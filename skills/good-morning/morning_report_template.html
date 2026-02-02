@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Morning Report - {{DATE}}</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px;
+            line-height: 1.5;
+        }
+        h1 { 
+            border-bottom: 2px solid #333; 
+            padding-bottom: 10px; 
+        }
+        h2 {
+            margin-top: 30px;
+            color: #333;
+        }
+        .section { 
+            margin: 20px 0; 
+        }
+        .good { color: #059669; }
+        .bad { color: #DC2626; }
+        .warning { color: #D97706; }
+        .alert {
+            background: #FEE2E2;
+            border-left: 4px solid #DC2626;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        .ok {
+            background: #D1FAE5;
+            border-left: 4px solid #059669;
+            padding: 10px 15px;
+            margin: 10px 0;
+        }
+        table { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin: 10px 0; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+        }
+        th { 
+            background: #f5f5f5; 
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Good Morning</h1>
+    <p class="timestamp">{{DATE}} · Generated at {{TIME}}</p>
+    
+    <div class="section">
+        <h2>🚨 Alerts</h2>
+        {{ALERTS}}
+        <!-- Example:
+        <div class="alert">Error rate spiked to 3.2% (was 0.8% last week)</div>
+        <div class="ok">All pipelines healthy</div>
+        -->
+    </div>
+    
+    <div class="section">
+        <h2>📊 Dashboard Checks</h2>
+        {{DASHBOARD_CHECKS}}
+        <!-- Example:
+        <table>
+            <tr><th>Metric</th><th>Today</th><th>Last Week</th><th>Change</th></tr>
+            <tr><td>DAU</td><td>12,450</td><td>11,200</td><td class="good">+11%</td></tr>
+        </table>
+        -->
+    </div>
+    
+    <div class="section">
+        <h2>📈 Week over Week</h2>
+        {{WOW_CHANGES}}
+    </div>
+    
+    <div class="section">
+        <h2>📝 Follow-ups</h2>
+        {{FOLLOWUPS}}
+        <!-- Example:
+        <ul>
+            <li>Draft message to #engineering about error spike</li>
+            <li>Check in with Acme Corp account team</li>
+        </ul>
+        -->
+    </div>
+</body>
+</html>
