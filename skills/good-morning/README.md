@@ -10,4 +10,4 @@ So now, every morning I just tell Cortex Code good morning, and it spits out a l
 
 Try out making your own by creating a profile / manifesto / template, and let us know how it goes!
 
-**Credits**: [Tyler Richards](https://tylerjrichards.com/), [Zachary Blackwood](https://www.linkedin.com/in/blackary/), [Mark Huberty](https://www.linkedin.com/in/mark-huberty-99665157/), [Tyler Simons](https://www.linkedin.com/in/tyler-simons-phd/)
+**Credits**: [Tyler Richards](https://tylerjrichards.com/), [Zachary Blackwood](https://www.linkedin.com/in/blackary/), [Mark Huberty](https://www.linkedin.com/in/mark-huberty-99665157/), [Tyler Simons](https://www.tylersimons.com/)
