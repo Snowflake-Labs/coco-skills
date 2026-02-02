@@ -1,154 +1,87 @@
 ---
 name: good-morning
-description: Daily workflow that checks the things you care about and generates a morning report. Triggers include good morning, gm, start my day.
+description: Run the user's personalized morning workflow to check pipelines, metrics, and generate a daily report
 ---
 
-# Good Morning
+# When to use
+- User says "good morning", "gm", "start my day", or similar greeting
+- User wants their daily morning check-in report
 
-An AI assistant that knows what you care about and checks it for you every morning.
+# Instructions
 
-**Credits**: Tyler Richards, Zachary Blackwood, Mark Huberty, Tyler Simons
+## Step 1: Find the user's workflow file
+Look for a `goodmorning.md` file in the user's project. This file defines their personalized morning routine.
+
+If no workflow file exists, help them create one (see example template below).
+
+## Step 2: Execute the workflow
+Read the workflow file and **follow its instructions exactly**. The workflow defines:
+- What queries to run
+- What thresholds matter
+- What to flag as issues
+- What actions to take
+
+Do what the workflow says. Don't add extra steps.
+
+## Step 3: Generate the report
+1. Use the HTML template at `morning_report_template.html` if one exists
+2. Save to: `goodmorning/YYYY-MM-DD_morning_report.html`
+3. Open in browser
+
+## Step 4: Present findings
+Summarize key findings to the user and link to the saved report.
 
 ---
 
-## How It Works
+# Example workflow template
 
-1. **Read your manifesto** — A file that describes what you care about, where your data lives, and what you check daily
-2. **Run your checks** — Query dashboards, look for week-over-week changes, check for errors
-3. **Generate a report** — HTML file using your template, opened in browser
-
----
-
-## Setup
-
-Create a `goodmorning.md` file in your project that describes:
+If the user needs to create a `goodmorning.md`, here's an example structure:
 
 ```markdown
-# My Good Morning Manifesto
+# My Good Morning Workflow
 
-## What I Care About
-- [Product/feature you own]
-- [Metrics that matter to you]
-- [Customers or accounts you track]
+**Owner**: [username]
+**Frequency**: Daily
 
-## Where My Data Lives
-- [database.schema.table_name] — [what it contains]
-- [another_table] — [what it contains]
+---
 
-## What I Check Every Morning
+## Overview
 
-### Dashboard Checks
-[Describe the charts you look at. What are you looking for? Week-over-week changes? Spikes? Drops?]
+What this workflow does and why.
 
-### Error Checks  
-[What logs or tables do you check for errors? What does "bad" look like?]
+**Output**: HTML file → `goodmorning/YYYY-MM-DD_morning_report.html`
 
-### Follow-ups
-[What actions do you take when you find something? Draft a message? Create an issue? Dig deeper?]
+---
+
+## [Section Name]
+
+[Description of what to check and why]
+
+```sql
+-- Your query here
+SELECT ...
+FROM database.schema.table
+WHERE ...;
+```
+
+**What to look for**: [Thresholds, patterns, or conditions to flag]
+
+---
+
+## [Another Section]
+
+[Add as many sections as you need for your workflow]
+
+---
+
+## Generate Report
+
+Save HTML report and open in browser.
 ```
 
 ---
 
-## Running the Workflow
-
-When triggered, the assistant will:
-
-1. Look for `goodmorning.md` in your project (or ask you to create one)
-2. Read the manifesto to understand your context
-3. Run SQL queries against the tables you specified
-4. Compare this week vs last week for each metric
-5. Flag anything that looks unusual
-6. Generate an HTML report using `morning_report_template.html`
-7. Open the report in your browser
-
----
-
-## HTML Template
-
-The skill uses `morning_report_template.html` for consistent formatting. If none exists, create one or use this starter:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Morning Report - {{DATE}}</title>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
-        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
-        .section { margin: 20px 0; }
-        .good { color: #059669; }
-        .bad { color: #DC2626; }
-        .warning { color: #D97706; }
-        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f5f5f5; }
-    </style>
-</head>
-<body>
-    <h1>Good Morning — {{DATE}}</h1>
-    
-    <div class="section">
-        <h2>Alerts</h2>
-        {{ALERTS}}
-    </div>
-    
-    <div class="section">
-        <h2>Dashboard Checks</h2>
-        {{DASHBOARD_CHECKS}}
-    </div>
-    
-    <div class="section">
-        <h2>Week over Week</h2>
-        {{WOW_CHANGES}}
-    </div>
-    
-    <div class="section">
-        <h2>Follow-ups</h2>
-        {{FOLLOWUPS}}
-    </div>
-</body>
-</html>
-```
-
-Save this as `morning_report_template.html` in your project, then customize it.
-
----
-
-## Example Manifesto
-
-```markdown
-# My Good Morning Manifesto
-
-## What I Care About
-- User adoption of our new feature
-- Error rates in production
-- Key customer accounts (Acme Corp, BigCo)
-
-## Where My Data Lives
-- analytics.prod.daily_metrics — DAU, feature usage, errors
-- analytics.prod.account_health — per-account metrics
-
-## What I Check Every Morning
-
-### Dashboard Checks
-I look at daily_metrics for the past 7 days. I want to see:
-- DAU trending up or stable
-- Feature adoption > 10%
-- Error rate < 1%
-
-Flag anything that changed more than 20% week-over-week.
-
-### Error Checks
-Check for rows in daily_metrics where error_count > 100.
-Check for any account in account_health where health_score dropped below 50.
-
-### Follow-ups
-If error rate spikes: draft a message to #engineering with the details.
-If a key account's health dropped: prepare talking points for the account team.
-```
-
----
-
-## Output
-
-Reports are saved to `goodmorning/YYYY-MM-DD_morning_report.html` and opened automatically.
+# Notes
+- The workflow file is the source of truth — execute what it says
+- Always save a report for historical record
+- Open the HTML report in browser when done
