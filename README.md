@@ -1,14 +1,8 @@
 # Cortex Code Skills
 
-A public repository of skills for [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills): Snowflake's AI-powered coding agent. Skills are contributed by Snowflake employees and the broader developer community. All skills follow the open source [SKILL.md standard](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills).
+This is the public repo for [Cortex Code](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) skills: reusable, shareable instruction sets that extend what Cortex Code knows how to do. Skills here are contributed by Snowflake employees and the broader developer community, including Data Superheroes and partners. They complement the bundled skills that ship with the Cortex Code CLI. All skills follow the open source [SKILL.md standard](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills).
 
----
-
-## About this repository
-
-This repository is the public home for Cortex Code skills: reusable, shareable instruction sets that extend what Cortex Code knows how to do. Skills here are contributed by Snowflake employees and the broader developer community, including Data Superheroes and partners. They complement the bundled skills that ship with the Cortex Code CLI.
-
-Cortex Code gets more useful the more skills exist for it. Every skill published here is a workflow someone already figured out, packaged so anyone can load it in seconds. The most valuable contributions come from people solving real problems: data engineers building pipelines, analysts working with Cortex Analyst, developers deploying agents. If you have a workflow you reach for repeatedly, it belongs here.
+Cortex Code gets more useful the more skills exist for it. Every skill published here is a workflow someone already figured out, packaged so anyone can load it in seconds. The most valuable contributions come from people solving real problems: data engineers building pipelines, analysts working with Cortex Analyst, developers deploying agents. If you have a workflow you reach for repeatedly, it belongs here. Skills in this repo are community-maintained: please [review them before use](#disclaimer).
 
 Licenses are assigned at the skill folder level (Apache 2.0 for community contributors, Snowflake license for employees). See the [License](#license) section for details.
 
