@@ -6,7 +6,7 @@ In the past, the best I could do was a series of alerts that were just yet anoth
 
 So now, every morning I just tell Cortex Code good morning, and it spits out a lovely html file. Here is the first bit of a synthetic version of what I see every morning.
 
-![Good Morning Report Example](example_report.png)
+![Good Morning Report Example](references/example_report.png)
 
 Try out making your own by creating a profile / manifesto / template, and let us know how it goes!
 
