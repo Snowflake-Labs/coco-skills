@@ -126,6 +126,14 @@ def validate_skill(skill_dir):
                 "LICENSE must be either Apache 2.0 (community skills) or the Snowflake Skills License (Snowflake employee skills)"
             )
 
+        # Snowflake email authors must use the Snowflake Skills License
+        fm_authors = frontmatter.get("authors", "") if frontmatter else ""
+        has_snowflake_email = bool(re.search(r"@snowflake\.com", fm_authors, re.IGNORECASE))
+        if has_snowflake_email and SNOWFLAKE_MARKER not in license_content:
+            errors.append(
+                "Authors with a @snowflake.com email must use the Snowflake Skills License, not Apache 2.0"
+            )
+
     return errors, warnings
 
 
