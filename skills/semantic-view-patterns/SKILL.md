@@ -2,7 +2,7 @@
 id: semantic-view-patterns
 name: semantic-view-patterns
 skill-name: $sv-patterns
-description: Two modes for 18 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
+description: Two modes for 20 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
 prompt: "$sv-patterns walk me through time intelligence"
 language: en
 categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
@@ -38,7 +38,7 @@ This skill has two modes — use the right one based on what the user is trying 
 
 # What This Skill Provides
 
-A library of 18 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
+A library of 20 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
 - Real problem statement and BI tool comparison
 - Minimal but realistic seed data
 - Fully annotated SV DDL
@@ -67,6 +67,8 @@ A library of 18 executable, self-contained Semantic View modeling patterns bundl
 | `ai_metadata` | AI_SQL_GENERATION, AI_QUESTION_CATEGORIZATION, AI_VERIFIED_QUERIES |
 | `tags` | WITH TAG on metrics |
 | `introspection` | SHOW METRICS, SHOW DIMENSIONS, get_lineage() |
+| `fact_as_relationship_key` | Computed FK fact — derive a join key from an expression when no physical FK column exists |
+| `system_explain_semantic_query` | SYSTEM$EXPLAIN_SEMANTIC_QUERY — inspect generated SQL, debug errors without running the query |
 | `standard_sql` | Plain SELECT on SVs — ANY_VALUE, metric-less queries |
 | `inline_sv` | Inline SV CTEs ⚠️ Private Preview |
 | `materialization` | SV materialization ⚠️ Private Preview |
