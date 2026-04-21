@@ -69,7 +69,7 @@ A library of 21 executable, self-contained Semantic View modeling patterns bundl
 | `introspection` | SHOW METRICS, SHOW DIMENSIONS, get_lineage() |
 | `fact_as_relationship_key` | Computed FK fact — derive a join key from an expression when no physical FK column exists |
 | `system_explain_semantic_query` | SYSTEM$EXPLAIN_SEMANTIC_QUERY — inspect generated SQL, debug errors without running the query |
-| `caller_rights` | Caller rights access model — users must have SELECT on both the SV and base tables; no privilege escalation ⚠️ Requires ACCOUNTADMIN |
+| `caller_rights` | Ownership separation trick — make the SV owner have no base table access, forcing callers to supply their own; no privilege escalation ⚠️ Requires ACCOUNTADMIN |
 | `standard_sql` | Plain SELECT on SVs — ANY_VALUE, metric-less queries |
 | `inline_sv` | Inline SV CTEs ⚠️ Private Preview |
 | `materialization` | SV materialization ⚠️ Private Preview |

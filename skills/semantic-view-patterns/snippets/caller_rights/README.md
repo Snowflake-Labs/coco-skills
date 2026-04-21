@@ -2,56 +2,71 @@
 
 ## The Problem
 
-A data platform team wants to expose a governed Semantic View to analysts, but needs to ensure that:
-1. Analysts can only query the SV if they also have direct access to the underlying base tables.
-2. Granting SELECT on the SV alone is **not** enough — there is no privilege escalation path through the SV layer.
+By default, both standard Snowflake views and semantic views execute with **owner rights**: when a user queries the view, it runs with the *view owner's* privileges. This means a user with SELECT on the view can read data even if they have no SELECT on the underlying tables — the owner's access covers them.
 
-This is the opposite of how standard Snowflake views work. Regular views use **owner rights** by default: a user with SELECT on the view can read data even without SELECT on the base tables. Semantic views use **caller rights**: the query runs with the calling user's privileges, and the user must have access to both the SV *and* every base table it references.
+Sometimes that's exactly what you want. But for a governed semantic layer, it creates a problem: you may want to ensure that users can only query the semantic view if they also have *direct* access to the underlying base tables — so that row-level security policies, column masking, and schema-level access controls still apply to the caller.
 
-## Owner Rights vs Caller Rights
+## The Trick — Ownership Separation
 
-| | Standard View (default) | Semantic View |
-|--|------------------------|---------------|
-| Query runs with | **Owner's** privileges | **Caller's** privileges |
+The key is a single design decision: **make the SV owner a role that has no access to the base tables.**
+
+```
+SV_CREATOR  creates the SV  (needs base table access to define it)
+     ↓  future grant transfers ownership immediately
+SV_OWNER    owns the SV     (deliberately has NO base table access)
+```
+
+Because the SV runs with the *owner's* rights (`SV_OWNER`), and `SV_OWNER` cannot access the base tables, the query cannot succeed on owner rights alone. The only way it can succeed is if the **caller** brings their own base table access. This converts the effective execution model to caller rights — without any special DDL clause.
+
+The critical line that makes this work:
+```sql
+GRANT OWNERSHIP ON FUTURE SEMANTIC VIEWS IN SCHEMA SV_CALLER_TEST.SV TO ROLE SV_OWNER;
+```
+
+`SV_OWNER` can grant SELECT on the SV to users — but granting SELECT on the SV alone is not enough. The caller must also have USAGE on the DATA schema and SELECT on every base table.
+
+## How This Compares to a Standard View
+
+| | Standard view (owner has table access) | This SV pattern (owner has NO table access) |
+|--|---------------------------------------|---------------------------------------------|
+| Executes with | Owner's rights | Owner's rights |
+| Owner has SELECT on base tables? | Yes | **No — deliberately** |
 | User needs SELECT on view? | Yes | Yes |
-| User needs SELECT on base tables? | **No** | **Yes** |
-| Privilege escalation possible? | Yes — view owner can expose data the caller can't see | **No** — caller must already have access |
-| Analogy | Stored procedure with `EXECUTE AS OWNER` | Stored procedure with `EXECUTE AS CALLER` |
+| User needs SELECT on base tables? | **No** — owner provides it | **Yes** — owner can't provide it |
+| Effective execution model | Owner rights | Effectively caller rights |
 
 ## How You Might Express This Need
 
 - "We want the SV to be an additional access gate, not a bypass around table-level permissions"
-- "Our base tables have row-level security / column masking — we need to make sure those policies still apply"
+- "Our base tables have row-level security / column masking — we need the caller's policies to apply, not the owner's"
 - "Can a user with SELECT on the SV read data they don't have SELECT on in the base tables?"
-- "How do we design roles for a semantic layer — who owns the SV vs who queries it?"
+- "How do we design roles for a semantic layer so that base table access is still required?"
 
 ## The Four-Role Pattern
 
-This snippet demonstrates the minimal role structure for a production semantic layer:
+| Role | Creates SVs? | Owns SVs? | DATA schema access? | SELECT on SV? | Can query? |
+|------|-------------|-----------|---------------------|----------------|------------|
+| `SV_CREATOR` | Yes | No (future grant hands off) | **Yes** | Implicitly | Yes |
+| `SV_OWNER` | No | **Yes** | **No** | Owns | N/A (grants, doesn't query) |
+| `SV_USER` | No | No | **Yes** | **Yes** | ✅ Yes |
+| `SV_USER_NO_BASE_SELECT` | No | No | **No** | **Yes** | ❌ Fails |
 
-| Role | What it can do | Has base table SELECT? | Has SV SELECT? |
-|------|---------------|----------------------|----------------|
-| `SV_CREATOR` | Creates SVs in `SV` schema | Yes (needed to define the SV) | Implicitly (creator) |
-| `SV_OWNER` | Owns SVs (via future grant), grants SELECT on them | No | Owns |
-| `SV_USER` | Queries the SV | **Yes** | **Yes** → **succeeds** |
-| `SV_USER_NO_BASE_SELECT` | Has SV SELECT but no base table access | **No** | Yes → **fails** |
-
-The key insight: `SV_USER_NO_BASE_SELECT` has SELECT on the SV but cannot query it because the engine needs to resolve the base tables with the *caller's* privileges. The error is immediate and clear.
+`SV_USER_NO_BASE_SELECT` has SELECT on the SV but the query fails because `SV_OWNER` (the view executor) has no base table access, and neither does the caller. The error is immediate and clear.
 
 ## Schema Layout
 
-Two separate schemas enforce the separation of concerns:
+Two separate schemas reinforce the boundary:
 
 ```
 SV_CALLER_TEST.SV    ← semantic view lives here (SV_CREATOR creates, SV_OWNER owns)
-SV_CALLER_TEST.DATA  ← base tables live here (SV_USER can see, SV_USER_NO_BASE_SELECT cannot)
+SV_CALLER_TEST.DATA  ← base tables live here (SV_USER can see, SV_OWNER cannot)
 ```
 
 ## What Doesn't Work
 
-- **Granting SELECT on the SV is not sufficient** — `SV_USER_NO_BASE_SELECT` fails even with SV SELECT because it lacks USAGE on `DATA` schema and SELECT on the base tables. This is the intended behavior.
-- **`USE SECONDARY ROLES ALL` can unexpectedly grant access** — if a user has secondary roles that include base table access, the query may succeed. The snippet uses `USE SECONDARY ROLES NONE` to isolate role-specific privileges during testing.
-- **Column masking and row access policies on base tables are respected** — because the query runs with caller rights, any policies applied to base table columns apply to SV queries too.
+- **`USE SECONDARY ROLES ALL` can unexpectedly grant access** — if a user has secondary roles that include DATA schema access, the query may succeed. Always use `USE SECONDARY ROLES NONE` when testing access boundaries.
+- **The trick only works if the owner truly lacks table access** — if `SV_OWNER` accidentally gets USAGE on the DATA schema (e.g. via a future grant or role inheritance), the whole pattern breaks and the SV reverts to effectively owner-rights behavior.
+- **Column masking and row access policies on base tables are respected** — because the query can only succeed when the *caller* has base table access, any policies on those tables apply to the caller's role.
 
 ## Cleanup
 
@@ -62,7 +77,7 @@ Run the cleanup block at the bottom of `queries.sql` to remove all objects creat
 - [Semantic view privileges](https://docs.snowflake.com/en/user-guide/views-semantic/privileges)
 - [CREATE SEMANTIC VIEW — access control](https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view#access-control-requirements)
 - [GRANT privilege on semantic view](https://docs.snowflake.com/en/sql-reference/sql/grant-privilege)
-- [Understanding caller's rights and owner's rights](https://docs.snowflake.com/en/developer-guide/stored-procedure/stored-procedures-rights)
+- [GRANT OWNERSHIP on future objects](https://docs.snowflake.com/en/sql-reference/sql/grant-ownership)
 
 ## Files
 
