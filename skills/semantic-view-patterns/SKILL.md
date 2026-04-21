@@ -105,15 +105,20 @@ Then construct the path as `<repo_root>/skills/semantic-view-patterns/snippets/`
 
 Before deploying for the first time in a session, ask:
 
-```
-Which Snowflake database and schema should I deploy the snippet tables into?
-```
+> "Where should I deploy the snippet tables? I recommend the Snowflake Learning Environment (`SNOWFLAKE_LEARNING_DB`) — it's pre-provisioned on most accounts and requires no setup. Or you can specify any database and schema you like."
 
-Options:
-- `CORTEX_SNIPPETS.PUBLIC` (default — created if it doesn't exist)
-- Let them type a custom `DB.SCHEMA`
+Present two options:
+1. **Snowflake Learning Environment** (recommended) — `SNOWFLAKE_LEARNING_DB.PUBLIC`, uses pre-provisioned role `SNOWFLAKE_LEARNING_ROLE` and warehouse `SNOWFLAKE_LEARNING_WH`
+2. **Custom location** — user specifies any `DB.SCHEMA`
 
-Store the chosen `TARGET_DB` and `TARGET_SCHEMA` for the rest of the session so you don't re-ask.
+If they choose the Learning Environment, set:
+- `TARGET_DB = SNOWFLAKE_LEARNING_DB`
+- `TARGET_SCHEMA = PUBLIC`
+- Note: they may need to run `USE ROLE SNOWFLAKE_LEARNING_ROLE` and `USE WAREHOUSE SNOWFLAKE_LEARNING_WH` if their session doesn't already have access
+
+If they choose a custom location, ask for `DB` and `SCHEMA` separately. If the DB doesn't exist, `run_snippet.py` will create it (the `CREATE DATABASE IF NOT EXISTS` in `schema.sql` is preserved and adapted).
+
+Store `TARGET_DB` and `TARGET_SCHEMA` for the rest of the session so you don't re-ask.
 
 ## Step 4 — Read All Five Files
 

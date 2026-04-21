@@ -122,7 +122,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run a semantic view snippet against your Snowflake account")
     parser.add_argument("snippet", nargs="?", help="Snippet name (e.g. time_intelligence). Omit to list available snippets.")
     parser.add_argument("--step", choices=["schema", "seed", "sv", "queries", "all"], default="all")
-    parser.add_argument("--db", default="CORTEX_SNIPPETS", help="Target database (default: CORTEX_SNIPPETS)")
+    parser.add_argument("--db", default="SNOWFLAKE_LEARNING_DB", help="Target database (default: SNOWFLAKE_LEARNING_DB)")
     parser.add_argument("--schema", default="PUBLIC", help="Target schema (default: PUBLIC)")
     parser.add_argument("--connection", default=None, help="Snowflake connection name (default: active session connection)")
     parser.add_argument("--quiet", action="store_true", help="Suppress query result rows")
