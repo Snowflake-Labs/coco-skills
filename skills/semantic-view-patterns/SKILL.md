@@ -2,7 +2,7 @@
 id: semantic-view-patterns
 name: semantic-view-patterns
 skill-name: $sv-patterns
-description: Two modes for 20 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
+description: Two modes for 21 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
 prompt: "$sv-patterns walk me through time intelligence"
 language: en
 categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
@@ -38,7 +38,7 @@ This skill has two modes — use the right one based on what the user is trying 
 
 # What This Skill Provides
 
-A library of 20 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
+A library of 21 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
 - Real problem statement and BI tool comparison
 - Minimal but realistic seed data
 - Fully annotated SV DDL
@@ -69,6 +69,7 @@ A library of 20 executable, self-contained Semantic View modeling patterns bundl
 | `introspection` | SHOW METRICS, SHOW DIMENSIONS, get_lineage() |
 | `fact_as_relationship_key` | Computed FK fact — derive a join key from an expression when no physical FK column exists |
 | `system_explain_semantic_query` | SYSTEM$EXPLAIN_SEMANTIC_QUERY — inspect generated SQL, debug errors without running the query |
+| `caller_rights` | Caller rights access model — users must have SELECT on both the SV and base tables; no privilege escalation ⚠️ Requires ACCOUNTADMIN |
 | `standard_sql` | Plain SELECT on SVs — ANY_VALUE, metric-less queries |
 | `inline_sv` | Inline SV CTEs ⚠️ Private Preview |
 | `materialization` | SV materialization ⚠️ Private Preview |
@@ -288,6 +289,7 @@ Offer any of:
 **Both modes:**
 - Be honest about limitations — when a pattern doesn't work or has caveats, explain exactly why
 - For ⚠️ Private Preview snippets (`inline_sv`, `materialization`, `scoped_dataset`), note upfront that the user may need to contact their Snowflake account team to enable the feature
+- For `caller_rights`, note upfront that it requires ACCOUNTADMIN (or both SECURITYADMIN + SYSADMIN), creates its own dedicated database/warehouse/roles (`SV_CALLER_TEST`), and includes a cleanup block — run it when done
 - Match the user's energy — if they're exploring, be expansive; if they're in a hurry, be terse
 
 **Tutorial mode:**
