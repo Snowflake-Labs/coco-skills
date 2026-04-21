@@ -101,24 +101,37 @@ Where is the cortex-code-skills repo cloned on your machine?
 ```
 Then construct the path as `<repo_root>/skills/semantic-view-patterns/snippets/`.
 
-## Step 3 — Ask for Target Schema (First Time Only)
+## Step 3 — Ask for Connection and Target Schema (First Time Only)
 
-Before deploying for the first time in a session, ask:
+Ask two questions upfront before deploying anything.
 
-> "Where should I deploy the snippet tables? I recommend the Snowflake Learning Environment (`SNOWFLAKE_LEARNING_DB`) — it's pre-provisioned on most accounts and requires no setup. Or you can specify any database and schema you like."
+**Question 1 — Which Snowflake account should I use?**
 
-Present two options:
+Cortex Code may be running on a different Snowflake account than the one the user wants to deploy and run the tutorial against. Ask:
+
+> "Which Snowflake connection should I use? This is the account where I'll deploy the tables and run the queries."
+
+Options to present:
+1. **Default connection** — the active Cortex Code account (no connection name needed)
+2. **Named connection** — user specifies a connection name from their `~/.snowflake/connections.toml` (e.g. `pm`, `dev`, `prod`)
+
+Store as `TARGET_CONNECTION` (empty string = default, otherwise the named connection).
+- Use `TARGET_CONNECTION` in all `snowflake_sql_execute` calls via the `connection` parameter
+- Pass as `--connection <TARGET_CONNECTION>` to `run_snippet.py` (omit the flag entirely if default)
+
+**Question 2 — Where in that account should I deploy the tables?**
+
+> "Where should I deploy the snippet tables? I recommend the Snowflake Learning Environment (`SNOWFLAKE_LEARNING_DB`) — it's pre-provisioned on most accounts and requires no setup. Or specify any database and schema."
+
+Options:
 1. **Snowflake Learning Environment** (recommended) — `SNOWFLAKE_LEARNING_DB.PUBLIC`, uses pre-provisioned role `SNOWFLAKE_LEARNING_ROLE` and warehouse `SNOWFLAKE_LEARNING_WH`
 2. **Custom location** — user specifies any `DB.SCHEMA`
 
-If they choose the Learning Environment, set:
-- `TARGET_DB = SNOWFLAKE_LEARNING_DB`
-- `TARGET_SCHEMA = PUBLIC`
-- Note: they may need to run `USE ROLE SNOWFLAKE_LEARNING_ROLE` and `USE WAREHOUSE SNOWFLAKE_LEARNING_WH` if their session doesn't already have access
+If they choose the Learning Environment, set `TARGET_DB = SNOWFLAKE_LEARNING_DB`, `TARGET_SCHEMA = PUBLIC`. Note they may need `USE ROLE SNOWFLAKE_LEARNING_ROLE` if their session doesn't have access.
 
-If they choose a custom location, ask for `DB` and `SCHEMA` separately. If the DB doesn't exist, `run_snippet.py` will create it (the `CREATE DATABASE IF NOT EXISTS` in `schema.sql` is preserved and adapted).
+If they choose a custom location, ask for `DB` and `SCHEMA`. If the DB doesn't exist, `run_snippet.py` will create it.
 
-Store `TARGET_DB` and `TARGET_SCHEMA` for the rest of the session so you don't re-ask.
+Store `TARGET_CONNECTION`, `TARGET_DB`, and `TARGET_SCHEMA` for the rest of the session — don't re-ask.
 
 ## Step 4 — Read All Five Files
 
