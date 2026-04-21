@@ -147,9 +147,22 @@ Before presenting anything, read all five files for the chosen snippet:
 Present the framing conversationally — do NOT just paste the README. Synthesize:
 1. What problem this snippet solves (2–3 sentences)
 2. The "How You Might Express This Need" list
-3. The BI tool comparison table
 
 End with: _"Here's how Snowflake Semantic Views handle it — without any of those workarounds."_
+
+Then add this prompt hint on its own line:
+> 💡 _Want to learn how other tools tackle this problem? Ask me "Tell me about other approaches."_
+
+## Step 5b — Other Approaches Handler
+
+If at any point the user says "tell me about other approaches", "how does [tool] handle this", or "what would this look like in Power BI / Tableau / dbt / SQL":
+
+Read the `## Equivalent in Other Tools` table from the snippet's README and present it conversationally. For each tool, briefly explain:
+- What mechanism or feature they use
+- Why it's more work or less reliable than the SV approach
+- Any genuine strengths that tool has for this use case (be honest)
+
+End with: _"The SV approach encodes the constraint in the model definition itself — the right answer is the only possible answer, regardless of who writes the query."_
 
 ## Step 6 — Act 2: The Data Model
 

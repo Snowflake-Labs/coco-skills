@@ -21,6 +21,7 @@ You have a metric or dimension whose calculation depends on a **user-defined thr
 | **LookML** | Liquid parameters: `{% parameter threshold %}` |
 | **dbt** | `{{ var('premium_threshold', 500) }}` in model SQL |
 | **Power BI** | What-if parameters / Power Query parameters |
+| **Tableau** | Parameters with Parameter Actions for dynamic filtering; Fixed LOD with parameter-driven thresholds. Parameters are session-scoped like SV variables. |
 
 ## The SV Approach
 

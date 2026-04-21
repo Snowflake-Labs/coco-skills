@@ -25,6 +25,7 @@ This kind of measure is called **semi-additive**: additive across some dimension
 | **LookML** | `type: sum` with a date filter in the measure, or `type: average` — no native semi-additive guard |
 | **dbt** | No native concept; requires window functions (`LAST_VALUE`, `SUM OVER`) in the model |
 | **Raw SQL** | `WHERE balance_date = CURRENT_DATE` for point-in-time; `AVG(balance_usd)` for trend |
+| **Tableau** | Fixed LOD for point-in-time: `{ FIXED [Date]: SUM([Balance]) }`; `WINDOW_AVG` table calculation for trends. Requires careful scope management to avoid double-counting. |
 
 Snowflake Semantic Views handle this with `NON ADDITIVE BY` — it marks a metric as non-aggregatable across a specific time dimension, preventing accidental cross-date summing.
 

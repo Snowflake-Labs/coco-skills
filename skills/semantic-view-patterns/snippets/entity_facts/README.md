@@ -23,6 +23,7 @@ These patterns require entity-level aggregation, derived dimensions, and express
 | **LookML** | `derived_table` + `dimension: value_segment { sql: CASE WHEN ... }` |
 | **dbt** | `metrics.yml` customer_ltv + downstream dimension in model |
 | **Power BI** | DAX CALCULATE + ALLEXCEPT for entity-level aggregation |
+| **Tableau** | Fixed LOD for entity aggregation: `{ FIXED [Customer ID]: SUM([Order Amount]) }`; CASE WHEN on the LOD result for segmentation. |
 
 ## Three Patterns in This Snippet
 

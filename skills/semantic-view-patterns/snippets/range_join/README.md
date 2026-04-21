@@ -23,6 +23,7 @@ You have a fact table and a dimension table where the dimension data changes ove
 | **Power BI / DAX** | No native temporal join. Requires pre-built snapshot tables or complex CALCULATE + FILTER patterns. |
 | **SSAS / Tabular** | No native temporal join. Denormalization is standard. |
 | **Raw SQL** | `JOIN dim ON fact.id = dim.id AND fact.event_date BETWEEN dim.valid_from AND dim.valid_to` |
+| **Tableau** | Custom SQL data source with date-range JOIN, or pre-joined SCD2 snapshot at extract time. No native temporal join. |
 
 Snowflake Semantic Views handle this natively with a **range relationship** — no denormalization or ETL-time join needed.
 

@@ -22,6 +22,7 @@ A related use case: **pre-joining two tables** into a single logical entity insi
 | **LookML** | `sql_table_name: (SELECT * FROM sales WHERE lob = 'Retail') ;;` in a view |
 | **dbt** | Separate model with `WHERE` filter |
 | **Power BI** | Row-level security or filtered Import table |
+| **Tableau** | Custom SQL in the data source definition, or Data Source Filters applied at connect time. |
 
 ## The SV Approach
 

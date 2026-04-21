@@ -18,6 +18,7 @@ A single business domain has **multiple independent fact tables** that should al
 | **LookML** | Multiple explores joined to a single shared dimension view |
 | **dbt** | `metrics.yml` with multiple models; union or join at reporting layer |
 | **Power BI** | Multiple fact tables in a star schema with shared dim tables |
+| **Tableau** | Multi-source Relationships or data blending. Each fact connects to shared dimension tables; cross-fact comparisons require blends or custom SQL. |
 
 ## The SV Approach
 

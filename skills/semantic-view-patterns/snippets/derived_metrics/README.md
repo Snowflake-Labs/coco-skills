@@ -19,6 +19,7 @@ You have metrics defined on separate entities (e.g. store sales, web sales, cata
 | **LookML** | `measure: total_revenue { type: number; sql: ${store_revenue} + ${web_revenue} }` |
 | **dbt** | Calculated metric in metrics YAML or derived model |
 | **Power BI** | DAX `TOTAL_REVENUE = [STORE_REVENUE] + [WEB_REVENUE]` |
+| **Tableau** | Calculated fields: `[Store Revenue] + [Web Revenue]`. Cross-data-source ratios require blending; single-source is straightforward. |
 
 ## The SV Approach
 

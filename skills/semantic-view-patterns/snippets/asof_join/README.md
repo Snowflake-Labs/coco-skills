@@ -33,6 +33,7 @@ This is an **ASOF join** (as-of join): "give me the record that was in effect *a
 | **dbt** | No native ASOF; requires the subquery pattern above in a Jinja model |
 | **LookML** | No native support; pre-join at ETL time |
 | **Power BI** | CALCULATE + FILTER to find latest active record |
+| **Tableau** | FIXED LOD `{ FIXED [ID]: MAX([start_date]) }` filtered to dates ≤ event timestamp; or blend a date-filtered extract. No native ASOF join. |
 
 ## The SV Approach
 

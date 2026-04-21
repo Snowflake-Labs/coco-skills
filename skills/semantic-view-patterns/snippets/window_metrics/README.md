@@ -19,6 +19,7 @@ You need metrics that **span time** — comparing today to a prior period, smoot
 | **LookML** | `measure: rolling_7d { type: running_total ... }` (limited) |
 | **dbt** | Window functions in model SQL; must be pre-materialized |
 | **Power BI** | DAX `DATESINPERIOD()`, `TOTALYTD()` |
+| **Tableau** | Table calculations: `WINDOW_AVG` for rolling, `LOOKUP(SUM([metric]), -1)` for LAG, `RUNNING_SUM` for YTD. Limited to dimensions present in the current view. |
 
 ## Three Window Metric Patterns
 

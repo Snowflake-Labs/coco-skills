@@ -68,6 +68,7 @@ If `store_orders` has `region = 'Pacific'` but `web_orders` has no `'Pacific'` r
 | **LookML** | Role-playing dimension / one-to-one relationship from each explore |
 | **Star schema** | Add a physical `dim_region` table to the warehouse layer |
 | **Power BI** | Common "Region" table referenced by both fact tables |
+| **Tableau** | Shared dimension table via Relationships or data blending. Both fact sources join to the same physical dimension. |
 
 ## Docs
 

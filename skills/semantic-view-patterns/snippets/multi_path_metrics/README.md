@@ -20,6 +20,7 @@ Without disambiguation, the SV engine would raise: `Multi-path relationship betw
 | **LookML** | `view: departure_weather { extends: [weather_base] }` — role-playing views |
 | **dbt** | Two separate `ref()` models or CTEs aliasing the same source |
 | **Power BI** | Multiple relationships to the same table; mark one as inactive; use USERELATIONSHIP() |
+| **Tableau** | Duplicate data source connections with aliases as role-playing workaround, or custom SQL self-joins. No native multi-path disambiguation. |
 
 ## The SV Approach
 
