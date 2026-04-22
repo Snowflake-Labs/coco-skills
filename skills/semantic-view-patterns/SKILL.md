@@ -2,7 +2,7 @@
 id: semantic-view-patterns
 name: semantic-view-patterns
 skill-name: $sv-patterns
-description: Two modes for 21 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
+description: Two modes for 22 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
 prompt: "$sv-patterns walk me through time intelligence"
 language: en
 categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
@@ -16,7 +16,7 @@ tools:
 
 # Semantic View Patterns
 
-Interactive, end-to-end tutorials for 18 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL, runs live queries, and surfaces what works and what doesn't.
+Interactive, end-to-end tutorials for 22 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL, runs live queries, and surfaces what works and what doesn't.
 
 # When to Use
 
@@ -38,14 +38,14 @@ This skill has two modes — use the right one based on what the user is trying 
 
 # What This Skill Provides
 
-A library of 21 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
+A library of 22 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
 - Real problem statement and BI tool comparison
 - Minimal but realistic seed data
 - Fully annotated SV DDL
 - Working `SEMANTIC_VIEW()` queries with live output
 - Explicit gotchas and what-doesn't-work notes
 
-**Tutorial mode**: The `run_snippet.py` script deploys each snippet into a user-specified database/schema, then runs live queries so the user can see the pattern in action against real data.
+**Tutorial mode**: Deploys each snippet directly via `snowflake_sql_execute` (no Python subprocess), walks through the annotated DDL section by section, runs live queries, and offers to clean up all created objects at the end.
 
 **Apply mode**: The snippet files serve as annotated reference patterns. The skill reads the user's existing SV DDL, maps the snippet's structure to their tables/columns, and generates adapted DDL ready to paste or deploy — no example data needed.
 
@@ -74,6 +74,7 @@ A library of 21 executable, self-contained Semantic View modeling patterns bundl
 | `inline_sv` | Inline SV CTEs ⚠️ Private Preview |
 | `materialization` | SV materialization ⚠️ Private Preview |
 | `scoped_dataset` | SQL query as logical table ⚠️ Private Preview |
+| `row_access_policies` | RAP gotcha + two workarounds — prevent NULL rows when filtering dimension tables ⚠️ Requires ACCOUNTADMIN |
 
 # Instructions
 
@@ -104,37 +105,49 @@ Where is the cortex-code-skills repo cloned on your machine?
 ```
 Then construct the path as `<repo_root>/skills/semantic-view-patterns/snippets/`.
 
-## Step 3 — Ask for Connection and Target Schema (First Time Only)
+## Step 3 — Pre-Flight Check and Deploy Target (First Time Only)
 
-Ask two questions upfront before deploying anything.
+### 3a — Access-control snippets
 
-**Question 1 — Which Snowflake account should I use?**
+If the chosen snippet is `caller_rights` or `row_access_policies`:
+- These snippets create **roles and a dedicated database** and require ACCOUNTADMIN (or both SECURITYADMIN + SYSADMIN).
+- Run `SELECT CURRENT_ROLE(), CURRENT_WAREHOUSE()` to confirm. If the role is insufficient, warn the user before proceeding.
+- These snippets use **hardcoded database names** (`SV_CALLER_TEST` or `RAP_TEST`) — no target DB question is needed.
+- **Warehouse**: do NOT create a dedicated warehouse. Instead, ask: _"Which warehouse should the analyst roles use for running queries? I'll grant them USAGE on it."_ Default to `CURRENT_WAREHOUSE()` if the user has no preference. Then run: `GRANT USAGE, OPERATE ON WAREHOUSE <wh> TO ROLE <analyst_role>` for each role.
+- Track the dedicated objects created so you can offer cleanup in Step 10.
 
-Cortex Code may be running on a different Snowflake account than the one the user wants to deploy and run the tutorial against. Ask:
+### 3b — Probe for Snowflake Learning Environment
 
-> "Which Snowflake connection should I use? This is the account where I'll deploy the tables and run the queries."
+For all other snippets, silently run both checks:
+```sql
+SHOW DATABASES LIKE 'SNOWFLAKE_LEARNING_DB';
+SHOW ROLES LIKE 'SNOWFLAKE_LEARNING_ROLE';
+```
 
-Options to present:
-1. **Default connection** — the active Cortex Code account (no connection name needed)
-2. **Named connection** — user specifies a connection name from their `~/.snowflake/connections.toml` (e.g. `pm`, `dev`, `prod`)
+- **Both found** → include `SNOWFLAKE_LEARNING_DB.PUBLIC` as a recommended option in the next question, noting it uses `SNOWFLAKE_LEARNING_ROLE` / `SNOWFLAKE_LEARNING_WH`.
+- **Either missing** → don't offer it; go straight to asking for a custom location.
 
-Store as `TARGET_CONNECTION` (empty string = default, otherwise the named connection).
-- Use `TARGET_CONNECTION` in all `snowflake_sql_execute` calls via the `connection` parameter
-- Pass as `--connection <TARGET_CONNECTION>` to `run_snippet.py` (omit the flag entirely if default)
+### 3c — Ask for target location and role
 
-**Question 2 — Where in that account should I deploy the tables?**
+Ask a single question. Options depend on 3b:
 
-> "Where should I deploy the snippet tables? I recommend the Snowflake Learning Environment (`SNOWFLAKE_LEARNING_DB`) — it's pre-provisioned on most accounts and requires no setup. Or specify any database and schema."
+- If Learning Environment is available: offer `SNOWFLAKE_LEARNING_DB.PUBLIC` (recommended) + custom location
+- If not available: only offer custom location
 
-Options:
-1. **Snowflake Learning Environment** (recommended) — `SNOWFLAKE_LEARNING_DB.PUBLIC`, uses pre-provisioned role `SNOWFLAKE_LEARNING_ROLE` and warehouse `SNOWFLAKE_LEARNING_WH`
-2. **Custom location** — user specifies any `DB.SCHEMA`
+For a **custom location**, follow up with:
+- Target `DATABASE.SCHEMA` (you'll create the DB if it doesn't exist)
+- Which **role** to use — needs `CREATE TABLE`, `CREATE SEMANTIC VIEW`, `CREATE SCHEMA` on that database
+- Which **warehouse** to use
 
-If they choose the Learning Environment, set `TARGET_DB = SNOWFLAKE_LEARNING_DB`, `TARGET_SCHEMA = PUBLIC`. Note they may need `USE ROLE SNOWFLAKE_LEARNING_ROLE` if their session doesn't have access.
+For the **Learning Environment**, set:
+- `TARGET_DB = SNOWFLAKE_LEARNING_DB`, `TARGET_SCHEMA = PUBLIC`
+- `TARGET_ROLE = SNOWFLAKE_LEARNING_ROLE`, `TARGET_WAREHOUSE = SNOWFLAKE_LEARNING_WH`
 
-If they choose a custom location, ask for `DB` and `SCHEMA`. If the DB doesn't exist, `run_snippet.py` will create it.
+Store `TARGET_DB`, `TARGET_SCHEMA`, `TARGET_ROLE`, `TARGET_WAREHOUSE` for the rest of the session — don't re-ask.
 
-Store `TARGET_CONNECTION`, `TARGET_DB`, and `TARGET_SCHEMA` for the rest of the session — don't re-ask.
+### 3d — Track objects created
+
+Before deploying anything, record an explicit list of every object you are about to create (tables, views, semantic views, DB if new). You'll use this list in the Step 10 cleanup offer.
 
 ## Step 4 — Read All Five Files
 
@@ -171,16 +184,17 @@ End with: _"The SV approach encodes the constraint in the model definition itsel
 
 Walk through `schema.sql` with inline annotations explaining what each table represents and which columns matter.
 
-Then deploy schema + seed using `run_snippet.py`:
+Then deploy schema + seed by executing the SQL files directly via `snowflake_sql_execute`. **Do not use `run_snippet.py`** — execute statements directly in the active Snowflake session:
 
-```bash
-python <skill_dir>/run_snippet.py <snippet> --step schema --db <TARGET_DB> --schema <TARGET_SCHEMA>
-python <skill_dir>/run_snippet.py <snippet> --step seed   --db <TARGET_DB> --schema <TARGET_SCHEMA>
-```
+1. Read `schema.sql` and `seed_data.sql`
+2. For **standard snippets**: substitute `SNIPPETS.PUBLIC` → `TARGET_DB.TARGET_SCHEMA`, `USE DATABASE SNIPPETS` → `USE DATABASE TARGET_DB`, `USE SCHEMA PUBLIC` → `USE SCHEMA TARGET_SCHEMA` throughout
+3. For **access-control snippets** (`caller_rights`, `row_access_policies`): no substitution — execute as-is
+4. Run a `USE ROLE TARGET_ROLE` and `USE WAREHOUSE TARGET_WAREHOUSE` before executing
+5. Execute each statement via `snowflake_sql_execute`, confirm each succeeds before continuing
 
-After deployment, show 3–5 sample rows from each table using `snowflake_sql_execute`:
+After deployment, show 3–5 sample rows from each table:
 ```sql
-SELECT * FROM <TARGET_DB>.<TARGET_SCHEMA>.<TABLE> LIMIT 5;
+SELECT * FROM TARGET_DB.TARGET_SCHEMA.TABLE_NAME LIMIT 5;
 ```
 
 ## Step 7 — Act 3: The SV Pattern
@@ -194,18 +208,17 @@ Format each stop as:
 > ```
 > Key things to notice: [2–3 bullet points]
 
-Then deploy the SV:
-```bash
-python <skill_dir>/run_snippet.py <snippet> --step sv --db <TARGET_DB> --schema <TARGET_SCHEMA>
-```
+Then deploy the SV using the same direct execution approach as Step 6 (read file, adapt if needed, execute via `snowflake_sql_execute`).
 
 ## Step 8 — Act 4: Live Queries
 
 Run each numbered working query from `queries.sql` one at a time using `snowflake_sql_execute`. Before each query:
 1. State what it demonstrates
-2. Run it (substitute `SNIPPETS.PUBLIC` → `<TARGET_DB>.<TARGET_SCHEMA>`)
-3. Show the output
+2. Adapt table/SV references if needed (`SNIPPETS.PUBLIC` → `TARGET_DB.TARGET_SCHEMA`)
+3. Run it and show the output
 4. Narrate what the specific numbers demonstrate — point to concrete rows/values
+
+For queries that include `USE ROLE` switches (access-control snippets), execute those role-switch statements directly via `snowflake_sql_execute` before the query that follows.
 
 After every 2–3 queries, check if the user wants to continue or dig deeper.
 
@@ -213,9 +226,28 @@ After every 2–3 queries, check if the user wants to continue or dig deeper.
 
 Read the `-- GOTCHAS` and `-- HOW ... WORKS` sections from `queries.sql` and the `## What Doesn't Work` section from `README.md`. Present each gotcha plainly: what trap exists, why it happens, how to avoid it.
 
-## Step 10 — Wrap-Up
+## Step 10 — Wrap-Up and Cleanup
 
-Summarize in 3–5 key takeaways. Show the `## Docs` links from `README.md`. Offer to run a different snippet or switch to Apply mode to adapt the pattern to the user's own tables.
+Summarize in 3–5 key takeaways. Show the `## Docs` links from `README.md`.
+
+Then **always offer cleanup** — list every object created during this tutorial before asking:
+
+For **standard snippets**, list:
+- Tables created: `TARGET_DB.TARGET_SCHEMA.TABLE_1`, `TABLE_2`, ...
+- Semantic views created: `TARGET_DB.TARGET_SCHEMA.SV_NAME`
+- If the database was created fresh: `TARGET_DB` itself
+- Do **not** offer to drop a DB that existed before the tutorial — only drop tables/SVs/views you created inside it
+
+For **access-control snippets**, list the full dedicated environment:
+- Database: `SV_CALLER_TEST` or `RAP_TEST`
+- Warehouse: `SV_CALLER_TEST` or `RAP_TEST_WH`
+- Roles: (all roles created)
+
+Ask: _"Want me to clean all of this up now, or leave it so you can keep exploring?"_
+
+If yes: execute the `-- CLEANUP` block from `queries.sql` via `snowflake_sql_execute`. Switch back to SYSADMIN / SECURITYADMIN as needed per the cleanup SQL. Confirm each drop succeeded.
+
+Finally, offer to run a different snippet or switch to Apply mode to adapt the pattern to the user's own tables.
 
 ---
 
@@ -290,6 +322,7 @@ Offer any of:
 - Be honest about limitations — when a pattern doesn't work or has caveats, explain exactly why
 - For ⚠️ Private Preview snippets (`inline_sv`, `materialization`, `scoped_dataset`), note upfront that the user may need to contact their Snowflake account team to enable the feature
 - For `caller_rights`, note upfront that it requires ACCOUNTADMIN (or both SECURITYADMIN + SYSADMIN), creates its own dedicated database/warehouse/roles (`SV_CALLER_TEST`), and includes a cleanup block — run it when done
+- For `row_access_policies`, note upfront that it requires ACCOUNTADMIN (or both SECURITYADMIN + SYSADMIN), creates roles (`REGION_A_ANALYST`, `REGION_B_ANALYST`) and a dedicated database (`RAP_TEST`), and grants those roles USAGE on an existing warehouse — no new warehouse is created
 - Match the user's energy — if they're exploring, be expansive; if they're in a hurry, be terse
 
 **Tutorial mode:**
@@ -315,7 +348,7 @@ Assistant: Matches to `range_join`, runs the full tutorial showing BETWEEN EXCLU
 
 ## Example 3: Discovery
 User: `$sv-patterns what snippets do you have`
-Assistant: Lists all 18 patterns with one-line descriptions, asks which one to walk through.
+Assistant: Lists all 22 patterns with one-line descriptions, asks which one to walk through.
 
 ## Example 4: Apply mode — existing SV
 User: `$sv-patterns help me add year-over-year to my existing SV`

@@ -59,6 +59,65 @@ daily_sales.ytd_revenue AS
 - `PARTITION BY <dim>` (without EXCLUDING) partitions explicitly by that dimension only
 - `LAG(n)` returns NULL for the first n rows — expected behavior
 
+## What Doesn't Work
+
+### PARTITION BY EXCLUDING on FACT-based metrics
+
+If you declare a measure column in the `FACTS` clause and then use it in a base metric, `PARTITION BY EXCLUDING` will fail:
+
+```sql
+FACTS (fact_table.revenue AS revenue)  -- ← declares revenue as a FACT
+
+METRICS (
+  fact_table.total_revenue AS SUM(fact_table.revenue),  -- ← references a FACT
+
+  fact_table.rolling_avg AS
+    AVG(total_revenue)
+    OVER (PARTITION BY EXCLUDING fact_table.date  -- ← FAILS
+          ORDER BY fact_table.date
+          RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW)
+)
+```
+**Error:** `PARTITION BY EXCLUDING is not allowed when the window function operates over a row-level expression.`
+
+The engine classifies any metric whose expression references a FACT column as "row-level" — even though it's wrapped in `SUM()`. The fix is to **not declare measure columns in FACTS**. Leave them as plain table columns and reference them by bare physical name in the metric:
+
+```sql
+-- No FACTS clause for revenue
+
+METRICS (
+  fact_table.total_revenue AS SUM(revenue),  -- ← bare physical column name, no entity prefix
+
+  fact_table.rolling_avg AS
+    AVG(total_revenue)
+    OVER (PARTITION BY EXCLUDING fact_table.date  -- ← works
+          ORDER BY fact_table.date
+          RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW)
+)
+```
+
+### ROWS BETWEEN without PARTITION BY EXCLUDING
+
+Dropping `PARTITION BY EXCLUDING` entirely and using bare `ORDER BY` with `ROWS BETWEEN <n> PRECEDING` also fails:
+
+```sql
+fact_table.rolling AS
+  SUM(total_revenue)
+  OVER (ORDER BY fact_table.date
+        ROWS BETWEEN 4 PRECEDING AND CURRENT ROW)  -- ← FAILS
+```
+**Error:** `Unsupported expression in the definition of derived metric.`
+
+Always include `PARTITION BY EXCLUDING` (or an explicit `PARTITION BY`) with window metrics.
+
+### Entity prefix in metric expressions
+
+Window metrics must use the **entity prefix on the metric name** (matching the snippet style `entity.metric_name AS ...`). Metrics defined without the entity prefix (`total_revenue AS SUM(revenue)`) may fail to resolve correctly in window function context. Always use:
+```sql
+fact_table.total_revenue AS SUM(revenue)
+fact_table.rolling_avg AS AVG(total_revenue) OVER (...)
+```
+
 ## Docs
 
 - [Defining and querying window function metrics](https://docs.snowflake.com/en/user-guide/views-semantic/querying#defining-and-querying-window-function-metrics)

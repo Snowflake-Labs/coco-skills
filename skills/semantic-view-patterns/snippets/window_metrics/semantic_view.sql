@@ -26,6 +26,11 @@ CREATE OR REPLACE SEMANTIC VIEW SNIPPETS.PUBLIC.DAILY_SALES_SV
 
   METRICS (
     -- Base metric: daily total
+    -- NOTE: 'revenue' is a bare physical column name (no entity prefix).
+    -- Do NOT declare revenue in FACTS \u2014 FACTS columns are "row-level" and
+    -- PARTITION BY EXCLUDING will fail on any metric that references them.
+    -- Always use entity prefix on the metric name (daily_sales.total_revenue)
+    -- when the SV includes window metrics.
     daily_sales.total_revenue AS SUM(revenue)
       WITH SYNONYMS ('revenue', 'daily revenue'),
 
