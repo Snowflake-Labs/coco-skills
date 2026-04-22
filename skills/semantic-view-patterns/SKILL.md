@@ -2,7 +2,7 @@
 id: semantic-view-patterns
 name: semantic-view-patterns
 skill-name: $sv-patterns
-description: Two modes for 22 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
+description: Two modes for 23 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
 prompt: "$sv-patterns walk me through time intelligence"
 language: en
 categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
@@ -16,7 +16,7 @@ tools:
 
 # Semantic View Patterns
 
-Interactive, end-to-end tutorials for 22 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL, runs live queries, and surfaces what works and what doesn't.
+Interactive, end-to-end tutorials for 23 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL, runs live queries, and surfaces what works and what doesn't.
 
 # When to Use
 
@@ -38,7 +38,7 @@ This skill has two modes — use the right one based on what the user is trying 
 
 # What This Skill Provides
 
-A library of 22 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
+A library of 23 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
 - Real problem statement and BI tool comparison
 - Minimal but realistic seed data
 - Fully annotated SV DDL
@@ -75,6 +75,7 @@ A library of 22 executable, self-contained Semantic View modeling patterns bundl
 | `materialization` | SV materialization ⚠️ Private Preview |
 | `scoped_dataset` | SQL query as logical table ⚠️ Private Preview |
 | `row_access_policies` | RAP gotcha + two workarounds — prevent NULL rows when filtering dimension tables ⚠️ Requires ACCOUNTADMIN |
+| `role_playing_dimensions` | Alias the same physical dimension table multiple times — independent ORDER_YEAR, SHIP_YEAR dimensions without USING |}
 
 # Instructions
 
