@@ -33,24 +33,20 @@ CREATE OR REPLACE SEMANTIC VIEW SNIPPETS.PUBLIC.FLIGHT_WEATHER_SV
       WITH SYNONYMS ('number of flights', 'flight count'),
 
     -- Late flights broken down by DEPARTURE weather
-    -- USING clause tells the engine: follow flight_departure_weather path
-    flights.late_departure_count AS COUNT_IF(is_late)
-      USING (flight_departure_weather)
+    -- USING comes before AS: entity.metric USING (relationship) AS expression
+    flights.late_departure_count USING (flight_departure_weather) AS COUNT_IF(is_late)
       WITH SYNONYMS ('late departures', 'delayed departures', 'flights late at departure'),
 
     -- Late flights broken down by ARRIVAL weather
-    flights.late_arrival_count AS COUNT_IF(is_late)
-      USING (flight_arrival_weather)
+    flights.late_arrival_count USING (flight_arrival_weather) AS COUNT_IF(is_late)
       WITH SYNONYMS ('late arrivals', 'delayed arrivals', 'flights late at arrival'),
 
     -- All flights broken down by departure weather
-    flights.departure_flight_count AS COUNT(flight_id)
-      USING (flight_departure_weather)
+    flights.departure_flight_count USING (flight_departure_weather) AS COUNT(flight_id)
       WITH SYNONYMS ('flights by departure weather'),
 
     -- All flights broken down by arrival weather
-    flights.arrival_flight_count AS COUNT(flight_id)
-      USING (flight_arrival_weather)
+    flights.arrival_flight_count USING (flight_arrival_weather) AS COUNT(flight_id)
       WITH SYNONYMS ('flights by arrival weather')
   )
 
