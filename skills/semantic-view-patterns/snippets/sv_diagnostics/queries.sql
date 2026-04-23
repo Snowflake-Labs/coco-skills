@@ -191,3 +191,116 @@ ORDER BY region_name;
 -- Q4b-5: "What is total deal value by rep territory?"
 -- → CA on DEALS_CLEAR_NAMES_SV: answers correctly ✓
 --   Generated SQL routes to deals.deal_value metric + rep_dim.rep_territory dimension
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SCENARIO 5A: REVERSED RELATIONSHIP DIRECTION — DEPLOY-TIME ERROR
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- Reproducing this error requires attempting to CREATE the broken SV.
+-- See semantic_view.sql — DEALS_REVERSED_REL_SV is commented out.
+-- Uncomment and run to observe:
+--
+-- ERROR: SQL compilation error:
+-- The referenced key in the relationship 'REP_DIM REFERENCES DEALS' must be
+-- the primary or unique key of the referenced entity.
+--
+-- This fires because DEALS.REP_ID is not a declared PK or UK of DEALS.
+-- The SV engine enforces that the RHS of REFERENCES must be a PK/UK — this
+-- catches reversed-direction mistakes whenever the FK column is not also unique.
+--
+-- Note: this guard only works when the FK column is NOT the PK of its table.
+-- If both the left and right columns happen to be declared PKs (Scenario 5b),
+-- the engine cannot detect the cardinality lie and the model deploys silently.
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SCENARIO 5B: WRONG CARDINALITY — SILENT WRONG RESULTS
+-- ══════════════════════════════════════════════════════════════════════════════
+
+-- Step 5b-1: Confirm the wrong-cardinality SV looks healthy for safe queries.
+--            Line-item metrics by product work correctly because the join path
+--            is the same regardless of the declared PK.
+SELECT * FROM SEMANTIC_VIEW(
+    SEMANTIC_SKILLS.SNIPPETS.DEALS_BOTH_UNIQUE_SV
+    DIMENSIONS products.category
+    METRICS    deal_items.total_revenue, deal_items.item_count
+)
+ORDER BY category;
+-- | CATEGORY        | TOTAL_REVENUE | ITEM_COUNT |
+-- |-----------------|---------------|------------|
+-- | Analytics       | 221666.66     |         10 |   ← correct ✓
+-- | Data Pipelines  |  91833.34     |          8 |   ← correct ✓
+
+-- Step 5b-2: The dangerous query — header-level metric by fine-grain dimension.
+--            On a correctly-declared SV this errors (fan trap caught).
+--            On the wrong-cardinality SV it runs and silently inflates numbers.
+--
+--            Why: declaring PRIMARY KEY (DEAL_ID) on DEAL_ITEMS tells the engine
+--            the relationship is 1:1. It believes no fan-out can occur and skips
+--            the cardinality check. Every deal with multiple items gets its
+--            AMOUNT counted once per item.
+SELECT * FROM SEMANTIC_VIEW(
+    SEMANTIC_SKILLS.SNIPPETS.DEALS_BOTH_UNIQUE_SV
+    DIMENSIONS products.category
+    METRICS    deals.total_amount
+)
+ORDER BY category;
+-- | CATEGORY        | TOTAL_AMOUNT  |
+-- |-----------------|---------------|
+-- | Analytics       | 430000.00     |   ← WRONG: should be ~$240k (multi-item deals counted 2-3×)
+-- | Data Pipelines  | 146500.00     |   ← WRONG: should be ~$73.5k
+
+-- Step 5b-3: Prove the correctly-declared SV would catch this as a fan trap error.
+SELECT * FROM SEMANTIC_VIEW(
+    SEMANTIC_SKILLS.SNIPPETS.DEALS_FAN_TRAP_SV
+    DIMENSIONS products.category
+    METRICS    deals.total_amount
+)
+ORDER BY category;
+-- ERROR: SQL compilation error:
+-- Invalid dimension specified: The dimension entity 'PRODUCTS' must be related
+-- to and have an equal or lower level of granularity compared to the base metric
+-- or dimension entity 'DEALS'.
+--
+-- The guard is disabled by the wrong PK declaration. Same model structure,
+-- same wrong query — one errors (safe), one silently returns garbage (dangerous).
+
+-- Step 5b-4: Detection heuristic — compare totals against raw SQL.
+--            If a SV metric total doesn't match a direct table aggregate, the
+--            model likely has a cardinality lie somewhere in the TABLES clause.
+SELECT SUM(amount) AS raw_total FROM SEMANTIC_SKILLS.SNIPPETS.DEALS;
+-- | RAW_TOTAL   |
+-- |-------------|
+-- | 313500.00   |   ← correct deal total; $430k + $146.5k = $576.5k in the SV ≠ this
+
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- SCENARIO 6: FORGOTTEN SEMI-ADDITIVE BEHAVIOR — CHECKLIST ONLY
+-- ══════════════════════════════════════════════════════════════════════════════
+--
+-- No query to run — this is a model review heuristic, not a detectable error.
+--
+-- Ask this question for every FACT and METRIC in your model:
+--   "Does this column represent a SNAPSHOT (balance, headcount, inventory level)
+--    or a FLOW (revenue, quantity sold, events)?"
+--
+--   FLOW   → SUM is correct. Adding up revenue across time periods is meaningful.
+--   SNAPSHOT → SUM across time is almost certainly wrong. Summing daily account
+--              balances across 30 days gives a number 30× too large.
+--
+-- Examples of snapshot metrics that should NOT be SUM'd across time:
+--   - Account balance (bank, savings, investment)
+--   - Headcount / employee count
+--   - Inventory on hand
+--   - Active subscriptions
+--   - Open pipeline value (the same deal counted every day it's open)
+--
+-- The correct aggregation for snapshots is either:
+--   - LAST_VALUE (closing balance, end-of-period headcount)
+--   - AVG (average daily balance, average inventory)
+--   - MAX/MIN (peak/trough)
+--
+-- Snowflake SVs support this via NON ADDITIVE BY — see the `semi_additive_metric`
+-- snippet for the full pattern. Use the question above as your trigger to go look
+-- at that snippet before defining a SUM on any snapshot column.

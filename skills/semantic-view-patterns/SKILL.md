@@ -77,7 +77,7 @@ A library of 25 executable, self-contained Semantic View modeling patterns bundl
 | `row_access_policies` | RAP gotcha + two workarounds — prevent NULL rows when filtering dimension tables ⚠️ Requires ACCOUNTADMIN |
 | `role_playing_dimensions` | Alias the same physical dimension table multiple times — independent ORDER_YEAR, SHIP_YEAR dimensions without USING |
 | `accumulating_snapshot` | Kimball Accumulating Snapshot Fact Table — one row per pipeline entity, USING per milestone stage metric |
-| `sv_diagnostics` | Four runtime and deploy-time failure modes — ambiguous path, fan trap, missing relationship, duplicate names/synonyms — with exact error messages and fixes |}
+| `sv_diagnostics` | Six runtime and deploy-time failure modes — ambiguous path, fan trap, missing relationship, duplicate names/synonyms, wrong cardinality (silent inflation), semi-additive heuristic — with exact error messages and fixes |}
 
 # Instructions
 

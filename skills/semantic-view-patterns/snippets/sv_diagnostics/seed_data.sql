@@ -25,6 +25,7 @@ FROM VALUES
 WHERE NOT EXISTS (SELECT 1 FROM DIM_DATE WHERE date_key = column1);
 
 -- ── DIM_REP ───────────────────────────────────────────────────────────────────
+DELETE FROM DIM_REP;
 INSERT INTO DIM_REP VALUES
     (1, 'Alice Nguyen', 'West', 'Enterprise'),
     (2, 'Bob Torres',   'West', 'SMB'),
@@ -32,6 +33,7 @@ INSERT INTO DIM_REP VALUES
     (4, 'David Osei',   'East', 'SMB');
 
 -- ── DIM_PRODUCT ───────────────────────────────────────────────────────────────
+DELETE FROM DIM_PRODUCT;
 INSERT INTO DIM_PRODUCT VALUES
     (1, 'Analytics Cloud',   'Analytics'),
     (2, 'Data Pipeline Pro', 'Data Pipelines'),
@@ -39,11 +41,13 @@ INSERT INTO DIM_PRODUCT VALUES
     (4, 'Connector Suite',   'Data Pipelines');
 
 -- ── DIM_REGION (region_code must match DIM_REP.region values exactly) ─────────
+DELETE FROM DIM_REGION;
 INSERT INTO DIM_REGION VALUES
     ('West', 'Western Region'),
     ('East', 'Eastern Region');
 
 -- ── DEALS ─────────────────────────────────────────────────────────────────────
+DELETE FROM DEALS;
 -- 12 deals Q1 2025. created_date and close_date often differ by weeks —
 -- that gap makes the ambiguous-path error meaningful (Scenario 1).
 -- AMOUNT is at header grain — used to demonstrate the fan trap (Scenario 2).
@@ -66,6 +70,7 @@ INSERT INTO DEALS VALUES
 -- Each deal links to 1–3 products. LINE_AMOUNT is the per-product share of
 -- the deal amount (evenly split). Deals with multiple items (1, 3, 5, 6, 7, 9)
 -- are the ones that would double/triple-count if header AMOUNT were used.
+DELETE FROM DEAL_ITEMS;
 INSERT INTO DEAL_ITEMS VALUES
 --  id  deal  product  line_amount
     (1,  1, 1, 22500.00),  -- Deal 1 ($45k): Analytics Cloud     (split 2 ways)
