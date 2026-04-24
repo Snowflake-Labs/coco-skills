@@ -1,0 +1,78 @@
+# Semi-Additive Metric: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features not in YAML:
+#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - NON ADDITIVE BY uses the YAML equivalent: non_additive_dimensions
+
+name: ACCOUNT_BALANCES_SV
+description: >
+  Daily account balance snapshots. Balances are semi-additive: sum across
+  accounts is valid; sum across time periods double-counts. Use total_balance
+  for point-in-time; avg_daily_balance for trends.
+
+tables:
+  - name: balances
+    description: End-of-day account balance snapshots
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: ACCOUNT_BALANCES
+    primary_key:
+      columns: [BALANCE_ID]
+    dimensions:
+      - name: account_id
+        synonyms: [account, account number]
+        description: Account identifier
+        expr: ACCOUNT_ID
+        data_type: NUMBER
+      - name: account_name
+        synonyms: [account label, account description]
+        expr: ACCOUNT_NAME
+        data_type: VARCHAR
+      - name: balance_date
+        synonyms: [date, snapshot date, as of date, month end]
+        description: The date this balance snapshot was recorded (end of day)
+        expr: BALANCE_DATE
+        data_type: DATE
+    facts:
+      - name: balance_usd
+        description: End-of-day account balance in USD
+        expr: BALANCE_USD
+        data_type: NUMBER
+    metrics:
+      - name: total_balance
+        synonyms:
+          - current balance
+          - balance as of date
+          - snapshot balance
+          - end of day balance
+          - point in time balance
+          - balance on hand
+        description: >
+          Sum of balances across accounts for a given date. Non-additive across
+          time — always filter or group by balance_date to get a meaningful total.
+        expr: SUM(balance_usd)
+        # YAML equivalent of DDL's NON ADDITIVE BY (balance_date)
+        non_additive_dimensions:
+          - table: balances
+            dimension: balance_date
+            sort_direction: ascending
+            null_order: last
+      - name: avg_daily_balance
+        synonyms:
+          - average balance
+          - average daily balance
+          - mean balance
+          - typical balance
+          - balance trend
+          - average monthly balance
+        description: >
+          Average balance across snapshot periods. Use for trend analysis,
+          not point-in-time reporting.
+        expr: AVG(balance_usd)

@@ -1,0 +1,156 @@
+# Accumulating Snapshot: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features:
+#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - USING (relationship) on metrics → YAML equivalent: using_relationships list
+
+name: LOAN_PIPELINE_SV
+description: >
+  Loan origination pipeline modeled as an Accumulating Snapshot Fact Table
+  (Kimball). One row per application; four milestone dates (application, review,
+  decision, funding). Each stage metric uses using_relationships to declare its
+  date relationship — enabling stage-specific time analysis from a single
+  DIM_DATE alias.
+
+tables:
+  - name: applications
+    description: >
+      Loan applications — one row per application. Milestone dates are NULL
+      until the application reaches that stage.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: LOAN_APPLICATIONS
+    primary_key:
+      columns: [APPLICATION_ID]
+    dimensions:
+      - name: loan_product
+        synonyms: [product, loan type, product type]
+        expr: LOAN_PRODUCT
+        data_type: VARCHAR
+      - name: state
+        synonyms: [state, us state, geography]
+        expr: STATE
+        data_type: VARCHAR
+      - name: channel
+        synonyms: [channel, acquisition channel, marketing channel]
+        expr: CHANNEL
+        data_type: VARCHAR
+    facts:
+      - name: requested_amount
+        expr: REQUESTED_AMOUNT
+        data_type: NUMBER
+      - name: funded_amount
+        description: NULL until loan is funded
+        expr: FUNDED_AMOUNT
+        data_type: NUMBER
+    metrics:
+      # using_relationships is the YAML equivalent of DDL's USING (relationship)
+      - name: application_count
+        synonyms: [applications, apps submitted, application volume]
+        description: Count of submitted applications, dated by application_date
+        expr: COUNT(APPLICATION_ID)
+        using_relationships:
+          - app_to_application_date
+      - name: review_count
+        synonyms: [reviews, reviews started, underwriting count]
+        description: Count of applications that entered review, dated by review_date
+        expr: COUNT(REVIEW_DATE)
+        using_relationships:
+          - app_to_review_date
+      - name: decision_count
+        synonyms: [decisions, decisions made, approvals and denials]
+        description: Count of applications with a final decision, dated by decision_date
+        expr: COUNT(DECISION_DATE)
+        using_relationships:
+          - app_to_decision_date
+      - name: funding_count
+        synonyms: [fundings, funded loans, loan count, originations]
+        description: Count of funded loans, dated by funding_date
+        expr: COUNT(FUNDING_DATE)
+        using_relationships:
+          - app_to_funding_date
+      - name: total_requested
+        synonyms: [requested amount, application volume dollars, pipeline value]
+        expr: SUM(requested_amount)
+        using_relationships:
+          - app_to_application_date
+      - name: total_funded
+        synonyms: [funded amount, origination volume, funded dollars]
+        expr: SUM(funded_amount)
+        using_relationships:
+          - app_to_funding_date
+
+  - name: date_dim
+    description: Calendar dimension shared by all four milestone date paths
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns: [DATE_KEY]
+    dimensions:
+      - name: month_name
+        synonyms: [month, month name]
+        expr: MONTH_NAME
+        data_type: VARCHAR
+      - name: month_num
+        synonyms: [month number]
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: quarter
+        synonyms: [quarter, qtr]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+
+relationships:
+  - name: app_to_application_date
+    left_table: applications
+    right_table: date_dim
+    relationship_columns:
+      - left_column: APPLICATION_DATE
+        right_column: DATE_KEY
+  - name: app_to_review_date
+    left_table: applications
+    right_table: date_dim
+    relationship_columns:
+      - left_column: REVIEW_DATE
+        right_column: DATE_KEY
+  - name: app_to_decision_date
+    left_table: applications
+    right_table: date_dim
+    relationship_columns:
+      - left_column: DECISION_DATE
+        right_column: DATE_KEY
+  - name: app_to_funding_date
+    left_table: applications
+    right_table: date_dim
+    relationship_columns:
+      - left_column: FUNDING_DATE
+        right_column: DATE_KEY
+
+# Derived metrics referencing using_relationships-scoped metrics
+# must be view-level (not nested under a table entity)
+metrics:
+  - name: review_rate
+    synonyms: [review rate, application to review rate]
+    description: Fraction of applications that entered review (same-period)
+    expr: DIV0(applications.review_count, applications.application_count)
+  - name: decision_rate
+    synonyms: [decision rate, approval rate, application to decision rate]
+    description: Fraction of applications that received a decision (same-period)
+    expr: DIV0(applications.decision_count, applications.application_count)
+  - name: funding_rate
+    synonyms: [funding rate, close rate, conversion rate, pull-through rate]
+    description: Fraction of applications that funded (same-period, not cohort-based)
+    expr: DIV0(applications.funding_count, applications.application_count)

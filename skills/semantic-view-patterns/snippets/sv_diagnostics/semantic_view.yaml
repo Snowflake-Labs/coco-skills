@@ -1,0 +1,145 @@
+# SV Diagnostics: Semantic View YAML
+#
+# KEY YAML ADVANTAGE: The verify_only parameter in SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML
+# provides a true pre-deployment dry-run — the closest thing to a model linter
+# available for Semantic Views:
+#
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+#     'TARGET_DB.TARGET_SCHEMA',
+#     $$ <your yaml> $$,
+#     TRUE  -- verify_only: validates YAML syntax and schema references without deploying
+#   );
+#
+# This catches Scenario 4a (duplicate logical names) and structural errors at
+# validation time rather than deploy time. Fan traps (Scenario 2) and missing
+# relationships (Scenario 3) still surface at query time.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# DIAGNOSTIC SCENARIOS IN YAML VS DDL
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Scenario 1 — Ambiguous path:     fully expressible in YAML (no USING → same error)
+# Scenario 2 — Fan trap:           fully expressible in YAML (wrong grain → same error)
+# Scenario 3 — No relationship:    fully expressible in YAML (orphaned table → same error)
+# Scenario 4a — Duplicate name:    verify_only=TRUE catches this before deployment ✓
+# Scenario 4b — Ambiguous synonyms:fully expressible in YAML (same CA confusion)
+# Scenario 5a — Reversed direction:verify_only=TRUE catches this ✓
+# Scenario 5b — Wrong PK/cardinality: fully expressible (same silent wrong-result risk)
+# Scenario 6 — Semi-additive:      non_additive_dimensions is the YAML fix ✓
+#
+# Deploy the HEALTHY diagnostic SV with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Validate WITHOUT deploying:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+
+name: DEALS_FIXED_SV
+description: >
+  Sales diagnostics reference model — the correctly-structured SV.
+  Demonstrates YAML authoring for the sv_diagnostics scenarios.
+  For broken/error-triggering variants, see semantic_view.sql.
+
+tables:
+  - name: deals
+    description: Deal fact table with two date FKs — requires using_relationships on metrics
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DEALS
+    primary_key:
+      columns: [DEAL_ID]
+    dimensions:
+      - name: product
+        synonyms: [product, deal product]
+        expr: PRODUCT
+        data_type: VARCHAR
+      - name: stage
+        synonyms: [stage, deal stage]
+        expr: STAGE
+        data_type: VARCHAR
+    metrics:
+      # using_relationships disambiguates the two date paths — YAML equivalent of USING
+      - name: total_amount_created
+        synonyms: [deal value created, revenue created]
+        description: Total deal value, dated by when the deal was created
+        expr: SUM(AMOUNT)
+        using_relationships:
+          - deals_to_created_date
+      - name: deal_count_created
+        synonyms: [deals created, deal volume]
+        description: Count of deals, dated by creation date
+        expr: COUNT(DEAL_ID)
+        using_relationships:
+          - deals_to_created_date
+      - name: total_amount_closed
+        synonyms: [deal value closed, revenue closed]
+        description: Total deal value, dated by close date
+        expr: SUM(AMOUNT)
+        using_relationships:
+          - deals_to_close_date
+      - name: deal_count_closed
+        synonyms: [deals closed, closed deal count]
+        description: Count of closed deals, dated by close date
+        expr: COUNT(DEAL_ID)
+        using_relationships:
+          - deals_to_close_date
+
+  - name: date_dim
+    description: Shared date dimension — both date paths resolve here
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns: [DATE_KEY]
+    dimensions:
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: month_num
+        synonyms: [month number]
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: month_name
+        synonyms: [month]
+        expr: MONTH_NAME
+        data_type: VARCHAR
+
+  - name: rep_dim
+    description: Sales rep dimension
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_REP
+    primary_key:
+      columns: [REP_ID]
+    dimensions:
+      - name: rep_name
+        synonyms: [rep, sales rep]
+        expr: REP_NAME
+        data_type: VARCHAR
+      - name: region
+        synonyms: [rep region, sales territory]
+        expr: REGION
+        data_type: VARCHAR
+
+relationships:
+  - name: deals_to_created_date
+    left_table: deals
+    right_table: date_dim
+    relationship_columns:
+      - left_column: CREATED_DATE
+        right_column: DATE_KEY
+  - name: deals_to_close_date
+    left_table: deals
+    right_table: date_dim
+    relationship_columns:
+      - left_column: CLOSE_DATE
+        right_column: DATE_KEY
+  - name: deals_to_rep
+    left_table: deals
+    right_table: rep_dim
+    relationship_columns:
+      - left_column: REP_ID
+        right_column: REP_ID

@@ -1,0 +1,149 @@
+# Time Intelligence: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features not in YAML:
+#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - Computed FK FACTS used as relationship keys (DATEADD shift trick) are DDL-only.
+#     The role-playing alias pattern (sales_lm, sales_ly) is fully supported in YAML
+#     via multiple table entries pointing to the same physical table, but the
+#     computed-FK join mechanism requires DDL. See semantic_view.sql for the full
+#     time intelligence pattern including SPLM/SPLY shifted joins.
+
+name: TIME_INTELLIGENCE_SV
+description: >
+  Monthly sales with time-shifted role-playing aliases for same-period-last-month
+  (SPLM) and same-period-last-year (SPLY) comparisons.
+  NOTE: The computed-FK DATEADD shift mechanism requires DDL authoring. This YAML
+  defines the base structure; use semantic_view.sql for full YoY/MoM metrics.
+
+tables:
+  - name: calendar
+    description: Calendar dimension — one row per month
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_CALENDAR
+    primary_key:
+      columns: [MONTH]
+    dimensions:
+      - name: month
+        synonyms: [period, month, sale month]
+        description: Calendar month (first day of month)
+        expr: MONTH
+        data_type: DATE
+      - name: month_name
+        synonyms: [month name]
+        expr: MONTH_NAME
+        data_type: VARCHAR
+      - name: quarter
+        synonyms: [quarter, qtr]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+
+  - name: sales
+    description: Current-period sales fact
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: FACT_SALES
+    primary_key:
+      columns: [ROW_ID]
+    dimensions:
+      - name: region
+        synonyms: [region, sales region, territory]
+        expr: REGION
+        data_type: VARCHAR
+    metrics:
+      - name: revenue
+        synonyms: [revenue, sales, net sales, total revenue]
+        description: Total revenue in the selected period
+        expr: SUM(REVENUE)
+      - name: units
+        synonyms: [units, units sold, quantity]
+        description: Total units sold in the selected period
+        expr: SUM(UNITS)
+
+  # Role-playing alias: same physical table as sales, but joined via shifted date.
+  # NOTE: the DATEADD computed-FK shift requires DDL. In YAML, this alias can be
+  # defined but will join on the raw SALE_MONTH column (no date shift).
+  - name: sales_lm
+    description: >
+      Same physical table as sales — intended for last-month comparison.
+      Full SPLM shift (DATEADD 1 month) requires DDL semantic_view.sql.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: FACT_SALES
+    primary_key:
+      columns: [ROW_ID]
+    metrics:
+      - name: revenue_lm
+        synonyms: [revenue last month, LM revenue, prior month revenue, SPLM]
+        description: Revenue for the same period last month
+        expr: SUM(REVENUE)
+
+  # Role-playing alias: same physical table as sales, but joined via +1 year shift.
+  - name: sales_ly
+    description: >
+      Same physical table as sales — intended for last-year comparison.
+      Full SPLY shift (DATEADD 1 year) requires DDL semantic_view.sql.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: FACT_SALES
+    primary_key:
+      columns: [ROW_ID]
+    metrics:
+      - name: revenue_ly
+        synonyms: [revenue last year, LY revenue, prior year revenue, SPLY, same period last year]
+        description: Revenue for the same period last year
+        expr: SUM(REVENUE)
+
+relationships:
+  - name: sales_to_calendar
+    left_table: sales
+    right_table: calendar
+    relationship_columns:
+      - left_column: SALE_MONTH
+        right_column: MONTH
+  # These relationships join on raw SALE_MONTH; for shifted joins use semantic_view.sql
+  - name: sales_lm_to_calendar
+    left_table: sales_lm
+    right_table: calendar
+    relationship_columns:
+      - left_column: SALE_MONTH
+        right_column: MONTH
+  - name: sales_ly_to_calendar
+    left_table: sales_ly
+    right_table: calendar
+    relationship_columns:
+      - left_column: SALE_MONTH
+        right_column: MONTH
+
+# Cross-entity derived metrics
+metrics:
+  - name: mom_change
+    synonyms: [MoM change, month over month change, monthly delta]
+    description: Revenue change vs prior month (positive = growth)
+    expr: sales.revenue - sales_lm.revenue_lm
+  - name: mom_pct
+    synonyms: [MoM %, MoM growth, month over month growth rate]
+    description: Revenue % change vs prior month
+    expr: DIV0(sales.revenue - sales_lm.revenue_lm, sales_lm.revenue_lm) * 100
+  - name: yoy_change
+    synonyms: [YoY change, year over year change, annual delta]
+    description: Revenue change vs same period last year (positive = growth)
+    expr: sales.revenue - sales_ly.revenue_ly
+  - name: yoy_pct
+    synonyms: [YoY %, YoY growth, year over year growth rate]
+    description: Revenue % change vs same period last year
+    expr: DIV0(sales.revenue - sales_ly.revenue_ly, sales_ly.revenue_ly) * 100

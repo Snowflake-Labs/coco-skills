@@ -1,0 +1,115 @@
+# Role-Playing Dimensions: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# Export an existing DDL SV to YAML:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('TARGET_DB.TARGET_SCHEMA.ORDERS_RPD_SV');
+#
+# Role-playing dimensions are fully supported in YAML:
+# Define the same physical table twice under different logical names.
+# Each alias gets its own uniquely-named dimensions.
+
+name: ORDERS_RPD_SV
+description: >
+  Orders with two date roles — order date and ship date — both resolving to the
+  same physical DIM_DATE table. Each alias exposes independently named dimensions
+  (order_year, ship_year, etc.) with no USING clause needed.
+
+tables:
+  - name: orders
+    description: Order fact table with two date foreign keys
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: ORDERS
+    primary_key:
+      columns: [ORDER_ID]
+    dimensions:
+      - name: customer_name
+        synonyms: [customer, account]
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+    facts:
+      - name: revenue
+        expr: AMOUNT
+        data_type: NUMBER
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, total sales]
+        expr: SUM(revenue)
+      - name: order_count
+        synonyms: [orders, number of orders]
+        expr: COUNT(ORDER_ID)
+
+  # Role 1: date dimension for when the order was placed
+  - name: order_date_dim
+    description: Date dimension for when the order was placed
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns: [DATE_KEY]
+    dimensions:
+      - name: order_year
+        synonyms: [order year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: order_quarter
+        synonyms: [order quarter]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: order_month_num
+        synonyms: [order month number]
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: order_month_name
+        synonyms: [order month]
+        expr: MONTH_NAME
+        data_type: VARCHAR
+
+  # Role 2: same physical DIM_DATE table, aliased as ship_date_dim
+  # Unique logical dimension names prevent any ambiguity with order_date_dim
+  - name: ship_date_dim
+    description: Date dimension for when the order was shipped
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns: [DATE_KEY]
+    dimensions:
+      - name: ship_year
+        synonyms: [ship year, shipment year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: ship_quarter
+        synonyms: [ship quarter, shipment quarter]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: ship_month_num
+        synonyms: [ship month number, shipment month number]
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: ship_month_name
+        synonyms: [ship month, shipment month]
+        expr: MONTH_NAME
+        data_type: VARCHAR
+
+relationships:
+  - name: orders_to_order_date
+    left_table: orders
+    right_table: order_date_dim
+    relationship_columns:
+      - left_column: ORDER_DATE
+        right_column: DATE_KEY
+  - name: orders_to_ship_date
+    left_table: orders
+    right_table: ship_date_dim
+    relationship_columns:
+      - left_column: SHIP_DATE
+        right_column: DATE_KEY

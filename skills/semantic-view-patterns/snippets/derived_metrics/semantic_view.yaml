@@ -1,0 +1,113 @@
+# Derived Metrics: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# Export an existing DDL SV to YAML:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('TARGET_DB.TARGET_SCHEMA.CHANNEL_SALES_SV');
+#
+# DDL-only features not in YAML:
+#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+
+name: CHANNEL_SALES_SV
+description: >
+  Multi-channel revenue analytics. Demonstrates cross-table derived metrics
+  (total_revenue = sum of three channels) and ratio metrics (% of total per channel).
+
+tables:
+  - name: dim_date
+    description: Date dimension
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns: [DATE_ID]
+    dimensions:
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: quarter
+        synonyms: [quarter, qtr]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: month
+        synonyms: [month]
+        expr: MONTH
+        data_type: NUMBER
+
+  - name: store_sales
+    description: Brick-and-mortar store sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: STORE_SALES
+    metrics:
+      - name: store_revenue
+        synonyms: [store sales, store revenue, brick and mortar revenue]
+        expr: SUM(REVENUE)
+
+  - name: web_sales
+    description: Online / e-commerce sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: WEB_SALES
+    metrics:
+      - name: web_revenue
+        synonyms: [web sales, online revenue, e-commerce revenue]
+        expr: SUM(REVENUE)
+
+  - name: catalog_sales
+    description: Mail order / catalog sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CATALOG_SALES
+    metrics:
+      - name: catalog_revenue
+        synonyms: [catalog sales, catalog revenue, mail order revenue]
+        expr: SUM(REVENUE)
+
+relationships:
+  - name: store_to_date
+    left_table: store_sales
+    right_table: dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: web_to_date
+    left_table: web_sales
+    right_table: dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: catalog_to_date
+    left_table: catalog_sales
+    right_table: dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+
+# Cross-table derived metrics live at the view level (not nested under any table)
+metrics:
+  - name: total_revenue
+    synonyms: [total sales, all channel revenue, combined revenue]
+    description: Combined revenue across all three channels
+    expr: store_sales.store_revenue + web_sales.web_revenue + catalog_sales.catalog_revenue
+  - name: store_pct_of_total
+    synonyms: [store share, store contribution, "% from store"]
+    description: Store revenue as a fraction of total revenue
+    expr: store_sales.store_revenue / total_revenue
+  - name: web_pct_of_total
+    synonyms: [web share, web contribution, "% from web"]
+    description: Web revenue as a fraction of total revenue
+    expr: web_sales.web_revenue / total_revenue
+  - name: catalog_pct_of_total
+    synonyms: [catalog share, catalog contribution, "% from catalog"]
+    description: Catalog revenue as a fraction of total revenue
+    expr: catalog_sales.catalog_revenue / total_revenue

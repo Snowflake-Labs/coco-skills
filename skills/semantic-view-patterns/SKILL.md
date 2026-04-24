@@ -2,7 +2,7 @@
 id: semantic-view-patterns
 name: semantic-view-patterns
 skill-name: $sv-patterns
-description: Two modes for 25 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL.
+description: Two modes for 25 Snowflake Semantic View modeling patterns — Tutorial mode deploys working examples and explains them live; Apply mode adapts a pattern to the user's own tables and generates ready-to-use DDL or YAML.
 prompt: "$sv-patterns walk me through time intelligence"
 language: en
 categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
@@ -16,7 +16,7 @@ tools:
 
 # Semantic View Patterns
 
-Interactive, end-to-end tutorials for 25 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL, runs live queries, and surfaces what works and what doesn't.
+Interactive, end-to-end tutorials for 25 Snowflake Semantic View modeling patterns. Each tutorial deploys a working example into your Snowflake account, walks through the annotated DDL or YAML, runs live queries, and surfaces what works and what doesn't.
 
 # When to Use
 
@@ -41,13 +41,13 @@ This skill has two modes — use the right one based on what the user is trying 
 A library of 25 executable, self-contained Semantic View modeling patterns bundled alongside this skill, each with:
 - Real problem statement and BI tool comparison
 - Minimal but realistic seed data
-- Fully annotated SV DDL
+- Fully annotated SV DDL **and** YAML (`semantic_view.sql` + `semantic_view.yaml`)
 - Working `SEMANTIC_VIEW()` queries with live output
 - Explicit gotchas and what-doesn't-work notes
 
-**Tutorial mode**: Deploys each snippet directly via `snowflake_sql_execute` (no Python subprocess), walks through the annotated DDL section by section, runs live queries, and offers to clean up all created objects at the end.
+**Tutorial mode**: Deploys each snippet directly via `snowflake_sql_execute`, walks through the annotated DDL or YAML section by section, runs live queries, and offers to clean up all created objects at the end.
 
-**Apply mode**: The snippet files serve as annotated reference patterns. The skill reads the user's existing SV DDL, maps the snippet's structure to their tables/columns, and generates adapted DDL ready to paste or deploy — no example data needed.
+**Apply mode**: The snippet files serve as annotated reference patterns. The skill reads the user's existing SV definition, maps the snippet's structure to their tables/columns, and generates adapted DDL or YAML ready to paste or deploy — no example data needed.
 
 ## Available Patterns
 
@@ -81,14 +81,76 @@ A library of 25 executable, self-contained Semantic View modeling patterns bundl
 
 # Instructions
 
-## Step 0 — Detect Mode
+## Step 0 — Detect Mode and Authoring Format
 
-Before doing anything else, determine which mode the user wants:
+Before doing anything else, determine two things:
+
+### 0a — Detect Mode
+
+Determine which mode the user wants:
 
 - If the user said something like "walk me through", "teach me", "explain", "show me in action", "what snippets" → **Tutorial mode** → go to Tutorial Steps
 - If the user said something like "apply to my SV", "add X to my semantic view", "my tables are...", "help me implement", "update my SV" → **Apply mode** → go to Apply Steps
 - If ambiguous (e.g. "help me with time intelligence"), ask:
   > "Do you want me to walk you through the time intelligence pattern with a live example, or help you apply it directly to your own Semantic View?"
+
+### 0b — Detect Authoring Format
+
+Once mode is determined, ask which authoring format the user prefers. Use `ask_user_question` with these options:
+
+| Option | Label | Description |
+|--------|-------|-------------|
+| DDL | `CREATE SEMANTIC VIEW` DDL | SQL-first; deploy with `CREATE OR REPLACE SEMANTIC VIEW`. Best for programmatic scripts, stored procedures, full feature access. |
+| YAML | YAML + `SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML` | Config-file-first; human-readable, version-control-friendly, includes `verify_only` dry-run. Some DDL-only features require post-deploy DDL. |
+
+Store `AUTHORING_FORMAT = DDL` or `AUTHORING_FORMAT = YAML` and use it in all subsequent steps.
+
+**Skip this question** if the user already indicated a preference (e.g. "show me the YAML", "give me the DDL").
+
+### YAML Authoring — Key Facts
+
+When `AUTHORING_FORMAT = YAML`:
+
+**Deployment:**
+```sql
+-- Deploy:
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+  'TARGET_DB.TARGET_SCHEMA',
+  $$ <yaml_contents> $$
+);
+
+-- Verify without deploying (dry-run — catch errors before they hit production):
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+  'TARGET_DB.TARGET_SCHEMA',
+  $$ <yaml_contents> $$,
+  TRUE  -- verify_only
+);
+
+-- Export an existing DDL SV to YAML:
+SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DB.SCHEMA.MY_SV');
+```
+
+**YAML ↔ DDL feature map:**
+
+| DDL feature | YAML equivalent |
+|---|---|
+| `USING (relationship)` on metrics | `using_relationships: [rel_name]` |
+| `NON ADDITIVE BY (dim)` | `non_additive_dimensions: [{table, dimension, sort_direction}]` |
+| `PRIVATE` fact/metric | `access_modifier: private_access` |
+| `AI_VERIFIED_QUERIES` | `verified_queries: [{question, sql, ...}]` |
+| `WITH SYNONYMS (...)` | `synonyms: [list]` |
+| `COMMENT = '...'` | `description: ...` |
+
+**DDL-only features (no YAML equivalent):**
+- `AI_SQL_GENERATION` / `AI_QUESTION_CATEGORIZATION` — set post-deploy via `ALTER SEMANTIC VIEW`
+- `WITH TAG` — apply post-deploy via `ALTER SEMANTIC VIEW ... ADD TAG`
+- `MAX_STALENESS` / `ADD MATERIALIZATION` — DDL only
+- `VARIABLES` clause — DDL only
+- `BETWEEN EXCLUSIVE` / `ASOF` range relationship syntax — DDL only
+- Inline SQL subqueries in `TABLES` clause — DDL only
+- `WITH ... AS SEMANTIC VIEW` inline CTE — DDL only
+
+When a snippet has DDL-only features and `AUTHORING_FORMAT = YAML`, note the limitation and show the YAML for the base structure plus the DDL commands to apply the unsupported features post-deploy.
 
 ---
 
@@ -152,14 +214,15 @@ Store `TARGET_DB`, `TARGET_SCHEMA`, `TARGET_ROLE`, `TARGET_WAREHOUSE` for the re
 
 Before deploying anything, record an explicit list of every object you are about to create (tables, views, semantic views, DB if new). You'll use this list in the Step 10 cleanup offer.
 
-## Step 4 — Read All Five Files
+## Step 4 — Read Snippet Files
 
-Before presenting anything, read all five files for the chosen snippet:
+Before presenting anything, read the relevant files for the chosen snippet:
 - `snippets/<name>/README.md`
 - `snippets/<name>/schema.sql`
 - `snippets/<name>/seed_data.sql`
-- `snippets/<name>/semantic_view.sql`
 - `snippets/<name>/queries.sql`
+- If `AUTHORING_FORMAT = DDL`: read `snippets/<name>/semantic_view.sql`
+- If `AUTHORING_FORMAT = YAML`: read `snippets/<name>/semantic_view.yaml` (and `semantic_view.sql` for context on DDL-only features not in YAML)
 
 ## Step 5 — Act 1: The Problem
 
@@ -211,7 +274,18 @@ Format each stop as:
 > ```
 > Key things to notice: [2–3 bullet points]
 
-Then deploy the SV using the same direct execution approach as Step 6 (read file, adapt if needed, execute via `snowflake_sql_execute`).
+Then deploy the SV using the format appropriate to `AUTHORING_FORMAT`:
+
+**If DDL:** Read file, substitute `SNIPPETS.PUBLIC` → `TARGET_DB.TARGET_SCHEMA`, execute via `snowflake_sql_execute`.
+
+**If YAML:** Read `semantic_view.yaml`. Substitute `TARGET_DB` and `TARGET_SCHEMA` throughout. Then deploy:
+```sql
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+  'TARGET_DB.TARGET_SCHEMA',
+  $$ <adapted yaml> $$
+);
+```
+If the YAML has DDL-only features flagged in comments (e.g. `AI_SQL_GENERATION`, `MAX_STALENESS`, `WITH TAG`), note them and execute the corresponding DDL follow-up commands from `semantic_view.sql` after the YAML deploy.
 
 ## Step 8 — Act 4: Live Queries
 
@@ -268,19 +342,24 @@ Then recommend the best-fit snippet with a one-sentence explanation of why.
 
 ## A2 — Read the Snippet Reference
 
-Read `snippets/<name>/README.md` and `snippets/<name>/semantic_view.sql` in full. These are your reference for the pattern — understand the structural intent before touching the user's data.
+Read `snippets/<name>/README.md` in full.
+
+Then read the authoring format file:
+- If `AUTHORING_FORMAT = DDL`: read `snippets/<name>/semantic_view.sql`
+- If `AUTHORING_FORMAT = YAML`: read `snippets/<name>/semantic_view.yaml` (and note any DDL-only features flagged in comments)
 
 Do NOT read `schema.sql`, `seed_data.sql`, or `queries.sql` — those are for Tutorial mode.
 
 ## A3 — Get the User's Existing SV
 
-Ask for their current Semantic View DDL. Accept any of:
-- Paste directly into the chat
+Ask for their current Semantic View definition. Accept any of:
+- Paste DDL or YAML directly into the chat
 - A local file path → use `read` to load it
 - A Snowflake stage path → use `snowflake_sql_execute` with `GET_DDL('semantic_view', '<name>')`
+- Export YAML from an existing SV: `SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DB.SCHEMA.SV_NAME')`
 - "I'm building one from scratch" → ask for table names and a brief description of what they're trying to measure
 
-If they have no existing SV yet, proceed with just the table descriptions — you'll generate the full SV DDL.
+If they have no existing SV yet, proceed with just the table descriptions — you'll generate the full definition.
 
 ## A4 — Map the Pattern to Their Schema
 
@@ -296,16 +375,28 @@ Show the user the core structural roles in the snippet (e.g. for `time_intellige
 
 Ask only for what the pattern actually requires — don't over-ask. If they have a calendar dim, great; if not, note that a self-join on the fact works too.
 
-## A5 — Generate Adapted DDL
+## A5 — Generate Adapted Definition
 
-Using their mapping, generate fully adapted SV DDL:
+Using their mapping, generate fully adapted SV definition in `AUTHORING_FORMAT`:
 
-1. **If they have an existing SV**: produce a diff — show the exact blocks (TABLES, RELATIONSHIPS, FACTS, METRICS) that need to be added or modified. Don't rewrite the whole SV; just show the changes.
-2. **If they're starting from scratch**: produce the complete SV DDL with their table/column names substituted throughout.
+**If DDL:**
+1. **Existing SV**: produce a diff — show the exact blocks that need to be added or modified.
+2. **From scratch**: produce complete `CREATE OR REPLACE SEMANTIC VIEW` DDL.
 
-Annotate each adapted block with a brief comment explaining what it does and why, mirroring the style of the snippet's own inline comments.
+**If YAML:**
+1. **Existing SV**: produce a YAML diff — show the table entries, relationship entries, or metric entries to add or modify.
+2. **From scratch**: produce complete YAML ready to pass to `SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML`.
+3. If the pattern has DDL-only features (ASOF/range join, VARIABLES, WITH TAG, etc.), show the YAML base + call out the follow-up DDL commands needed.
 
-After presenting the DDL, summarize in plain English what changed and why each change was needed.
+For YAML output, always include the deployment snippet at the top:
+```sql
+-- Verify (dry-run):
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DB.SCHEMA', $$ <yaml> $$, TRUE);
+-- Deploy:
+CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('DB.SCHEMA', $$ <yaml> $$);
+```
+
+Annotate each adapted block with a brief comment explaining what it does and why.
 
 ## A6 — Gotchas for Their Case
 
