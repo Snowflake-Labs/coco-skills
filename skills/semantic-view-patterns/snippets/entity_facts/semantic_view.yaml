@@ -37,12 +37,12 @@ tables:
       - name: value_segment
         synonyms: [customer tier, value tier, segment]
         description: >
-          Customer tier based on lifetime spend. Driven by the private
-          lifetime_value aggregated fact.
+          Customer tier based on lifetime spend. References the private
+          lifetime_value fact by logical name — not a raw aggregate expression.
         expr: >
           CASE
-            WHEN SUM(orders.amount) < 1000  THEN 'low'
-            WHEN SUM(orders.amount) <= 3000 THEN 'medium'
+            WHEN lifetime_value < 1000  THEN 'low'
+            WHEN lifetime_value <= 3000 THEN 'medium'
             ELSE 'high'
           END
         data_type: VARCHAR

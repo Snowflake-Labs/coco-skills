@@ -1,115 +1,144 @@
 # Role-Playing Dimensions: Semantic View YAML
 #
+# This file is the canonical YAML for ORDERS_RPD_SV, exported via:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('SEMANTIC_SKILLS.SNIPPETS.ORDERS_RPD_SV');
+# then lightly formatted and annotated.
+#
 # Deploy with:
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
 #
-# Verify without deploying (dry-run):
+# Verify without deploying:
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
-#
-# Export an existing DDL SV to YAML:
-#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('TARGET_DB.TARGET_SCHEMA.ORDERS_RPD_SV');
-#
-# Role-playing dimensions are fully supported in YAML:
-# Define the same physical table twice under different logical names.
-# Each alias gets its own uniquely-named dimensions.
 
 name: ORDERS_RPD_SV
-description: >
-  Orders with two date roles — order date and ship date — both resolving to the
-  same physical DIM_DATE table. Each alias exposes independently named dimensions
-  (order_year, ship_year, etc.) with no USING clause needed.
+description: Orders with two independent date roles backed by the same physical DIM_DATE table.
 
 tables:
-  - name: orders
-    description: Order fact table with two date foreign keys
+  - name: ORDERS
     base_table:
       database: TARGET_DB
       schema: TARGET_SCHEMA
       table: ORDERS
     primary_key:
-      columns: [ORDER_ID]
+      columns:
+        - ORDER_ID
     dimensions:
-      - name: customer_name
-        synonyms: [customer, account]
+      - name: CUSTOMER_NAME
+        synonyms:
+          - customer
+          - buyer
+          - account
         expr: CUSTOMER_NAME
-        data_type: VARCHAR
+        data_type: VARCHAR(50)
     facts:
-      - name: revenue
+      - name: REVENUE
         expr: AMOUNT
-        data_type: NUMBER
+        data_type: NUMBER(10,2)
+        access_modifier: public_access
     metrics:
-      - name: total_revenue
-        synonyms: [revenue, total sales]
-        expr: SUM(revenue)
-      - name: order_count
-        synonyms: [orders, number of orders]
+      - name: TOTAL_REVENUE
+        synonyms:
+          - revenue
+          - sales
+          - total sales
+        expr: SUM(AMOUNT)
+        access_modifier: public_access
+      - name: ORDER_COUNT
+        synonyms:
+          - orders
+          - order count
+          - number of orders
         expr: COUNT(ORDER_ID)
+        access_modifier: public_access
 
   # Role 1: date dimension for when the order was placed
-  - name: order_date_dim
+  # Same physical DIM_DATE table, aliased as ORDER_DATE_DIM
+  - name: ORDER_DATE_DIM
     description: Date dimension for when the order was placed
     base_table:
       database: TARGET_DB
       schema: TARGET_SCHEMA
       table: DIM_DATE
     primary_key:
-      columns: [DATE_KEY]
+      columns:
+        - DATE_KEY
     dimensions:
-      - name: order_year
-        synonyms: [order year]
+      - name: ORDER_YEAR
+        synonyms:
+          - order year
+          - year ordered
+          - placed year
         expr: YEAR
         data_type: NUMBER
-      - name: order_quarter
-        synonyms: [order quarter]
+      - name: ORDER_QUARTER
+        synonyms:
+          - order quarter
+          - quarter ordered
         expr: QUARTER
-        data_type: VARCHAR
-      - name: order_month_num
-        synonyms: [order month number]
+        data_type: VARCHAR(2)
+      - name: ORDER_MONTH_NUM
+        synonyms:
+          - order month number
+          - month number ordered
         expr: MONTH_NUM
         data_type: NUMBER
-      - name: order_month_name
-        synonyms: [order month]
+      - name: ORDER_MONTH_NAME
+        synonyms:
+          - order month
+          - order month name
+          - month ordered
         expr: MONTH_NAME
-        data_type: VARCHAR
+        data_type: VARCHAR(10)
 
-  # Role 2: same physical DIM_DATE table, aliased as ship_date_dim
-  # Unique logical dimension names prevent any ambiguity with order_date_dim
-  - name: ship_date_dim
+  # Role 2: same physical DIM_DATE table, aliased as SHIP_DATE_DIM
+  # Unique logical dimension names prevent any ambiguity with ORDER_DATE_DIM
+  - name: SHIP_DATE_DIM
     description: Date dimension for when the order was shipped
     base_table:
       database: TARGET_DB
       schema: TARGET_SCHEMA
       table: DIM_DATE
     primary_key:
-      columns: [DATE_KEY]
+      columns:
+        - DATE_KEY
     dimensions:
-      - name: ship_year
-        synonyms: [ship year, shipment year]
+      - name: SHIP_YEAR
+        synonyms:
+          - ship year
+          - shipped year
+          - fulfillment year
         expr: YEAR
         data_type: NUMBER
-      - name: ship_quarter
-        synonyms: [ship quarter, shipment quarter]
+      - name: SHIP_QUARTER
+        synonyms:
+          - ship quarter
+          - shipped quarter
         expr: QUARTER
-        data_type: VARCHAR
-      - name: ship_month_num
-        synonyms: [ship month number, shipment month number]
+        data_type: VARCHAR(2)
+      - name: SHIP_MONTH_NUM
+        synonyms:
+          - ship month number
+          - month number shipped
         expr: MONTH_NUM
         data_type: NUMBER
-      - name: ship_month_name
-        synonyms: [ship month, shipment month]
+      - name: SHIP_MONTH_NAME
+        synonyms:
+          - ship month
+          - ship month name
+          - month shipped
         expr: MONTH_NAME
-        data_type: VARCHAR
+        data_type: VARCHAR(10)
 
 relationships:
-  - name: orders_to_order_date
-    left_table: orders
-    right_table: order_date_dim
+  - name: ORDERS_TO_ORDER_DATE
+    left_table: ORDERS
+    right_table: ORDER_DATE_DIM
     relationship_columns:
       - left_column: ORDER_DATE
         right_column: DATE_KEY
-  - name: orders_to_ship_date
-    left_table: orders
-    right_table: ship_date_dim
+  - name: ORDERS_TO_SHIP_DATE
+    left_table: ORDERS
+    right_table: SHIP_DATE_DIM
     relationship_columns:
       - left_column: SHIP_DATE
         right_column: DATE_KEY
