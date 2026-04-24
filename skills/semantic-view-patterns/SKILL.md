@@ -138,15 +138,17 @@ SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('DB.SCHEMA.MY_SV');
 | `NON ADDITIVE BY (dim)` | `non_additive_dimensions: [{table, dimension, sort_direction}]` |
 | `PRIVATE` fact/metric | `access_modifier: private_access` |
 | `AI_VERIFIED_QUERIES` | `verified_queries: [{question, sql, ...}]` |
+| `AI_SQL_GENERATION` | `module_custom_instructions: sql_generation: ...` |
+| `RANGE BETWEEN ... EXCLUSIVE` join | `type: range` + `right_range: {start_column, end_column}` + `constraints: [{distinct_range}]` |
 | `WITH SYNONYMS (...)` | `synonyms: [list]` |
 | `COMMENT = '...'` | `description: ...` |
 
 **DDL-only features (no YAML equivalent):**
-- `AI_SQL_GENERATION` / `AI_QUESTION_CATEGORIZATION` — set post-deploy via `ALTER SEMANTIC VIEW`
+- `AI_QUESTION_CATEGORIZATION` — set post-deploy via `ALTER SEMANTIC VIEW`
 - `WITH TAG` — apply post-deploy via `ALTER SEMANTIC VIEW ... ADD TAG`
 - `MAX_STALENESS` / `ADD MATERIALIZATION` — DDL only
 - `VARIABLES` clause — DDL only
-- `BETWEEN EXCLUSIVE` / `ASOF` range relationship syntax — DDL only
+- `ASOF` relationship syntax — DDL only
 - Inline SQL subqueries in `TABLES` clause — DDL only
 - `WITH ... AS SEMANTIC VIEW` inline CTE — DDL only
 
@@ -285,7 +287,7 @@ CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
   $$ <adapted yaml> $$
 );
 ```
-If the YAML has DDL-only features flagged in comments (e.g. `AI_SQL_GENERATION`, `MAX_STALENESS`, `WITH TAG`), note them and execute the corresponding DDL follow-up commands from `semantic_view.sql` after the YAML deploy.
+If the YAML has DDL-only features flagged in comments (e.g. `AI_QUESTION_CATEGORIZATION`, `MAX_STALENESS`, `WITH TAG`), note them and execute the corresponding DDL follow-up commands from `semantic_view.sql` after the YAML deploy.
 
 ## Step 8 — Act 4: Live Queries
 

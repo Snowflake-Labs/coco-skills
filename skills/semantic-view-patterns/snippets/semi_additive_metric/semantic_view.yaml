@@ -7,7 +7,7 @@
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
 #
 # DDL-only features not in YAML:
-#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
 #   - NON ADDITIVE BY uses the YAML equivalent: non_additive_dimensions
 
 name: ACCOUNT_BALANCES_SV

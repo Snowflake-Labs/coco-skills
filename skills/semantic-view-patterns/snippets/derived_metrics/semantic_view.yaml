@@ -10,7 +10,7 @@
 #   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('TARGET_DB.TARGET_SCHEMA.CHANNEL_SALES_SV');
 #
 # DDL-only features not in YAML:
-#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
 
 name: CHANNEL_SALES_SV
 description: >

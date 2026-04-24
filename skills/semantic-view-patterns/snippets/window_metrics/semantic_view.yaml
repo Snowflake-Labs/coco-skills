@@ -7,7 +7,7 @@
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
 #
 # DDL-only features not in YAML:
-#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
 #   - PARTITION BY EXCLUDING syntax in window metrics is DDL-only;
 #     YAML expresses window functions using standard SQL in the expr field
 

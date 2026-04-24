@@ -7,7 +7,7 @@
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
 #
 # DDL-only features:
-#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
 #   - PRIVATE entity-level aggregated facts → YAML equivalent: access_modifier: private_access
 
 name: CUSTOMER_ORDERS_SV

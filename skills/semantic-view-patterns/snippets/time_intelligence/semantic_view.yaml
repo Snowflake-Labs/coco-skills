@@ -7,7 +7,7 @@
 #   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
 #
 # DDL-only features not in YAML:
-#   - AI_SQL_GENERATION (set post-deploy via ALTER SEMANTIC VIEW)
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
 #   - Computed FK FACTS used as relationship keys (DATEADD shift trick) are DDL-only.
 #     The role-playing alias pattern (sales_lm, sales_ly) is fully supported in YAML
 #     via multiple table entries pointing to the same physical table, but the
