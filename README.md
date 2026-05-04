@@ -87,26 +87,24 @@ cortex skill remove <path>         # Remove a skill
 
 ## Repo structure
 
-Each skill lives in its own directory under `skills/`. The directory name must match the `id` field in `SKILL.md` (lowercase, hyphens, no underscores).
+Each skill lives in its own directory under `skills/`. The directory name must match the `id` field in `SKILL.md` (lowercase, hyphens, no underscores). The `_template-skill-name/` folder is a starter template — not a real skill.
 
 ```
 skills/
-  my-skill-name/          # matches id field in SKILL.md
+  _template-skill-name/   # starter template — copy this, rename the folder to your skill id
     SKILL.md              # Required: skill instructions and frontmatter
     LICENSE               # Required: Apache 2.0 (community) or Snowflake license (employee)
-    templates/            # Optional: prompt templates or reusable snippets
+  my-skill-name/          # example real skill
+    SKILL.md
+    LICENSE
     references/           # Optional: supporting reference material
-
-template/                 # Forkable starter template for new skills
-  SKILL.md
-  LICENSE
 ```
 
 ---
 
 ## Contribute a skill
 
-Skills follow the [standard SKILL.md format](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) defined by Cortex Code. A forkable starter template with a pre-filled `SKILL.md` and `LICENSE` file is available in the `template/` directory at the root of this repo.
+Skills follow the [standard SKILL.md format](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) defined by Cortex Code. A starter template is available at `skills/_template-skill-name/` — copy it, rename the folder to your skill's id, and fill in the `SKILL.md`.
 
 The fastest way to build a skill is to use the bundled `$skill-development` skill directly in a Cortex Code session:
 
