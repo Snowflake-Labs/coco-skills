@@ -25,7 +25,7 @@ You can also create a skill interactively: open a Cortex Code session, run `/ski
 
 ## Skill format
 
-Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) defined by Cortex Code, with additional frontmatter fields required for catalog metadata.
+Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) defined by Cortex Code.
 
 ### Required frontmatter fields
 
@@ -37,64 +37,14 @@ Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake
 | `description` | One sentence explaining what this skill does and when to use it. Shown in `/skill list`. |
 | `prompt` | A sample user prompt that demonstrates how to trigger the skill. |
 | `language` | Language code: `en`, `es`, `it`, `fr`, `ja`, `ko`, or `pt_br`. |
-| `categories` | One or more taxonomy paths from the [approved tag list](https://www.snowflake.com/en/developers/guides/get-started-with-guides/#language-and-category-tags), comma-separated. |
 | `status` | `Published` (active), `Archived` (deprecated), or `Hidden` (not yet ready). |
-| `authors` | Full name of the author(s). Multiple authors are comma-separated. |
-| `type` | Defaults to `community` for skills submitted to this repo from non-Snowflake employees. For Snowflake employee contributions, this is set to `snowflake`. |
+| `author` | Full name of the author(s). Multiple authors are comma-separated. |
+| `type` | `community`, `bundled`, or `partner`. Defaults to `community` for skills submitted to this repo. |
 
-The `tools` field is optional. Use it to declare which Cortex Code tools the skill is designed to activate (e.g., `snowflake_sql_execute`). Declaring tool dependencies helps users understand what the skill will do before they load it.
 
 ### SKILL.md template
 
-Copy the `template/` directory at the root of this repo as your starting point. It includes a pre-filled `SKILL.md` and an Apache 2.0 `LICENSE` file.
-
-```markdown
----
-id: my-skill-name
-name: my-skill-name
-skill-name: $my-skill
-description: One sentence explaining what this skill does and when to use it.
-prompt: "$my-skill do something specific with my data"
-language: en
-categories: snowflake-site:taxonomy/product/ai, snowflake-site:taxonomy/snowflake-feature/build
-status: Published
-authors: First Last
-type: community        # community (default) or snowflake (Snowflake employees)
-tools:
-  - snowflake_sql_execute    # optional: declare tools this skill is designed to use
----
-
-# When to Use
-- List the user intents or scenarios where this skill should be invoked
-
-# What This Skill Provides
-Describe the capabilities and domain knowledge this skill adds to Cortex Code.
-
-# Instructions
-Step-by-step guidance for Cortex Code when this skill is active.
-
-## Best Practices
-- Best practice 1
-- Best practice 2
-
-## Common Patterns
-
-### Pattern 1
-Description and example.
-
-### Pattern 2
-Description and example.
-
-# Examples
-
-## Example 1: Basic usage
-User: $my-skill Do something
-Assistant: [Expected behavior]
-
-## Example 2: Advanced usage
-User: $my-skill Complex task with @file.sql
-Assistant: [Expected behavior]
-```
+Use the `skills/_template-skill-name/` directory as your starting point. Copy it, rename the folder to your skill's `id`, and rename `_template-skill-name.md` to `SKILL.md`.
 
 ### Best practices
 
@@ -116,7 +66,7 @@ Skills created interactively are saved to `~/.snowflake/cortex/skills/<skill-nam
 **Steps:**
 
 1. [Fork this repo](https://github.com/Snowflake-Labs/cortex-code-skills/fork) and clone your fork locally
-2. Copy your skill directory (or the `template/` directory) into `skills/` and rename it to your skill's `id` (lowercase, hyphens)
+2. Copy `skills/_template-skill-name/` into `skills/` as a new folder named your skill's `id` (lowercase, hyphens), then rename `_template-skill-name.md` to `SKILL.md`
 3. Open `SKILL.md` and fill in all required frontmatter fields, then add a `LICENSE` file (Apache 2.0 for community contributors)
 4. Confirm your skill name is not already used by a bundled skill: run `/skill` in a Cortex Code session to see all skills grouped by location, or inspect `~/.local/share/cortex/<version>/bundled_skills/` directly
 5. Test your skill against your example prompt and confirm the behavior matches what you described
