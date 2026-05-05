@@ -1,10 +1,10 @@
 # Cortex Code Skills
 
-Welcome to the community skills repo for [Cortex Code] ("CoCo")(https://www.snowflake.com/en/product/features/cortex-code/). CoCo already ships with 50+ [bundled skills](https://docs.snowflake.com/en/user-guide/cortex-code/bundled-skills) (type `/skill` to browse them). 
+Welcome to the community skills repo for [Cortex Code](https://www.snowflake.com/en/product/features/cortex-code/) ("CoCo"). CoCo already ships with 50+ [bundled skills](https://docs.snowflake.com/en/user-guide/cortex-code/bundled-skills) (type `/skill` to browse them).
 
-Skills here are contributed by the broader developer community, including Data Superheroes and Snowflake employees. Every skill published here is a workflow someone already figured out, packaged so anyone can load it in seconds. 
+Skills here are contributed and maintained by the broader developer community, including Data Superheroes and Snowflake employees. Every skill published here is a workflow someone already figured out, packaged so anyone can load it in seconds. 
 
-Skills in this repo are community-maintained: please review them before use. Licenses are assigned at the skill folder level: Apache 2.0 for community contributors, Snowflake license for employees.
+Licenses are assigned at the skill folder level: Apache 2.0 for community contributors, Snowflake license for employees.
 
 - [How to contribute a skill](CONTRIBUTING.md)
 - [Using skills in CoCo](#using-skills)
