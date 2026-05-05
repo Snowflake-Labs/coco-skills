@@ -19,7 +19,7 @@ demo-url: https://www.youtube.com    # update with your video URL
 
 # My Skill Name
 
-# Demo
+## Skill in action
 
 > **Optional:** Add a short demo video (under 5 minutes) or a screenshot showing your skill in action.
 > 1. Replace `VIDEO_ID` below with the 11-character ID from your YouTube URL (e.g., `lftWaAcG2nE` from `https://www.youtube.com/watch?v=lftWaAcG2nE`)
