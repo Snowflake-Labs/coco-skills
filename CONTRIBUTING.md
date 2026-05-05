@@ -39,7 +39,7 @@ For full details on skill format, see the [Cortex Code extensibility docs](https
 | `title` | Human-readable display name, similar to `name` without hyphens. Max 30 characters. (e.g., `cost-intelligence` → "Analyze Snowflake Costs") |
 | `summary` | One sentence explaining what this skill does. Max 140 characters. Displayed in the skill catalog and search results. |
 | `description` | Longer explanation including when to use, trigger keywords, and anti-patterns. Cortex Code matches user prompts against this field to automatically activate your skill. |
-| `tools` | List of tools to enable when the skill is active. See the [full tools reference](https://docs.snowflake.com/en/user-guide/cortex-code/tools). Common tools: `snowflake_sql_execute`, `snowflake_object_search`, `Bash`, `Read`, `Write`, `Edit`, `Grep`, `Glob`. |
+| `tools` | List of tools to enable when the skill is active (one per line, each prefixed with `- `). See the [full tools reference](https://docs.snowflake.com/en/user-guide/cortex-code/tools). Common tools: `snowflake_sql_execute`, `snowflake_object_search`, `Bash`, `Read`, `Write`, `Edit`, `Grep`, `Glob`. |
 | `prompt` | A sample user prompt that demonstrates how to trigger the skill. |
 | `language` | Language code: `en`, `es`, `it`, `fr`, `ja`, `ko`, or `pt_br`. |
 | `status` | `Published` (active), `Archived` (deprecated), or `Hidden` (not yet ready). |
