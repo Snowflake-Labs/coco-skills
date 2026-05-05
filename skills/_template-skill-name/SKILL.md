@@ -9,7 +9,7 @@ description: >-
   Triggers: [keyword1], [keyword2]. Do NOT use for [anti-pattern]."
 tools:              # optional: tools to enable when this skill is active
   - snowflake_sql_execute
-prompt: "$my-skill-name do something"
+prompt: "$my-skill-name [a realistic example prompt showing how a user would invoke this skill]"
 language: en
 status: Published   # Published | Archived | Hidden
 author: First Last
