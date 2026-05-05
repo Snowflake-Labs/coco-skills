@@ -1,16 +1,17 @@
 ---
-name: my-skill-name    # matches folder name, max 3 words, hyphenated, invoked as $my-skill-name
-title: My Skill Name  # human-readable, max 30 chars (e.g., "Analyze Snowflake Costs")
-summary: One sentence explaining what this skill does.  # max 140 chars, shown in skill catalog
+name: my-skill-name    # unique identifier, matches folder name. Max 3 words, lowercase, hyphens only. Invoked as $my-skill-name
+title: My Skill Name  # human-readable display name. Max 30 chars (e.g., "Analyze Snowflake Costs")
+summary: One sentence explaining what this skill does.  # max 140 chars, displayed in skill catalog and search results
 description: >-
-  Longer description including when to use this skill and trigger keywords.
+  Longer explanation including when to use, trigger keywords, and anti-patterns.
+  Cortex Code matches user prompts against this field to automatically activate your skill.
   Example: "Use for ALL requests that mention: [action1], [action2].
   Triggers: [keyword1], [keyword2]. Do NOT use for [anti-pattern]."
 tools:              # optional: tools to enable when this skill is active
   - snowflake_sql_execute
 prompt: "$my-skill-name do something"
 language: en
-status: Published
+status: Published   # Published | Archived | Hidden
 author: First Last
 type: community     # community (default) | snowflake | partner
 demo-url: https://www.youtube.com    # update with your video URL

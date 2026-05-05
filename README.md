@@ -11,8 +11,6 @@ Licenses are assigned at the skill folder level: Apache 2.0 for community contri
 - [Repo structure](#repo-structure)
 - [Disclaimer](#disclaimer)
 
----
-
 ## What are skills?
 
 Skills are directories containing a `SKILL.md` file that injects domain-specific knowledge and instructions into a Cortex Code conversation, teaching it your workflows, coding standards, or best practices for the duration of a session.
