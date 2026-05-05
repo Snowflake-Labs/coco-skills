@@ -1,6 +1,6 @@
 ---
-name: my-skill-name    # unique identifier, matches folder name. Max 3 words, lowercase, hyphens only. Invoked as $my-skill-name
-title: My Skill Name  # human-readable display name. Max 30 chars (e.g., "Analyze Snowflake Costs")
+name: my-skill-name    # unique identifier, matches folder name. Max 3 words, lowercase, hyphens only (e.g. cost-intelligence). Invoked in prompts as $my-skill-name 
+title: What Your Skill Does  # human-readable display name, . Max 30 chars (e.g. "Analyze Snowflake Costs"). Displayed in skill catalog and search results
 summary: One sentence explaining what this skill does.  # max 140 chars, displayed in skill catalog and search results
 description: >-
   Longer explanation including when to use, trigger keywords, and anti-patterns.
