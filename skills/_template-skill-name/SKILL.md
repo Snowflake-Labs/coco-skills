@@ -7,7 +7,7 @@ description: >-
   Cortex Code matches user prompts against this field to automatically activate your skill.
   Example: "Use for ALL requests that mention: [action1], [action2].
   Triggers: [keyword1], [keyword2]. Do NOT use for [anti-pattern]."
-tools:              # optional: tools to enable when this skill is active
+tools:              # required: tools to enable when this skill is active. See https://docs.snowflake.com/en/user-guide/cortex-code/tools
   - snowflake_sql_execute
 prompt: "$my-skill-name [a realistic example prompt showing how a user would invoke this skill]"
 language: en
