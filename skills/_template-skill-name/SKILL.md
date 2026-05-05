@@ -21,11 +21,16 @@ demo-url: https://www.youtube.com    # update with your video URL
 
 # Demo
 
-> **Optional:** Record a short demo video (under 5 minutes) showing your skill in action. Then:
-> 1. Replace `VIDEO_ID` below with your YouTube video ID
-> 2. Update `demo-url` in the frontmatter with the full video URL
+> **Optional:** Add a short demo video (under 5 minutes) or a screenshot showing your skill in action.
+> 1. Replace `VIDEO_ID` below with the 11-character ID from your YouTube URL (e.g., `lftWaAcG2nE` from `https://www.youtube.com/watch?v=lftWaAcG2nE`)
+> 2. Update `demo-url` in the frontmatter with the full video or image URL
+> 3. For a screenshot instead, replace the entire line below with `![Screenshot](./screenshot.png)`
 
-[![Watch the demo](https://img.youtube.com/vi/VIDEO_ID/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID)
+**Example (replace with your own):**
+
+[![Watch the demo](https://img.youtube.com/vi/lftWaAcG2nE/0.jpg)](https://www.youtube.com/watch?v=lftWaAcG2nE)
+
+[Watch on YouTube](https://www.youtube.com/watch?v=lftWaAcG2nE)
 
 # When to Use
 - List specific trigger phrases or user intents that should invoke this skill
