@@ -1,13 +1,18 @@
 ---
-id: my-skill-name
-name: my-skill-name
-skill-name: $my-skill
-description: One sentence explaining what this skill does and when to use it.  # max 140 chars
-prompt: "$my-skill do something"
+name: my-skill-name    # matches folder name, max 3 words, hyphenated, invoked as $my-skill-name
+title: My Skill Name  # human-readable, max 30 chars (e.g., "Analyze Snowflake Costs")
+summary: One sentence explaining what this skill does.  # max 140 chars, shown in skill catalog
+description: >-
+  Longer description including when to use this skill and trigger keywords.
+  Example: "Use for ALL requests that mention: [action1], [action2].
+  Triggers: [keyword1], [keyword2]. Do NOT use for [anti-pattern]."
+tools:              # optional: tools to enable when this skill is active
+  - snowflake_sql_execute
+prompt: "$my-skill-name do something"
 language: en
 status: Published
 author: First Last
-type: community     # community | bundled | partner
+type: community     # community (default) | snowflake | partner
 demo-url: https://www.youtube.com    # update with your video URL
 ---
 
@@ -67,6 +72,39 @@ Description and example.
 ### Pattern 2: [Name]
 Description and example.
 
+# Tools (Optional)
+
+> Include this section only if your skill uses scripts, CLI commands, or external tools. Delete it otherwise.
+
+**Consider using scripts when:**
+- The operation involves API calls or external services
+- Logic is complex and benefits from a real programming language
+- You need proper error handling, retries, or validation
+
+**Keep it in markdown when:**
+- Simple SQL queries (Cortex Code can run these directly)
+- File operations or straightforward logic
+
+### tool_name
+
+**Description:** What it does.
+
+**Parameters:**
+- `--param1`: [type] - what it controls
+
+**Example:**
+```bash
+uv run --project <SKILL_DIR> python <SKILL_DIR>/scripts/my_script.py --param1 value
+```
+
+**When to use:** [Specific scenario]
+
+**Script tips:**
+- Use argparse for CLI arguments
+- Never hardcode credentials; use environment variables
+- One script = one job
+- Always use absolute paths with `uv run`
+
 # Stopping Points
 - ✋ After Step 1 — wait for user confirmation before making changes
 - ✋ After Step 2 — if validation fails, do not proceed
@@ -79,18 +117,19 @@ Describe what the completed skill produces.
 # Examples
 
 ## Example 1: Basic usage
-User: $my-skill Do something
+User: $my-skill-name Do something
 Assistant: [Expected behavior]
 
 ## Example 2: Advanced usage
-User: $my-skill Complex task with @file.sql
+User: $my-skill-name Complex task with @file.sql
 Assistant: [Expected behavior]
 
 ---
 
 ## Skill Author Checklist
 
-- [ ] `summary` includes trigger keywords and when to use/not use this skill
+- [ ] `id` uses verb-noun format (e.g., `deploy-agent`, `build-dashboard`)
+- [ ] `description` includes trigger keywords and when to use/not use this skill
 - [ ] Steps use imperative voice (`Ask`, `Execute`, `Validate`)
 - [ ] Stopping points marked with ⚠️ before any destructive or irreversible action
 - [ ] Error handling included for likely failure modes
