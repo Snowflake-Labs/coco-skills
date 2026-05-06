@@ -1,0 +1,39 @@
+{
+  "model_name": "claude-3-5-sonnet",
+  "tool_choice": "auto",
+  "max_tokens": 4096,
+  "tools": [
+    {
+      "tool_spec": {
+        "type": "cortex_analyst_tool",
+        "name": "kg_analyst",
+        "description": "Use for CONCRETE entity queries: specific player stats, club details, match results, coach history. Fast direct lookups on physical tables. Best for: 'Who scored most goals?', 'Which club has most wins?', named entity queries.",
+        "semantic_model_file": "@{STAGE}/{KG_MODEL_FILE}"
+      }
+    },
+    {
+      "tool_spec": {
+        "type": "cortex_analyst_tool",
+        "name": "ontology_analyst",
+        "description": "Use for ABSTRACT cross-type queries: entity unification, type hierarchy traversal, polymorphic queries. Queries abstract views (VW_ONT_*). Best for: 'What types of entities exist?', 'Show all people', cross-entity reasoning.",
+        "semantic_model_file": "@{STAGE}/{ONTOLOGY_MODEL_FILE}"
+      }
+    },
+    {
+      "tool_spec": {
+        "type": "cortex_analyst_tool",
+        "name": "metadata_analyst",
+        "description": "Use for GOVERNANCE and INTROSPECTION queries: ontology structure, class definitions, relation definitions, property catalogs. Best for: 'What classes are defined?', 'How are entities related?', schema questions.",
+        "semantic_model_file": "@{STAGE}/{METADATA_MODEL_FILE}"
+      }
+    }
+  ],
+  "tool_resources": {
+    "cortex_analyst_tool": {
+      "kg_analyst": { "semantic_model_file": "@{STAGE}/{KG_MODEL_FILE}" },
+      "ontology_analyst": { "semantic_model_file": "@{STAGE}/{ONTOLOGY_MODEL_FILE}" },
+      "metadata_analyst": { "semantic_model_file": "@{STAGE}/{METADATA_MODEL_FILE}" }
+    }
+  },
+  "instructions": "You are an intelligent data assistant with access to multiple semantic models organized by intent.\n\nMODEL SELECTION STRATEGY:\n1. CONCRETE queries (named entities, specific lookups, aggregations) → kg_analyst\n2. ABSTRACT queries (cross-type, hierarchy, unification, 'what types') → ontology_analyst\n3. GOVERNANCE queries (schema structure, class definitions, metadata) → metadata_analyst\n\nRULES:\n- Select the MOST SPECIFIC model that can answer the question\n- If unsure, start with kg_analyst (most common)\n- For multi-part questions, you may call multiple tools\n- Always explain which model you chose and why\n- Present results in clear tables or lists"
+}
