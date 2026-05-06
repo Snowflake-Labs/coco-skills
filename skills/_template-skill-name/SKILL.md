@@ -10,8 +10,7 @@ description: >-
 tools:
   # required: one per line, with a - prefix. See tool documentation: https://docs.snowflake.com/en/user-guide/cortex-code/tools. 
   # Common tools: snowflake_sql_execute, snowflake_object_search, Bash, Read, Write, Edit, Grep, Glob
-  - snowflake_sql_execute
-  - another_tool
+  - tool_name
 prompt: "$my-skill-name [a realistic example prompt showing how a user would invoke this skill]"
 language: en
 status: Published   # Published | Archived | Hidden
