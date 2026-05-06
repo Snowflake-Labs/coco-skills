@@ -1,0 +1,58 @@
+# Semantic Model Template for Ontology-on-Snowflake
+# Replace placeholders: {DATABASE}, {SCHEMA}, {MODEL_NAME}, {DESCRIPTION}
+
+name: "{MODEL_NAME}"
+description: >
+  {DESCRIPTION}
+
+tables:
+  # Pattern for entity view table:
+  # - name: "VW_ONT_{CLASS_NAME}"
+  #   base_table:
+  #     database: "{DATABASE}"
+  #     schema: "{SCHEMA}"
+  #     table: "VW_ONT_{CLASS_NAME}"
+  #   primary_key:
+  #     columns: ["ENTITY_ID"]
+  #   dimensions:
+  #     - name: "ENTITY_ID"
+  #       expr: "ENTITY_ID"
+  #       data_type: "VARCHAR"
+  #       description: "Unique identifier"
+  #     - name: "ENTITY_TYPE"
+  #       expr: "ENTITY_TYPE"
+  #       data_type: "VARCHAR"
+  #       description: "Ontology class type"
+  #     - name: "ENTITY_NAME"
+  #       expr: "ENTITY_NAME"
+  #       data_type: "VARCHAR"
+  #       description: "Display name"
+
+  # Pattern for relationship table:
+  # - name: "REL_RESOLVED"
+  #   base_table:
+  #     database: "{DATABASE}"
+  #     schema: "{SCHEMA}"
+  #     table: "REL_RESOLVED"
+  #   dimensions:
+  #     - name: "REL_NAME"
+  #       expr: "REL_NAME"
+  #       data_type: "VARCHAR"
+  #     - name: "SRC_NAME"
+  #       expr: "SRC_NAME"
+  #       data_type: "VARCHAR"
+  #     - name: "DST_NAME"
+  #       expr: "DST_NAME"
+  #       data_type: "VARCHAR"
+  #   facts:
+  #     - name: "WEIGHT"
+  #       expr: "WEIGHT"
+  #       data_type: "FLOAT"
+
+verified_queries:
+  # Pattern:
+  # - name: "query_name"
+  #   question: "Natural language question"
+  #   sql: "SELECT ... FROM ... WHERE ..."
+  #   verified_at: 1700000000
+  #   verified_by: "ontology-stack-builder"

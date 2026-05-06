@@ -1,0 +1,14 @@
+[project]
+name = "ontology-stack-builder"
+version = "1.0.0"
+description = "Cortex Code skill: generate full Ontology-on-Snowflake stack from any relational schema"
+requires-python = ">=3.10"
+dependencies = [
+    "rdflib>=7.0.0",
+    "pyyaml>=6.0",
+    "streamlit>=1.30.0",
+    "streamlit-agraph>=0.0.45",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
