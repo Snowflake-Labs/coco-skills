@@ -7,7 +7,8 @@ description: >-
   Cortex Code matches user prompts against this field to automatically activate your skill.
   Example: "Use for ALL requests that mention: [action1], [action2].
   Triggers: [keyword1], [keyword2]. Do NOT use for [anti-pattern]."
-tools:              # required: one per line, with a - prefix. See tool documentation:(https://docs.snowflake.com/en/user-guide/cortex-code/tools). 
+tools:
+  # required: one per line, with a - prefix. See tool documentation: https://docs.snowflake.com/en/user-guide/cortex-code/tools. 
   # Common tools: snowflake_sql_execute, snowflake_object_search, Bash, Read, Write, Edit, Grep, Glob
   - snowflake_sql_execute
   - another_tool
