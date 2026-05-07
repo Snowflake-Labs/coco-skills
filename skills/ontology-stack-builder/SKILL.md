@@ -26,7 +26,7 @@ prompt: "$ontology-stack-builder Build an ontology stack on MY_DB.MY_SCHEMA usin
 language: en
 status: Published
 author: Tianxia Jia
-type: community
+type: Snowflake Staff
 demo-url: https://medium.com/snowflake/ontology-on-snowflake-from-architecture-to-deployment-with-a-cortex-code-skill-197866ce9c9f
 ---
 
