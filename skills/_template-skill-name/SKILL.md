@@ -15,7 +15,7 @@ prompt: "$my-skill-name [a realistic example prompt showing how a user would inv
 language: en
 status: Published   # Published | Archived | Hidden
 author: First Last
-type: community     # community (default) | snowflake | partner
+type: Community     # Community (default) | Snowflake Staff | Partner
 demo-url: https://www.youtube.com    # update with your video URL
 ---
 
