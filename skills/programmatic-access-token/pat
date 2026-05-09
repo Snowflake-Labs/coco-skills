@@ -1,0 +1,34 @@
+#!/bin/bash
+# Copyright 2026 Snowflake Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# pat - sfutils-pat CLI wrapper
+#
+# Resolves the skill's --project path automatically so you don't have to
+# type the full `uv run --project /long/path/...` every time.
+# .env is loaded automatically by the CLI from your current working directory.
+#
+# Usage (from your project directory):
+#   pat create --user MY_RUNNER --role MY_ROLE --db MY_DB
+#   pat verify --user MY_RUNNER --role MY_ROLE
+#   pat rotate --user MY_RUNNER --role MY_ROLE
+#   pat remove --user MY_RUNNER --db MY_DB
+#   pat check-setup --suggest
+#   pat --help
+#
+# Install globally (symlink-safe — realpath follows the link back to this file):
+#   ln -sf "$(pwd)/pat" ~/.local/bin/pat
+
+# Resolve the real path of this script (follows symlinks)
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SKILL_DIR="$(dirname "$SCRIPT_PATH")"
+
+# Suppress uv VIRTUAL_ENV mismatch warnings
+unset VIRTUAL_ENV
+
+if [ "$1" = "check-setup" ]; then
+  shift
+  exec uv run --project "$SKILL_DIR" check-setup "$@"
+fi
+
+exec uv run --project "$SKILL_DIR" sfutils-pat "$@"
