@@ -1,0 +1,35 @@
+#!/bin/bash
+# Copyright 2026 Snowflake Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# nw - sfutils-networks CLI wrapper
+#
+# Resolves the skill's --project path automatically so you don't have to
+# type the full `uv run --project /long/path/...` every time.
+# Connection is read automatically from .sfutils/manifest.toml — no .env sourcing needed.
+#
+# Usage (from your project directory):
+#   nw rule create --name MY_RULE --db MY_DB
+#   nw rule list --db MY_DB
+#   nw rule update --name MY_RULE --db MY_DB --allow-gh
+#   nw rule delete --name MY_RULE --db MY_DB
+#   nw policy create --name MY_POLICY --rules DB.SCHEMA.MY_RULE
+#   nw check-setup --suggest
+#   nw --help
+#
+# Install globally (symlink-safe — realpath follows the link back to this file):
+#   ln -sf "$(pwd)/nw" ~/.local/bin/nw
+
+# Resolve the real path of this script (follows symlinks)
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SKILL_DIR="$(dirname "$SCRIPT_PATH")"
+
+# Suppress uv VIRTUAL_ENV mismatch warnings
+unset VIRTUAL_ENV
+
+if [ "$1" = "check-setup" ]; then
+  shift
+  exec uv run --project "$SKILL_DIR" check-setup "$@"
+fi
+
+exec uv run --project "$SKILL_DIR" sfutils-networks "$@"
