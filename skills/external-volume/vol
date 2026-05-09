@@ -1,0 +1,33 @@
+#!/bin/bash
+# Copyright 2026 Snowflake Inc.
+# SPDX-License-Identifier: Apache-2.0
+#
+# vol - sfutils-extvolumes CLI wrapper
+#
+# Resolves the skill's --project path automatically so you don't have to
+# type the full `uv run --project /long/path/...` every time.
+# Connection is read automatically from .sfutils/manifest.toml — no .env sourcing needed.
+#
+# Usage (from your project directory):
+#   vol create --bucket my-bucket --region us-west-2
+#   vol verify --volume-name MY_EXTERNAL_VOLUME
+#   vol delete --bucket my-bucket
+#   vol check-setup --suggest
+#   vol --help
+#
+# Install globally (symlink-safe — realpath follows the link back to this file):
+#   ln -sf "$(pwd)/vol" ~/.local/bin/vol
+
+# Resolve the real path of this script (follows symlinks)
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SKILL_DIR="$(dirname "$SCRIPT_PATH")"
+
+# Suppress uv VIRTUAL_ENV mismatch warnings
+unset VIRTUAL_ENV
+
+if [ "$1" = "check-setup" ]; then
+  shift
+  exec uv run --project "$SKILL_DIR" check-setup "$@"
+fi
+
+exec uv run --project "$SKILL_DIR" sfutils-extvolumes "$@"
