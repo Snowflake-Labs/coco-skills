@@ -1,0 +1,840 @@
+{
+    "definitions": {
+        "cashflow": {
+            "kind": "context"
+        },
+        "cashflow.CashFlow": {
+            "__abapOriginalName": "I_CashLiquidityActualFlow",
+            "@AccessControl.authorizationCheck": {
+                "#": "MANDATORY"
+            },
+            "@Analytics.dataCategory": {
+                "#": "FACT"
+            },
+            "@Analytics.dataExtraction.delta.changeDataCapture.mapping": [
+                {
+                    "table": "FQM_FLOW",
+                    "role": {
+                        "#": "MAIN"
+                    },
+                    "viewElement": [
+                        "CashFlowID",
+                        "CshFlwValdtyStrtDteTmeVal"
+                    ],
+                    "tableElement": [
+                        "flow_id",
+                        "valid_from"
+                    ]
+                }
+            ],
+            "@Analytics.dataExtraction.enabled": true,
+            "@Analytics.internalName": {
+                "#": "LOCAL"
+            },
+            "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW@ENDUSERTEXT.LABEL}",
+            "@ODM.oid": "CashFlowOID",
+            "@ObjectModel.modelingPattern": {
+                "#": "ANALYTICAL_FACT"
+            },
+            "@ObjectModel.sapObjectNodeType.name": "CashFlow",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                },
+                {
+                    "#": "SQL_DATA_SOURCE"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "MIXED"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "D"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "XL"
+            },
+            "@VDM.viewType": {
+                "#": "COMPOSITE"
+            },
+            "kind": "entity",
+            "elements": {
+                "CashFlowID": {
+                    "__abapOriginalName": "CashFlowID",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 16
+                },
+                "CshFlwValdtyStrtDteTmeVal": {
+                    "__abapOriginalName": "CshFlwValdtyStrtDteTmeVal",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.Decimal",
+                    "precision": 21,
+                    "scale": 7
+                },
+                "CompanyCode": {
+                    "__abapOriginalName": "CompanyCode",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CompanyCode",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "TransactionDate": {
+                    "__abapOriginalName": "TransactionDate",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CalendarDate",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.Date"
+                },
+                "PostingDate": {
+                    "__abapOriginalName": "PostingDate",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.Date"
+                },
+                "TransactionCurrency": {
+                    "__abapOriginalName": "TransactionCurrency",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInTransactionCurrency": {
+                    "__abapOriginalName": "AmountInTransactionCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "TransactionCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "CompanyCodeCurrency": {
+                    "__abapOriginalName": "CompanyCodeCurrency",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CompanyCodeCurrency",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInCompanyCodeCurrency": {
+                    "__abapOriginalName": "AmountInCompanyCodeCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "CompanyCodeCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "GlobalCurrency": {
+                    "__abapOriginalName": "GlobalCurrency",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_GlobalCurrency",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInGlobalCurrency": {
+                    "__abapOriginalName": "AmountInGlobalCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "GlobalCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "BankAccountInternalID": {
+                    "__abapOriginalName": "BankAccountInternalID",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_BankAccount",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 10
+                },
+                "Bank": {
+                    "__abapOriginalName": "Bank",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_Bank",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 15
+                },
+                "BankCountry": {
+                    "__abapOriginalName": "BankCountry",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_BankCountry",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 3
+                },
+                "BankName": {
+                    "__abapOriginalName": "BankName",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 60
+                },
+                "CashFlowOID": {
+                    "type": "cds.String",
+                    "length": 128
+                }
+            }
+        },
+        "cashflow.CashFlowForecast": {
+            "__abapOriginalName": "I_CashLiquidityForecastFlow",
+            "@AccessControl.authorizationCheck": {
+                "#": "MANDATORY"
+            },
+            "@Analytics.dataCategory": {
+                "#": "FACT"
+            },
+            "@Analytics.dataExtraction.delta.changeDataCapture.mapping": [
+                {
+                    "table": "FQM_FLOW",
+                    "role": {
+                        "#": "MAIN"
+                    },
+                    "viewElement": [
+                        "CashFlowID",
+                        "CshFlwValdtyStrtDteTmeVal"
+                    ],
+                    "tableElement": [
+                        "flow_id",
+                        "valid_from"
+                    ]
+                }
+            ],
+            "@Analytics.dataExtraction.enabled": true,
+            "@Analytics.internalName": {
+                "#": "LOCAL"
+            },
+            "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW@ENDUSERTEXT.LABEL}",
+            "@ODM.oid": "CashFlowOID",
+            "@ObjectModel.modelingPattern": {
+                "#": "ANALYTICAL_FACT"
+            },
+            "@ObjectModel.sapObjectNodeType.name": "CashFlow",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                },
+                {
+                    "#": "SQL_DATA_SOURCE"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "MIXED"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "D"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "XL"
+            },
+            "@VDM.viewType": {
+                "#": "COMPOSITE"
+            },
+            "kind": "entity",
+            "elements": {
+                "CashFlowID": {
+                    "__abapOriginalName": "CashFlowID",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 16
+                },
+                "CshFlwValdtyStrtDteTmeVal": {
+                    "__abapOriginalName": "CshFlwValdtyStrtDteTmeVal",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.Decimal",
+                    "precision": 21,
+                    "scale": 7
+                },
+                "CompanyCode": {
+                    "__abapOriginalName": "CompanyCode",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CompanyCode",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "TransactionDate": {
+                    "__abapOriginalName": "TransactionDate",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CalendarDate",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.Date"
+                },
+                "PostingDate": {
+                    "__abapOriginalName": "PostingDate",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.Date"
+                },
+                "TransactionCurrency": {
+                    "__abapOriginalName": "TransactionCurrency",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInTransactionCurrency": {
+                    "__abapOriginalName": "AmountInTransactionCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "TransactionCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "CompanyCodeCurrency": {
+                    "__abapOriginalName": "CompanyCodeCurrency",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CompanyCodeCurrency",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInCompanyCodeCurrency": {
+                    "__abapOriginalName": "AmountInCompanyCodeCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "CompanyCodeCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "GlobalCurrency": {
+                    "__abapOriginalName": "GlobalCurrency",
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_GlobalCurrency",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.currencyCode": true,
+                    "type": "cds.String",
+                    "length": 5
+                },
+                "AmountInGlobalCurrency": {
+                    "__abapOriginalName": "AmountInGlobalCurrency",
+                    "@Aggregation.default": {
+                        "#": "SUM"
+                    },
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "@Semantics.amount.currencyCode": "GlobalCurrency",
+                    "type": "cds.Decimal",
+                    "precision": 34,
+                    "scale": 4
+                },
+                "BankAccountInternalID": {
+                    "__abapOriginalName": "BankAccountInternalID",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_BankAccount",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 10
+                },
+                "CashFlowOID": {
+                    "type": "cds.String",
+                    "length": 128
+                }
+            }
+        }
+    },
+    "meta": {
+        "creator": "BDS CSN Aggregator 1.0",
+        "flavor": "inferred",
+        "__createdAt": "2025-02-17T17:43:15.586867693Z",
+        "__cashflow.cashflow.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        },
+        "__cashflow.cashflowforecast.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        }
+    },
+    "i18n": {
+        "de": {
+            "BANKA@ENDUSERTEXT.HEADING": "Name des Geldinstituts",
+            "BANKA@ENDUSERTEXT.LABEL": "Geldinstitut",
+            "BANKA@ENDUSERTEXT.QUICKINFO": "Name des Geldinstituts",
+            "BUDAT@ENDUSERTEXT.HEADING": "Buch.dat.",
+            "BUDAT@ENDUSERTEXT.LABEL": "Buchungsdatum",
+            "BUDAT@ENDUSERTEXT.QUICKINFO": "Buchungsdatum im Beleg",
+            "BUKRS@ENDUSERTEXT.HEADING": "BuKr",
+            "BUKRS@ENDUSERTEXT.LABEL": "Buchungskreis",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Buchungskreis",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.HEADING": "Technische ID",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.LABEL": "Technische ID",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.QUICKINFO": "Technische Bankkonto-ID",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.HEADING": "Länder-/Regionenschlüssel der Bank",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.LABEL": "L/R-Schl. der Bank",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.QUICKINFO": "Länder-/Regionenschlüssel der Bank",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.HEADING": "Bankschlüssel",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.LABEL": "Bankschlüssel",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.QUICKINFO": "Bankschlüssel",
+            "FIS_HSL@ENDUSERTEXT.HEADING": "Betrag in Buchungskreiswährung",
+            "FIS_HSL@ENDUSERTEXT.LABEL": "Betrag in BuKrsWährg",
+            "FIS_HSL@ENDUSERTEXT.QUICKINFO": "Betrag in Buchungskreiswährung",
+            "FIS_KSL@ENDUSERTEXT.HEADING": "Betrag in übergreifender Währung",
+            "FIS_KSL@ENDUSERTEXT.LABEL": "Betrag in übergr. W.",
+            "FIS_KSL@ENDUSERTEXT.QUICKINFO": "Betrag in übergreifender Währung",
+            "FIS_RKCUR@ENDUSERTEXT.HEADING": "Übergreifende Währung",
+            "FIS_RKCUR@ENDUSERTEXT.LABEL": "Übergreif. Währung",
+            "FIS_RKCUR@ENDUSERTEXT.QUICKINFO": "Übergreifende Währung",
+            "FQM_AMOUNT@ENDUSERTEXT.HEADING": "Betrag",
+            "FQM_AMOUNT@ENDUSERTEXT.LABEL": "Betrag",
+            "FQM_AMOUNT@ENDUSERTEXT.QUICKINFO": "Betrag",
+            "FQM_CURRENCY@ENDUSERTEXT.HEADING": "Währung",
+            "FQM_CURRENCY@ENDUSERTEXT.LABEL": "Währung",
+            "FQM_CURRENCY@ENDUSERTEXT.QUICKINFO": "Währung",
+            "FQM_FLOW_ID@ENDUSERTEXT.HEADING": "Bew.-ID",
+            "FQM_FLOW_ID@ENDUSERTEXT.LABEL": "Bewegungs-ID",
+            "FQM_FLOW_ID@ENDUSERTEXT.QUICKINFO": "Bewegungs-ID",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.HEADING": "Transaktionsdat.",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.LABEL": "Transaktionsdatum",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.QUICKINFO": "Transaktionsdatum",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.HEADING": "FQM-Bewegung gültig von",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.LABEL": "FQM-Bew. gültig von",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.QUICKINFO": "FQM-Bewegung gültig von - Dezimaltyp",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Betrag in Buchungskreiswährung",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Betrag in BuKrsWährg",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag in Buchungskreiswährung",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Betrag in übergreifender Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Betrag in übergr. W.",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag in übergreifender Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Betrag",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Betrag",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.HEADING": "Bankschlüssel",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.LABEL": "Bankschlüssel",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.QUICKINFO": "Bankschlüssel",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "Technische ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "Technische ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "Technische Bankkonto-ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.HEADING": "Länder-/Regionenschlüssel der Bank",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.LABEL": "L/R-Schl. der Bank",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.QUICKINFO": "Länder-/Regionenschlüssel der Bank",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.HEADING": "Name des Geldinstituts",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.LABEL": "Geldinstitut",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.QUICKINFO": "Name des Geldinstituts",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "Bew.-ID",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "Bewegungs-ID",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "Bewegungs-ID",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "BuKr",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Buchungskreis",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Buchungskreis",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Währg",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Währungsschlüssel",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM-Bewegung gültig von",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM-Bew. gültig von",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM-Bewegung gültig von - Dezimaltyp",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Übergreifende Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Übergreif. Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Übergreifende Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Buch.dat.",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Buchungsdatum",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Buchungsdatum im Beleg",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Währung",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Transaktionsdat.",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Transaktionsdatum",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Transaktionsdatum",
+            "I_CASHLIQUIDITYACTUALFLOW@ENDUSERTEXT.LABEL": "Barmittelliquiditätsistbewegung für Umlaufvermögen",
+            "WAERS@ENDUSERTEXT.HEADING": "Währg",
+            "WAERS@ENDUSERTEXT.LABEL": "Währung",
+            "WAERS@ENDUSERTEXT.QUICKINFO": "Währungsschlüssel",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Betrag in Buchungskreiswährung",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Betrag in BuKrsWährg",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag in Buchungskreiswährung",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Betrag in übergreifender Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Betrag in übergr. W.",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag in übergreifender Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Betrag",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Betrag",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Betrag",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "Technische ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "Technische ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "Technische Bankkonto-ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "Bew.-ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "Bewegungs-ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "Bewegungs-ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "BuKr",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Buchungskreis",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Buchungskreis",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Währg",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Währungsschlüssel",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM-Bewegung gültig von",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM-Bew. gültig von",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM-Bewegung gültig von - Dezimaltyp",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Übergreifende Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Übergreif. Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Übergreifende Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Buch.dat.",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Buchungsdatum",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Buchungsdatum im Beleg",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Währung",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Transaktionsdat.",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Transaktionsdatum",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Transaktionsdatum",
+            "I_CASHLIQUIDITYFORECASTFLOW@ENDUSERTEXT.LABEL": "Prognostiz. Barmittelliquiditätsbewegung für Umlaufvermögen"
+        },
+        "en": {
+            "BANKA@ENDUSERTEXT.HEADING": "Name of Financial Institution",
+            "BANKA@ENDUSERTEXT.LABEL": "Bank Name",
+            "BANKA@ENDUSERTEXT.QUICKINFO": "Name of Financial Institution",
+            "BUDAT@ENDUSERTEXT.HEADING": "Pstng Date",
+            "BUDAT@ENDUSERTEXT.LABEL": "Posting Date",
+            "BUDAT@ENDUSERTEXT.QUICKINFO": "Posting Date in the Document",
+            "BUKRS@ENDUSERTEXT.HEADING": "CoCd",
+            "BUKRS@ENDUSERTEXT.LABEL": "Company Code",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Company Code",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.HEADING": "Technical ID",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.LABEL": "Technical ID",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.QUICKINFO": "Bank Account Technical ID",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.HEADING": "Bank Country/Region Key",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.LABEL": "Bank Ctry/Rgn. Key",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.QUICKINFO": "Bank Country/Region Key",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.HEADING": "Bank Key",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.LABEL": "Bank Key",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.QUICKINFO": "Bank Key",
+            "FIS_HSL@ENDUSERTEXT.HEADING": "Amount in Company Code Currency",
+            "FIS_HSL@ENDUSERTEXT.LABEL": "Amount in Company Code Currency",
+            "FIS_HSL@ENDUSERTEXT.QUICKINFO": "Amount in Company Code Currency",
+            "FIS_KSL@ENDUSERTEXT.HEADING": "Amount in Global Currency",
+            "FIS_KSL@ENDUSERTEXT.LABEL": "Amount in Global Currency",
+            "FIS_KSL@ENDUSERTEXT.QUICKINFO": "Amount in Global Currency",
+            "FIS_RKCUR@ENDUSERTEXT.HEADING": "Global Currency",
+            "FIS_RKCUR@ENDUSERTEXT.LABEL": "Global Currency",
+            "FIS_RKCUR@ENDUSERTEXT.QUICKINFO": "Global Currency",
+            "FQM_AMOUNT@ENDUSERTEXT.HEADING": "Amount",
+            "FQM_AMOUNT@ENDUSERTEXT.LABEL": "Amount",
+            "FQM_AMOUNT@ENDUSERTEXT.QUICKINFO": "Amount",
+            "FQM_CURRENCY@ENDUSERTEXT.HEADING": "Currency",
+            "FQM_CURRENCY@ENDUSERTEXT.LABEL": "Currency",
+            "FQM_CURRENCY@ENDUSERTEXT.QUICKINFO": "Currency",
+            "FQM_FLOW_ID@ENDUSERTEXT.HEADING": "Flow ID",
+            "FQM_FLOW_ID@ENDUSERTEXT.LABEL": "Flow ID",
+            "FQM_FLOW_ID@ENDUSERTEXT.QUICKINFO": "Flow ID",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.HEADING": "Transaction Date",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.LABEL": "Transaction Date",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.QUICKINFO": "Transaction Date",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.HEADING": "FQM Flow Valid From",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.LABEL": "FQM Flow Valid From",
+            "FQM_VALID_FROM_DEC@ENDUSERTEXT.QUICKINFO": "FQM Flow Valid From - Decimal Type",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Amount in Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Amount in Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Amount in Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Amount",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Amount",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Amount",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.HEADING": "Bank Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.LABEL": "Bank Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.QUICKINFO": "Bank Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "Technical ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "Technical ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "Bank Account Technical ID",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.HEADING": "Bank Country/Region Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.LABEL": "Bank Ctry/Rgn. Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.QUICKINFO": "Bank Country/Region Key",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.HEADING": "Name of Financial Institution",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.LABEL": "Bank Name",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.QUICKINFO": "Name of Financial Institution",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "Flow ID",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "Flow ID",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "Flow ID",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "CoCd",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Company Code",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Company Code",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Crcy",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Currency Key",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM Flow Valid From - Decimal Type",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Global Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Pstng Date",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Posting Date",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Posting Date in the Document",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Currency",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Transaction Date",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Transaction Date",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Transaction Date",
+            "I_CASHLIQUIDITYACTUALFLOW@ENDUSERTEXT.LABEL": "Cash Liquidity Actual Flow for WCI",
+            "WAERS@ENDUSERTEXT.HEADING": "Crcy",
+            "WAERS@ENDUSERTEXT.LABEL": "Currency",
+            "WAERS@ENDUSERTEXT.QUICKINFO": "Currency Key",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Amount in Company Code Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Amount in Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Amount in Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Amount in Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Amount",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Amount",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Amount",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "Technical ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "Technical ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "Bank Account Technical ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "Flow ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "Flow ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "Flow ID",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "CoCd",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Company Code",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Company Code",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Crcy",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Currency Key",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM Flow Valid From - Decimal Type",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Global Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Pstng Date",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Posting Date",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Posting Date in the Document",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Currency",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Transaction Date",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Transaction Date",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Transaction Date",
+            "I_CASHLIQUIDITYFORECASTFLOW@ENDUSERTEXT.LABEL": "Cash Liquidity Forecast Flow for WCI"
+        },
+        "fr": {
+            "BANKA@ENDUSERTEXT.HEADING": "Nom de l'institut bancaire",
+            "BANKA@ENDUSERTEXT.LABEL": "Institut bancaire",
+            "BANKA@ENDUSERTEXT.QUICKINFO": "Nom de l'institut bancaire",
+            "BUDAT@ENDUSERTEXT.HEADING": "Date cpt.",
+            "BUDAT@ENDUSERTEXT.LABEL": "Date comptable",
+            "BUDAT@ENDUSERTEXT.QUICKINFO": "Date comptable du document",
+            "BUKRS@ENDUSERTEXT.HEADING": "Sté",
+            "BUKRS@ENDUSERTEXT.LABEL": "Société",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Société",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.HEADING": "ID technique",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.LABEL": "ID technique",
+            "FCLM_BAM_ACC_ID@ENDUSERTEXT.QUICKINFO": "ID technique compte bancaire",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.HEADING": "Clé de pays de la banque",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.LABEL": "Clé pays banque",
+            "FCLM_BAM_BANK_COUNTRY_KEY@ENDUSERTEXT.QUICKINFO": "Clé du pays de la banque",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.HEADING": "Clé bancaire",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.LABEL": "Clé bancaire",
+            "FCLM_BAM_BANK_KEY@ENDUSERTEXT.QUICKINFO": "Clé bancaire",
+            "FIS_HSL@ENDUSERTEXT.HEADING": "Montant en devise société",
+            "FIS_HSL@ENDUSERTEXT.LABEL": "Mont. devise société",
+            "FIS_HSL@ENDUSERTEXT.QUICKINFO": "Montant en devise société",
+            "FIS_KSL@ENDUSERTEXT.HEADING": "Montant en devise globale",
+            "FIS_KSL@ENDUSERTEXT.LABEL": "Mntt devise globale",
+            "FIS_KSL@ENDUSERTEXT.QUICKINFO": "Montant en devise globale",
+            "FIS_RKCUR@ENDUSERTEXT.HEADING": "Devise globale",
+            "FIS_RKCUR@ENDUSERTEXT.LABEL": "Devise globale",
+            "FIS_RKCUR@ENDUSERTEXT.QUICKINFO": "Devise globale",
+            "FQM_AMOUNT@ENDUSERTEXT.HEADING": "Mntant",
+            "FQM_AMOUNT@ENDUSERTEXT.LABEL": "Mntant",
+            "FQM_AMOUNT@ENDUSERTEXT.QUICKINFO": "Montant",
+            "FQM_CURRENCY@ENDUSERTEXT.HEADING": "Devise",
+            "FQM_CURRENCY@ENDUSERTEXT.LABEL": "Devise",
+            "FQM_CURRENCY@ENDUSERTEXT.QUICKINFO": "Devise",
+            "FQM_FLOW_ID@ENDUSERTEXT.HEADING": "ID flux",
+            "FQM_FLOW_ID@ENDUSERTEXT.LABEL": "ID flux",
+            "FQM_FLOW_ID@ENDUSERTEXT.QUICKINFO": "ID flux",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.HEADING": "Date transaction",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.LABEL": "Date transaction",
+            "FQM_TRANSACTION_DATE@ENDUSERTEXT.QUICKINFO": "Date de la transaction",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Montant en devise société",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Mont. devise société",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Montant en devise société",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Montant en devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Mntt devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Montant en devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Mntant",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Mntant",
+            "I_CASHLIQUIDITYACTUALFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Montant",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.HEADING": "Clé bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.LABEL": "Clé bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANK@ENDUSERTEXT.QUICKINFO": "Clé bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "ID technique",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "ID technique",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "ID technique compte bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.HEADING": "Clé de pays de la banque",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.LABEL": "Clé pays banque",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKCOUNTRY@ENDUSERTEXT.QUICKINFO": "Clé du pays de la banque",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.HEADING": "Nom de l'institut bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.LABEL": "Institut bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.BANKNAME@ENDUSERTEXT.QUICKINFO": "Nom de l'institut bancaire",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "ID flux",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "ID flux",
+            "I_CASHLIQUIDITYACTUALFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "ID flux",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "Sté",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Société",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Société",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Dev.",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Devise",
+            "I_CASHLIQUIDITYACTUALFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Clé de devise",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYACTUALFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM Flow Valid From - Decimal Type",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Devise globale",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Date cpt.",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Date comptable",
+            "I_CASHLIQUIDITYACTUALFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Date comptable du document",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Devise",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Devise",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Devise",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Date transaction",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Date transaction",
+            "I_CASHLIQUIDITYACTUALFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Date de la transaction",
+            "I_CASHLIQUIDITYACTUALFLOW@ENDUSERTEXT.LABEL": "Cash Liquidity Actual Flow for WCI",
+            "WAERS@ENDUSERTEXT.HEADING": "Dev.",
+            "WAERS@ENDUSERTEXT.LABEL": "Devise",
+            "WAERS@ENDUSERTEXT.QUICKINFO": "Clé de devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Montant en devise société",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Mont. devise société",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINCOMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Montant en devise société",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.HEADING": "Montant en devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.LABEL": "Mntt devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINGLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Montant en devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Mntant",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Mntant",
+            "I_CASHLIQUIDITYFORECASTFLOW.AMOUNTINTRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Montant",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.HEADING": "ID technique",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.LABEL": "ID technique",
+            "I_CASHLIQUIDITYFORECASTFLOW.BANKACCOUNTINTERNALID@ENDUSERTEXT.QUICKINFO": "ID technique compte bancaire",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.HEADING": "ID flux",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.LABEL": "ID flux",
+            "I_CASHLIQUIDITYFORECASTFLOW.CASHFLOWID@ENDUSERTEXT.QUICKINFO": "ID flux",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.HEADING": "Sté",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.LABEL": "Société",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Société",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.HEADING": "Dev.",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.LABEL": "Devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.COMPANYCODECURRENCY@ENDUSERTEXT.QUICKINFO": "Clé de devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.HEADING": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.LABEL": "FQM Flow Valid From",
+            "I_CASHLIQUIDITYFORECASTFLOW.CSHFLWVALDTYSTRTDTETMEVAL@ENDUSERTEXT.QUICKINFO": "FQM Flow Valid From - Decimal Type",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.HEADING": "Devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.LABEL": "Devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.GLOBALCURRENCY@ENDUSERTEXT.QUICKINFO": "Devise globale",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.HEADING": "Date cpt.",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.LABEL": "Date comptable",
+            "I_CASHLIQUIDITYFORECASTFLOW.POSTINGDATE@ENDUSERTEXT.QUICKINFO": "Date comptable du document",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.HEADING": "Devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.LABEL": "Devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONCURRENCY@ENDUSERTEXT.QUICKINFO": "Devise",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.HEADING": "Date transaction",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.LABEL": "Date transaction",
+            "I_CASHLIQUIDITYFORECASTFLOW.TRANSACTIONDATE@ENDUSERTEXT.QUICKINFO": "Date de la transaction",
+            "I_CASHLIQUIDITYFORECASTFLOW@ENDUSERTEXT.LABEL": "Cash Liquidity Forecast Flow for WCI"
+        }
+    }
+}

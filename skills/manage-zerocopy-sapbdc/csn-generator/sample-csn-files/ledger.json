@@ -1,0 +1,1187 @@
+{
+    "definitions": {
+        "ledger": {
+            "kind": "context"
+        },
+        "ledger.Ledger": {
+            "__abapOriginalName": "I_Ledger",
+            "@AccessControl.authorizationCheck": {
+                "#": "CHECK"
+            },
+            "@Analytics.dataCategory": {
+                "#": "DIMENSION"
+            },
+            "@Analytics.dataExtraction.enabled": true,
+            "@EndUserText.label": "{i18n>I_LEDGER@ENDUSERTEXT.LABEL}",
+            "@Metadata.allowExtensions": true,
+            "@ObjectModel.modelingPattern": {
+                "#": "ANALYTICAL_DIMENSION"
+            },
+            "@ObjectModel.representativeKey": "Ledger",
+            "@ObjectModel.sapObjectNodeType.name": "Ledger",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "ANALYTICAL_DIMENSION"
+                },
+                {
+                    "#": "CDS_MODELING_ASSOCIATION_TARGET"
+                },
+                {
+                    "#": "SQL_DATA_SOURCE"
+                },
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "CUSTOMIZING"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "A"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "S"
+            },
+            "@VDM.viewType": {
+                "#": "BASIC"
+            },
+            "kind": "entity",
+            "elements": {
+                "Ledger": {
+                    "__abapOriginalName": "Ledger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.LEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.LEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.LEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.text.association": "_Text",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "IsLeadingLedger": {
+                    "__abapOriginalName": "IsLeadingLedger",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.Boolean"
+                },
+                "LedgerApplication": {
+                    "__abapOriginalName": "LedgerApplication",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "LedgerSubApplication": {
+                    "__abapOriginalName": "LedgerSubApplication",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 3
+                },
+                "AccountingValuationView": {
+                    "__abapOriginalName": "AccountingValuationView",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 1
+                },
+                "LedgerType": {
+                    "__abapOriginalName": "LedgerType",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.LEDGERTYPE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.LEDGERTYPE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.LEDGERTYPE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 1
+                },
+                "ExtensionLedgerType": {
+                    "__abapOriginalName": "ExtensionLedgerType",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 1
+                },
+                "ReferenceLedger": {
+                    "__abapOriginalName": "ReferenceLedger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "TechnicalLedger": {
+                    "__abapOriginalName": "TechnicalLedger",
+                    "@Consumption.hidden": true,
+                    "@EndUserText.heading": "{i18n>I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "_Text": {
+                    "__abapOriginalName": "_Text",
+                    "type": "cds.Association",
+                    "cardinality": {
+                        "max": "*"
+                    },
+                    "target": "ledger.LedgerText",
+                    "on": [
+                        {
+                            "ref": [
+                                "Ledger"
+                            ]
+                        },
+                        "=",
+                        {
+                            "ref": [
+                                "_Text",
+                                "Ledger"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "ledger.LedgerCompanyCodeCurrencyRoles": {
+            "__abapOriginalName": "I_LedgerCompanyCodeCrcyRoles",
+            "@AccessControl.authorizationCheck": {
+                "#": "CHECK"
+            },
+            "@Analytics.dataCategory": {
+                "#": "DIMENSION"
+            },
+            "@Analytics.dataExtraction.enabled": true,
+            "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES@ENDUSERTEXT.LABEL}",
+            "@Metadata.allowExtensions": true,
+            "@ObjectModel.modelingPattern": {
+                "#": "ANALYTICAL_DIMENSION"
+            },
+            "@ObjectModel.representativeKey": "CompanyCode",
+            "@ObjectModel.sapObjectNodeType.name": "LedgerCompanyCodeCurrencyRoles",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "ANALYTICAL_DIMENSION"
+                },
+                {
+                    "#": "CDS_MODELING_ASSOCIATION_TARGET"
+                },
+                {
+                    "#": "SQL_DATA_SOURCE"
+                },
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "MASTER"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "A"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "S"
+            },
+            "@VDM.viewType": {
+                "#": "BASIC"
+            },
+            "kind": "entity",
+            "elements": {
+                "Ledger": {
+                    "__abapOriginalName": "Ledger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_Ledger",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "CompanyCode": {
+                    "__abapOriginalName": "CompanyCode",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_CompanyCode",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "FiscalYearVariant": {
+                    "__abapOriginalName": "FiscalYearVariant",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "CompanyCodeCurrencyRole": {
+                    "__abapOriginalName": "CompanyCodeCurrencyRole",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "GlobalCurrencyRole": {
+                    "__abapOriginalName": "GlobalCurrencyRole",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency1Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency1Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency2Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency2Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency3Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency3Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency4Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency4Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency5Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency5Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency6Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency6Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency7Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency7Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "FreeDefinedCurrency8Role": {
+                    "__abapOriginalName": "FreeDefinedCurrency8Role",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "AccountingPrinciple": {
+                    "__abapOriginalName": "AccountingPrinciple",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@Analytics.internalName": {
+                        "#": "LOCAL"
+                    },
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_AccountingPrinciple",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "FunctionalCurrencyRole": {
+                    "__abapOriginalName": "FunctionalCurrencyRole",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.QUICKINFO}",
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "AdditionalCurrency1Field": {
+                    "__abapOriginalName": "AdditionalCurrency1Field",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "AdditionalCurrency2Field": {
+                    "__abapOriginalName": "AdditionalCurrency2Field",
+                    "@EndUserText.heading": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "type": "cds.String",
+                    "length": 4
+                },
+                "_Ledger": {
+                    "__abapOriginalName": "_Ledger",
+                    "type": "cds.Association",
+                    "cardinality": {
+                        "max": 1
+                    },
+                    "target": "ledger.Ledger",
+                    "on": [
+                        {
+                            "ref": [
+                                "Ledger"
+                            ]
+                        },
+                        "=",
+                        {
+                            "ref": [
+                                "_Ledger",
+                                "Ledger"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "ledger.LedgerSourceLedger": {
+            "__abapOriginalName": "I_LedgerSourceLedger",
+            "@AccessControl.authorizationCheck": {
+                "#": "CHECK"
+            },
+            "@Analytics.dataCategory": {
+                "#": "DIMENSION"
+            },
+            "@Analytics.dataExtraction.enabled": true,
+            "@Analytics.internalName": {
+                "#": "LOCAL"
+            },
+            "@Analytics.technicalName": "IFILDRSRCLDR",
+            "@EndUserText.label": "{i18n>I_LEDGERSOURCELEDGER@ENDUSERTEXT.LABEL}",
+            "@Metadata.allowExtensions": true,
+            "@ObjectModel.representativeKey": "SourceLedger",
+            "@ObjectModel.sapObjectNodeType.name": "Ledger",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                },
+                {
+                    "#": "SQL_DATA_SOURCE"
+                },
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "CDS_MODELING_ASSOCIATION_TARGET"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "CUSTOMIZING"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "A"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "S"
+            },
+            "@VDM.lifecycle.contract.type": {
+                "#": "PUBLIC_LOCAL_API"
+            },
+            "@VDM.viewType": {
+                "#": "BASIC"
+            },
+            "kind": "entity",
+            "elements": {
+                "Ledger": {
+                    "__abapOriginalName": "Ledger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_Ledger",
+                    "@ObjectModel.text.association": "_Text",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "SourceLedger": {
+                    "__abapOriginalName": "SourceLedger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "_Ledger": {
+                    "__abapOriginalName": "_Ledger",
+                    "type": "cds.Association",
+                    "cardinality": {
+                        "min": 1,
+                        "max": 1
+                    },
+                    "target": "ledger.Ledger",
+                    "on": [
+                        {
+                            "ref": [
+                                "Ledger"
+                            ]
+                        },
+                        "=",
+                        {
+                            "ref": [
+                                "_Ledger",
+                                "Ledger"
+                            ]
+                        }
+                    ]
+                },
+                "_Text": {
+                    "__abapOriginalName": "_Text",
+                    "type": "cds.Association",
+                    "cardinality": {
+                        "max": "*"
+                    },
+                    "target": "ledger.LedgerText",
+                    "on": [
+                        {
+                            "ref": [
+                                "Ledger"
+                            ]
+                        },
+                        "=",
+                        {
+                            "ref": [
+                                "_Text",
+                                "Ledger"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "ledger.LedgerText": {
+            "__abapOriginalName": "I_LedgerText",
+            "@AccessControl.authorizationCheck": {
+                "#": "CHECK"
+            },
+            "@Analytics.dataExtraction.enabled": true,
+            "@EndUserText.label": "{i18n>I_LEDGERTEXT@ENDUSERTEXT.LABEL}",
+            "@ObjectModel.dataCategory": {
+                "#": "TEXT"
+            },
+            "@ObjectModel.modelingPattern": {
+                "#": "LANGUAGE_DEPENDENT_TEXT"
+            },
+            "@ObjectModel.representativeKey": "Ledger",
+            "@ObjectModel.supportedCapabilities": [
+                {
+                    "#": "CDS_MODELING_DATA_SOURCE"
+                },
+                {
+                    "#": "LANGUAGE_DEPENDENT_TEXT"
+                },
+                {
+                    "#": "EXTRACTION_DATA_SOURCE"
+                },
+                {
+                    "#": "CDS_MODELING_ASSOCIATION_TARGET"
+                }
+            ],
+            "@ObjectModel.usageType.dataClass": {
+                "#": "CUSTOMIZING"
+            },
+            "@ObjectModel.usageType.serviceQuality": {
+                "#": "A"
+            },
+            "@ObjectModel.usageType.sizeCategory": {
+                "#": "M"
+            },
+            "@VDM.viewType": {
+                "#": "BASIC"
+            },
+            "kind": "entity",
+            "elements": {
+                "Ledger": {
+                    "__abapOriginalName": "Ledger",
+                    "@AbapCatalog.typeSpec.conversionExit": "ALPHA",
+                    "@EndUserText.heading": "{i18n>I_LEDGERTEXT.LEDGER@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERTEXT.LEDGER@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERTEXT.LEDGER@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.upperCase": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "Language": {
+                    "__abapOriginalName": "Language",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@AbapCatalog.typeSpec.conversionExit": "ISOLA",
+                    "@EndUserText.heading": "{i18n>I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.QUICKINFO}",
+                    "@ObjectModel.foreignKey.association": "_Language",
+                    "@Semantics.language": true,
+                    "key": true,
+                    "type": "cds.String",
+                    "length": 2
+                },
+                "LedgerName": {
+                    "__abapOriginalName": "LedgerName",
+                    "@AbapCatalog.typeSpec.changeDocumentRelevant": true,
+                    "@EndUserText.heading": "{i18n>I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.HEADING}",
+                    "@EndUserText.label": "{i18n>I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.LABEL}",
+                    "@EndUserText.quickInfo": "{i18n>I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.QUICKINFO}",
+                    "@Semantics.text": true,
+                    "type": "cds.String",
+                    "length": 30
+                }
+            }
+        }
+    },
+    "meta": {
+        "creator": "BDS CSN Aggregator 1.0",
+        "flavor": "inferred",
+        "__createdAt": "2025-02-17T14:33:34.171744494Z",
+        "__ledger.ledger.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        },
+        "__ledger.ledgercompanycodecurrencyroles.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        },
+        "__ledger.ledgersourceledger.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        },
+        "__ledger.ledgertext.meta": {
+            "creator": "ABAP CSN Object Model API v1.0.0"
+        }
+    },
+    "i18n": {
+        "de": {
+            "FAGL_FLAG_LEADING.0001@ENDUSERTEXT.LABEL": "Ja",
+            "FAGL_FLAG_LEADING.0002@ENDUSERTEXT.LABEL": "Nein",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.HEADING": "Führend",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.LABEL": "Führendes Ledger",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.QUICKINFO": "Kennzeichen Führendes Ledger",
+            "FINS_EXT_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Standardbuchungsbelege",
+            "FINS_EXT_LEDGER_TYPE.0002@ENDUSERTEXT.LABEL": "Buchungsbelege für Hauptbuchkorrekturbuchungen",
+            "FINS_EXT_LEDGER_TYPE.0003@ENDUSERTEXT.LABEL": "Einzelposten mit technischen Nummern / Löschen möglich",
+            "FINS_EXT_LEDGER_TYPE.0004@ENDUSERTEXT.LABEL": "Einzelposten mit technischen Nummern / Löschen nicht möglich",
+            "FINS_EXT_LEDGER_TYPE.0005@ENDUSERTEXT.LABEL": "Buchungsbelege für Bewertungsdifferenzen",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Erweiterungsledgerart",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.LABEL": "ErweitLedgerart",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Erweiterungsledgerart",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.HEADING": "FL",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.LABEL": "Fallback-Ledger",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.QUICKINFO": "Fallback-Ledger",
+            "FINS_LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "FINS_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "FINS_LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in der Hauptbuchhaltung",
+            "FINS_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Festes Ledger",
+            "FINS_LEDGER_TYPE.0002@ENDUSERTEXT.LABEL": "Erweiterungsledger",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Ledger-Typ",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.LABEL": "Ledger-Typ",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Ledger-Typ",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.HEADING": "TL",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.LABEL": "Technisches Ledger",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.QUICKINFO": "Technisches Ledger",
+            "FINS_VALUTYP_CHAR.0002@ENDUSERTEXT.LABEL": "Legale Bewertung",
+            "FINS_VALUTYP_CHAR.0003@ENDUSERTEXT.LABEL": "Konzernbewertung",
+            "FINS_VALUTYP_CHAR.0004@ENDUSERTEXT.LABEL": "Profitcenter-Bewertung",
+            "FINS_VALUTYP_CHAR.0005@ENDUSERTEXT.LABEL": "Segmentbewertung",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.HEADING": "Bewert.",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.LABEL": "Bewertungssicht",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.QUICKINFO": "Bewertungssicht",
+            "GLXAPPL@ENDUSERTEXT.HEADING": "Applikat.",
+            "GLXAPPL@ENDUSERTEXT.LABEL": "Applikation",
+            "GLXAPPL@ENDUSERTEXT.QUICKINFO": "Eigentümer-Applikation",
+            "GLXSUBAPPL@ENDUSERTEXT.HEADING": "Subappl.",
+            "GLXSUBAPPL@ENDUSERTEXT.LABEL": "Subapplikation",
+            "GLXSUBAPPL@ENDUSERTEXT.QUICKINFO": "Subapplikation",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.HEADING": "Bewert.",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.LABEL": "Bewertungssicht",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.QUICKINFO": "Bewertungssicht",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.HEADING": "Erweiterungsledgerart",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.LABEL": "ErweitLedgerart",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Erweiterungsledgerart",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.HEADING": "Führend",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.LABEL": "Führendes Ledger",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.QUICKINFO": "Kennzeichen Führendes Ledger",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in der Hauptbuchhaltung",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.HEADING": "Applikat.",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.LABEL": "Applikation",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.QUICKINFO": "Eigentümer-Applikation",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.HEADING": "Subappl.",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.LABEL": "Subapplikation",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.QUICKINFO": "Subapplikation",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.HEADING": "Ledger-Typ",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.LABEL": "Ledger-Typ",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Ledger-Typ",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.HEADING": "FL",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.LABEL": "Fallback-Ledger",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.QUICKINFO": "Fallback-Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.HEADING": "TL",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.LABEL": "Technisches Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.QUICKINFO": "Technisches Ledger",
+            "I_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.HEADING": "Rechnungslegungsvorschrift",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.LABEL": "RLV",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.QUICKINFO": "Rechnungslegungsvorschrift",
+            "BUKRS@ENDUSERTEXT.HEADING": "BuKr",
+            "BUKRS@ENDUSERTEXT.LABEL": "Buchungskreis",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Buchungskreis",
+            "FIS_ADDL1_CRCY_FIELD.0001@ENDUSERTEXT.LABEL": "Buchungskreiswährung",
+            "FIS_ADDL1_CRCY_FIELD.0002@ENDUSERTEXT.LABEL": "Übergreifende Währung",
+            "FIS_ADDL1_CRCY_FIELD.0003@ENDUSERTEXT.LABEL": "Frei definierte Währung 1",
+            "FIS_ADDL1_CRCY_FIELD.0004@ENDUSERTEXT.LABEL": "Frei definierte Währung 2",
+            "FIS_ADDL1_CRCY_FIELD.0005@ENDUSERTEXT.LABEL": "Frei definierte Währung 3",
+            "FIS_ADDL1_CRCY_FIELD.0006@ENDUSERTEXT.LABEL": "Frei definierte Währung 4",
+            "FIS_ADDL1_CRCY_FIELD.0007@ENDUSERTEXT.LABEL": "Frei definierte Währung 5",
+            "FIS_ADDL1_CRCY_FIELD.0008@ENDUSERTEXT.LABEL": "Frei definierte Währung 6",
+            "FIS_ADDL1_CRCY_FIELD.0009@ENDUSERTEXT.LABEL": "Frei definierte Währung 7",
+            "FIS_ADDL1_CRCY_FIELD.0010@ENDUSERTEXT.LABEL": "Frei definierte Währung 8",
+            "FIS_ADDL1_CRCY_FIELD.0011@ENDUSERTEXT.LABEL": "Funktionale Währung",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.HEADING": "",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.LABEL": "Zusätzliches Währungsfeld 1",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.QUICKINFO": "Zusätzliches Währungsfeld 1",
+            "FIS_ADDL2_CRCY_FIELD.0001@ENDUSERTEXT.LABEL": "Buchungskreiswährung",
+            "FIS_ADDL2_CRCY_FIELD.0002@ENDUSERTEXT.LABEL": "Übergreifende Währung",
+            "FIS_ADDL2_CRCY_FIELD.0003@ENDUSERTEXT.LABEL": "Frei definierte Währung 1",
+            "FIS_ADDL2_CRCY_FIELD.0004@ENDUSERTEXT.LABEL": "Frei definierte Währung 2",
+            "FIS_ADDL2_CRCY_FIELD.0005@ENDUSERTEXT.LABEL": "Frei definierte Währung 3",
+            "FIS_ADDL2_CRCY_FIELD.0006@ENDUSERTEXT.LABEL": "Frei definierte Währung 4",
+            "FIS_ADDL2_CRCY_FIELD.0007@ENDUSERTEXT.LABEL": "Frei definierte Währung 5",
+            "FIS_ADDL2_CRCY_FIELD.0008@ENDUSERTEXT.LABEL": "Frei definierte Währung 6",
+            "FIS_ADDL2_CRCY_FIELD.0009@ENDUSERTEXT.LABEL": "Frei definierte Währung 7",
+            "FIS_ADDL2_CRCY_FIELD.0010@ENDUSERTEXT.LABEL": "Frei definierte Währung 8",
+            "FIS_ADDL2_CRCY_FIELD.0011@ENDUSERTEXT.LABEL": "Funktionale Währung",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.HEADING": "",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.LABEL": "Zusätzliches Währungsfeld 2",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.QUICKINFO": "Zusätzliches Währungsfeld 2",
+            "FIS_CC_CURROLE@ENDUSERTEXT.HEADING": "Buchungskreiswährung Rolle",
+            "FIS_CC_CURROLE@ENDUSERTEXT.LABEL": "Buchungskreiswährung Rolle",
+            "FIS_CC_CURROLE@ENDUSERTEXT.QUICKINFO": "Buchungskreiswährung Rolle",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 1 - Rolle",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 1 - Rolle",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 1 - Rolle (Währungstyp)",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 2 - Rolle",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 2 - Rolle",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 2 - Rolle (Währungstyp)",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 3 - Rolle",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 3 - Rolle",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 3 - Rolle (Währungstyp)",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 4 - Rolle",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 4 - Rolle",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 4 - Rolle (Währungstyp)",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 5 - Rolle",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 5 - Rolle",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 5 - Rolle (Währungstyp)",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 6 - Rolle",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 6 - Rolle",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 6 - Rolle (Währungstyp)",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 7 - Rolle",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 7 - Rolle",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 7 - Rolle (Währungstyp)",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 8 - Rolle",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 8 - Rolle",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 8 - Rolle (Währungstyp)",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.HEADING": "Funktionale Währung Rolle",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.LABEL": "Funktionale Währung Rolle",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.QUICKINFO": "Funktionale Währung Rolle (Währungstyp)",
+            "FIS_GC_CURROLE@ENDUSERTEXT.HEADING": "Übergreifende Währung - Rolle",
+            "FIS_GC_CURROLE@ENDUSERTEXT.LABEL": "Übergr. Whr - Rolle",
+            "FIS_GC_CURROLE@ENDUSERTEXT.QUICKINFO": "Übergreifende Währung - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.HEADING": "Rechnungslegungsvorschrift",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.LABEL": "RLV",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.QUICKINFO": "Rechnungslegungsvorschrift",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.LABEL": "Zusätzliches Währungsfeld 1",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.QUICKINFO": "Zusätzliches Währungsfeld 1",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.LABEL": "Zusätzliches Währungsfeld 2",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.QUICKINFO": "Zusätzliches Währungsfeld 2",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.HEADING": "BuKr",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.LABEL": "Buchungskreis",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Buchungskreis",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.HEADING": "Buchungskreiswährung Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.LABEL": "Buchungskreiswährung Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Buchungskreiswährung Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.HEADING": "GV",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.LABEL": "GeschJahresvariante",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.QUICKINFO": "Geschäftsjahresvariante",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 1 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 1 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 1 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 2 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 2 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 2 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 3 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 3 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 3 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 4 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 4 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 4 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 5 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 5 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 5 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 6 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 6 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 6 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 7 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 7 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 7 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.HEADING": "Frei definierte Währung 8 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.LABEL": "Frei definierte Währung 8 - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.QUICKINFO": "Frei definierte Währung 8 - Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.HEADING": "Funktionale Währung Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.LABEL": "Funktionale Währung Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Funktionale Währung Rolle (Währungstyp)",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.HEADING": "Übergreifende Währung - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.LABEL": "Übergr. Whr - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Übergreifende Währung - Rolle",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in der Hauptbuchhaltung",
+            "I_LEDGERCOMPANYCODECRCYROLES@ENDUSERTEXT.LABEL": "Währungsrollen für Ledger",
+            "PERIV@ENDUSERTEXT.HEADING": "GV",
+            "PERIV@ENDUSERTEXT.LABEL": "GeschJahresvariante",
+            "PERIV@ENDUSERTEXT.QUICKINFO": "Geschäftsjahresvariante",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.HEADING": "Quell-Ledger",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.LABEL": "Quell-Ledger",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.QUICKINFO": "Quell-Ledger",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in der Hauptbuchhaltung",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.HEADING": "Quell-Ledger",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.LABEL": "Quell-Ledger",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.QUICKINFO": "Quell-Ledger",
+            "I_LEDGERSOURCELEDGER@ENDUSERTEXT.LABEL": "Zuordnung zwischen Ledger und Quell-Ledger",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.HEADING": "Sprache",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.LABEL": "Sprachenschlüssel",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.QUICKINFO": "Sprachenschlüssel",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in der Hauptbuchhaltung",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.HEADING": "Bezeichnung",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.LABEL": "Ledger-Bezeichnung",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.QUICKINFO": "Ledger-Bezeichnung",
+            "I_LEDGERTEXT@ENDUSERTEXT.LABEL": "Ledger - Text",
+            "LDTXT@ENDUSERTEXT.HEADING": "Bezeichnung",
+            "LDTXT@ENDUSERTEXT.LABEL": "Ledger-Bezeichnung",
+            "LDTXT@ENDUSERTEXT.QUICKINFO": "Ledger-Bezeichnung",
+            "SPRAS@ENDUSERTEXT.HEADING": "Sprache",
+            "SPRAS@ENDUSERTEXT.LABEL": "Sprachenschlüssel",
+            "SPRAS@ENDUSERTEXT.QUICKINFO": "Sprachenschlüssel"
+        },
+        "en": {
+            "FAGL_FLAG_LEADING.0001@ENDUSERTEXT.LABEL": "Yes",
+            "FAGL_FLAG_LEADING.0002@ENDUSERTEXT.LABEL": "No",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.HEADING": "Leading",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.LABEL": "Leading Ledger",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.QUICKINFO": "Indicator: Leading Ledger",
+            "FINS_EXT_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Standard journal entries",
+            "FINS_EXT_LEDGER_TYPE.0002@ENDUSERTEXT.LABEL": "Journal entries for G/L adjustment postings",
+            "FINS_EXT_LEDGER_TYPE.0003@ENDUSERTEXT.LABEL": "Line items with technical numbers / deletion possible",
+            "FINS_EXT_LEDGER_TYPE.0004@ENDUSERTEXT.LABEL": "Line items with technical numbers / no deletion possible",
+            "FINS_EXT_LEDGER_TYPE.0005@ENDUSERTEXT.LABEL": "Journal entries for valuation differences",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Extension Ledger Type",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.LABEL": "Extn. Ledger Type",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Extension Ledger Type",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.HEADING": "FL",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.LABEL": "Fallback Ledger",
+            "FINS_FALLBACK_LEDGER@ENDUSERTEXT.QUICKINFO": "Fallback Ledger",
+            "FINS_LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "FINS_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "FINS_LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in General Ledger Accounting",
+            "FINS_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Standard Ledger",
+            "FINS_LEDGER_TYPE.0002@ENDUSERTEXT.LABEL": "Extension Ledger",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Ledger Type",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.LABEL": "Ledger Type",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Ledger Type",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.HEADING": "TL",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.LABEL": "Technical Ledger",
+            "FINS_TECHNICAL_LEDGER@ENDUSERTEXT.QUICKINFO": "Technical ledger",
+            "FINS_VALUTYP_CHAR.0001@ENDUSERTEXT.LABEL": "",
+            "FINS_VALUTYP_CHAR.0002@ENDUSERTEXT.LABEL": "Legal Valuation",
+            "FINS_VALUTYP_CHAR.0003@ENDUSERTEXT.LABEL": "Group Valuation",
+            "FINS_VALUTYP_CHAR.0004@ENDUSERTEXT.LABEL": "Profit Center Valuation",
+            "FINS_VALUTYP_CHAR.0005@ENDUSERTEXT.LABEL": "Segmentation Valuation",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.HEADING": "Valuatn",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.LABEL": "Valuation View",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.QUICKINFO": "Valuation View",
+            "GLXAPPL@ENDUSERTEXT.HEADING": "Applicatn",
+            "GLXAPPL@ENDUSERTEXT.LABEL": "Application",
+            "GLXAPPL@ENDUSERTEXT.QUICKINFO": "Owner application",
+            "GLXSUBAPPL@ENDUSERTEXT.HEADING": "Subappl.",
+            "GLXSUBAPPL@ENDUSERTEXT.LABEL": "Subapplication",
+            "GLXSUBAPPL@ENDUSERTEXT.QUICKINFO": "Subapplication",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.HEADING": "Valuatn",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.LABEL": "Valuation View",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.QUICKINFO": "Valuation View",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.HEADING": "Extension Ledger Type",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.LABEL": "Extn. Ledger Type",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Extension Ledger Type",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.HEADING": "Leading",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.LABEL": "Leading Ledger",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.QUICKINFO": "Indicator: Leading Ledger",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in General Ledger Accounting",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.HEADING": "Applicatn",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.LABEL": "Application",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.QUICKINFO": "Owner application",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.HEADING": "Subappl.",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.LABEL": "Subapplication",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.QUICKINFO": "Subapplication",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.HEADING": "Ledger Type",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.LABEL": "Ledger Type",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Ledger Type",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.HEADING": "FL",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.LABEL": "Fallback Ledger",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.QUICKINFO": "Fallback Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.HEADING": "TL",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.LABEL": "Technical Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.QUICKINFO": "Technical ledger",
+            "I_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.HEADING": "Accounting Principle",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.LABEL": "Accounting Principle",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.QUICKINFO": "Accounting Principle",
+            "BUKRS@ENDUSERTEXT.HEADING": "CoCd",
+            "BUKRS@ENDUSERTEXT.LABEL": "Company Code",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Company Code",
+            "FIS_ADDL1_CRCY_FIELD.0001@ENDUSERTEXT.LABEL": "Company Code Currency",
+            "FIS_ADDL1_CRCY_FIELD.0002@ENDUSERTEXT.LABEL": "Global Currency",
+            "FIS_ADDL1_CRCY_FIELD.0003@ENDUSERTEXT.LABEL": "Freely Defined Currency 1",
+            "FIS_ADDL1_CRCY_FIELD.0004@ENDUSERTEXT.LABEL": "Freely Defined Currency 2",
+            "FIS_ADDL1_CRCY_FIELD.0005@ENDUSERTEXT.LABEL": "Freely Defined Currency 3",
+            "FIS_ADDL1_CRCY_FIELD.0006@ENDUSERTEXT.LABEL": "Freely Defined Currency 4",
+            "FIS_ADDL1_CRCY_FIELD.0007@ENDUSERTEXT.LABEL": "Freely Defined Currency 5",
+            "FIS_ADDL1_CRCY_FIELD.0008@ENDUSERTEXT.LABEL": "Freely Defined Currency 6",
+            "FIS_ADDL1_CRCY_FIELD.0009@ENDUSERTEXT.LABEL": "Freely Defined Currency 7",
+            "FIS_ADDL1_CRCY_FIELD.0010@ENDUSERTEXT.LABEL": "Freely Defined Currency 8",
+            "FIS_ADDL1_CRCY_FIELD.0011@ENDUSERTEXT.LABEL": "Functional Currency",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.HEADING": "",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.LABEL": "Additional Currency 1 Field",
+            "FIS_ADDL1_CRCY_FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 1 Field",
+            "FIS_ADDL2_CRCY_FIELD.0001@ENDUSERTEXT.LABEL": "Company Code Currency",
+            "FIS_ADDL2_CRCY_FIELD.0002@ENDUSERTEXT.LABEL": "Global Currency",
+            "FIS_ADDL2_CRCY_FIELD.0003@ENDUSERTEXT.LABEL": "Freely Defined Currency 1",
+            "FIS_ADDL2_CRCY_FIELD.0004@ENDUSERTEXT.LABEL": "Freely Defined Currency 2",
+            "FIS_ADDL2_CRCY_FIELD.0005@ENDUSERTEXT.LABEL": "Freely Defined Currency 3",
+            "FIS_ADDL2_CRCY_FIELD.0006@ENDUSERTEXT.LABEL": "Freely Defined Currency 4",
+            "FIS_ADDL2_CRCY_FIELD.0007@ENDUSERTEXT.LABEL": "Freely Defined Currency 5",
+            "FIS_ADDL2_CRCY_FIELD.0008@ENDUSERTEXT.LABEL": "Freely Defined Currency 6",
+            "FIS_ADDL2_CRCY_FIELD.0009@ENDUSERTEXT.LABEL": "Freely Defined Currency 7",
+            "FIS_ADDL2_CRCY_FIELD.0010@ENDUSERTEXT.LABEL": "Freely Defined Currency 8",
+            "FIS_ADDL2_CRCY_FIELD.0011@ENDUSERTEXT.LABEL": "Functional Currency",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.HEADING": "",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.LABEL": "Additional Currency 2 Field",
+            "FIS_ADDL2_CRCY_FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 2 Field",
+            "FIS_CC_CURROLE@ENDUSERTEXT.HEADING": "Company Code Currency Role",
+            "FIS_CC_CURROLE@ENDUSERTEXT.LABEL": "Company Code Currency Role",
+            "FIS_CC_CURROLE@ENDUSERTEXT.QUICKINFO": "Company Code Currency Role",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 1 Role",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 1 Role",
+            "FIS_FDC1_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 1 Role  (Currency Type)",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 2 Role",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 2 Role",
+            "FIS_FDC2_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 2 Role  (Currency Type)",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 3 Role",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 3 Role",
+            "FIS_FDC3_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 3 Role  (Currency Type)",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 4 Role",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 4 Role",
+            "FIS_FDC4_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 4 Role  (Currency Type)",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 5 Role",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 5 Role",
+            "FIS_FDC5_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 5 Role  (Currency Type)",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 6 Role",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 6 Role",
+            "FIS_FDC6_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 6 Role  (Currency Type)",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 7 Role",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 7 Role",
+            "FIS_FDC7_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 7 Role  (Currency Type)",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 8 Role",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 8 Role",
+            "FIS_FDC8_CURROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 8 Role  (Currency Type)",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.HEADING": "Functional Currency Role",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.LABEL": "Functional Currency Role",
+            "FIS_FUNCTIONAL_CURROLE@ENDUSERTEXT.QUICKINFO": "Functional Currency Role (Currency Type)",
+            "FIS_GC_CURROLE@ENDUSERTEXT.HEADING": "Global Currency Role",
+            "FIS_GC_CURROLE@ENDUSERTEXT.LABEL": "Global Currency Role",
+            "FIS_GC_CURROLE@ENDUSERTEXT.QUICKINFO": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.HEADING": "Accounting Principle",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.LABEL": "Accounting Principle",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.QUICKINFO": "Accounting Principle",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.LABEL": "Additional Currency 1 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 1 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.LABEL": "Additional Currency 2 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 2 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.HEADING": "CoCd",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.LABEL": "Company Code",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Company Code",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.HEADING": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.LABEL": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.HEADING": "FV",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.LABEL": "Fiscal Year Variant",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.QUICKINFO": "Fiscal Year Variant",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 1 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 1 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 1 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 2 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 2 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 2 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 3 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 3 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 3 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 4 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 4 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 4 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 5 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 5 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 5 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 6 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 6 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 6 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 7 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 7 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 7 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 8 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 8 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 8 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.HEADING": "Functional Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.LABEL": "Functional Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Functional Currency Role (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.HEADING": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.LABEL": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in General Ledger Accounting",
+            "I_LEDGERCOMPANYCODECRCYROLES@ENDUSERTEXT.LABEL": "Currency Roles for Ledger",
+            "PERIV@ENDUSERTEXT.HEADING": "FV",
+            "PERIV@ENDUSERTEXT.LABEL": "Fiscal Year Variant",
+            "PERIV@ENDUSERTEXT.QUICKINFO": "Fiscal Year Variant",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.HEADING": "Source Ledger",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.LABEL": "Source Ledger",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.QUICKINFO": "Source Ledger",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in General Ledger Accounting",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.HEADING": "Source Ledger",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.LABEL": "Source Ledger",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.QUICKINFO": "Source Ledger",
+            "I_LEDGERSOURCELEDGER@ENDUSERTEXT.LABEL": "Mapping between Ledger and Source Ledger",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.HEADING": "Language",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.LABEL": "Language Key",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.QUICKINFO": "Language Key",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.HEADING": "Ld",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger in General Ledger Accounting",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.HEADING": "Name",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.LABEL": "Ledger Name",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.QUICKINFO": "Ledger Name",
+            "I_LEDGERTEXT@ENDUSERTEXT.LABEL": "Ledger - Text",
+            "LDTXT@ENDUSERTEXT.HEADING": "Name",
+            "LDTXT@ENDUSERTEXT.LABEL": "Ledger Name",
+            "LDTXT@ENDUSERTEXT.QUICKINFO": "Ledger Name",
+            "SPRAS@ENDUSERTEXT.HEADING": "Language",
+            "SPRAS@ENDUSERTEXT.LABEL": "Language Key",
+            "SPRAS@ENDUSERTEXT.QUICKINFO": "Language Key"
+        },
+        "fr": {
+            "FAGL_FLAG_LEADING.0001@ENDUSERTEXT.LABEL": "Oui",
+            "FAGL_FLAG_LEADING.0002@ENDUSERTEXT.LABEL": "Non",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.HEADING": "Princip.",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.LABEL": "Ledger principal",
+            "FAGL_FLAG_LEADING@ENDUSERTEXT.QUICKINFO": "Code ledger principal",
+            "FINS_EXT_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Ledger d'extension",
+            "FINS_EXT_LEDGER_TYPE.0003@ENDUSERTEXT.LABEL": "Ledger d'extension de simulation",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Type de ledger d'extension",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.LABEL": "Type de ledger ext.",
+            "FINS_EXT_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Type de ledger d'extension",
+            "FINS_LEDGER@ENDUSERTEXT.HEADING": "Lg",
+            "FINS_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "FINS_LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger dans la comptabilité générale",
+            "FINS_LEDGER_TYPE.0001@ENDUSERTEXT.LABEL": "Ledger standard",
+            "FINS_LEDGER_TYPE.0002@ENDUSERTEXT.LABEL": "Ledger d'extension",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.HEADING": "Type ledger",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.LABEL": "Type de ledger",
+            "FINS_LEDGER_TYPE@ENDUSERTEXT.QUICKINFO": "Type de ledger",
+            "FINS_VALUTYP_CHAR.0002@ENDUSERTEXT.LABEL": "Valorisation légale",
+            "FINS_VALUTYP_CHAR.0003@ENDUSERTEXT.LABEL": "Valorisation au niveau du groupe",
+            "FINS_VALUTYP_CHAR.0004@ENDUSERTEXT.LABEL": "Valorisation de centre de profit",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.HEADING": "Valor.",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.LABEL": "Vue de valorisation",
+            "FINS_VALUTYP_CHAR@ENDUSERTEXT.QUICKINFO": "Vue de valorisation",
+            "GLXAPPL@ENDUSERTEXT.HEADING": "Applicat.",
+            "GLXAPPL@ENDUSERTEXT.LABEL": "Application",
+            "GLXAPPL@ENDUSERTEXT.QUICKINFO": "Application du propriétaire",
+            "GLXSUBAPPL@ENDUSERTEXT.HEADING": "Sous-appl.",
+            "GLXSUBAPPL@ENDUSERTEXT.LABEL": "Sous-application",
+            "GLXSUBAPPL@ENDUSERTEXT.QUICKINFO": "Sous-application",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.HEADING": "Valor.",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.LABEL": "Vue de valorisation",
+            "I_LEDGER.ACCOUNTINGVALUATIONVIEW@ENDUSERTEXT.QUICKINFO": "Vue de valorisation",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.HEADING": "Type de ledger d'extension",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.LABEL": "Type de ledger ext.",
+            "I_LEDGER.EXTENSIONLEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Type de ledger d'extension",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.HEADING": "Princip.",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.LABEL": "Ledger principal",
+            "I_LEDGER.ISLEADINGLEDGER@ENDUSERTEXT.QUICKINFO": "Code ledger principal",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.HEADING": "Lg",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger dans la comptabilité générale",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.HEADING": "Applicat.",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.LABEL": "Application",
+            "I_LEDGER.LEDGERAPPLICATION@ENDUSERTEXT.QUICKINFO": "Application du propriétaire",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.HEADING": "Sous-appl.",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.LABEL": "Sous-application",
+            "I_LEDGER.LEDGERSUBAPPLICATION@ENDUSERTEXT.QUICKINFO": "Sous-application",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.HEADING": "Type ledger",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.LABEL": "Type de ledger",
+            "I_LEDGER.LEDGERTYPE@ENDUSERTEXT.QUICKINFO": "Type de ledger",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.HEADING": "FL",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.LABEL": "Fallback Ledger",
+            "I_LEDGER.REFERENCELEDGER@ENDUSERTEXT.QUICKINFO": "Fallback Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.HEADING": "TL",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.LABEL": "Technical Ledger",
+            "I_LEDGER.TECHNICALLEDGER@ENDUSERTEXT.QUICKINFO": "Technical ledger",
+            "I_LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.HEADING": "NC",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.LABEL": "Norme comptable",
+            "ACCOUNTING_PRINCIPLE@ENDUSERTEXT.QUICKINFO": "Norme comptable",
+            "BUKRS@ENDUSERTEXT.HEADING": "Sté",
+            "BUKRS@ENDUSERTEXT.LABEL": "Société",
+            "BUKRS@ENDUSERTEXT.QUICKINFO": "Société",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.HEADING": "NC",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.LABEL": "Norme comptable",
+            "I_LEDGERCOMPANYCODECRCYROLES.ACCOUNTINGPRINCIPLE@ENDUSERTEXT.QUICKINFO": "Norme comptable",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.LABEL": "Additional Currency 1 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY1FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 1 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.HEADING": "",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.LABEL": "Additional Currency 2 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.ADDITIONALCURRENCY2FIELD@ENDUSERTEXT.QUICKINFO": "Additional Currency 2 Field",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.HEADING": "Sté",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.LABEL": "Société",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODE@ENDUSERTEXT.QUICKINFO": "Société",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.HEADING": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.LABEL": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.COMPANYCODECURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Company Code Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.HEADING": "VE",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.LABEL": "Version d'exercice",
+            "I_LEDGERCOMPANYCODECRCYROLES.FISCALYEARVARIANT@ENDUSERTEXT.QUICKINFO": "Version d'exercice",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 1 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 1 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY1ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 1 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 2 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 2 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY2ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 2 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 3 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 3 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY3ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 3 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 4 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 4 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY4ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 4 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 5 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 5 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY5ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 5 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 6 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 6 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY6ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 6 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 7 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 7 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY7ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 7 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.HEADING": "Freely Defined Currency 8 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.LABEL": "Freely Defined Currency 8 Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FREEDEFINEDCURRENCY8ROLE@ENDUSERTEXT.QUICKINFO": "Freely Defined Currency 8 Role  (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.HEADING": "Functional Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.LABEL": "Functional Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.FUNCTIONALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Functional Currency Role (Currency Type)",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.HEADING": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.LABEL": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.GLOBALCURRENCYROLE@ENDUSERTEXT.QUICKINFO": "Global Currency Role",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.HEADING": "Lg",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERCOMPANYCODECRCYROLES.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger dans la comptabilité générale",
+            "I_LEDGERCOMPANYCODECRCYROLES@ENDUSERTEXT.LABEL": "Rôles de devise pour ledger et société",
+            "PERIV@ENDUSERTEXT.HEADING": "VE",
+            "PERIV@ENDUSERTEXT.LABEL": "Version d'exercice",
+            "PERIV@ENDUSERTEXT.QUICKINFO": "Version d'exercice",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.HEADING": "Ledger source",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.LABEL": "Ledger source",
+            "FINS_LEDGER_PERS@ENDUSERTEXT.QUICKINFO": "Ledger source",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.HEADING": "Lg",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERSOURCELEDGER.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger dans la comptabilité générale",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.HEADING": "Ledger source",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.LABEL": "Ledger source",
+            "I_LEDGERSOURCELEDGER.SOURCELEDGER@ENDUSERTEXT.QUICKINFO": "Ledger source",
+            "I_LEDGERSOURCELEDGER@ENDUSERTEXT.LABEL": "Mapping between Ledger and Source Ledger",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.HEADING": "Langue",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.LABEL": "Code langue",
+            "I_LEDGERTEXT.LANGUAGE@ENDUSERTEXT.QUICKINFO": "Code langue",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.HEADING": "Lg",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.LABEL": "Ledger",
+            "I_LEDGERTEXT.LEDGER@ENDUSERTEXT.QUICKINFO": "Ledger dans la comptabilité générale",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.HEADING": "Désignation",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.LABEL": "Désignation ledger",
+            "I_LEDGERTEXT.LEDGERNAME@ENDUSERTEXT.QUICKINFO": "Désignation ledger",
+            "I_LEDGERTEXT@ENDUSERTEXT.LABEL": "Texte de ledger",
+            "LDTXT@ENDUSERTEXT.HEADING": "Désignation",
+            "LDTXT@ENDUSERTEXT.LABEL": "Désignation ledger",
+            "LDTXT@ENDUSERTEXT.QUICKINFO": "Désignation ledger",
+            "SPRAS@ENDUSERTEXT.HEADING": "Langue",
+            "SPRAS@ENDUSERTEXT.LABEL": "Code langue",
+            "SPRAS@ENDUSERTEXT.QUICKINFO": "Code langue"
+        }
+    }
+}
