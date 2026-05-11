@@ -29,9 +29,9 @@ tools:
   - ask_user_question
 prompt: "$network-rule Setup an ingress network rule to allow GitHub Actions IPs to connect to Snowflake"
 language: en
-status: Published
+status: stable
 author: Kamesh Sampath
-type: Snowflake Staff
+type: snowflake
 ---
 
 # Snowflake Network Rules & Policies
@@ -255,4 +255,3 @@ After completing Step 2a (admin role check), dispatch based on rule intent:
 - [Manifest Flows](manifest-flows.md) — Manifest template, export for sharing, and remove/cleanup flows
 - [Replay Flows](replay-flows.md) — Replay single skill and replay all skills flows
 - [Supplemental](supplemental.md) — Stopping points, output, SQL reference, troubleshooting, and security notes
-

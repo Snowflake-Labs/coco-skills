@@ -30,9 +30,9 @@ tools:
   - ask_user_question
 prompt: "$programmatic-access-token Create a new PAT for my service account to use in CI/CD pipelines"
 language: en
-status: Published
+status: stable
 author: Kamesh Sampath
-type: Snowflake Staff
+type: snowflake
 ---
 
 # Snowflake PAT Setup

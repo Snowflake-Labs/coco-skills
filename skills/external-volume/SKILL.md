@@ -32,9 +32,9 @@ tools:
   - ask_user_question
 prompt: "$external-volume Create an external volume backed by my S3 bucket for Iceberg tables"
 language: en
-status: Published
+status: stable
 author: Kamesh Sampath
-type: Snowflake Staff
+type: snowflake
 ---
 
 # External Volume Setup
