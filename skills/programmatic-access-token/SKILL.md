@@ -1,10 +1,38 @@
 ---
 name: programmatic-access-token
+title: Setup Snowflake PATs
+summary: Create and manage Snowflake Programmatic Access Tokens (PATs) for service accounts with network and auth policies.
+description: >-
+  Create Snowflake Programmatic Access Tokens (PATs) for service accounts.
+  Use for ALL requests that mention: setting up service user, creating PAT,
+  configuring authentication policy, network policy for PAT, rotating tokens,
+  verifying PAT connectivity, service account automation.
+  Triggers: programmatic-access-token, sfutils-pat, create-access-token,
+  programmatic access token, PAT, service account, snowflake authentication,
+  replay pat, replay pat manifest, recreate pat, replay all manifests,
+  replay all sfutils, export manifest for sharing, setup from shared manifest,
+  replay from shared manifest, setup from manifest URL, replay from URL,
+  use manifest from URL, multiple pats, multi-pat, add second pat, list pats,
+  setup connection, validate manifest, migrate manifest, repair manifest,
+  second service account.
+  Do NOT use for: general Snowflake SQL queries, external volumes, network rules
+  unrelated to PAT, or non-authentication tasks.
 aliases:
   - setup-programmatic-access-token
   - programmatic-access-tokens
   - setup-programmatic-access-tokens
-description: "Create Snowflake Programmatic Access Tokens (PATs) for service accounts. Use when: setting up service user, creating PAT, configuring authentication policy, network policy for PAT. Triggers: programmatic-access-token, sfutils-pat, create-access-token, programmatic access token, PAT, service account, snowflake authentication, replay pat, replay pat manifest, recreate pat, replay all manifests, replay all sfutils, export manifest for sharing, setup from shared manifest, replay from shared manifest, setup from manifest URL, replay from URL, use manifest from URL, multiple pats, multi-pat, add second pat, list pats, setup connection, validate manifest, migrate manifest, repair manifest, second service account."
+tools:
+  - Bash
+  - Read
+  - Edit
+  - Glob
+  - Grep
+  - ask_user_question
+prompt: "$programmatic-access-token Create a new PAT for my service account to use in CI/CD pipelines"
+language: en
+status: Published
+author: Kamesh Sampath
+type: Snowflake Staff
 ---
 
 # Snowflake PAT Setup

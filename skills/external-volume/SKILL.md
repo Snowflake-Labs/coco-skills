@@ -1,10 +1,40 @@
 ---
 name: external-volume
+title: Setup Snowflake External Volumes
+summary: Create and manage Snowflake external volumes with cloud storage (AWS S3) for Iceberg tables and data lake access.
+description: >-
+  Create Snowflake external volumes with cloud storage.
+  Use for ALL requests that mention: setting up external storage, creating
+  external volume, configuring S3 for Snowflake, Iceberg tables, unloading
+  data, cloud storage, COPY INTO unload, external stage storage, data lake
+  storage, IAM trust policy, volume verification.
+  Triggers: sfutils-extvolumes, setup-external-volume, external volume,
+  create external volume, s3 snowflake, iceberg storage, data lake storage,
+  COPY INTO location, external stage, unload to S3, replay volumes,
+  replay volume manifest, recreate external volume, replay all manifests,
+  replay all sfutils, export manifest for sharing, setup from shared manifest,
+  replay from shared manifest, setup from manifest URL, replay from URL,
+  use manifest from URL, azure, gcs, blob storage, cloud storage,
+  multiple volumes, list volumes, setup connection, validate manifest,
+  migrate manifest, second external volume.
+  Do NOT use for: network rules, PAT creation, general SQL queries,
+  or non-storage tasks.
 aliases:
   - setup-external-volume
   - external-volumes
   - setup-external-volumes
-description: "**[REQUIRED]** Create Snowflake external volumes with cloud storage. Use when: setting up external storage, creating external volume, configuring S3 for Snowflake, azure blob storage, GCS for Snowflake, Iceberg tables, unloading data, cloud storage, COPY INTO unload, external stage storage, data lake storage. Triggers: sfutils-extvolumes, setup-external-volume, external volume, create external volume, s3 snowflake, iceberg storage, data lake storage, COPY INTO location, external stage, unload to S3, replay volumes, replay volume manifest, recreate external volume, replay all manifests, replay all sfutils, export manifest for sharing, setup from shared manifest, replay from shared manifest, setup from manifest URL, replay from URL, use manifest from URL, azure, gcs, blob storage, cloud storage, multiple volumes, list volumes, setup connection, validate manifest, migrate manifest, second external volume."
+tools:
+  - Bash
+  - Read
+  - Edit
+  - Glob
+  - Grep
+  - ask_user_question
+prompt: "$external-volume Create an external volume backed by my S3 bucket for Iceberg tables"
+language: en
+status: Published
+author: Kamesh Sampath
+type: Snowflake Staff
 ---
 
 # External Volume Setup

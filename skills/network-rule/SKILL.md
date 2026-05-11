@@ -1,21 +1,37 @@
 ---
 name: network-rule
-aliases:
-  - setup-network-rules
-description: >
+title: Setup Snowflake Network Rules
+summary: Create and manage Snowflake network rules and policies for IP-based access control with TOML manifest tracking.
+description: >-
   Setup and manage Snowflake network rules and policies using sfutils CLI
   with TOML manifest tracking.
-  Use when: setting up network rules, creating network rules with GitHub Actions
-  or Google IPs or local IP allowlisting, managing INGRESS/EGRESS/POSTGRES/INTERNAL_STAGE
-  rules, CIDR allowlisting, firewall setup, dry-run preview, replaying network setup
-  from manifest, cleaning up network resources, exporting network manifest for sharing.
+  Use for ALL requests that mention: setting up network rules, creating network
+  rules with GitHub Actions or Google IPs or local IP allowlisting, managing
+  INGRESS/EGRESS/POSTGRES/INTERNAL_STAGE rules, CIDR allowlisting, firewall
+  setup, external access integrations, EAI for SPCS or Snowpark.
   Triggers: sfutils-networks, setup-network-rules, network-rule, setup network,
   setup nw, allow gh, allow github, allow google, allow local, CIDR, egress rule,
-  postgres ingress, AWSVPCEID, HOST_PORT, dry-run network, replay network, replay manifest,
-  recreate network, export manifest, cleanup network, remove network rule, network manifest,
-  multiple network rules, external access, call external API, OpenFlow connector,
-  SPCS app, Snowpark external, EAI, integration, slack alert, pull from S3,
-  HuggingFace, OpenAI from Snowflake.
+  postgres ingress, AWSVPCEID, HOST_PORT, dry-run network, replay network,
+  replay manifest, recreate network, export manifest, cleanup network,
+  remove network rule, network manifest, multiple network rules, external access,
+  call external API, OpenFlow connector, SPCS app, Snowpark external, EAI,
+  integration, slack alert, pull from S3, HuggingFace, OpenAI from Snowflake.
+  Do NOT use for: external volumes, PAT creation, general SQL queries,
+  or non-network tasks.
+aliases:
+  - setup-network-rules
+tools:
+  - Bash
+  - Read
+  - Edit
+  - Glob
+  - Grep
+  - ask_user_question
+prompt: "$network-rule Setup an ingress network rule to allow GitHub Actions IPs to connect to Snowflake"
+language: en
+status: Published
+author: Kamesh Sampath
+type: Snowflake Staff
 ---
 
 # Snowflake Network Rules & Policies
