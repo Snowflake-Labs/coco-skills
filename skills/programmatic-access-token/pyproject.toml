@@ -1,0 +1,11 @@
+[project]
+name = "programmatic-access-token"
+version = "0.4.1"
+description = "Cortex Code skill for creating Snowflake Programmatic Access Tokens"
+requires-python = ">=3.12"
+dependencies = [
+    "sfutils-pat",
+]
+
+[tool.uv.sources]
+sfutils-pat = { git = "https://github.com/Snowflake-Labs/sfutils-pat.git", tag = "v0.4.1" }

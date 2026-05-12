@@ -1,0 +1,115 @@
+# =============================================================================
+# SF Utils manifest.toml — canonical schema reference
+# Machine-managed by Cortex Code.  Do not hand-edit the live file.
+#
+# This file documents every supported field.  Lines marked "[optional]" may
+# be omitted; the skill will leave them blank until the relevant step runs.
+#
+# To validate a live manifest:
+#   sfutils-pat validate-manifest
+# =============================================================================
+schema_version = "1"                          # do not change
+project_name   = "my-demo"                    # derived from project directory name
+created_at     = "2026-05-02T10:00:00Z"       # ISO-8601 UTC, set once at init
+
+# ── Shared Snowflake connection (captured once, reused by all PATs) ───────────
+#
+# Set by:  sfutils-pat setup-connection -c <connection>
+# All PATs inherit these values unless they declare their own [pat.<x>]
+# connection / account / account_url fields.
+#
+[snowflake]
+connection   = "local-oauth"                              # snow connection name
+account      = "ABC12345"                                 # cached from snow connection test
+user         = "KAMESHS"                                  # Snowflake login user
+account_url  = "https://abc12345.snowflakecomputing.com"  # cached from snow connection test
+sf_utils_db  = "KAMESHS_SF_UTILS"                        # set by sfutils-pat check-setup
+admin_role   = "ACCOUNTADMIN"                             # role used to create PAT resources
+
+# ── Tool / infra pre-flight cache ─────────────────────────────────────────────
+#
+# Written by:  sfutils-pat check-setup
+#
+[prereqs]
+tools_verified = "2026-05-02"   # ISO date; skill skips tool checks if today's date
+infra_ready    = true           # true once SF_UTILS_DB database exists
+
+# ── PAT: app-runner ───────────────────────────────────────────────────────────
+#
+# Single-PAT example (inherits all [snowflake] fields — no overrides needed).
+# Label "app-runner" is the key used with --profile on the CLI.
+#
+[pat.app-runner]
+status              = "COMPLETE"   # IN_PROGRESS | COMPLETE | REMOVED
+created_at          = "2026-05-02T10:15:00Z"
+updated_at          = "2026-05-02T10:15:00Z"
+# removed_at        = "..."        # [optional] set automatically on remove
+sa_user             = "KAMESHS_MYAPP_RUNNER"
+sa_role             = "KAMESHS_MYAPP_ACCESS"
+pat_name            = "KAMESHS_MYAPP_RUNNER_PAT"
+comment_prefix      = "KAMESHS_MYAPP"
+sf_utils_db         = "KAMESHS_SF_UTILS"   # can override [snowflake].sf_utils_db
+admin_role          = "ACCOUNTADMIN"        # can override [snowflake].admin_role
+default_expiry_days = 7
+max_expiry_days     = 30
+local_ip            = "203.0.113.1/32"
+allow_github        = false
+allow_google        = false
+extra_cidrs         = []
+
+[pat.app-runner.resources]
+network_rule   = "KAMESHS_SF_UTILS.NETWORKS.KAMESHS_MYAPP_RUNNER_NETWORK_RULE"
+network_policy = "KAMESHS_MYAPP_RUNNER_NETWORK_POLICY"
+auth_policy    = "KAMESHS_SF_UTILS.POLICIES.KAMESHS_MYAPP_RUNNER_AUTH_POLICY"
+service_user   = "KAMESHS_MYAPP_RUNNER"
+service_role   = "KAMESHS_MYAPP_ACCESS"
+pat            = "KAMESHS_MYAPP_RUNNER_PAT"
+
+[pat.app-runner.cleanup]
+user      = "KAMESHS_MYAPP_RUNNER"
+db        = "KAMESHS_SF_UTILS"
+drop_user = true
+
+# ── PAT: prod-runner ──────────────────────────────────────────────────────────
+#
+# Multi-PAT / multi-connection example.
+# This PAT uses a DIFFERENT Snowflake account ("prod-oauth").
+# Only the three overriding fields need to be set; everything else still
+# resolves from [snowflake] by default.
+#
+# connection overrides → connection, account, account_url stored here
+# sf_utils_db overrides → prod account has its own infra database
+# admin_role overrides  → prod uses SYSADMIN instead of ACCOUNTADMIN
+#
+[pat.prod-runner]
+connection          = "prod-oauth"                               # overrides [snowflake].connection
+account             = "XYZ99999"                                 # cached from: snow connection test -c prod-oauth
+account_url         = "https://xyz99999.snowflakecomputing.com"  # cached from connection test
+status              = "COMPLETE"
+created_at          = "2026-05-02T11:30:00Z"
+updated_at          = "2026-05-02T11:30:00Z"
+sa_user             = "KAMESHS_PROD_RUNNER"
+sa_role             = "KAMESHS_PROD_ACCESS"
+pat_name            = "KAMESHS_PROD_RUNNER_PAT"
+comment_prefix      = "KAMESHS_PROD"
+sf_utils_db         = "PROD_SF_UTILS"   # overrides [snowflake].sf_utils_db
+admin_role          = "SYSADMIN"        # overrides [snowflake].admin_role
+default_expiry_days = 7
+max_expiry_days     = 30
+local_ip            = "203.0.113.1/32"
+allow_github        = false
+allow_google        = false
+extra_cidrs         = []
+
+[pat.prod-runner.resources]
+network_rule   = "PROD_SF_UTILS.NETWORKS.KAMESHS_PROD_RUNNER_NETWORK_RULE"
+network_policy = "KAMESHS_PROD_RUNNER_NETWORK_POLICY"
+auth_policy    = "PROD_SF_UTILS.POLICIES.KAMESHS_PROD_RUNNER_AUTH_POLICY"
+service_user   = "KAMESHS_PROD_RUNNER"
+service_role   = "KAMESHS_PROD_ACCESS"
+pat            = "KAMESHS_PROD_RUNNER_PAT"
+
+[pat.prod-runner.cleanup]
+user      = "KAMESHS_PROD_RUNNER"
+db        = "PROD_SF_UTILS"
+drop_user = true
