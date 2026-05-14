@@ -33,7 +33,7 @@ categories: solutions, demo, installer
 Installs a pre-built industry solution from the [sf-solutions](https://github.com/Snowflake-Labs/sf-solutions) repository into the user's Snowflake account. Each solution contains a `manifest.json` describing its metadata and a `scripts/` directory with SQL setup/teardown files.
 
 # When to Use
-- User wants to install a solution: `$solutions-installer manufacturing-predictive-maintenance`
+- User wants to install a solution: `$solutions-installer <solution-name>` where `<solution-name>` is a directory name in the [sf-solutions](https://github.com/Snowflake-Labs/sf-solutions) repository (e.g., `manufacturing-predictive-maintenance`)
 - User wants to tear down / uninstall a solution
 - User wants to set up a demo environment for an industry use case
 - Do NOT use for editing the solutions catalog website
@@ -213,21 +213,6 @@ Next steps:
   - Teardown: $solutions-installer teardown <slug>
 ```
 
-# Teardown Flow
-
-When the user requests teardown / uninstall:
-
-1. Read `manifest.json` to get `teardown_scripts`
-2. **⚠️ STOPPING POINT:** Warn the user:
-   ```
-   This will DROP the following objects:
-     Database: <database>
-     (and all schemas, tables, views, models within it)
-
-   This action is IRREVERSIBLE. Proceed?
-   ```
-3. Upon confirmation, execute each script in `teardown_scripts`
-4. Verify the database no longer exists
 
 # Best Practices
 - Always read manifest.json first — it is the source of truth for the solution
@@ -261,14 +246,7 @@ Assistant:
 5. Verifies all tables created, shows row counts
 6. Shows summary with next steps
 
-## Example 2: Teardown a solution
-User: $solutions-installer teardown manufacturing-predictive-maintenance
-Assistant:
-1. Reads manifest.json → teardown_scripts: ["scripts/teardown.sql"]
-2. Warns: "This will DROP database SNOWCORE_INDUSTRIES. Irreversible. Proceed?"
-3. User confirms → executes teardown.sql
-4. Verifies database is gone
 
-## Example 3: List available solutions
+## Example 2: List available solutions
 User: $solutions-installer
 Assistant: Scans repo for manifest.json files, shows table of available solutions, asks user to pick one
