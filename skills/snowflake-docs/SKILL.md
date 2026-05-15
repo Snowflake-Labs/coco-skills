@@ -1,6 +1,12 @@
 ---
 name: snowflake-docs
+id: snowflake-docs
 description: "Use for **ALL** Snowflake documentation lookups: feature questions, SQL syntax, best practices, how-to guides, configuration, and troubleshooting. This is the required entry point for any question about Snowflake products or features. Triggers: Snowflake docs, how do I, SQL syntax, CREATE, ALTER, DROP, warehouse, stage, Cortex, Snowpipe, dynamic table, stored procedure, UDF, MCP, Snowpark, Streamlit, Native App, data sharing, replication, security, roles, grants, what is, how does, Snowflake feature."
+authors: Gilberto Hernandez
+type: snowflake
+status: stable
+categories:
+  - documentation
 ---
 
 # Snowflake Docs
