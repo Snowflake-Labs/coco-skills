@@ -1,0 +1,29 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-2866751","df.write.saveAsTable('my_table', mode='overwrite', format='transient')
+snowflake_session.sql('create transient table my_table...')
+df.write.mode('append').saveAsTable('my_table')
+snowflake_session.sql('create transient table if not exists my_table as select * from values (null) t(dummy) where false')
+df.write.mode('append').saveAsTable('my_table')","Transient table creation limitation: Snowpark Connect's saveAsTable() API does not support Snowflake-specific table types like TRANSIENT tables directly. This is architectural difference - Spark has no concept of transient tables, so the API doesn't expose this Snowflake-specific feature. Workaround requires two-step process: 1) manually create transient table using snowflake_session.sql() with CREATE TRANSIENT TABLE DDL, 2) use saveAsTable() with mode='append'. This maintains Spark API compatibility but loses Snowflake-native table type features. Feature marked as Backlog indicating potential future support through Snowflake-specific extensions",""
+"SNOW-2677265","","",""
+"df = spark.table('t1')","","",""
+"df = df.withColumnRenamed('AB'","'AB1')","",""
+"print(df.columns)  # output: ['AB1'","'AB1']","",""
+"df.show()","","",""
+"# Workaround:","","",""
+"spark.conf.set('spark.sql.caseSensitive'","'true')","",""
+"df = df.withColumnRenamed('AB'","'AB1')","",""
+"print(df.columns)  # ['ab'","'AB1'] - correct behavior""","Case sensitivity handling difference: SCOS by default treats identifiers in case-insensitive manner, so 'ab' and AB are treated the same. Can configure spark.conf.set('spark.sql.caseSensitive', 'true') to differentiate, but this also affects table names. Alternative: use spark.conf.set('snowpark.connect.sql.passthrough', 'true') for table creation with mixed case columns. SCOS provides legacy configuration for separate table/column casing but not recommended. This is fundamental identifier resolution difference between Snowflake (case-insensitive by default) vs Spark (case-sensitive by default)",""
+"SNOW-2263699","df.createOrReplaceTempView('abc')
+cached_df = spark.sql('select * from abc')
+cached_df.cache()
+spark.sql('DROP VIEW abc')
+cached_df.show()
+cached_df.unpersist()
+spark.sql('DROP VIEW abc')","Cache lifecycle difference: In native Spark, cached DataFrames maintain independence from their source views - once cached, the data exists in memory/disk independent of the original view. In Snowpark Connect, cached DataFrames maintain dependency on the underlying view definition due to Snowflake's architecture where caching is handled differently. When the view is dropped, Snowpark cannot resolve the cached DataFrame because it still references the dropped view metadata. This is fundamental architectural difference - Spark's caching creates materialized independent copies, while Snowflake's caching maintains logical dependencies. Resolution 'Not a Bug' confirms this is expected behavior difference",""
+"SNOW-2224385","pip install grpcio==1.62
+pip install 'grpcio<1.62,>=1.50' 'protobuf<5.0,>=4.0'","Dependency compatibility matrix issue: Trinity customer encountered version conflict where SAS (Snowflake Accelerated Spark) requires protobuf<5 for integration compatibility, but grpcio==1.62 depends on protobuf>=5.0. This creates incompatible dependency requirements. The issue stems from different protobuf version requirements: SAS integration components built against protobuf 4.x API, while newer grpcio versions require protobuf 5.x with breaking API changes. Resolution 'Not a Bug' indicates this is expected constraint - SAS must maintain compatibility with specific protobuf versions for stability. Workaround: use compatible grpcio version <1.62 that works with protobuf<5",""
+"SNOW-2893284","query = f'select 1222 as tmp_date from tmp_table where 1=1 qualify min(a) over (partition by tmp_date)> 1'
+df_table1 = spark.sql(query)
+query = '''with cte as (
+select 1222 as tmp_date, min(a) over (partition by tmp_date) as min_a from tmp_table where 1=1
+) select tmp_date from cte where min_a > 1'''","SQL feature compatibility gaps: 1) QUALIFY clause - Snowflake-specific SQL extension for filtering window function results, not part of standard SQL or Spark SQL. Spark requires window functions to be computed first, then filtered with WHERE clause. 2) CTE alias restrictions - Snowpark Connect has stricter column aliasing rules within CTEs compared to native Spark SQL. The DataFrame column aliasing system conflicts with complex CTE expressions containing window functions. Workaround for QUALIFY: use window function in SELECT, then filter with WHERE. Workaround for CTE: simplify aliases or use subqueries. These represent fundamental differences between Snowflake SQL dialect (extended with QUALIFY) vs Spark SQL dialect (ANSI SQL focused)",""
