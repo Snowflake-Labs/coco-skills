@@ -1,0 +1,96 @@
+# Shared Degenerate Dimension: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# YAML NOTE: Inline SQL subqueries in the TABLES clause (Approach B in the DDL)
+# are not supported in YAML. This YAML implements Approach A (physical helper view).
+# Approach B requires DDL authoring (semantic_view.sql).
+
+name: CHANNEL_BY_REGION_SV
+description: >
+  Store and web orders with a shared region dimension derived from a UNION helper
+  view. Demonstrates the degenerate dimension pattern.
+  Approach B (inline SQL UNION) is DDL-only — see semantic_view.sql.
+
+tables:
+  - name: regions
+    description: >
+      Shared region dimension — union of distinct regions from both fact tables.
+      Physical helper view: CREATE VIEW region_dim AS SELECT DISTINCT region FROM
+      store_orders UNION SELECT DISTINCT region FROM web_orders.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: REGION_DIM
+    primary_key:
+      columns: [REGION]
+    dimensions:
+      - name: region
+        synonyms: [region, geo, geography]
+        description: Shared region dimension covering all channels
+        expr: REGION
+        data_type: VARCHAR
+
+  - name: store_orders
+    description: Store order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: STORE_ORDERS
+    dimensions:
+      - name: category
+        synonyms: [product category]
+        expr: CATEGORY
+        data_type: VARCHAR
+      - name: order_month
+        synonyms: [store month, month]
+        expr: DATE_TRUNC('month', ORDER_DATE)
+        data_type: DATE
+    metrics:
+      - name: store_revenue
+        synonyms: [store sales, store revenue]
+        expr: SUM(AMOUNT)
+
+  - name: web_orders
+    description: Web order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: WEB_ORDERS
+    dimensions:
+      - name: channel
+        synonyms: [device type, web channel]
+        expr: CHANNEL
+        data_type: VARCHAR
+      - name: order_month
+        synonyms: [web month]
+        expr: DATE_TRUNC('month', ORDER_DATE)
+        data_type: DATE
+    metrics:
+      - name: web_revenue
+        synonyms: [web sales, online revenue]
+        expr: SUM(AMOUNT)
+
+relationships:
+  - name: store_to_region
+    left_table: store_orders
+    right_table: regions
+    relationship_columns:
+      - left_column: REGION
+        right_column: REGION
+  - name: web_to_region
+    left_table: web_orders
+    right_table: regions
+    relationship_columns:
+      - left_column: REGION
+        right_column: REGION
+
+metrics:
+  - name: total_revenue
+    synonyms: [total revenue, all channel revenue]
+    description: Combined store and web revenue
+    expr: store_orders.store_revenue + web_orders.web_revenue

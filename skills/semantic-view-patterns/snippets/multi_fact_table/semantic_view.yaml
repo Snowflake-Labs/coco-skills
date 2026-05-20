@@ -1,0 +1,154 @@
+# Multi-Fact Table: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features: AI_SQL_GENERATION
+
+name: MULTI_CHANNEL_SV
+description: >
+  Multi-fact table SV: store sales, web sales, and returns as three independent
+  fact tables sharing a product and date dimension. Demonstrates cross-fact
+  derived metrics (total_gross_revenue, net_revenue).
+
+tables:
+  - name: dim_product
+    description: Product catalog
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_PRODUCT
+    primary_key:
+      columns: [PRODUCT_ID]
+    dimensions:
+      - name: category
+        synonyms: [category, product category]
+        expr: CATEGORY
+        data_type: VARCHAR
+      - name: brand
+        synonyms: [brand]
+        expr: BRAND
+        data_type: VARCHAR
+      - name: product_name
+        synonyms: [product]
+        expr: PRODUCT_NAME
+        data_type: VARCHAR
+
+  - name: channel_dim_date
+    description: Date dimension
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CHANNEL_DIM_DATE
+    primary_key:
+      columns: [DATE_ID]
+    dimensions:
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: quarter
+        synonyms: [quarter, qtr]
+        expr: QUARTER
+        data_type: VARCHAR
+      - name: month
+        synonyms: [month]
+        expr: MONTH
+        data_type: NUMBER
+
+  - name: channel_store_sales
+    description: Store sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CHANNEL_STORE_SALES
+    metrics:
+      - name: store_revenue
+        synonyms: [store sales, store revenue]
+        expr: SUM(REVENUE)
+      - name: store_quantity
+        synonyms: [store units, units sold in store]
+        expr: SUM(QUANTITY)
+
+  - name: channel_web_sales
+    description: Web / online sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CHANNEL_WEB_SALES
+    metrics:
+      - name: web_revenue
+        synonyms: [web sales, online revenue]
+        expr: SUM(REVENUE)
+      - name: web_quantity
+        synonyms: [web units, units sold online]
+        expr: SUM(QUANTITY)
+
+  - name: channel_returns
+    description: Product returns
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CHANNEL_RETURNS
+    metrics:
+      - name: total_returns
+        synonyms: [returns, total returned amount]
+        expr: SUM(AMOUNT)
+      - name: return_quantity
+        synonyms: [returned units, return volume]
+        expr: SUM(QUANTITY)
+
+relationships:
+  - name: store_to_date
+    left_table: channel_store_sales
+    right_table: channel_dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: store_to_product
+    left_table: channel_store_sales
+    right_table: dim_product
+    relationship_columns:
+      - left_column: PRODUCT_ID
+        right_column: PRODUCT_ID
+  - name: web_to_date
+    left_table: channel_web_sales
+    right_table: channel_dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: web_to_product
+    left_table: channel_web_sales
+    right_table: dim_product
+    relationship_columns:
+      - left_column: PRODUCT_ID
+        right_column: PRODUCT_ID
+  - name: returns_to_date
+    left_table: channel_returns
+    right_table: channel_dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: returns_to_product
+    left_table: channel_returns
+    right_table: dim_product
+    relationship_columns:
+      - left_column: PRODUCT_ID
+        right_column: PRODUCT_ID
+
+metrics:
+  - name: total_gross_revenue
+    synonyms: [gross revenue, combined revenue, all channels revenue]
+    description: Combined revenue from store and web channels
+    expr: channel_store_sales.store_revenue + channel_web_sales.web_revenue
+  - name: net_revenue
+    synonyms: [net revenue, revenue after returns]
+    description: Gross revenue minus returns
+    expr: total_gross_revenue - channel_returns.total_returns
+  - name: store_share
+    synonyms: [store contribution, store share]
+    description: Store revenue as a fraction of total gross revenue
+    expr: channel_store_sales.store_revenue / total_gross_revenue

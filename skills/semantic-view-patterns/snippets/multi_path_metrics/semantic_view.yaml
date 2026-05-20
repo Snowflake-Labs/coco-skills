@@ -1,0 +1,86 @@
+# Multi-Path Metrics (USING): Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features: AI_SQL_GENERATION
+# YAML USING equivalent: using_relationships list on each metric
+
+name: FLIGHT_WEATHER_SV
+description: >
+  Flight delays analyzed by weather at departure city and weather at arrival city.
+  Uses using_relationships to disambiguate two range relationships to the same
+  weather table (YAML equivalent of DDL's USING clause).
+
+tables:
+  - name: flights
+    description: Flight records with departure and arrival cities and times
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: FLIGHTS
+    primary_key:
+      columns: [FLIGHT_ID]
+    metrics:
+      - name: total_flights
+        synonyms: [number of flights, flight count]
+        expr: COUNT(FLIGHT_ID)
+      - name: late_departure_count
+        synonyms: [late departures, delayed departures, flights late at departure]
+        description: Late flights broken down by departure weather
+        expr: COUNT_IF(IS_LATE)
+        using_relationships:
+          - flight_departure_weather
+      - name: late_arrival_count
+        synonyms: [late arrivals, delayed arrivals, flights late at arrival]
+        description: Late flights broken down by arrival weather
+        expr: COUNT_IF(IS_LATE)
+        using_relationships:
+          - flight_arrival_weather
+      - name: departure_flight_count
+        synonyms: [flights by departure weather]
+        description: All flights broken down by departure weather
+        expr: COUNT(FLIGHT_ID)
+        using_relationships:
+          - flight_departure_weather
+      - name: arrival_flight_count
+        synonyms: [flights by arrival weather]
+        description: All flights broken down by arrival weather
+        expr: COUNT(FLIGHT_ID)
+        using_relationships:
+          - flight_arrival_weather
+
+  - name: weather
+    description: Weather conditions by city and date range
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: WEATHER
+    primary_key:
+      columns: [CITY_CODE, START_DATE, END_DATE]
+    dimensions:
+      - name: weather_condition
+        synonyms: [weather, conditions, sky condition]
+        expr: WEATHER_CONDITION
+        data_type: VARCHAR
+
+# Two paths from flights to weather — one per city role.
+# NOTE: range relationship syntax (BETWEEN EXCLUSIVE) not supported in YAML.
+# These are standard column-equality relationships as placeholders.
+# For full range join, use semantic_view.sql.
+relationships:
+  - name: flight_departure_weather
+    left_table: flights
+    right_table: weather
+    relationship_columns:
+      - left_column: DEPARTURE_CITY
+        right_column: CITY_CODE
+  - name: flight_arrival_weather
+    left_table: flights
+    right_table: weather
+    relationship_columns:
+      - left_column: ARRIVAL_CITY
+        right_column: CITY_CODE
