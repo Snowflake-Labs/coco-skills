@@ -1,0 +1,62 @@
+# Inline SV: Semantic View YAML
+#
+# ⚠️  INLINE SQL SUBQUERIES IN TABLES NOT SUPPORTED IN YAML:
+# The scoped_dataset / inline SQL pattern (WHERE filter or JOIN embedded in
+# the TABLES clause) is a DDL-only feature. YAML base_table must point to
+# a physical table or view — inline SQL is not supported.
+#
+# ⚠️  WITH ... AS SEMANTIC VIEW (inline / ad-hoc SV CTE) is DDL-only.
+# There is no YAML equivalent; YAML always creates a persistent named SV.
+#
+# This YAML defines the base SV structure using the physical tables.
+# For the filter-in-TABLES and inline CTE patterns, use semantic_view.sql.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+
+name: PREMIUM_ORDERS_SV
+description: >
+  Orders for premium customers. NOTE: the inline SQL filter (WHERE tier='premium')
+  embedded in the TABLES clause is DDL-only. This YAML uses the physical tables;
+  create a helper view (CREATE VIEW ... AS SELECT ... WHERE tier='premium') and
+  reference that view here as the base_table for the same scoping effect.
+
+tables:
+  - name: inline_orders
+    description: Order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: INLINE_ORDERS
+    metrics:
+      - name: total_revenue
+        expr: SUM(AMOUNT)
+      - name: order_count
+        expr: COUNT(ORDER_ID)
+
+  - name: inline_customers
+    description: >
+      Customer master. To scope to premium-only, replace this base_table
+      with a helper view: CREATE VIEW inline_customers_premium AS
+      SELECT * FROM INLINE_CUSTOMERS WHERE tier = 'premium'.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: INLINE_CUSTOMERS
+    primary_key:
+      columns: [CUSTOMER_ID]
+    dimensions:
+      - name: customer_name
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+      - name: tier
+        expr: TIER
+        data_type: VARCHAR
+
+relationships:
+  - name: orders_to_customers
+    left_table: inline_orders
+    right_table: inline_customers
+    relationship_columns:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID
