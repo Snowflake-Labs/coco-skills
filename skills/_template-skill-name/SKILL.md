@@ -15,7 +15,7 @@ prompt: "$my-skill-name [a realistic example prompt showing how a user would inv
 language: en
 status: Published   # Published | Archived | Hidden
 author: First Last
-type: Community     # Community (default) | Snowflake Staff | Partner
+type: community     # community (default) | snowflake | partner
 demo-url: https://www.youtube.com    # update with your video URL
 ---
 
@@ -136,9 +136,10 @@ Assistant: [Expected behavior]
 
 ## Skill Author Checklist
 
-- [ ] `id` uses verb-noun format (e.g., `deploy-agent`, `build-dashboard`)
+- [ ] `name` uses verb-noun format (e.g., `deploy-agent`, `build-dashboard`)
 - [ ] `description` includes trigger keywords and when to use/not use this skill
 - [ ] Steps use imperative voice (`Ask`, `Execute`, `Validate`)
 - [ ] Stopping points marked with ⚠️ before any destructive or irreversible action
 - [ ] Error handling included for likely failure modes
 - [ ] File is under 500 lines
+- [ ] Skill is written for **external Snowflake builders** (developers, data engineers) — not internal Snowflake staff. No references to internal-only systems, sales tooling, or SE/SA engagement framing.
