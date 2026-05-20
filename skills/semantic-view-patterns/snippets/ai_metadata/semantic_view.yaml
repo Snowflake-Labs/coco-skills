@@ -1,0 +1,92 @@
+# AI Metadata: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features → YAML equivalents:
+#   AI_SQL_GENERATION       → not supported in YAML; set post-deploy via ALTER SEMANTIC VIEW
+#   AI_QUESTION_CATEGORIZATION → not supported in YAML; set post-deploy via ALTER SEMANTIC VIEW
+#   AI_VERIFIED_QUERIES     → YAML equivalent: verified_queries section (see below)
+
+name: ORDERS_AI_SV
+description: >
+  Order analytics with AI metadata: verified queries (pre-approved SQL for
+  common questions). AI_SQL_GENERATION and AI_QUESTION_CATEGORIZATION
+  must be set post-deploy via ALTER SEMANTIC VIEW.
+
+tables:
+  - name: ai_orders
+    description: Order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: AI_ORDERS
+    dimensions:
+      - name: status
+        synonyms: [order status, fulfillment status]
+        expr: STATUS
+        data_type: VARCHAR
+      - name: order_month
+        synonyms: [month, order month]
+        expr: DATE_TRUNC('month', ORDER_DATE)
+        data_type: DATE
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, total orders, sales]
+        expr: SUM(AMOUNT)
+      - name: order_count
+        synonyms: [orders, number of orders, order volume]
+        expr: COUNT(ORDER_ID)
+      - name: avg_order_value
+        synonyms: [AOV, average order, average order value]
+        expr: AVG(AMOUNT)
+
+  - name: ai_customers
+    description: Customer master data
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: AI_CUSTOMERS
+    primary_key:
+      columns: [CUSTOMER_ID]
+    dimensions:
+      - name: customer_name
+        synonyms: [customer, name, who]
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+      - name: region
+        synonyms: [region, area]
+        expr: REGION
+        data_type: VARCHAR
+
+relationships:
+  - name: orders_to_customers
+    left_table: ai_orders
+    right_table: ai_customers
+    relationship_columns:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID
+
+# YAML equivalent of DDL's AI_VERIFIED_QUERIES block
+verified_queries:
+  - name: order_count_by_customer
+    question: How many orders does each customer have?
+    verified_by: jklahr
+    verified_at: 1750000000
+    sql: >
+      SELECT * FROM SEMANTIC_VIEW(TARGET_DB.TARGET_SCHEMA.ORDERS_AI_SV
+        METRICS ai_orders.order_count
+        DIMENSIONS ai_customers.customer_name)
+      ORDER BY order_count DESC
+  - name: revenue_by_region
+    question: What is the revenue by region?
+    verified_by: jklahr
+    verified_at: 1750000000
+    sql: >
+      SELECT * FROM SEMANTIC_VIEW(TARGET_DB.TARGET_SCHEMA.ORDERS_AI_SV
+        METRICS ai_orders.total_revenue
+        DIMENSIONS ai_customers.region)
+      ORDER BY total_revenue DESC

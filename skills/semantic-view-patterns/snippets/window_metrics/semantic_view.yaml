@@ -1,0 +1,79 @@
+# Window Metrics: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features not in YAML:
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
+#   - PARTITION BY EXCLUDING syntax in window metrics is DDL-only;
+#     YAML expresses window functions using standard SQL in the expr field
+
+name: DAILY_SALES_SV
+description: >
+  Daily sales metrics demonstrating three window function patterns: rolling
+  7-day average, LAG for period-over-period comparison, and YTD cumulative sum.
+
+tables:
+  - name: daily_sales
+    description: One row per day per sales channel
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DAILY_SALES
+    dimensions:
+      - name: date
+        synonyms: [date, day, sale date]
+        expr: SALE_DATE
+        data_type: DATE
+      - name: channel
+        synonyms: [channel, sales channel]
+        expr: CHANNEL
+        data_type: VARCHAR
+      - name: year
+        synonyms: [year]
+        expr: YEAR(SALE_DATE)
+        data_type: NUMBER
+      - name: month
+        synonyms: [month]
+        expr: MONTH(SALE_DATE)
+        data_type: NUMBER
+    facts:
+      - name: sale_date_fact
+        expr: SALE_DATE
+        data_type: DATE
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, daily revenue]
+        expr: SUM(REVENUE)
+      - name: total_quantity
+        synonyms: [quantity, units sold]
+        expr: SUM(QUANTITY)
+      # Window metrics: YAML uses standard SQL window syntax in the expr field.
+      # DDL uses PARTITION BY EXCLUDING <dim> which is not available in YAML;
+      # the equivalent below partitions by channel explicitly.
+      - name: rolling_7d_avg_revenue
+        synonyms: [7 day rolling average, 7-day avg, weekly rolling average]
+        description: 7-day rolling average of daily revenue, partitioned by channel
+        expr: >
+          AVG(SUM(REVENUE))
+          OVER (PARTITION BY CHANNEL
+                ORDER BY SALE_DATE
+                RANGE BETWEEN INTERVAL '6 days' PRECEDING AND CURRENT ROW)
+      - name: revenue_30d_ago
+        synonyms: [revenue 30 days ago, prior month revenue, last month revenue]
+        description: Revenue value 30 days prior in the same channel
+        expr: >
+          LAG(SUM(REVENUE), 30)
+          OVER (PARTITION BY CHANNEL
+                ORDER BY SALE_DATE)
+      - name: ytd_revenue
+        synonyms: [YTD revenue, year to date revenue, cumulative revenue]
+        description: Running year-to-date total, reset at each year boundary
+        expr: >
+          SUM(SUM(REVENUE))
+          OVER (PARTITION BY YEAR(SALE_DATE), CHANNEL
+                ORDER BY SALE_DATE
+                ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)

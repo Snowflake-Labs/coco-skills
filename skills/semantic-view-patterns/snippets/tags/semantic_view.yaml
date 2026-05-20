@@ -1,0 +1,90 @@
+# Tags: Semantic View YAML
+#
+# ⚠️  TAGS NOT SUPPORTED IN YAML: The WITH TAG clause on metrics is a DDL-only
+# feature. Tags cannot be declared in the YAML specification. This YAML defines
+# the base SV structure without metric tags.
+#
+# For metric tagging, use semantic_view.sql and ALTER SEMANTIC VIEW ... ADD TAG
+# post-deploy, or use the CREATE SEMANTIC VIEW DDL directly.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+
+name: CHANNEL_SALES_TAGGED_SV
+description: >
+  Multi-channel sales with metric tagging for ownership and certification tracking.
+  NOTE: WITH TAG is a DDL-only feature — tags must be applied via semantic_view.sql
+  or via ALTER SEMANTIC VIEW ... ADD TAG after deploying this YAML.
+
+tables:
+  - name: tag_dim_date
+    description: Date dimension
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: TAG_DIM_DATE
+    primary_key:
+      columns: [DATE_ID]
+    dimensions:
+      - name: year
+        synonyms: [year]
+        expr: YEAR
+        data_type: NUMBER
+      - name: month
+        synonyms: [month]
+        expr: MONTH
+        data_type: NUMBER
+
+  - name: tag_store_sales
+    description: Store sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: TAG_STORE_SALES
+    metrics:
+      # Tags would be applied here in DDL: WITH TAG (metric_owner='finance_team', ...)
+      - name: store_revenue
+        synonyms: [store revenue, store sales]
+        description: "Finance team certified. Tag: metric_owner=finance_team, metric_status=certified"
+        expr: SUM(REVENUE)
+      - name: store_quantity
+        synonyms: [store units]
+        description: "Finance team certified. Tag: metric_owner=finance_team, metric_status=certified"
+        expr: SUM(QUANTITY)
+
+  - name: tag_web_sales
+    description: Web sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: TAG_WEB_SALES
+    metrics:
+      # Tags would be applied here in DDL: WITH TAG (metric_owner='growth_team', ...)
+      - name: web_revenue
+        synonyms: [web revenue, online sales]
+        description: "Growth team in development. Tag: metric_owner=growth_team, metric_status=in_development"
+        expr: SUM(REVENUE)
+      - name: web_quantity
+        synonyms: [web units, online units]
+        description: "Growth team in development. Tag: metric_owner=growth_team, metric_status=in_development"
+        expr: SUM(QUANTITY)
+
+relationships:
+  - name: store_to_date
+    left_table: tag_store_sales
+    right_table: tag_dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+  - name: web_to_date
+    left_table: tag_web_sales
+    right_table: tag_dim_date
+    relationship_columns:
+      - left_column: DATE_ID
+        right_column: DATE_ID
+
+metrics:
+  - name: total_channel_revenue
+    synonyms: [total revenue, all channel revenue]
+    description: "Finance team certified. Tag: metric_owner=finance_team, metric_status=certified"
+    expr: tag_store_sales.store_revenue + tag_web_sales.web_revenue
