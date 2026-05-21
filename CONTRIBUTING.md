@@ -49,7 +49,7 @@ For full details on skill format, see the [Cortex Code extensibility docs](https
 
 ### SKILL.md template
 
-Use the `skills/_template-skill-name/` directory as your starting point. Copy it and rename the folder to your skill's `name`.
+Use the `_template-skill-name/` directory as your starting point. Copy it and rename the folder to your skill's `name`.
 
 ### Recommendations
 
@@ -74,7 +74,7 @@ Skills created interactively are saved to `~/.snowflake/cortex/skills/<skill-nam
 **Steps:**
 
 1. [Fork this repo](https://github.com/Snowflake-Labs/cortex-code-skills/fork) and clone your fork locally
-2. Copy `skills/_template-skill-name/` into `skills/` as a new folder named your skill's `name` (lowercase, hyphens)
+2. Copy `_template-skill-name/` to a new folder at the repo root named your skill's `name` (lowercase, hyphens)
 3. Open `SKILL.md` and fill in all required frontmatter fields, then add a `LICENSE` file (Apache 2.0 for community contributors)
 4. Confirm your skill name is not already used by a bundled skill: run `/skill` in a Cortex Code session to see all skills grouped by location, or inspect `~/.local/share/cortex/<version>/bundled_skills/` directly
 5. Test your skill against your example prompt and confirm the behavior matches what you described

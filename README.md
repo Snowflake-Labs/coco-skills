@@ -30,7 +30,7 @@ You can add the entire repo (all skills at once) or a specific skill:
 
 **A specific skill:**
 ```
-/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/skills/<skill-name>
+/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/<skill-name>
 ```
 
 Remote skills are cached locally. To pull the latest updates, run `/skill sync`. See the [skill management docs](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) for more options.
@@ -61,14 +61,13 @@ A skill from this repo will silently shadow a bundled skill with the same name. 
 ## Repo structure
 
 ```
-skills/
-  _template-skill-name/   # starter template: copy this and rename the folder to your skill name
-    SKILL.md              # Required: skill instructions and frontmatter
-    LICENSE               # Required: Apache 2.0 (community) or Snowflake license (employee)
-  my-skill-name/          # real skill example
-    SKILL.md
-    LICENSE
-    references/           # Optional: supporting reference material
+_template-skill-name/   # starter template: copy this and rename the folder to your skill name
+  SKILL.md              # Required: skill instructions and frontmatter
+  LICENSE               # Required: Apache 2.0 (community) or Snowflake license (employee)
+my-skill-name/          # real skill example
+  SKILL.md
+  LICENSE
+  references/           # Optional: supporting reference material
 ```
 
 ---
