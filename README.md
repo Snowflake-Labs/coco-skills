@@ -1,60 +1,143 @@
 # Cortex Code Skills
 
-Welcome to the community skills repo for [Cortex Code](https://www.snowflake.com/en/product/features/cortex-code/) ("CoCo"). CoCo already ships with 50+ [bundled skills](https://docs.snowflake.com/en/user-guide/cortex-code/bundled-skills) (type `/skill` to browse them).
+This is a curated collection of [Agent Skills](https://agentskills.io) for [Cortex Code](https://www.snowflake.com/en/product/features/cortex-code/) ("CoCo") — Snowflake's CLI for building with AI.
 
-Skills here are contributed and maintained by the broader developer community, including Data Superheroes and Snowflake employees. Every skill published here is a workflow someone already figured out, packaged so anyone can load it in seconds. 
+Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, coding standard, or domain-specific best practice. CoCo already ships with 50+ [bundled skills](https://docs.snowflake.com/en/user-guide/cortex-code/bundled-skills) (run `/skill` to browse). The skills here extend that catalog with workflows contributed by Data Superheroes, Snowflake employees, and partners.
 
-Licenses are assigned at the skill folder level: Apache 2.0 for community contributors, Snowflake license for employees.
-
-- [How to contribute a skill](CONTRIBUTING.md)
-- [Using skills in CoCo](#using-skills)
+- [Install these skills](#install-these-skills)
+- [Skill catalog](#skill-catalog)
+- [How skills work](#how-skills-work)
+- [Authoring a skill](#authoring-a-skill)
 - [Repo structure](#repo-structure)
+- [Troubleshooting](#troubleshooting)
 - [Disclaimer](#disclaimer)
-
-## What are skills?
-
-Skills are directories containing a `SKILL.md` file that injects domain-specific knowledge and instructions into a Cortex Code conversation, teaching it your workflows, coding standards, or best practices for the duration of a session.
 
 ---
 
-## Using skills
+## Install these skills
 
-### Add this repo
-
-You can add the entire repo (all skills at once) or a specific skill:
-
-**All skills:**
-```
-/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git
-```
-
-**A specific skill:**
-```
-/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/skills/<skill-name>
-```
-
-Remote skills are cached locally. To pull the latest updates, run `/skill sync`. See the [skill management docs](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) for more options.
-
-### Invoke a skill
+Open Cortex Code and ask:
 
 ```
-$skill-name your prompt here
+Install the skills from https://github.com/Snowflake-Labs/cortex-code-skills
 ```
 
-Each skill's `SKILL.md` includes example prompts. Run `/skill list` to see what's available, or `$$` to verify what's loaded in the current session.
+CoCo will clone, cache, and register every skill in this repo. To pull updates later:
 
-### Resolution order
+```
+Sync my skills
+```
 
-Cortex Code uses first-match-wins:
+To install a single skill rather than the whole repo:
 
-| Priority | Level | Path |
-|---|---|---|
-| 1 | Project | `.cortex/skills/`, `.claude/skills/`, or `.snova/skills/` |
-| 2 | Global | `~/.snowflake/cortex/skills/` |
-| 3 | Git-sourced | Cached from `/skill add` |
-| 4 | Bundled | Ships with Cortex Code |
+```
+Install the skill at https://github.com/Snowflake-Labs/cortex-code-skills/tree/main/skills/<skill-name>
+```
 
-A skill from this repo will silently shadow a bundled skill with the same name. Use `/skill` to check for collisions before submitting.
+Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt. Run `/skill list` to see what's loaded, or `$$` to verify the active session's skill set.
+
+> **Snowflake connection required.** Most skills here run SQL or call Cortex services. Set your active connection with `cortex connections set <name>` before invoking.
+
+---
+
+## Skill catalog
+
+### Snowflake docs & learning
+
+
+| Skill                                         | What it does                                                                                                     |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `[snowflake-docs](skills/snowflake-docs)`     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
+| `[quickstart-guide](skills/quickstart-guide)` | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
+
+
+### Analytics & semantic modeling
+
+
+| Skill                                                     | What it does                                                                                                                                             |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[semantic-view-patterns](skills/semantic-view-patterns)` | Apply 25 production-tested Semantic View patterns covering joins, metrics, dimensions, and access policies.                                              |
+| `[ontology-stack-builder](skills/ontology-stack-builder)` | Build a 5-layer Ontology-on-Snowflake stack (physical → metadata → abstract views → semantic views → Cortex Agent) from a relational schema or OWL file. |
+
+
+### AI & Cortex
+
+
+| Skill                                           | What it does                                                                                        |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `[entity-resolution](skills/entity-resolution)` | End-to-end entity resolution pipeline using Cortex AI Functions to match, link, and dedupe records. |
+
+
+### Data engineering & integration
+
+
+| Skill                                                           | What it does                                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `[snowpipe-bcdr](skills/snowpipe-bcdr)`                         | Snowpipe disaster-recovery patterns for Azure ADLS Gen2 — failover, failback, and catchup.                   |
+| `[openflow-spcs-privatelink](skills/openflow-spcs-privatelink)` | Set up AWS PrivateLink between OpenFlow on SPCS and private sources like RDS or on-prem databases.           |
+| `[manage-zerocopy-sapbdc](skills/manage-zerocopy-sapbdc)`       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
+
+
+### Operations, MLOps & governance
+
+
+| Skill                                 | What it does                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `[rbac](skills/rbac)`                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
+| `[mlops](skills/mlops)`               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
+| `[dcr-v1-to-v2](skills/dcr-v1-to-v2)` | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
+
+
+---
+
+## How skills work
+
+Skills use **progressive disclosure** to keep CoCo's context window lean:
+
+1. **At session start**, only each skill's `name` and `description` (from YAML frontmatter) are pre-loaded into the system prompt. CoCo uses these to decide *whether* a skill is relevant.
+2. **When a skill is triggered**, CoCo reads the full `SKILL.md` body and follows the workflow.
+3. **Optional `references/` and `scripts/`** are loaded only when the workflow points to them.
+
+This means a sharp `description` matters more than verbose body content — it's the only thing CoCo sees when deciding to use the skill at all.
+
+A minimal `SKILL.md`:
+
+```markdown
+---
+name: my-skill-name
+title: Do The Thing
+summary: One sentence, max 140 characters.
+description: >-
+  Use when <specific user intent>. Triggers: <comma-separated keywords a user might type>.
+  Do NOT use for <adjacent skill names> (use those skills instead).
+type: community
+---
+
+# Do The Thing
+
+## Overview
+[2-3 sentence description of what this workflow accomplishes]
+
+## Workflow
+1. **Step name**: action verb + concrete instruction
+2. ...
+
+## Common Mistakes
+- [Anti-pattern]: [what to do instead]
+```
+
+See the [authoring guide](CONTRIBUTING.md) for the full frontmatter spec, body conventions, and the audit checks each skill is reviewed against.
+
+---
+
+## Authoring a skill
+
+1. **Copy the template**: `cp -R skills/_template-skill-name skills/your-skill-name`
+2. **Fill in the frontmatter** — `name`, `title`, `summary`, `description` with triggers, `type` (`community` | `snowflake` | `partner`), and `tools` you'll use.
+3. **Write the body** — Overview, Workflow with numbered steps, Common Mistakes. Aim for under ~500 words; move reference material to `references/<topic>.md`, executable helpers to `scripts/`.
+4. **Pick a license** — Apache 2.0 for community contributors, Snowflake license for employees. The license file lives **inside the skill folder**, not at the repo root.
+5. **Test in CoCo** — load your local skill with `Install the skill at <path>` and run a few sessions against representative tasks.
+6. **Open a PR** — see [CONTRIBUTING.md](CONTRIBUTING.md) for the review checklist.
 
 ---
 
@@ -62,19 +145,42 @@ A skill from this repo will silently shadow a bundled skill with the same name. 
 
 ```
 skills/
-  _template-skill-name/   # starter template: copy this and rename the folder to your skill name
-    SKILL.md              # Required: skill instructions and frontmatter
-    LICENSE               # Required: Apache 2.0 (community) or Snowflake license (employee)
-  my-skill-name/          # real skill example
+  _template-skill-name/        # starter — copy and rename
+    SKILL.md                   # required
+    LICENSE                    # required (Apache 2.0 or Snowflake license)
+  your-skill-name/
     SKILL.md
     LICENSE
-    references/           # Optional: supporting reference material
+    references/                # optional — additional docs loaded on demand
+      patterns.md
+    scripts/                   # optional — executable helpers (Python, bash)
+      validate.py
+    assets/                    # optional — templates, fixtures, sample data
+      example.csv
 ```
+
+`references/` and `scripts/` are first-class. Use them to keep `SKILL.md` focused on the workflow itself; CoCo loads supporting files only when the workflow points at them.
+
+---
+
+## Troubleshooting
+
+
+| Problem                                           | Fix                                                                                                                        |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `/skill list` doesn't show a skill from this repo | Re-run the install prompt above, then run `/skill sync`.                                                                   |
+| Skill triggers in unexpected sessions             | Tighten the `description` field — keep triggers specific, list "Do NOT use for…" cases for adjacent skills.                |
+| Skill never triggers                              | Trigger keywords may be too narrow or too generic. Add concrete user phrases the skill should respond to.                  |
+| Name collision with a bundled skill               | A repo skill silently shadows a bundled skill of the same name. Run `/skill list` to spot duplicates and rename if needed. |
+| SQL fails immediately                             | Most skills need an active Snowflake connection. Run `cortex connections list` and `cortex connections set <name>`.        |
+
+
+For deeper debugging, read `[docs.snowflake.com/.../cortex-code/extensibility](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills)`.
 
 ---
 
 ## Disclaimer
 
-**Skills are provided for community use only.** Snowflake reviews PRs before merging but cannot guarantee quality, accuracy, or security. Review each skill's `SKILL.md` and `LICENSE` before loading it, especially skills that execute SQL, modify Snowflake objects, or interact with external services.
+These skills are contributed by the community for educational and reference use. Snowflake reviews PRs before merging but cannot guarantee correctness, completeness, or security. Review each skill's `SKILL.md`, `LICENSE`, and any bundled `scripts/` before loading — especially skills that execute SQL, modify Snowflake objects, or call external services.
 
-To report a concern, open an issue or email [devrel@snowflake.com](mailto:devrel@snowflake.com). Snowflake reserves the right to remove skills that violate our [contribution guidelines](CONTRIBUTING.md) or [terms of use](https://www.snowflake.com/legal/).
+Snowflake reserves the right to remove skills that violate our [contribution guidelines](CONTRIBUTING.md) or [terms of use](https://www.snowflake.com/legal/).
