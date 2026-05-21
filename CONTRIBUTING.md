@@ -47,15 +47,19 @@ For full details on skill format, see the [Cortex Code extensibility docs](https
 | `type` | `community` (default), `snowflake` (Snowflake employee), or `partner`. |
 
 
-### SKILL.md template
+### Starting point
 
-Use the `skills/_template-skill-name/` directory as your starting point. Copy it and rename the folder to your skill's `name`.
+Pick any existing skill in `skills/` whose shape matches what you're building, copy the folder, and rename it to your skill's `name`. Good starting points:
+
+- A router skill that delegates to sub-flows: `skills/rbac/` or `skills/mlops/`
+- A linear multi-step pipeline: `skills/entity-resolution/` or `skills/dcr-v1-to-v2/`
+- A docs/lookup skill: `skills/snowflake-docs/`
 
 ### Recommendations
 
 - **Naming:** We recommend verb-noun format for skill names: `deploy-agent`, `analyze-pipeline`, `build-dashboard`, `validate-model`.
-- **Tools:** If your skill uses scripts or external commands, document them in your `SKILL.md` so Cortex Code knows how to invoke them. See the template for the recommended format.
-- **Scripts:** If your skill includes Python scripts, place them in a `scripts/` directory and add a `pyproject.toml` for dependency management. We recommend using `uv` to run scripts. See the template for guidance on when scripts make sense vs. keeping logic in markdown.
+- **Tools:** If your skill uses scripts or external commands, document them in your `SKILL.md` so Cortex Code knows how to invoke them.
+- **Scripts:** If your skill includes Python scripts, place them in a `scripts/` directory and add a `pyproject.toml` for dependency management. We recommend using `uv` to run scripts.
 - **Be specific:** Clear instructions produce better results than vague guidance.
 - **Provide examples:** Show expected inputs and outputs in the `# Examples` section.
 - **Include edge cases:** Handle common errors and exceptions.
@@ -74,7 +78,7 @@ Skills created interactively are saved to `~/.snowflake/cortex/skills/<skill-nam
 **Steps:**
 
 1. [Fork this repo](https://github.com/Snowflake-Labs/cortex-code-skills/fork) and clone your fork locally
-2. Copy `skills/_template-skill-name/` into `skills/` as a new folder named your skill's `name` (lowercase, hyphens)
+2. Copy an existing skill folder from `skills/` (see "Starting point" above) into a new folder named your skill's `name` (lowercase, hyphens)
 3. Open `SKILL.md` and fill in all required frontmatter fields, then add a `LICENSE` file (Apache 2.0 for community contributors)
 4. Confirm your skill name is not already used by a bundled skill: run `/skill` in a Cortex Code session to see all skills grouped by location, or inspect `~/.local/share/cortex/<version>/bundled_skills/` directly
 5. Test your skill against your example prompt and confirm the behavior matches what you described

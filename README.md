@@ -6,7 +6,6 @@ Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, cod
 
 - [Install these skills](#install-these-skills)
 - [Skill catalog](#skill-catalog)
-- [How skills work](#how-skills-work)
 - [Authoring a skill](#authoring-a-skill)
 - [Repo structure](#repo-structure)
 - [Troubleshooting](#troubleshooting)
@@ -47,8 +46,8 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                         | What it does                                                                                                     |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `[snowflake-docs](skills/snowflake-docs)`     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
-| `[quickstart-guide](skills/quickstart-guide)` | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
+| [`snowflake-docs`](skills/snowflake-docs)     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
+| [`quickstart-guide`](skills/quickstart-guide) | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
 
 
 ### Analytics & semantic modeling
@@ -56,8 +55,8 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                                     | What it does                                                                                                                                             |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[semantic-view-patterns](skills/semantic-view-patterns)` | Apply 25 production-tested Semantic View patterns covering joins, metrics, dimensions, and access policies.                                              |
-| `[ontology-stack-builder](skills/ontology-stack-builder)` | Build a 5-layer Ontology-on-Snowflake stack (physical → metadata → abstract views → semantic views → Cortex Agent) from a relational schema or OWL file. |
+| [`semantic-view-patterns`](skills/semantic-view-patterns) | Apply 25 production-tested Semantic View patterns covering joins, metrics, dimensions, and access policies.                                              |
+| [`ontology-stack-builder`](skills/ontology-stack-builder) | Build a 5-layer Ontology-on-Snowflake stack (physical → metadata → abstract views → semantic views → Cortex Agent) from a relational schema or OWL file. |
 
 
 ### AI & Cortex
@@ -65,7 +64,7 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                           | What it does                                                                                        |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `[entity-resolution](skills/entity-resolution)` | End-to-end entity resolution pipeline using Cortex AI Functions to match, link, and dedupe records. |
+| [`entity-resolution`](skills/entity-resolution) | End-to-end entity resolution pipeline using Cortex AI Functions to match, link, and dedupe records. |
 
 
 ### Data engineering & integration
@@ -73,9 +72,9 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                                           | What it does                                                                                                 |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `[snowpipe-bcdr](skills/snowpipe-bcdr)`                         | Snowpipe disaster-recovery patterns for Azure ADLS Gen2 — failover, failback, and catchup.                   |
-| `[openflow-spcs-privatelink](skills/openflow-spcs-privatelink)` | Set up AWS PrivateLink between OpenFlow on SPCS and private sources like RDS or on-prem databases.           |
-| `[manage-zerocopy-sapbdc](skills/manage-zerocopy-sapbdc)`       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
+| [`snowpipe-bcdr`](skills/snowpipe-bcdr)                         | Snowpipe disaster-recovery patterns for Azure ADLS Gen2 — failover, failback, and catchup.                   |
+| [`openflow-spcs-privatelink`](skills/openflow-spcs-privatelink) | Set up AWS PrivateLink between OpenFlow on SPCS and private sources like RDS or on-prem databases.           |
+| [`manage-zerocopy-sapbdc`](skills/manage-zerocopy-sapbdc)       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
 
 
 ### Operations, MLOps & governance
@@ -83,56 +82,16 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                 | What it does                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `[rbac](skills/rbac)`                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
-| `[mlops](skills/mlops)`               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
-| `[dcr-v1-to-v2](skills/dcr-v1-to-v2)` | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
+| [`rbac`](skills/rbac)                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
+| [`mlops`](skills/mlops)               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
+| [`dcr-v1-to-v2`](skills/dcr-v1-to-v2) | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
 
-
----
-
-## How skills work
-
-Skills use **progressive disclosure** to keep CoCo's context window lean:
-
-1. **At session start**, only each skill's `name` and `description` (from YAML frontmatter) are pre-loaded into the system prompt. CoCo uses these to decide *whether* a skill is relevant.
-2. **When a skill is triggered**, CoCo reads the full `SKILL.md` body and follows the workflow.
-3. **Optional `references/` and `scripts/`** are loaded only when the workflow points to them.
-
-This means a sharp `description` matters more than verbose body content — it's the only thing CoCo sees when deciding to use the skill at all.
-
-A minimal `SKILL.md`:
-
-```markdown
----
-name: my-skill-name
-title: Do The Thing
-summary: One sentence, max 140 characters.
-description: >-
-  Use when <specific user intent>. Triggers: <comma-separated keywords a user might type>.
-  Do NOT use for <adjacent skill names> (use those skills instead).
-type: community
----
-
-# Do The Thing
-
-## Overview
-[2-3 sentence description of what this workflow accomplishes]
-
-## Workflow
-1. **Step name**: action verb + concrete instruction
-2. ...
-
-## Common Mistakes
-- [Anti-pattern]: [what to do instead]
-```
-
-See the [authoring guide](CONTRIBUTING.md) for the full frontmatter spec, body conventions, and the audit checks each skill is reviewed against.
 
 ---
 
 ## Authoring a skill
 
-1. **Copy the template**: `cp -R skills/_template-skill-name skills/your-skill-name`
+1. **Start from an existing skill** — pick any skill in `skills/` whose shape matches what you're building (e.g. [`rbac`](skills/rbac) for a router skill, [`entity-resolution`](skills/entity-resolution) for a multi-step pipeline). Copy its folder and rename to your skill's `name`.
 2. **Fill in the frontmatter** — `name`, `title`, `summary`, `description` with triggers, `type` (`community` | `snowflake` | `partner`), and `tools` you'll use.
 3. **Write the body** — Overview, Workflow with numbered steps, Common Mistakes. Aim for under ~500 words; move reference material to `references/<topic>.md`, executable helpers to `scripts/`.
 4. **Pick a license** — Apache 2.0 for community contributors, Snowflake license for employees. The license file lives **inside the skill folder**, not at the repo root.
@@ -145,12 +104,9 @@ See the [authoring guide](CONTRIBUTING.md) for the full frontmatter spec, body c
 
 ```
 skills/
-  _template-skill-name/        # starter — copy and rename
+  your-skill-name/
     SKILL.md                   # required
     LICENSE                    # required (Apache 2.0 or Snowflake license)
-  your-skill-name/
-    SKILL.md
-    LICENSE
     references/                # optional — additional docs loaded on demand
       patterns.md
     scripts/                   # optional — executable helpers (Python, bash)
@@ -175,7 +131,7 @@ skills/
 | SQL fails immediately                             | Most skills need an active Snowflake connection. Run `cortex connections list` and `cortex connections set <name>`.        |
 
 
-For deeper debugging, read `[docs.snowflake.com/.../cortex-code/extensibility](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills)`.
+For deeper debugging, read [`docs.snowflake.com/.../cortex-code/extensibility`](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills).
 
 ---
 
