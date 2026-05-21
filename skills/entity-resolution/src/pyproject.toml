@@ -1,0 +1,28 @@
+[project]
+name = "entity-resolution-tests"
+version = "0.1.0"
+description = "Integration tests for the entity-resolution skill"
+requires-python = ">=3.11"
+dependencies = [
+    "pytest>=8.0",
+    "snowflake-connector-python>=3.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "setup: Phase 1 — create source tables in Snowflake (fast, no CoCo)",
+    "invoke: Phase 2 — invoke the skill via cortex -p (slow, requires CoCo CLI)",
+    "validate: Phase 3 — verify skill outputs in Snowflake (fast, no CoCo)",
+    "pharma: pharma domain scenario",
+    "financial: financial services domain scenario",
+    "healthcare: healthcare provider domain scenario",
+    "retail: retail/CPG domain scenario",
+    "generic: generic name+address domain scenario",
+    "benchmark: benchmark integration tests against academic ER datasets",
+    "bench_dblp_acm: DBLP-ACM bibliographic benchmark",
+    "bench_dblp_scholar: DBLP-Scholar bibliographic benchmark (asymmetric)",
+    "bench_walmart_amazon: Walmart-Amazon product benchmark",
+    "bench_amazon_google: Amazon-Google product benchmark",
+    "bench_abt_buy: Abt-Buy e-commerce benchmark",
+]
