@@ -91,7 +91,7 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 ## Authoring a skill
 
-1. **Copy the template**: `cp -R skills/_template-skill-name skills/your-skill-name`
+1. **Start from an existing skill** — pick any skill in `skills/` whose shape matches what you're building (e.g. [`rbac`](skills/rbac) for a router skill, [`entity-resolution`](skills/entity-resolution) for a multi-step pipeline). Copy its folder and rename to your skill's `name`.
 2. **Fill in the frontmatter** — `name`, `title`, `summary`, `description` with triggers, `type` (`community` | `snowflake` | `partner`), and `tools` you'll use.
 3. **Write the body** — Overview, Workflow with numbered steps, Common Mistakes. Aim for under ~500 words; move reference material to `references/<topic>.md`, executable helpers to `scripts/`.
 4. **Pick a license** — Apache 2.0 for community contributors, Snowflake license for employees. The license file lives **inside the skill folder**, not at the repo root.
@@ -104,12 +104,9 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 ```
 skills/
-  _template-skill-name/        # starter — copy and rename
+  your-skill-name/
     SKILL.md                   # required
     LICENSE                    # required (Apache 2.0 or Snowflake license)
-  your-skill-name/
-    SKILL.md
-    LICENSE
     references/                # optional — additional docs loaded on demand
       patterns.md
     scripts/                   # optional — executable helpers (Python, bash)
