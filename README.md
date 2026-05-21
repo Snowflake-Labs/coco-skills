@@ -47,8 +47,8 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                         | What it does                                                                                                     |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `[snowflake-docs](skills/snowflake-docs)`     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
-| `[quickstart-guide](skills/quickstart-guide)` | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
+| [`snowflake-docs`](skills/snowflake-docs)     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
+| [`quickstart-guide`](skills/quickstart-guide) | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
 
 
 ### Analytics & semantic modeling
@@ -56,8 +56,8 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                                     | What it does                                                                                                                                             |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[semantic-view-patterns](skills/semantic-view-patterns)` | Apply 25 production-tested Semantic View patterns covering joins, metrics, dimensions, and access policies.                                              |
-| `[ontology-stack-builder](skills/ontology-stack-builder)` | Build a 5-layer Ontology-on-Snowflake stack (physical → metadata → abstract views → semantic views → Cortex Agent) from a relational schema or OWL file. |
+| [`semantic-view-patterns`](skills/semantic-view-patterns) | Apply 25 production-tested Semantic View patterns covering joins, metrics, dimensions, and access policies.                                              |
+| [`ontology-stack-builder`](skills/ontology-stack-builder) | Build a 5-layer Ontology-on-Snowflake stack (physical → metadata → abstract views → semantic views → Cortex Agent) from a relational schema or OWL file. |
 
 
 ### AI & Cortex
@@ -65,7 +65,7 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                           | What it does                                                                                        |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `[entity-resolution](skills/entity-resolution)` | End-to-end entity resolution pipeline using Cortex AI Functions to match, link, and dedupe records. |
+| [`entity-resolution`](skills/entity-resolution) | End-to-end entity resolution pipeline using Cortex AI Functions to match, link, and dedupe records. |
 
 
 ### Data engineering & integration
@@ -73,9 +73,9 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                                           | What it does                                                                                                 |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `[snowpipe-bcdr](skills/snowpipe-bcdr)`                         | Snowpipe disaster-recovery patterns for Azure ADLS Gen2 — failover, failback, and catchup.                   |
-| `[openflow-spcs-privatelink](skills/openflow-spcs-privatelink)` | Set up AWS PrivateLink between OpenFlow on SPCS and private sources like RDS or on-prem databases.           |
-| `[manage-zerocopy-sapbdc](skills/manage-zerocopy-sapbdc)`       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
+| [`snowpipe-bcdr`](skills/snowpipe-bcdr)                         | Snowpipe disaster-recovery patterns for Azure ADLS Gen2 — failover, failback, and catchup.                   |
+| [`openflow-spcs-privatelink`](skills/openflow-spcs-privatelink) | Set up AWS PrivateLink between OpenFlow on SPCS and private sources like RDS or on-prem databases.           |
+| [`manage-zerocopy-sapbdc`](skills/manage-zerocopy-sapbdc)       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
 
 
 ### Operations, MLOps & governance
@@ -83,9 +83,9 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 | Skill                                 | What it does                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `[rbac](skills/rbac)`                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
-| `[mlops](skills/mlops)`               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
-| `[dcr-v1-to-v2](skills/dcr-v1-to-v2)` | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
+| [`rbac`](skills/rbac)                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
+| [`mlops`](skills/mlops)               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
+| [`dcr-v1-to-v2`](skills/dcr-v1-to-v2) | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
 
 
 ---
@@ -175,7 +175,7 @@ skills/
 | SQL fails immediately                             | Most skills need an active Snowflake connection. Run `cortex connections list` and `cortex connections set <name>`.        |
 
 
-For deeper debugging, read `[docs.snowflake.com/.../cortex-code/extensibility](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills)`.
+For deeper debugging, read [`docs.snowflake.com/.../cortex-code/extensibility`](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills).
 
 ---
 
