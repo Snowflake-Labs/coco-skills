@@ -1,0 +1,105 @@
+# GitHub Actions CI/CD Template — Snowflake Deployment with OIDC
+#
+# This template demonstrates the best practices described in ci-cd-testing.md:
+#   - OIDC/WIF authentication (no stored secrets)
+#   - Selective deployment (only changed files)
+#   - File-type routing (SQL, Python, Notebook)
+#   - Environment parameterization via Snowflake CLI Jinja2
+#   - Pinned CLI version for reproducibility
+#
+# ADAPTATION REQUIRED:
+#   - Replace <ENVIRONMENT> with the target environment name (e.g., PROD, STAGING)
+#   - Replace <DATABASE.SCHEMA> in the EXECUTE NOTEBOOK command with the actual
+#     database and schema for notebook entities in that environment
+#   - Adjust `pip install` dependencies to match the project's requirements
+#   - Adjust trigger (push to main, workflow_dispatch, etc.) to match branching strategy
+#   - For multi-environment pipelines, duplicate the job per environment or use a
+#     matrix strategy with environment-specific GitHub Environments
+#
+# PREREQUISITES:
+#   - Snowflake service user (TYPE = SERVICE) with OIDC/WIF configured
+#   - GitHub Environment created (e.g., "PROD") — the environment name must match
+#     the subject claim in the Snowflake API integration
+#   - SNOWFLAKE_ACCOUNT stored as a GitHub variable (not secret — it's not sensitive)
+#   - snowflake.yml project definition if deploying notebooks
+#
+# See ci-cd-testing.md for the full guidance on each concept demonstrated here.
+
+name: deploy_to_snowflake
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+
+# OIDC requires id-token:write so GitHub can issue a JWT for Snowflake authentication.
+# contents:read is needed for actions/checkout.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # GitHub Environment — controls which OIDC subject claim is used.
+    # Must match the subject configured in the Snowflake API integration.
+    environment: <ENVIRONMENT>
+
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ vars.SNOWFLAKE_ACCOUNT }}
+      var_environment: <ENVIRONMENT>
+
+    steps:
+      # fetch-depth: 2 — only the last 2 commits are needed for git diff.
+      # persist-credentials: false — security hygiene; prevents token leakage.
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # Pin the CLI version for reproducible deployments.
+      # use-oidc: true — authenticates via GitHub's OIDC token (no secrets stored).
+      - name: Set up Snowflake CLI
+        uses: snowflakedb/snowflake-cli-action@v2.0
+        with:
+          use-oidc: true
+          cli-version: "3.16.0"
+
+      - name: Install Python dependencies
+        run: pip install snowflake-connector-python snowflake-snowpark-python snowflake-ml-python
+
+      # Validate that OIDC authentication works before deploying anything.
+      - name: Test connection
+        run: snow connection test --temporary-connection
+
+      # Selective deployment: only deploy files that changed in the last commit.
+      # File-type routing: each file type has a different execution mechanism.
+      # --temporary-connection avoids requiring a config.toml — OIDC handles auth.
+      - name: Deploy changed files
+        run: |
+            CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR HEAD~1 HEAD | grep -E '\.(sql|py|ipynb)$' | sort || true)
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "No changed SQL/Python/Notebook files to deploy"
+              exit 0
+            fi
+            echo "$CHANGED_FILES" | while read -r file; do
+              ext="${file##*.}"
+              if [ "$ext" = "sql" ]; then
+                  echo "-> Deploying SQL: $file"
+                  snow sql -f "$file" --enable-templating JINJA -D "var_environment=${var_environment}" --temporary-connection
+              elif [ "$ext" = "py" ]; then
+                  echo "-> Executing Python: $file"
+                  var_environment=${var_environment} python "$file"
+              elif [ "$ext" = "ipynb" ]; then
+                  notebook_name=$(basename "$file" .ipynb)
+                  notebook_dir=$(dirname "$file")
+                  entity_name=$(echo "$notebook_name" | sed 's/^[0-9]*_//' | tr '[:upper:]' '[:lower:]')
+                  echo "-> Deploying notebook: $entity_name"
+                  (cd "$notebook_dir" && snow notebook deploy "$entity_name" --replace --env "var_environment=${var_environment}" --temporary-connection)
+                  echo "-> Executing notebook: $entity_name"
+                  snow sql -q "EXECUTE NOTEBOOK <DATABASE.SCHEMA>.${entity_name}('var_environment=${var_environment}');" --temporary-connection
+              fi
+            done
