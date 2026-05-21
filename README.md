@@ -6,7 +6,6 @@ Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, cod
 
 - [Install these skills](#install-these-skills)
 - [Skill catalog](#skill-catalog)
-- [How skills work](#how-skills-work)
 - [Authoring a skill](#authoring-a-skill)
 - [Repo structure](#repo-structure)
 - [Troubleshooting](#troubleshooting)
@@ -87,46 +86,6 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | [`mlops`](skills/mlops)               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
 | [`dcr-v1-to-v2`](skills/dcr-v1-to-v2) | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
 
-
----
-
-## How skills work
-
-Skills use **progressive disclosure** to keep CoCo's context window lean:
-
-1. **At session start**, only each skill's `name` and `description` (from YAML frontmatter) are pre-loaded into the system prompt. CoCo uses these to decide *whether* a skill is relevant.
-2. **When a skill is triggered**, CoCo reads the full `SKILL.md` body and follows the workflow.
-3. **Optional `references/` and `scripts/`** are loaded only when the workflow points to them.
-
-This means a sharp `description` matters more than verbose body content — it's the only thing CoCo sees when deciding to use the skill at all.
-
-A minimal `SKILL.md`:
-
-```markdown
----
-name: my-skill-name
-title: Do The Thing
-summary: One sentence, max 140 characters.
-description: >-
-  Use when <specific user intent>. Triggers: <comma-separated keywords a user might type>.
-  Do NOT use for <adjacent skill names> (use those skills instead).
-type: community
----
-
-# Do The Thing
-
-## Overview
-[2-3 sentence description of what this workflow accomplishes]
-
-## Workflow
-1. **Step name**: action verb + concrete instruction
-2. ...
-
-## Common Mistakes
-- [Anti-pattern]: [what to do instead]
-```
-
-See the [authoring guide](CONTRIBUTING.md) for the full frontmatter spec, body conventions, and the audit checks each skill is reviewed against.
 
 ---
 
