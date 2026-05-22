@@ -2,7 +2,16 @@
 name: entity-resolution
 title: Resolve Entities
 summary: End-to-end entity resolution pipeline using Snowflake Cortex AI Functions to match, link, and dedupe records.
-description: Use when you need to match records across datasets, deduplicate within a dataset, build a golden record, or link source records to a reference corpus. Orchestrates profiling, normalization, blocking, multi-tier matching (deterministic, fuzzy, AI-judged, agentic, contrastive), human review, and operationalization via dynamic tables. Industry-agnostic with optional domain profiles for pharma, financial services, retail/CPG, healthcare, and insurance. Triggers: entity resolution, record matching, deduplication, record linkage, fuzzy matching, golden record, master data, MDM, merge records, match entities, link records, dedupe, duplicate detection, identity resolution.
+description: >-
+  Use when you need to match records across datasets, deduplicate within a
+  dataset, build a golden record, or link source records to a reference corpus.
+  Orchestrates profiling, normalization, blocking, multi-tier matching
+  (deterministic, fuzzy, AI-judged, agentic, contrastive), human review, and
+  operationalization via dynamic tables. Industry-agnostic with optional domain
+  profiles for pharma, financial services, retail/CPG, healthcare, and insurance.
+  Triggers: entity resolution, record matching, deduplication, record linkage,
+  fuzzy matching, golden record, master data, MDM, merge records, match
+  entities, link records, dedupe, duplicate detection, identity resolution.
 tools:
   - snowflake_sql_execute
   - Bash
