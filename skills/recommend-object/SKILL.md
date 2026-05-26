@@ -7,8 +7,8 @@ description: >-
   know which one is the most trustworthy source for a given metric or concept.
   Scores candidates on semantic-view backing (and verified queries),
   Streamlit/dashboard consumers, daily refresh, service-role ownership, schema
-  placement, freshness, and structural quality. Triggers: "which table should
-  we use", "score these tables", "rank these objects", "most trustworthy",
+  placement, freshness, and structural quality. Triggers: "which table to
+  use", "score these tables", "rank these objects", "most trustworthy",
   "best source for", "which table has".
 tools:
   - snowflake_sql_execute
