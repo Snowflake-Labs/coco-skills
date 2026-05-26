@@ -23,8 +23,17 @@ demo-url: ""
 
 # Generate Cortex Chart Customization
 
+## When to Use
+
+- A Cortex Agent or Semantic Model needs custom chart styling (theme, fonts, brand colors)
+- Charts need fixed axis ranges, custom sort order, or specific number formats
+- A particular column should always render as a specific chart type
+- A specific column value should always map to a specific color or shape
+
+## Overview
+
 This skill generates a ready-to-paste `<chart_customization>` block based on the
-user's requirements. The block is placed inside either:
+requirements gathered in Step 1. The block is placed inside either:
 
 - **Agent** `instructions.orchestration` — applies to every chart across all semantic models
 - **Semantic Model** `custom_instructions` (or `module_custom_instructions.sql_generation`) — overrides agent settings for that SM only
