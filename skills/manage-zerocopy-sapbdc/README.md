@@ -59,14 +59,12 @@ Before using this skill, ensure:
 
 ### Step 1: Download the Skill
 
-The skill lives in the Snowflake-Solutions internal repository. Clone the whole repo and locate the skill folder:
+Clone the public Snowflake-Labs repository and locate the skill folder:
 
 ```
-git clone git@github.com:Snowflake-Solutions/cortex-code-skills.git
+git clone git@github.com:Snowflake-Labs/cortex-code-skills.git
 cd cortex-code-skills/skills/manage-zerocopy-sapbdc
 ```
-
-For external (Snowflake-Labs) distribution, the skill will be published separately at `https://github.com/Snowflake-Labs/cortex-code-skills` (forthcoming).
 
 ### Step 2: Install
 
