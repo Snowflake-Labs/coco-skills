@@ -4,13 +4,11 @@ title: Manage Authentication Policy
 summary: Create, modify, view, attach, detach, drop, or recommend Snowflake authentication policies.
 description: >-
   Use when a request involves Snowflake authentication policies — create,
-  modify, view, attach, detach, drop, or recommend. Covers restricting
-  authentication methods (PASSWORD, SAML, OAUTH, KEYPAIR), enforcing MFA, PAT
-  expiry and network policy, workload identity federation, client type
-  restrictions, minimum driver versions, and security integration controls.
-  Triggers: authentication policy, auth policy, MFA policy, PAT policy, client
-  types, workload identity, keypair only, SAML only, require MFA, harden
-  authentication, lock down authentication.
+  modify, view, attach, detach, drop, or recommend. Covers AUTHENTICATION_METHODS
+  (PASSWORD, SAML, OAUTH, KEYPAIR), MFA enforcement, PAT_POLICY, workload
+  identity federation, CLIENT_TYPES, and minimum driver versions. Triggers:
+  authentication policy, auth policy, MFA policy, PAT policy, workload identity,
+  keypair only, SAML only, require MFA, harden authentication.
 tools:
   - snowflake_sql_execute
   - snowflake_object_search
