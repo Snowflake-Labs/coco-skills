@@ -3,13 +3,13 @@ name: recommend-object
 title: Recommend Snowflake Object
 summary: Score and rank candidate Snowflake tables/views by trust signals to recommend the best source for a data question.
 description: >-
-  Use when candidates have already been identified and the user needs to know which
-  one is the most trustworthy source for a given metric or concept. Scores
-  candidates on semantic-view backing (and verified queries), Streamlit/dashboard
-  consumers, daily refresh, service-role ownership, schema placement, freshness,
-  and structural quality. Triggers: "which table should I use", "score these
-  tables", "rank these objects", "which is most trustworthy", "best source for",
-  "which table has", "what is the best data to use for".
+  Use when candidates have already been identified and the requester needs to
+  know which one is the most trustworthy source for a given metric or concept.
+  Scores candidates on semantic-view backing (and verified queries),
+  Streamlit/dashboard consumers, daily refresh, service-role ownership, schema
+  placement, freshness, and structural quality. Triggers: "which table should
+  we use", "score these tables", "rank these objects", "most trustworthy",
+  "best source for", "which table has".
 tools:
   - snowflake_sql_execute
   - snowflake_object_search
