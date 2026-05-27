@@ -23,7 +23,7 @@ prompt: "$review-skill-sflabs ~/.snowflake/cortex/skills/my-skill"
 language: en
 status: Published
 author: Daniel Myers, Cortex Code DevRel
-type: community
+type: snowflake
 demo-url: ""
 ---
 
