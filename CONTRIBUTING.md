@@ -4,6 +4,7 @@ We are thrilled you want to contribute! The Snowflake community is full of peopl
 
 - [Before you start](#before-you-start)
 - [Skill format](#skill-format)
+- [Review your skill before submitting](#review-your-skill-before-submitting)
 - [Submit a skill from Cortex Code CLI](#submit-a-skill-from-cortex-code-cli)
 - [Review criteria](#review-criteria)
 
@@ -64,6 +65,23 @@ Pick any existing skill in `skills/` whose shape matches what you're building, c
 - **Provide examples:** Show expected inputs and outputs in the `# Examples` section.
 - **Include edge cases:** Handle common errors and exceptions.
 - **Keep focused:** One skill should cover one domain or capability.
+
+---
+
+## Review your skill before submitting
+
+Before opening a pull request, run `$review-skill-sflabs` against your skill directory. The skill is itself published in this repo and provides a pre-PR readiness check: format validation, public-web duplicate search, data-policy reasoning, and catalog-fit check (overlap with bundled skills, scope flexibility). It applies safe mechanical fixes in place (with your confirmation) and flags content rewrites for you to address manually.
+
+Install and run it in a Cortex Code session:
+
+```
+/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/skills/review-skill-sflabs
+$review-skill-sflabs <path-to-your-skill>
+```
+
+The output is a verdict (🟢 promote / 🟡 adapt / 🟠 skip) plus a concrete checklist of issues. Address any 🟠 *Needs Attention* findings before opening the PR.
+
+Running it does not gate PR acceptance — it is advisory. Final review is human-in-the-loop and reviewers may decline or request changes regardless of what the skill reports.
 
 ---
 
