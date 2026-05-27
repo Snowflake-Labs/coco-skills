@@ -75,7 +75,12 @@ Before opening a pull request, run `$review-skill-sflabs` against your skill dir
 Install and run it in a Cortex Code session:
 
 ```
-/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/skills/review-skill-sflabs
+Install the skill at https://github.com/Snowflake-Labs/cortex-code-skills/tree/main/skills/review-skill-sflabs
+```
+
+Then:
+
+```
 $review-skill-sflabs <path-to-your-skill>
 ```
 
