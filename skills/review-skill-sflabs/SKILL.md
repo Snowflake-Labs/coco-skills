@@ -3,12 +3,10 @@ name: review-skill-sflabs
 title: Review Skill for SF Labs
 summary: Pre-PR self-check that audits a local skill directory for Snowflake Labs catalog readiness.
 description: >-
-  Use when a contributor has built a Cortex Code skill locally and wants to
-  know whether it would be a fit for the public Snowflake-Labs/cortex-code-skills
-  repository before opening a pull request. Runs format checks, public-web
-  duplicate search, data-policy reasoning, and bundled-skill catalog-fit
-  reasoning, then reports a verdict (promote / adapt / skip) with concrete
-  fixes. Triggers: "review a skill", "is this skill ready for labs",
+  Use when a contributor has built a Cortex Code skill locally and wants a
+  pre-PR readiness check before opening a pull request against
+  Snowflake-Labs/cortex-code-skills. Verdict: promote, adapt, or skip — with
+  concrete fixes. Triggers: "review a skill", "is this skill ready for labs",
   "check this skill before PR", "audit skill for promotion", "does this skill
   belong in labs".
 tools:
@@ -101,7 +99,7 @@ After rendering the report, stop. Do not offer to fork the repo, push, or open a
 
 A single rendered report per `references/report-template.md`. Includes verdict, confidence, summary table of the four checks, mechanical fixes applied, manual issues to address, disclosures (if any), and an attribution of which sources were consulted.
 
-## Common Pitfalls
+## Common Mistakes
 
 | Pitfall | Fix |
 |---|---|
