@@ -56,6 +56,6 @@ jobs:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.sha }}
     secrets:
-      AEM_USERNAME: ${{ secrets.AEM_USERNAME_PROD }}
-      AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_PROD }}
-      AEM_AUTHOR_URL: ${{ secrets.AEM_AUTHOR_URL_PROD }}
+      AEM_USERNAME: ${{ secrets.AEM_USERNAME_STAGING }}
+      AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_STAGING }}
+      AEM_AUTHOR_URL: ${{ secrets.AEM_AUTHOR_URL_STAGING }}
