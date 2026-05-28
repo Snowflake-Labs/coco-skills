@@ -53,7 +53,7 @@ For full details on skill format, see the [Cortex Code extensibility docs](https
 Pick any existing skill in `skills/` whose shape matches what you're building, copy the folder, and rename it to your skill's `name`. Good starting points:
 
 - A router skill that delegates to sub-flows: `skills/rbac/` or `skills/mlops/`
-- A linear multi-step pipeline: `skills/entity-resolution/` or `skills/dcr-v1-to-v2/`
+- A linear multi-step pipeline: `skills/dcr-v1-to-v2/`
 - A docs/lookup skill: `skills/snowflake-docs/`
 
 ### Recommendations
