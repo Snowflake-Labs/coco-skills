@@ -1,6 +1,14 @@
 ---
 name: well-architected-framework-assessment
-description: "Run a Snowflake Well-Architected Framework (WAF) assessment for a customer account. Three-tier scale: On Track / Needs Improvement / Needs Attention. Results displayed inline; optional HTML export. Triggers: WAF assessment, well-architected, architecture review, WAF review, security assessment, pillar assessment, security and governance, reliability, cost optimization, operational excellence, performance."
+title: Well Architected Framework Assessment
+language: en
+status: Published
+author: Post Go-Live
+type: snowflake
+tools: [snowflake_sql_execute, ask_user_question, visualize_data, task, read, write, bash]
+prompt: "Run a Well-Architected Framework assessment for this account"
+summary: "Assess a Snowflake account against all five Well-Architected Framework pillars."
+description: "Use when running a Snowflake Well-Architected Framework (WAF) assessment for a customer account. Three-tier scale: On Track / Needs Improvement / Needs Attention. Results displayed inline; optional HTML export. Triggers: WAF assessment, well-architected, architecture review, WAF review, security assessment, pillar assessment, security and governance, reliability, cost optimization, operational excellence, performance."
 ---
 
 # Well-Architected Framework Assessment
