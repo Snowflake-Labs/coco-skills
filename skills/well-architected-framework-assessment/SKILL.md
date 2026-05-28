@@ -1,6 +1,6 @@
 ---
 name: well-architected-framework-assessment
-title: Well Architected Framework Assessment
+title: WAF Assessment
 language: en
 status: Published
 author: Post Go-Live
