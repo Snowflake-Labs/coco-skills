@@ -1,0 +1,666 @@
+meta:
+  title: "WAF Operational Excellence — 16 Controls"
+  pillar: Operational Excellence
+  total_controls: 16
+  total_checks: 18
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: OPEX-1
+    name: Resource Monitor Configured
+    domain: Governance & FinOps
+    remediation: >
+      Create account-level and warehouse-level resource monitors with credit quotas and escalating trigger actions (notify + suspend). Ensure coverage of at least 70% of warehouses.
+    thresholds:
+      on_track: "At least one account-level resource monitor exists, warehouse-level monitors cover 70% or more of warehouses, no monitors have a zero credit quota, and all monitors have at least 2 trigger actions (escalating: notify + suspend)"
+      needs_improvement: "No account-level resource monitor exists but warehouse-level monitors with credit quota greater than zero cover between 30% and 70% of warehouses, and all monitors have at least 1 trigger action set"
+      needs_attention: "No account-level resource monitor and warehouse-level coverage is 30% or below, or any monitor has a zero credit quota, or any monitor has no trigger actions set"
+    checks:
+      - id: OPEX-1a
+        name: Resource Monitor Coverage and Trigger Analysis
+        type: automated
+        metric: rag_status
+        sql: |
+          SHOW WAREHOUSES;
+          SET wh_qid = LAST_QUERY_ID();
+          SHOW RESOURCE MONITORS;
+          SET rm_qid = LAST_QUERY_ID();
+          WITH monitors AS (
+              SELECT
+                  "name" AS monitor_name,
+                  "credit_quota"::NUMBER AS credit_quota,
+                  "level",
+                  "notify_at",
+                  "suspend_at",
+                  "suspend_immediately_at"
+              FROM TABLE(RESULT_SCAN($rm_qid))
+          ),
+          warehouses AS (
+              SELECT
+                  "name",
+                  "resource_monitor"
+              FROM TABLE(RESULT_SCAN($wh_qid))
+          ),
+          effective_wh_monitors AS (
+              SELECT m.monitor_name
+              FROM monitors m
+              WHERE m."level" = 'WAREHOUSE'
+                AND m.credit_quota > 0
+          ),
+          trigger_analysis AS (
+              SELECT
+                  monitor_name,
+                  credit_quota,
+                  "level",
+                  (CASE WHEN "notify_at" IS NOT NULL AND TRIM("notify_at") != '' AND TRIM("notify_at") != '0%' THEN 1 ELSE 0 END)
+                  + (CASE WHEN "suspend_at" IS NOT NULL AND TRIM("suspend_at") != '' THEN 1 ELSE 0 END)
+                  + (CASE WHEN "suspend_immediately_at" IS NOT NULL AND TRIM("suspend_immediately_at") != '' THEN 1 ELSE 0 END) AS trigger_action_count
+              FROM monitors
+          ),
+          metrics AS (
+              SELECT
+                  (SELECT COUNT(*) FROM monitors WHERE "level" = 'ACCOUNT') AS account_level_monitors,
+                  (SELECT COUNT(*) FROM monitors WHERE "level" = 'WAREHOUSE') AS warehouse_level_monitors,
+                  (SELECT COUNT(*) FROM warehouses) AS total_warehouses,
+                  (SELECT COUNT(*) FROM warehouses WHERE "resource_monitor" IN (SELECT monitor_name FROM effective_wh_monitors)) AS warehouses_effectively_covered,
+                  ROUND(
+                      (SELECT COUNT(*) FROM warehouses WHERE "resource_monitor" IN (SELECT monitor_name FROM effective_wh_monitors))
+                      / NULLIF((SELECT COUNT(*) FROM warehouses), 0) * 100,
+                      1
+                  ) AS pct_effectively_covered,
+                  (SELECT COUNT(*) FROM monitors WHERE credit_quota = 0) AS monitors_with_zero_quota,
+                  (SELECT LISTAGG(monitor_name, ', ') FROM monitors WHERE credit_quota = 0) AS zero_quota_monitor_names,
+                  (SELECT COUNT(*) FROM trigger_analysis WHERE trigger_action_count = 0) AS monitors_with_no_triggers,
+                  (SELECT LISTAGG(monitor_name, ', ') FROM trigger_analysis WHERE trigger_action_count = 0) AS no_trigger_monitor_names,
+                  (SELECT COUNT(*) FROM trigger_analysis WHERE trigger_action_count >= 2) AS monitors_with_escalation,
+                  (SELECT COUNT(*) FROM trigger_analysis WHERE trigger_action_count >= 1) AS monitors_with_at_least_1_trigger,
+                  (SELECT COUNT(*) FROM trigger_analysis) AS total_monitors,
+                  (SELECT LISTAGG(monitor_name, ', ') FROM trigger_analysis WHERE trigger_action_count < 2) AS lacking_escalation_monitor_names
+          ),
+          reasons AS (
+              SELECT
+                  ARRAY_TO_STRING(ARRAY_CAT(ARRAY_CAT(ARRAY_CAT(ARRAY_CAT(
+                      CASE WHEN account_level_monitors = 0 THEN ARRAY_CONSTRUCT('No account-level resource monitor exists') ELSE ARRAY_CONSTRUCT() END,
+                      CASE WHEN pct_effectively_covered < 70 THEN ARRAY_CONSTRUCT('Warehouse-level monitor coverage is ' || pct_effectively_covered || '% (need >=70% for ON TRACK)') ELSE ARRAY_CONSTRUCT() END),
+                      CASE WHEN monitors_with_zero_quota > 0 THEN ARRAY_CONSTRUCT(monitors_with_zero_quota || ' monitor(s) have zero credit quota: ' || zero_quota_monitor_names) ELSE ARRAY_CONSTRUCT() END),
+                      CASE WHEN monitors_with_no_triggers > 0 THEN ARRAY_CONSTRUCT(monitors_with_no_triggers || ' monitor(s) have no trigger actions set: ' || no_trigger_monitor_names) ELSE ARRAY_CONSTRUCT() END),
+                      CASE WHEN monitors_with_escalation < total_monitors THEN ARRAY_CONSTRUCT((total_monitors - monitors_with_escalation) || ' monitor(s) lack escalating triggers (need both notify + suspend): ' || lacking_escalation_monitor_names) ELSE ARRAY_CONSTRUCT() END
+                  ), ' | ') AS reason_details
+              FROM metrics
+          )
+          SELECT
+              m.account_level_monitors,
+              m.warehouse_level_monitors,
+              m.total_warehouses,
+              m.warehouses_effectively_covered,
+              m.pct_effectively_covered,
+              m.monitors_with_zero_quota,
+              m.zero_quota_monitor_names,
+              m.monitors_with_no_triggers,
+              m.no_trigger_monitor_names,
+              m.monitors_with_escalation,
+              m.monitors_with_at_least_1_trigger,
+              m.total_monitors,
+              CASE
+                  WHEN m.account_level_monitors >= 1
+                      AND m.pct_effectively_covered >= 70
+                      AND m.monitors_with_zero_quota = 0
+                      AND (SELECT COUNT(*) FROM trigger_analysis WHERE trigger_action_count < 2) = 0
+                  THEN 'ON TRACK'
+                  WHEN m.monitors_with_no_triggers > 0 THEN 'NEEDS ATTENTION'
+                  WHEN m.monitors_with_zero_quota > 0 THEN 'NEEDS ATTENTION'
+                  WHEN m.account_level_monitors = 0 AND m.pct_effectively_covered <= 30 THEN 'NEEDS ATTENTION'
+                  WHEN m.pct_effectively_covered > 30
+                      AND m.pct_effectively_covered < 70
+                      AND m.monitors_with_at_least_1_trigger = m.total_monitors
+                  THEN 'NEEDS IMPROVEMENT'
+                  ELSE 'NEEDS ATTENTION'
+              END AS rag_status,
+              r.reason_details
+          FROM metrics m, reasons r;
+
+  - id: OPEX-2
+    name: GLOBALORGADMIN in Use (Org 2.0)
+    domain: Governance & FinOps
+    remediation: >
+      Enable Organisation 2.0 features by granting and using the GLOBALORGADMIN role. Review usage patterns to ensure proper governance.
+    thresholds:
+      on_track: "GLOBALORGADMIN role has been used at least once in the last 90 days"
+      needs_attention: "Zero GLOBALORGADMIN usage in the last 90 days"
+    checks:
+      - id: OPEX-2a
+        name: GLOBALORGADMIN Usage in Last 90 Days
+        type: automated
+        metric: orgadmin_queries
+        sql: |
+          SELECT
+              COUNT(*) AS orgadmin_queries
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE ROLE_NAME = 'GLOBALORGADMIN'
+            AND START_TIME > DATEADD('day', -90, CURRENT_TIMESTAMP());
+
+  - id: OPEX-3
+    name: GLOBALORGADMIN Query Usage
+    domain: Governance & FinOps
+    depends_on: OPEX-2
+    dependency_condition: "Only run if OPEX-2 is not NEEDS_ATTENTION"
+    remediation: >
+      Create purpose-specific roles (SYSADMIN, SECURITYADMIN, custom functional roles) and grant only the minimum privileges required. Educate users to use GLOBALORGADMIN only when strictly necessary. Review QUERY_HISTORY WHERE ROLE_NAME = 'GLOBALORGADMIN' to identify which users and query types are driving the usage.
+    thresholds:
+      on_track: "GLOBALORGADMIN accounts for less than 10% of total queries in the last 30 days"
+      needs_attention: "GLOBALORGADMIN accounts for 10% or more of total queries in the last 30 days"
+    checks:
+      - id: OPEX-3a
+        name: GLOBALORGADMIN Query Percentage
+        type: automated
+        metric: globalorgadmin_pct
+        sql: |
+          SELECT
+              COUNT(*) AS total_queries,
+              SUM(CASE WHEN ROLE_NAME = 'GLOBALORGADMIN' THEN 1 ELSE 0 END) AS globalorgadmin_queries,
+              ROUND(
+                  SUM(CASE WHEN ROLE_NAME = 'GLOBALORGADMIN' THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(*), 0) * 100,
+                  2
+              ) AS globalorgadmin_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE START_TIME > DATEADD('day', -30, CURRENT_TIMESTAMP());
+
+  - id: OPEX-4
+    name: Organization Account Creation & Structure
+    domain: Governance & FinOps
+    depends_on: OPEX-2
+    dependency_condition: "Only run if OPEX-2 is not NEEDS_ATTENTION"
+    remediation: >
+      Document a formal account creation strategy defining when to create new Snowflake accounts versus using existing ones (e.g., by environment, region, or business unit). Ensure the process is consistently followed.
+    thresholds:
+      on_track: "A documented account creation process exists and is consistently followed for all new accounts"
+      needs_improvement: "An informal or undocumented process exists but is not consistently followed, or a documented process exists but is not always followed in practice"
+      needs_attention: "No defined process exists and accounts are created ad hoc, or unknown"
+    checks:
+      - id: OPEX-4a
+        name: Account Creation Strategy Maturity
+        type: manual
+        metric: user_response
+        question: "Which of the following best describes how you decide when to create a new Snowflake account versus use an existing one (e.g., by environment, region, or business unit)?"
+        question_options:
+          - "No defined process; accounts are created ad hoc"
+          - "Informal/undocumented process, not consistently followed"
+          - "Documented process, but not always followed"
+          - "Documented process that is consistently followed"
+          - "I don't know"
+
+  - id: OPEX-5
+    name: Organization Account Management
+    domain: Governance & FinOps
+    depends_on: OPEX-2
+    dependency_condition: "Only run if OPEX-2 is not NEEDS_ATTENTION"
+    remediation: >
+      Define and document operating standards for all Snowflake accounts covering roles, parameters, integrations, environments, and usage. Ensure all accounts are aligned to these standards.
+    thresholds:
+      on_track: "A documented operating process exists and is consistently followed across all accounts"
+      needs_improvement: "An informal or undocumented process exists but is not consistently followed, or a documented process exists but is not always followed in practice"
+      needs_attention: "No defined process exists and accounts are managed ad hoc, or unknown"
+    checks:
+      - id: OPEX-5a
+        name: Account Management Maturity
+        type: manual
+        metric: user_response
+        question: "Which of the following best describes how your existing Snowflake accounts are managed and operated today (e.g., roles, parameters, integrations, environments, and usage)?"
+        question_options:
+          - "No defined process; accounts managed ad hoc"
+          - "Informal/undocumented process, not consistently followed"
+          - "Documented process, but not always followed"
+          - "Documented process that is consistently followed"
+          - "I don't know"
+
+  - id: OPEX-6
+    name: Tag Usage
+    domain: Governance & FinOps
+    remediation: >
+      Create and apply user-defined tags to objects (tables, columns, schemas, databases) for governance, cost attribution, and data classification.
+    thresholds:
+      on_track: "75% or more of objects are tagged"
+      needs_improvement: "More than 0% but less than 75% of objects are tagged"
+      needs_attention: "No tags are applied to any objects"
+    checks:
+      - id: OPEX-6a
+        name: Tag Existence
+        type: automated
+        metric: tags
+        sql: |
+          SELECT
+              COUNT(*) AS tags
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TAGS
+          WHERE DELETED IS NULL
+            AND TAG_SCHEMA != 'INFORMATION_SCHEMA';
+
+      - id: OPEX-6b
+        name: Tag Coverage Percentage
+        type: automated
+        metric: pct_tagged
+        sql: |
+          WITH tagged_objects AS (
+              SELECT
+                  COUNT(DISTINCT OBJECT_DATABASE || '.' || OBJECT_SCHEMA || '.' || OBJECT_NAME || '.' || DOMAIN) AS tagged_count
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES
+              WHERE OBJECT_DELETED IS NULL
+          ),
+          total_objects AS (
+              SELECT SUM(obj_count) AS total_count
+              FROM (
+                  SELECT COUNT(*) AS obj_count
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
+                  WHERE DELETED IS NULL
+                    AND TABLE_SCHEMA != 'INFORMATION_SCHEMA'
+                  UNION ALL
+                  SELECT COUNT(*)
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.COLUMNS
+                  WHERE DELETED IS NULL
+                    AND TABLE_SCHEMA != 'INFORMATION_SCHEMA'
+                  UNION ALL
+                  SELECT COUNT(*)
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.SCHEMATA
+                  WHERE DELETED IS NULL
+                    AND SCHEMA_NAME != 'INFORMATION_SCHEMA'
+                  UNION ALL
+                  SELECT COUNT(*)
+                  FROM SNOWFLAKE.ACCOUNT_USAGE.DATABASES
+                  WHERE DELETED IS NULL
+              )
+          )
+          SELECT
+              tagged_count,
+              total_count,
+              ROUND(tagged_count * 100.0 / NULLIF(total_count, 0), 1) AS pct_tagged
+          FROM tagged_objects, total_objects;
+
+  - id: OPEX-7
+    name: Data Lineage Active
+    domain: Governance & FinOps
+    edition_gate: Enterprise+
+    remediation: >
+      Ensure Enterprise edition or higher is enabled and that ACCESS_HISTORY is generating lineage events. Review data flows to confirm lineage is captured.
+    thresholds:
+      on_track: "Lineage events are present in the last 30 days"
+      needs_improvement: "Lineage feature is enabled but no events were generated"
+      needs_attention: "No lineage data found, or the account is on Standard edition"
+    checks:
+      - id: OPEX-7a
+        name: Lineage Events in Last 30 Days
+        type: automated
+        metric: lineage_events
+        sql: |
+          SELECT
+              COUNT(*) AS lineage_events
+          FROM SNOWFLAKE.ACCOUNT_USAGE.ACCESS_HISTORY
+          WHERE QUERY_START_TIME > DATEADD('day', -30, CURRENT_TIMESTAMP())
+            AND ARRAY_SIZE(OBJECTS_MODIFIED) > 0
+            AND ARRAY_SIZE(BASE_OBJECTS_ACCESSED) > 0;
+
+  - id: OPEX-8
+    name: Serverless Feature Adoption
+    domain: Governance & FinOps
+    remediation: >
+      Adopt serverless features (Snowpipe, Serverless Tasks, Auto-clustering, Query Acceleration, Snowpark Container Services) to reduce operational overhead and improve efficiency.
+    thresholds:
+      on_track: "Serverless credits account for more than 15% of total compute, indicating regular scheduled workload"
+      needs_improvement: "Serverless credits account for between 5% and 15% of total compute, indicating infrequent or very simple tasks"
+      needs_attention: "Serverless credits account for less than 5% of total compute, indicating the feature is not adopted"
+    checks:
+      - id: OPEX-8a
+        name: Serverless Credit Percentage
+        type: automated
+        metric: pct_serverless_of_total_compute
+        sql: |
+          WITH serverless AS (
+              SELECT
+                  COALESCE(SUM(CREDITS_USED), 0) AS serverless_credits
+              FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_HISTORY
+              WHERE START_TIME > DATEADD('day', -30, CURRENT_TIMESTAMP())
+                AND SERVICE_TYPE IN (
+                    'AUTO_CLUSTERING',
+                    'MATERIALIZED_VIEW',
+                    'PIPE',
+                    'SERVERLESS_TASK',
+                    'QUERY_ACCELERATION',
+                    'SNOWPARK_CONTAINER_SERVICES'
+                )
+          ),
+          warehouse AS (
+              SELECT
+                  COALESCE(SUM(CREDITS_USED), 0) AS warehouse_credits
+              FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+              WHERE START_TIME > DATEADD('day', -30, CURRENT_TIMESTAMP())
+          )
+          SELECT
+              serverless_credits,
+              warehouse_credits,
+              ROUND(
+                  100 * serverless_credits / NULLIF(serverless_credits + warehouse_credits, 0),
+                  2
+              ) AS pct_serverless_of_total_compute
+          FROM serverless, warehouse;
+
+  - id: OPEX-9
+    name: Streaming Feature Adoption
+    domain: Governance & FinOps
+    remediation: >
+      Implement Streams and Tasks for change data capture and incremental processing. Ensure tasks are running regularly and processing data.
+    thresholds:
+      on_track: "At least one task has 720 or more successful runs and has processed rows in the last 30 days"
+      needs_improvement: "Tasks exist with successful runs but fewer than 720 runs, or some tasks have zero rows processed"
+      needs_attention: "No tasks found, or all tasks have zero rows processed"
+    checks:
+      - id: OPEX-9a
+        name: Task/Stream Usage Detail
+        type: automated
+        metric: signal_2_data_flow
+        sql: |
+          SELECT
+              th.NAME AS task_name,
+              th.DATABASE_NAME,
+              th.SCHEMA_NAME,
+              COUNT(*) AS successful_runs,
+              SUM(
+                  COALESCE(qh.ROWS_INSERTED, 0)
+                  + COALESCE(qh.ROWS_UPDATED, 0)
+                  + COALESCE(qh.ROWS_DELETED, 0)
+                  + COALESCE(qh.ROWS_PRODUCED, 0)
+              ) AS total_rows_processed,
+              CASE
+                  WHEN COUNT(*) < 30 THEN 'NEEDS IMPROVEMENT - Sporadic'
+                  WHEN COUNT(*) < 720 THEN 'NEEDS IMPROVEMENT - Daily cadence'
+                  ELSE 'ON TRACK - Active'
+              END AS signal_1_frequency,
+              CASE
+                  WHEN SUM(
+                      COALESCE(qh.ROWS_INSERTED, 0)
+                      + COALESCE(qh.ROWS_UPDATED, 0)
+                      + COALESCE(qh.ROWS_DELETED, 0)
+                      + COALESCE(qh.ROWS_PRODUCED, 0)
+                  ) = 0
+                  THEN 'NEEDS ATTENTION - No rows processed'
+                  ELSE 'ON TRACK - Data flowing'
+              END AS signal_2_data_flow
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TASK_HISTORY th
+          LEFT JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY qh
+              ON th.QUERY_ID = qh.QUERY_ID
+          WHERE th.SCHEDULED_TIME >= DATEADD('day', -30, CURRENT_TIMESTAMP())
+            AND th.STATE = 'SUCCEEDED'
+          GROUP BY
+              th.NAME,
+              th.DATABASE_NAME,
+              th.SCHEMA_NAME
+          ORDER BY successful_runs DESC;
+
+  - id: OPEX-10
+    name: IaC in Use
+    domain: Automation
+    remediation: >
+      Adopt Infrastructure as Code tools (Terraform, Pulumi, SnowCLI, dbt, Schemachange) for managing Snowflake objects. Automate deployments via SERVICE user accounts for consistency and auditability.
+    thresholds:
+      on_track: "User confirms active IaC usage, or Git repositories exist with evidence of automated deployments"
+      needs_improvement: "User confirms partial IaC adoption, or Git repositories exist but user reports manual or unknown deployment processes"
+      needs_attention: "User confirms all changes are manual and no Git repositories exist, or the user does not know and no Git repositories exist"
+    checks:
+      - id: OPEX-10a
+        name: Git Repository Integrations
+        type: automated
+        metric: rows_returned
+        sql: |
+          SHOW GIT REPOSITORIES IN ACCOUNT;
+
+      - id: OPEX-10b
+        name: IaC Tool Adoption
+        type: manual
+        metric: user_response
+        question: "Do you use Infrastructure as Code (Terraform, SnowCLI, Git-based deployment) to manage Snowflake objects?"
+        question_options:
+          - "Yes — actively used"
+          - "Partial — some adoption"
+          - "No — all manual"
+          - "I don't know"
+
+  - id: OPEX-11
+    name: CI/CD Pipelines
+    domain: Automation
+    remediation: >
+      Implement CI/CD pipelines for automated testing and deployment of data pipelines to reduce manual errors and improve release velocity.
+    thresholds:
+      on_track: "CI/CD pipelines with automated testing are in place"
+      needs_improvement: "Some CI/CD pipelines exist but coverage is partial"
+      needs_attention: "No CI/CD pipelines exist and all deployments are manual, or unknown"
+    checks:
+      - id: OPEX-11a
+        name: CI/CD Pipeline Maturity
+        type: manual
+        metric: user_response
+        question: "Do you have CI/CD pipelines for automated testing and deployment of data pipelines?"
+        question_options:
+          - "Yes — CI/CD with automated testing"
+          - "Partial — some pipelines"
+          - "No — all manual"
+          - "I don't know"
+
+  - id: OPEX-12
+    name: Notification Integration Configured
+    domain: Observability
+    remediation: >
+      Create and enable at least one notification integration (EMAIL, SNS, Event Hub, Pub/Sub, or WEBHOOK) and verify that notifications are being delivered successfully.
+    thresholds:
+      on_track: "Enabled notification integrations exist and have delivered successful notifications in the last 14 days"
+      needs_improvement: "Enabled notification integrations exist but no successful notifications were delivered in the last 14 days"
+      needs_attention: "No enabled notification integrations are configured"
+    checks:
+      - id: OPEX-12a
+        name: Notification Integration Inventory and Delivery History
+        type: automated
+        metric: rag_status
+        sql: |
+          SHOW NOTIFICATION INTEGRATIONS;
+          WITH enabled_integrations AS (
+              SELECT
+                  "name" AS integration_name,
+                  "type" AS integration_type,
+                  "enabled" AS is_enabled,
+                  "created_on" AS created_on,
+                  "direction" AS direction
+              FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+              WHERE TRY_TO_BOOLEAN("enabled") = TRUE
+          ),
+          history_14d AS (
+              SELECT
+                  integration_name,
+                  COUNT(*) AS total_events,
+                  COUNT_IF(status = 'SUCCESS') AS success_count,
+                  COUNT_IF(status IN ('FAILURE', 'RETRIABLE_FAILURE')) AS failure_count,
+                  MIN(created) AS first_event_at,
+                  MAX(created) AS last_event_at
+              FROM TABLE(
+                  SNOWFLAKE.INFORMATION_SCHEMA.NOTIFICATION_HISTORY(
+                      START_TIME => DATEADD('day', -14, CURRENT_TIMESTAMP()),
+                      END_TIME   => CURRENT_TIMESTAMP(),
+                      RESULT_LIMIT => 1000
+                  )
+              )
+              GROUP BY integration_name
+          ),
+          detail AS (
+              SELECT
+                  e.integration_name,
+                  e.integration_type,
+                  e.direction,
+                  e.created_on,
+                  COALESCE(h.total_events, 0) AS total_events_14d,
+                  COALESCE(h.success_count, 0) AS successful_14d,
+                  COALESCE(h.failure_count, 0) AS failed_14d,
+                  h.first_event_at,
+                  h.last_event_at
+              FROM enabled_integrations e
+              LEFT JOIN history_14d h
+                  ON e.integration_name = h.integration_name
+          )
+          SELECT
+              COUNT(*) AS enabled_integration_count,
+              SUM(successful_14d) AS total_successful_14d,
+              CASE
+                  WHEN COUNT(*) = 0 THEN 'NEEDS ATTENTION'
+                  WHEN SUM(successful_14d) = 0 THEN 'NEEDS IMPROVEMENT'
+                  ELSE 'ON TRACK'
+              END AS rag_status
+          FROM detail;
+
+  - id: OPEX-13
+    name: Alerts Configured
+    domain: Observability
+    remediation: >
+      Create Snowflake Alerts for monitoring key operational metrics. Ensure alerts are active, running successfully, and not exhibiting persistent ACTION_FAILED or CONDITION_FAILED patterns.
+    thresholds:
+      on_track: "At least one active alert exists with runs in the last 30 days, at least one successful trigger or no failures, and no persistent ACTION_FAILED or CONDITION_FAILED pattern"
+      needs_improvement: "Alerts exist and are active but have not triggered successfully yet (only CONDITION_FALSE), or they show some CONDITION_FAILED or ACTION_FAILED in recent runs, or activity is stale or very low"
+      needs_attention: "No alerts are configured, or alerts exist but have no runs in the last 30 days, or all recent runs are failing or unhealthy"
+    checks:
+      - id: OPEX-13a
+        name: Alert Inventory and Health Analysis
+        type: automated
+        metric: maturity_signal
+        sql: |
+          SHOW ALERTS IN ACCOUNT;
+          WITH alerts AS (
+              SELECT
+                  "name" AS alert_name,
+                  "database_name" AS database_name,
+                  "schema_name" AS schema_name,
+                  "database_name" || '.' || "schema_name" AS location,
+                  "state" AS alert_state,
+                  "schedule" AS schedule,
+                  "created_on" AS created_on,
+                  "owner" AS owner,
+                  "condition" AS condition_sql,
+                  "action" AS action_sql
+              FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+          ),
+          history_30d AS (
+              SELECT
+                  name AS alert_name,
+                  database_name,
+                  schema_name,
+                  COUNT(*) AS total_runs,
+                  COUNT_IF(state = 'TRIGGERED') AS triggered_count,
+                  COUNT_IF(state = 'CONDITION_FALSE') AS condition_false_count,
+                  COUNT_IF(state = 'CONDITION_FAILED') AS condition_failed_count,
+                  COUNT_IF(state = 'ACTION_FAILED') AS action_failed_count,
+                  COUNT_IF(state = 'FAILED') AS failed_count,
+                  COUNT_IF(state = 'CANCELLED') AS cancelled_count,
+                  MIN(scheduled_time) AS first_run_30d,
+                  MAX(scheduled_time) AS last_run_30d
+              FROM SNOWFLAKE.ACCOUNT_USAGE.ALERT_HISTORY
+              WHERE scheduled_time >= DATEADD(day, -30, CURRENT_TIMESTAMP())
+              GROUP BY
+                  name,
+                  database_name,
+                  schema_name
+          )
+          SELECT
+              a.alert_name,
+              a.location,
+              a.alert_state,
+              a.schedule,
+              a.created_on,
+              a.owner,
+              COALESCE(h.total_runs, 0) AS total_runs_30d,
+              COALESCE(h.triggered_count, 0) AS triggered_count_30d,
+              COALESCE(h.condition_false_count, 0) AS condition_false_count_30d,
+              COALESCE(h.condition_failed_count, 0) AS condition_failed_count_30d,
+              COALESCE(h.action_failed_count, 0) AS action_failed_count_30d,
+              COALESCE(h.failed_count, 0) AS failed_count_30d,
+              COALESCE(h.cancelled_count, 0) AS cancelled_count_30d,
+              h.first_run_30d,
+              h.last_run_30d,
+              CASE
+                  WHEN COALESCE(h.total_runs, 0) = 0 THEN 'NEEDS ATTENTION'
+                  WHEN COALESCE(h.action_failed_count, 0) > 0
+                      OR COALESCE(h.condition_failed_count, 0) > 0
+                      OR COALESCE(h.failed_count, 0) > 0 THEN 'NEEDS IMPROVEMENT'
+                  WHEN COALESCE(h.triggered_count, 0) > 0 THEN 'ON TRACK'
+                  ELSE 'NEEDS IMPROVEMENT'
+              END AS maturity_signal
+          FROM alerts a
+          LEFT JOIN history_30d h
+              ON a.alert_name = h.alert_name
+              AND a.database_name = h.database_name
+              AND a.schema_name = h.schema_name
+          ORDER BY
+              maturity_signal,
+              a.alert_name;
+
+  - id: OPEX-14
+    name: Low Task Error Rate
+    domain: Observability
+    remediation: >
+      Investigate and fix failing tasks. Target less than 5% error rate. Review TASK_HISTORY for failure patterns and root causes.
+    thresholds:
+      on_track: "Task error rate is below 5% in the last 30 days"
+      needs_improvement: "Task error rate is between 5% and 15%"
+      needs_attention: "Task error rate exceeds 15%"
+    checks:
+      - id: OPEX-14a
+        name: Task Error Rate
+        type: automated
+        metric: error_rate_pct
+        sql: |
+          SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN STATE = 'FAILED' THEN 1 ELSE 0 END) AS failed,
+              ROUND(
+                  SUM(CASE WHEN STATE = 'FAILED' THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(*), 0) * 100,
+                  2
+              ) AS error_rate_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TASK_HISTORY
+          WHERE SCHEDULED_TIME > DATEADD('day', -30, CURRENT_TIMESTAMP())
+            AND STATE IN ('SUCCEEDED', 'FAILED');
+
+  - id: OPEX-15
+    name: SDLC Process
+    domain: Collaboration
+    remediation: >
+      Document a Software Development Lifecycle process for Snowflake with change management and dev/test/prod promotion gates.
+    thresholds:
+      on_track: "A documented SDLC process with promotion gates is in place"
+      needs_improvement: "An informal process exists but it is not fully documented"
+      needs_attention: "No SDLC process exists, or unknown"
+    checks:
+      - id: OPEX-15a
+        name: SDLC Process Maturity
+        type: manual
+        metric: user_response
+        question: "Do you have a documented SDLC process for Snowflake with change management and dev/test/prod promotion gates?"
+        question_options:
+          - "Yes — documented with gates"
+          - "Partial — informal process"
+          - "No — no process"
+          - "I don't know"
+
+  - id: OPEX-16
+    name: BCR Subscription & Owner
+    domain: BCR
+    remediation: >
+      Configure valid contact emails for all notification types in Snowsight Admin > Admin contacts (Security, Privacy, and Product notifications).
+    thresholds:
+      on_track: "All notification types (Security, Privacy, and Product) have at least one valid contact email configured"
+      needs_improvement: "Some but not all notification types have contacts configured"
+      needs_attention: "No notification types have contacts configured, or unknown"
+    checks:
+      - id: OPEX-16a
+        name: Admin Contact Notification Coverage
+        type: manual
+        metric: user_response
+        question: "For each of the following notification types in Snowsight Admin > Admin contacts, do you have at least one valid contact email configured? Security notifications, Privacy notifications, Product notifications."
+        question_options:
+          - "All configured"
+          - "Some configured"
+          - "None configured"
+          - "I don't know"

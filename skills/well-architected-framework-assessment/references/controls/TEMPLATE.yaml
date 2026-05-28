@@ -1,0 +1,41 @@
+meta:
+  title: "WAF <Pillar Name> — <N> Controls"
+  pillar: "<Pillar Name>"
+  total_controls: 0
+  total_checks: 0
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: ctrl_1
+    name: "<Control Name>"
+    domain: "<Domain Name>"
+    # edition_gate: Business Critical+  # optional — use when control only applies to specific editions
+    remediation: >
+      <Actionable remediation guidance>
+    thresholds:
+      on_track: "<option text that maps to healthy>"
+      needs_improvement: "<option text for watch — use | to separate multiple options>"  # omit if binary (on_track/needs_attention only)
+      needs_attention: "<option text for critical> | I don't know"
+    checks:
+
+      # --- SQL check (automated) ---
+      - id: chk_1a
+        name: "<Check Name>"
+        type: automated
+        metric: "<column_name to evaluate from result>"
+        sql: |
+          SELECT <metric_column>
+          FROM <source_table_or_view>
+          WHERE <filters>;
+
+      # --- Manual check (question-based, graded from user answer) ---
+      - id: chk_1b
+        name: "<Check Name>"
+        type: manual
+        metric: user_response
+        question: "<Question to ask the user>"
+        question_options:
+          - "<Option 1>"
+          - "<Option 2>"
+          - "I don't know"

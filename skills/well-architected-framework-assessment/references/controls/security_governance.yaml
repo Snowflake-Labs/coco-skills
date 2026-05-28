@@ -1,0 +1,681 @@
+meta:
+  title: "WAF Security & Governance — 13 Controls"
+  pillar: Security & Governance
+  total_controls: 13
+  total_checks: 22
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: SEC-1
+    name: Network Policies
+    domain: Network Security
+    remediation: >
+      Apply user-level or account-level network policies to restrict access by IP. Remove 0.0.0.0/0 wildcards from all policies. Never allow unrestricted IP access.
+    thresholds:
+      on_track: "An account-level network policy exists without wildcard, or 90% or more of users have user-level network policies, and no security risk findings in network rules"
+      needs_improvement: "An account-level network policy exists but uses a wildcard, or user-level coverage is between 50% and 90%, or there are risk findings in network rules"
+      needs_attention: "No account-level network policy exists and user-level coverage is below 50%, and no secure network rules are in place"
+    checks:
+      - id: SEC-1a
+        name: User-Level Network Policy Coverage
+        type: automated
+        metric: pct_users_with_network_policy
+        sql: |
+          WITH acct_users AS (
+              SELECT DISTINCT
+                  name,
+                  login_name
+              FROM SNOWFLAKE.ACCOUNT_USAGE.USERS
+              WHERE deleted_on IS NULL
+                AND disabled = FALSE
+                AND login_name NOT ILIKE '%SF$SERVICE$%'
+          ),
+          network_policy_ref AS (
+              SELECT
+                  network_policies.name AS network_policy_name,
+                  pr.ref_entity_name
+              FROM SNOWFLAKE.ACCOUNT_USAGE.NETWORK_POLICIES network_policies
+              INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES pr
+                  ON network_policies.id = pr.policy_id
+                  AND pr.policy_kind = 'NETWORK_POLICY'
+              INNER JOIN acct_users au
+                  ON pr.ref_entity_name = au.name
+              WHERE pr.policy_status = 'ACTIVE'
+                AND ref_entity_domain = 'USER'
+                AND allowed_ip_list NOT ILIKE '%0.0.0.0/0%'
+                AND network_policies.deleted IS NULL
+              GROUP BY ALL
+          ),
+          user_level_network_policy AS (
+              SELECT
+                  au.name,
+                  CASE WHEN nu.ref_entity_name IS NULL THEN 0 ELSE 1 END AS network_policy_exists_user
+              FROM acct_users au
+              LEFT JOIN network_policy_ref nu
+                  ON au.name = nu.ref_entity_name
+          )
+          SELECT
+              COUNT(DISTINCT CASE WHEN network_policy_exists_user = 1 THEN name END)
+              / NULLIF(COUNT(DISTINCT name), 0) AS pct_users_with_network_policy
+          FROM user_level_network_policy;
+
+      - id: SEC-1b
+        name: Account-Level Network Policy Without Wildcard
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              network_policies.name AS policy_name,
+              network_policies.id AS policy_id,
+              network_policies.allowed_ip_list,
+              pr.ref_entity_domain,
+              pr.ref_entity_name,
+              pr.policy_status
+          FROM SNOWFLAKE.ACCOUNT_USAGE.NETWORK_POLICIES network_policies
+          INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.POLICY_REFERENCES pr
+              ON network_policies.id = pr.policy_id
+              AND pr.policy_kind = 'NETWORK_POLICY'
+              AND pr.ref_entity_domain = 'ACCOUNT'
+              AND network_policies.deleted IS NULL
+              AND pr.policy_status = 'ACTIVE'
+          WHERE network_policies.allowed_ip_list NOT ILIKE '%0.0.0.0/0%';
+
+      - id: SEC-1c
+        name: Wildcard IP Detection
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              name AS policy_name,
+              id AS policy_id,
+              allowed_ip_list AS allowed_ips
+          FROM SNOWFLAKE.ACCOUNT_USAGE.NETWORK_POLICIES
+          WHERE deleted IS NULL
+            AND allowed_ip_list ILIKE '%0.0.0.0/0%';
+
+      - id: SEC-1d
+        name: Network Rules Security Findings
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              nref.container_name AS network_policy_name,
+              nref.action_type,
+              nref.network_rule_name,
+              nr.type,
+              nr.mode,
+              nr.value_list,
+              CASE
+                  WHEN nr.deleted IS NOT NULL
+                      THEN 'RISK: rule deleted but still referenced'
+                  WHEN nr.mode NOT IN ('INGRESS', 'INTERNAL_STAGE', 'SNOWFLAKE_MANAGED_STORAGE_VOLUME')
+                      THEN 'RISK: mode not valid for inbound'
+                  WHEN nr.type = 'HOST_PORT'
+                      THEN 'RISK: host_port is for egress'
+                  WHEN nr.type = 'PRIVATE_HOST_PORT'
+                      THEN 'RISK: private_host_port is for egress'
+                  WHEN nr.type = 'IPV4'
+                      AND (nr.value_list ILIKE '%0.0.0.0/0%' OR nr.value_list ILIKE '%0.0.0.0%')
+                      THEN 'RISK: allows all IPv4'
+                  WHEN nr.value_list ILIKE '%:0%'
+                      THEN 'RISK: wildcard all ports'
+                  ELSE 'SECURE_OR_REVIEW'
+              END AS security_finding
+          FROM SNOWFLAKE.ACCOUNT_USAGE.NETWORK_RULE_REFERENCES nref
+          LEFT JOIN SNOWFLAKE.ACCOUNT_USAGE.NETWORK_RULES nr
+              ON nref.network_rule_id = nr.id
+          WHERE nref.container_type = 'NETWORK_POLICY'
+            AND (
+                nr.deleted IS NOT NULL
+                OR nr.mode NOT IN ('INGRESS', 'INTERNAL_STAGE', 'SNOWFLAKE_MANAGED_STORAGE_VOLUME')
+                OR nr.type IN ('HOST_PORT', 'PRIVATE_HOST_PORT')
+                OR (nr.type = 'IPV4' AND (nr.value_list ILIKE '%0.0.0.0/0%' OR nr.value_list ILIKE '%0.0.0.0%'))
+                OR nr.value_list ILIKE '%:0%'
+            );
+
+  - id: SEC-2
+    name: MFA Enforcement
+    domain: Authentication
+    remediation: >
+      Enforce MFA for all password-enabled human users. Create an Authentication Policy with MFA_ENROLLMENT = REQUIRED and set the ENABLE_MFA_BY_DEFAULT parameter to TRUE.
+    thresholds:
+      on_track: "95% or more of password-enabled human users have MFA enrolled and ENABLE_MFA_BY_DEFAULT is TRUE"
+      needs_improvement: "Between 80% and 95% of users have MFA enrolled, or the ENABLE_MFA_BY_DEFAULT parameter is not set"
+      needs_attention: "Less than 80% of password-enabled human users have MFA enrolled"
+    checks:
+      - id: SEC-2a
+        name: MFA Enrollment Detail
+        type: automated
+        metric: mfa_exists
+        sql: |
+          SELECT
+              CASE
+                  WHEN (au.ext_authn_duo = TRUE OR au.has_mfa = TRUE OR c.user_name IS NOT NULL)
+                  THEN TRUE
+                  ELSE FALSE
+              END AS mfa_exists,
+              au.name AS user_name,
+              au.type AS user_type,
+              au.has_password,
+              au.ext_authn_duo,
+              au.has_mfa,
+              c.user_name AS credential_user,
+              c.domain AS credential_domain
+          FROM SNOWFLAKE.ACCOUNT_USAGE.USERS au
+          LEFT JOIN SNOWFLAKE.ACCOUNT_USAGE.CREDENTIALS c
+              ON au.name = c.user_name
+              AND c.domain = 'MFA_METHOD'
+              AND (c.expiration_date IS NULL OR c.expiration_date::DATE > CURRENT_DATE())
+              AND c.status = 'ENROLLED'
+          WHERE (au.type = 'PERSON' OR au.type IS NULL)
+            AND au.has_password = TRUE
+            AND au.disabled = FALSE
+            AND au.deleted_on IS NULL;
+
+      - id: SEC-2b
+        name: MFA Enrollment Percentage
+        type: automated
+        metric: pct_mfa_enrolled
+        sql: |
+          WITH mfa_check AS (
+              SELECT
+                  au.name,
+                  CASE
+                      WHEN (au.ext_authn_duo = TRUE OR au.has_mfa = TRUE OR c.user_name IS NOT NULL)
+                      THEN TRUE
+                      ELSE FALSE
+                  END AS mfa_enrolled
+              FROM SNOWFLAKE.ACCOUNT_USAGE.USERS au
+              LEFT JOIN SNOWFLAKE.ACCOUNT_USAGE.CREDENTIALS c
+                  ON au.name = c.user_name
+                  AND c.domain = 'MFA_METHOD'
+                  AND (c.expiration_date IS NULL OR c.expiration_date::DATE > CURRENT_DATE())
+                  AND c.status = 'ENROLLED'
+              WHERE (au.type = 'PERSON' OR au.type IS NULL)
+                AND au.has_password = TRUE
+                AND au.disabled = FALSE
+                AND au.deleted_on IS NULL
+          )
+          SELECT
+              COUNT(*) AS total_human_users_with_password,
+              COUNT_IF(mfa_enrolled) AS mfa_enrolled_count,
+              COUNT_IF(NOT mfa_enrolled) AS mfa_not_enrolled_count,
+              ROUND(COUNT_IF(mfa_enrolled) * 100.0 / NULLIF(COUNT(*), 0), 2) AS pct_mfa_enrolled
+          FROM mfa_check;
+
+      - id: SEC-2c
+        name: MFA Parameter Enforcement
+        type: automated
+        metric: parameter_value
+        sql: |
+          SHOW PARAMETERS LIKE '%ENABLE_MFA_BY_DEFAULT%' IN ACCOUNT;
+          SELECT
+              "key" AS parameter_name,
+              "level",
+              "description",
+              "value"::STRING AS parameter_value
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+  - id: SEC-3
+    name: SSO for Human Users
+    domain: Authentication
+    remediation: >
+      Configure a SAML2 security integration and migrate human users to SSO. At least 90% of human logins should use SAML authentication.
+    thresholds:
+      on_track: "A SAML2 integration exists and 90% or more of human user logins use SSO"
+      needs_improvement: "A SAML2 integration exists but less than 90% of human user logins use SSO"
+      needs_attention: "No SAML2 integration exists, or less than 80% of human user logins use SSO"
+    checks:
+      - id: SEC-3a
+        name: SAML2 Integration Exists
+        type: automated
+        metric: rows_returned
+        sql: |
+          SHOW SECURITY INTEGRATIONS;
+          WITH raw AS (
+              SELECT
+                  "name" AS integration_name,
+                  "type" AS integration_type,
+                  "category" AS integration_category,
+                  "enabled" AS enabled,
+                  "created_on"::DATE AS created_on_date
+              FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+          )
+          SELECT *
+          FROM raw
+          WHERE integration_type ILIKE '%SAML%';
+
+      - id: SEC-3b
+        name: SSO Usage Percentage
+        type: automated
+        metric: pct_sso_users
+        sql: |
+          WITH sso_logins AS (
+              SELECT
+                  lh.user_name,
+                  COUNT(*) AS total_logins,
+                  COUNT_IF(lh.first_authentication_factor ILIKE '%SAML%') AS sso_logins
+              FROM SNOWFLAKE.ACCOUNT_USAGE.LOGIN_HISTORY lh
+              INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.USERS u
+                  ON lh.user_name = u.name
+                  AND (u.type = 'PERSON' OR u.type IS NULL)
+                  AND u.disabled = FALSE
+                  AND u.deleted_on IS NULL
+              WHERE lh.is_success = 'YES'
+                AND lh.event_timestamp >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+              GROUP BY lh.user_name
+          )
+          SELECT
+              COUNT(*) AS total_active_human_users,
+              COUNT_IF(sso_logins > 0) AS users_with_sso,
+              COUNT_IF(sso_logins = 0) AS users_without_sso,
+              ROUND(COUNT_IF(sso_logins > 0) * 100.0 / NULLIF(COUNT(*), 0), 2) AS pct_sso_users
+          FROM sso_logins;
+
+  - id: SEC-4
+    name: Service Account Strong Auth
+    domain: Authentication
+    remediation: >
+      Migrate all SERVICE users to OAuth, RSA key pair, Workload Identity Federation (WIF), or Programmatic Access Token (PAT). Password-only authentication for service accounts is a security risk.
+    thresholds:
+      on_track: "100% of service accounts are using strong authentication (OAuth, RSA key pair, WIF, or PAT)"
+      needs_improvement: "90% or more but less than 100% of service accounts use strong authentication"
+      needs_attention: "Any service account user is still using password-only authentication"
+    checks:
+      - id: SEC-4a
+        name: Service Account Login Detail by Auth Method
+        type: automated
+        metric: login_count
+        sql: |
+          WITH service_logins AS (
+              SELECT
+                  lh.user_name,
+                  lh.first_authentication_factor,
+                  lh.second_authentication_factor,
+                  COUNT(*) AS login_count
+              FROM SNOWFLAKE.ACCOUNT_USAGE.LOGIN_HISTORY lh
+              INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.USERS u
+                  ON lh.user_name = u.name
+                  AND u.type = 'SERVICE'
+                  AND u.disabled = FALSE
+                  AND u.deleted_on IS NULL
+              WHERE lh.is_success = 'YES'
+                AND lh.event_timestamp >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+              GROUP BY
+                  lh.user_name,
+                  lh.first_authentication_factor,
+                  lh.second_authentication_factor
+          )
+          SELECT *
+          FROM service_logins
+          ORDER BY user_name, login_count DESC;
+
+      - id: SEC-4b
+        name: Service Account Auth Summary
+        type: automated
+        metric: pct_strong_auth
+        sql: |
+          WITH service_auth AS (
+              SELECT
+                  lh.user_name,
+                  CASE
+                      WHEN lh.first_authentication_factor IN (
+                          'OAUTH_ACCESS_TOKEN',
+                          'RSA_KEYPAIR',
+                          'WORKLOAD_IDENTITY',
+                          'PROGRAMMATIC_ACCESS_TOKEN'
+                      )
+                      THEN TRUE
+                      ELSE FALSE
+                  END AS strong_auth
+              FROM SNOWFLAKE.ACCOUNT_USAGE.LOGIN_HISTORY lh
+              INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.USERS u
+                  ON lh.user_name = u.name
+                  AND u.type = 'SERVICE'
+                  AND u.disabled = FALSE
+                  AND u.deleted_on IS NULL
+              WHERE lh.is_success = 'YES'
+                AND lh.event_timestamp >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+          ),
+          user_summary AS (
+              SELECT
+                  user_name,
+                  BOOLOR_AGG(strong_auth) AS has_strong_auth,
+                  BOOLAND_AGG(strong_auth) AS all_strong_auth
+              FROM service_auth
+              GROUP BY user_name
+          )
+          SELECT
+              COUNT(*) AS total_service_users,
+              COUNT_IF(all_strong_auth) AS fully_strong_auth,
+              COUNT_IF(NOT has_strong_auth) AS password_only,
+              ROUND(COUNT_IF(all_strong_auth) * 100.0 / NULLIF(COUNT(*), 0), 2) AS pct_strong_auth
+          FROM user_summary;
+
+  - id: SEC-5
+    name: Legacy Service Passwordless Auth
+    domain: Authentication
+    remediation: >
+      Migrate LEGACY_SERVICE users to strong authentication (OAuth, RSA key pair, WIF, or PAT) or convert them to the SERVICE user type with proper auth configured.
+    thresholds:
+      on_track: "No LEGACY_SERVICE users logged in with password-only in the last 90 days"
+      needs_improvement: "Fewer than 5 LEGACY_SERVICE users logged in with password-only"
+      needs_attention: "5 or more LEGACY_SERVICE users logged in with password-only"
+    checks:
+      - id: SEC-5a
+        name: Legacy Service Password-Only Users
+        type: automated
+        metric: password_only_users
+        sql: |
+          WITH legacy_logins AS (
+              SELECT
+                  lh.user_name,
+                  lh.first_authentication_factor,
+                  lh.second_authentication_factor,
+                  COUNT(*) AS login_count
+              FROM SNOWFLAKE.ACCOUNT_USAGE.LOGIN_HISTORY lh
+              INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.USERS u
+                  ON lh.user_name = u.name
+                  AND u.type = 'LEGACY_SERVICE'
+                  AND u.disabled = FALSE
+                  AND u.deleted_on IS NULL
+              WHERE lh.is_success = 'YES'
+                AND lh.event_timestamp >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+              GROUP BY
+                  lh.user_name,
+                  lh.first_authentication_factor,
+                  lh.second_authentication_factor
+          ),
+          password_only AS (
+              SELECT
+                  user_name,
+                  login_count
+              FROM legacy_logins
+              WHERE first_authentication_factor ILIKE '%PASSWORD%'
+                AND (second_authentication_factor IS NULL OR second_authentication_factor = '')
+          )
+          SELECT
+              (SELECT COUNT(DISTINCT user_name) FROM legacy_logins) AS total_legacy_service_users,
+              COUNT(DISTINCT user_name) AS password_only_users,
+              SUM(login_count) AS password_only_logins
+          FROM password_only;
+
+  - id: SEC-6
+    name: SCIM Password UNSET
+    domain: Provisioning
+    remediation: >
+      Run ALTER USER ... SET PASSWORD = NULL for SCIM-provisioned users to remove unnecessary password credentials. Authentication should go through the Identity Provider only.
+    thresholds:
+      on_track: "No SCIM-provisioned users have a Snowflake password set"
+      needs_improvement: "Between 1 and 5 SCIM-provisioned users have a Snowflake password set"
+      needs_attention: "More than 5 SCIM-provisioned users have a Snowflake password set"
+    checks:
+      - id: SEC-6a
+        name: SCIM-Provisioned Users With Passwords
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              u.name AS user_name,
+              u.type AS user_type,
+              u.has_password,
+              u.ext_authn_duo,
+              u.created_on
+          FROM SNOWFLAKE.ACCOUNT_USAGE.USERS u
+          WHERE u.deleted_on IS NULL
+            AND u.disabled = FALSE
+            AND u.provisioned_by ILIKE '%scim%'
+            AND u.has_password = TRUE;
+
+  - id: SEC-7
+    name: SCIM Integration
+    domain: Provisioning
+    remediation: >
+      Configure a SCIM security integration for automated user lifecycle management (provisioning and deprovisioning). SCIM ensures accounts are deactivated automatically when users leave the organization.
+    thresholds:
+      on_track: "At least one SCIM integration exists and is enabled"
+      needs_attention: "No SCIM integration found"
+    checks:
+      - id: SEC-7a
+        name: SCIM Integration Exists and Enabled
+        type: automated
+        metric: rows_returned
+        sql: |
+          SHOW SECURITY INTEGRATIONS;
+          WITH raw AS (
+              SELECT
+                  "name" AS integration_name,
+                  "type" AS integration_type,
+                  "category" AS integration_category,
+                  "enabled"::BOOLEAN AS enabled,
+                  "comment" AS comment,
+                  "created_on"::DATE AS created_on_date
+              FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+          )
+          SELECT *
+          FROM raw
+          WHERE integration_type ILIKE '%SCIM%'
+            AND enabled = TRUE;
+
+  - id: SEC-8
+    name: Trust Center Scanners
+    domain: Audit / Monitoring
+    remediation: >
+      Enable Trust Center in Snowsight (Admin > Trust Center). Enable the Security Essentials package at minimum to activate core automated security scanners. Trust Center provides continuous scanning for known security misconfigurations and surfaces actionable findings.
+    thresholds:
+      on_track: "70% or more of Trust Center scanners ran successfully in the last 90 days"
+      needs_improvement: "Between 1% and 69% of Trust Center scanners ran successfully in the last 90 days"
+      needs_attention: "No scanners ran successfully in the last 90 days, or Trust Center is not configured"
+    checks:
+      - id: SEC-8a
+        name: Active Scanners by Package
+        type: automated
+        metric: total_scanners
+        sql: |
+          SELECT
+              COUNT(DISTINCT scanner_package_id || id) AS total_scanners,
+              scanner_package_id,
+              state
+          FROM SNOWFLAKE.TRUST_CENTER.SCANNERS
+          WHERE last_scan_timestamp::DATE >= CURRENT_DATE() - 90
+          GROUP BY ALL
+          HAVING COUNT(DISTINCT scanner_package_id || id) > 0;
+
+      - id: SEC-8b
+        name: Scanner Activity Summary
+        type: automated
+        metric: pct_active
+        sql: |
+          SELECT
+              COUNT(DISTINCT id) AS total_scanners,
+              COUNT_IF(state::BOOLEAN = TRUE AND last_scan_timestamp::DATE >= CURRENT_DATE() - 90) AS active_last_90d,
+              COUNT_IF(state::BOOLEAN = TRUE) AS enabled_scanners,
+              COUNT_IF(state::BOOLEAN = FALSE OR state IS NULL) AS disabled_scanners,
+              ROUND(
+                  COUNT_IF(state::BOOLEAN = TRUE AND last_scan_timestamp::DATE >= CURRENT_DATE() - 90)
+                  * 100.0 / NULLIF(COUNT(DISTINCT id), 0),
+                  1
+              ) AS pct_active
+          FROM SNOWFLAKE.TRUST_CENTER.SCANNERS;
+
+  - id: SEC-9
+    name: Tri-Secret Secure (TSS)
+    domain: Data Security
+    edition_gate: Business Critical+
+    remediation: >
+      Enable Tri-Secret Secure (BYOK encryption with customer-managed key) on Business Critical or higher accounts. Register a CMK via SYSTEM$REGISTER_CMK_INFO.
+    thresholds:
+      on_track: "Customer-Managed Key (CMK) registration details returned successfully"
+      needs_attention: "CMK is not registered, or the account is not on Business Critical edition or above"
+    checks:
+      - id: SEC-9a
+        name: Customer-Managed Key (CMK) Info Check
+        type: automated
+        metric: result_value
+        sql: |
+          SELECT SYSTEM$GET_CMK_INFO();
+
+  - id: SEC-10
+    name: Private Link Inbound
+    domain: Data Security
+    edition_gate: Business Critical+
+    remediation: >
+      Configure AWS PrivateLink, Azure Private Link, or GCP Private Service Connect for secure inbound connectivity. PrivateLink ensures traffic never traverses the public internet.
+    thresholds:
+      on_track: "PrivateLink inbound configuration data returned successfully"
+      needs_attention: "No PrivateLink inbound configured, or the account is not on Business Critical edition or above"
+    checks:
+      - id: SEC-10a
+        name: Private Link Config
+        type: automated
+        metric: result_value
+        sql: |
+          SELECT SYSTEM$GET_PRIVATELINK_CONFIG();
+
+  - id: SEC-11
+    name: Private Link Outbound
+    domain: Data Security
+    edition_gate: Business Critical+
+    remediation: >
+      Create outbound private link endpoints for secure external service connectivity. This ensures outbound traffic to external services does not traverse the public internet.
+    thresholds:
+      on_track: "At least one outbound PrivateLink endpoint exists in CREATED state"
+      needs_attention: "No outbound PrivateLink endpoints found, or the account is not on Business Critical edition or above"
+    checks:
+      - id: SEC-11a
+        name: Outbound Private Link Endpoints
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              provider_resource_id,
+              hostname,
+              endpoint_state,
+              created_on
+          FROM SNOWFLAKE.ACCOUNT_USAGE.OUTBOUND_PRIVATELINK_ENDPOINTS
+          WHERE deleted_on IS NULL
+            AND UPPER(endpoint_state) = 'CREATED';
+
+  - id: SEC-12
+    name: Task/Proc Admin Ownership
+    domain: RBAC
+    remediation: >
+      Transfer ownership of tasks and procedures from ACCOUNTADMIN/SECURITYADMIN to dedicated functional roles. High-privilege roles owning executable objects create privilege escalation risk.
+    thresholds:
+      on_track: "No tasks or procedures are owned by ACCOUNTADMIN or SECURITYADMIN"
+      needs_attention: "One or more tasks or procedures are owned by ACCOUNTADMIN or SECURITYADMIN"
+    checks:
+      - id: SEC-12a
+        name: Admin-Owned Tasks/Procedures Detail
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              granted_on AS object_type,
+              grantee_name AS admin_role,
+              privilege,
+              name AS object_name,
+              table_catalog AS database_name,
+              table_schema AS schema_name
+          FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
+          WHERE granted_on IN ('PROCEDURE', 'TASK')
+            AND deleted_on IS NULL
+            AND grantee_name IN ('ACCOUNTADMIN', 'SECURITYADMIN')
+            AND privilege IN ('OWNERSHIP', 'OPERATE');
+
+      - id: SEC-12b
+        name: Admin-Owned Tasks/Procedures Count
+        type: automated
+        metric: admin_owned_objects
+        sql: |
+          SELECT
+              COUNT(DISTINCT table_catalog || '.' || table_schema || '.' || name) AS admin_owned_objects
+          FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
+          WHERE granted_on IN ('PROCEDURE', 'TASK')
+            AND deleted_on IS NULL
+            AND grantee_name IN ('ACCOUNTADMIN', 'SECURITYADMIN')
+            AND privilege IN ('OWNERSHIP', 'OPERATE');
+
+  - id: SEC-13
+    name: Driver Hygiene
+    domain: Connectivity
+    remediation: >
+      Upgrade outdated Snowflake client drivers to at least the minimum supported version. Drivers below minimum are unsupported and may have security vulnerabilities.
+    thresholds:
+      on_track: "All active drivers are at or above the recommended version"
+      needs_improvement: "All drivers are above the minimum supported version but some are below the recommended version"
+      needs_attention: "One or more drivers are below the minimum supported version (unsupported)"
+    checks:
+      - id: SEC-13a
+        name: Driver Version Comparison
+        type: automated
+        metric: version_status
+        sql: |
+          WITH driver_versions AS (
+              SELECT
+                  f.value:clientAppId::STRING AS driver_name,
+                  f.value:minimumSupportedVersion::STRING AS min_supported,
+                  f.value:recommendedVersion::STRING AS recommended
+              FROM TABLE(FLATTEN(input => PARSE_JSON(SYSTEM$CLIENT_VERSION_INFO()))) f
+          ),
+          sessions AS (
+              SELECT
+                  SPLIT_PART(CLIENT_APPLICATION_ID, ' ', 1) AS driver_name,
+                  SPLIT_PART(CLIENT_APPLICATION_ID, ' ', 2) AS driver_version,
+                  COUNT(*) AS session_count,
+                  COUNT(DISTINCT USER_NAME) AS unique_users,
+                  MAX(CREATED_ON) AS last_seen
+              FROM SNOWFLAKE.ACCOUNT_USAGE.SESSIONS
+              WHERE CREATED_ON >= DATEADD('day', -30, CURRENT_TIMESTAMP())
+                AND CLIENT_APPLICATION_ID IS NOT NULL
+                AND SPLIT_PART(CLIENT_APPLICATION_ID, ' ', 2) RLIKE '^[0-9]+\\.[0-9]+\\.[0-9]+$'
+              GROUP BY 1, 2
+          ),
+          compared AS (
+              SELECT
+                  s.driver_name,
+                  s.driver_version,
+                  dv.min_supported,
+                  dv.recommended,
+                  s.session_count,
+                  s.unique_users,
+                  s.last_seen,
+                  CASE
+                      WHEN (SPLIT_PART(s.driver_version, '.', 1)::INT < SPLIT_PART(dv.min_supported, '.', 1)::INT)
+                          OR (SPLIT_PART(s.driver_version, '.', 1)::INT = SPLIT_PART(dv.min_supported, '.', 1)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 2)::INT < SPLIT_PART(dv.min_supported, '.', 2)::INT)
+                          OR (SPLIT_PART(s.driver_version, '.', 1)::INT = SPLIT_PART(dv.min_supported, '.', 1)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 2)::INT = SPLIT_PART(dv.min_supported, '.', 2)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 3)::INT < SPLIT_PART(dv.min_supported, '.', 3)::INT)
+                      THEN 'UNSUPPORTED'
+                      WHEN (SPLIT_PART(s.driver_version, '.', 1)::INT < SPLIT_PART(dv.recommended, '.', 1)::INT)
+                          OR (SPLIT_PART(s.driver_version, '.', 1)::INT = SPLIT_PART(dv.recommended, '.', 1)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 2)::INT < SPLIT_PART(dv.recommended, '.', 2)::INT)
+                          OR (SPLIT_PART(s.driver_version, '.', 1)::INT = SPLIT_PART(dv.recommended, '.', 1)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 2)::INT = SPLIT_PART(dv.recommended, '.', 2)::INT
+                              AND SPLIT_PART(s.driver_version, '.', 3)::INT < SPLIT_PART(dv.recommended, '.', 3)::INT)
+                      THEN 'BELOW_RECOMMENDED'
+                      ELSE 'CURRENT'
+                  END AS version_status
+              FROM sessions s
+              INNER JOIN driver_versions dv
+                  ON s.driver_name = dv.driver_name
+          )
+          SELECT
+              driver_name,
+              driver_version,
+              min_supported,
+              recommended,
+              version_status,
+              session_count,
+              unique_users,
+              last_seen
+          FROM compared
+          ORDER BY
+              CASE version_status
+                  WHEN 'UNSUPPORTED' THEN 1
+                  WHEN 'BELOW_RECOMMENDED' THEN 2
+                  ELSE 3
+              END,
+              session_count DESC;

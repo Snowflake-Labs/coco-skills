@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<!--
+  WAF Assessment Report Template (Minimal JSON)
+  ==============================================
+  Used by: .cortex/skills/pgl-waf-assessment/SKILL.md
+
+  HOW TO USE:
+  The agent reads this template, replaces the placeholder
+  __WAF_DATA_PLACEHOLDER__ with the minimal JSON object, and writes
+  the result as a single self-contained HTML file.
+
+  The template JS enriches the minimal JSON (computes badges, domains,
+  percentages, top_failures) — CoCo only provides raw data.
+
+  MINIMAL JSON SCHEMA:
+  {
+    "customer_name": "Acme Corp",
+    "account_name": "PZC35145",
+    "edition": "Enterprise",
+    "date": "20 May 2026",
+    "pillars": [{
+      "pillar": "sec",
+      "pillar_name": "Security & Governance",
+      "controls": [{"name": "...", "domain": "...", "result": "on_track", "value": "...", "remediation": ""}],
+      "checks": [{"name": "...", "domain": "...", "control": "...", "result": "on_track", "value": "..."}]
+    }]
+  }
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAF Assessment</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Lato',sans-serif;background:#F2F5F7;color:#003545}
+.topbar{background:#003545;padding:14px 32px;display:flex;justify-content:space-between;align-items:center}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.sf-logo{color:#29b5e8;font-size:20px;font-weight:900;letter-spacing:-1px}
+.topbar-title{color:#fff;font-size:14px;font-weight:600}
+.topbar-sep{color:#24323D}
+.topbar-sub{color:#8A999E;font-size:13px}
+.topbar-right{color:#8A999E;font-size:12px}
+.nav{background:#000;padding:0 32px;display:flex;gap:2px;border-bottom:1px solid #1D3645;overflow-x:auto}
+.tab{padding:14px 20px;cursor:pointer;font-size:13px;font-weight:500;color:#8A999E;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:7px}
+.tab:hover{color:#cbd5e1}
+.tab.active{color:#29b5e8;border-bottom-color:#29b5e8}
+.tab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.section{display:none;padding:28px 32px;max-width:1140px;margin:0 auto}
+.section.active{display:block}
+.score-header{background:linear-gradient(135deg,#003545 0%,#004A62 100%);border-radius:16px;padding:28px 32px;margin-bottom:20px;display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center}
+.ring-wrap{text-align:center}
+.ring{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.ring::after{content:'';position:absolute;width:100px;height:100px;background:#004A62;border-radius:50%}
+.ring-inner{position:relative;z-index:1;text-align:center}
+.ring-pct{font-size:30px;font-weight:900;color:#fff;line-height:1}
+.ring-lbl{font-size:10px;color:#B5C0C4;margin-top:1px}
+.score-meta h1{font-size:20px;font-weight:700;color:#fff;margin-bottom:3px}
+.score-meta .acct{font-size:12px;color:#8A999E;margin-bottom:18px}
+.pills{display:flex;gap:10px;flex-wrap:wrap}
+.pill{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600}
+.p-ontrack{background:rgba(34,197,94,.15);color:#22c55e}
+.p-needsimprovement{background:rgba(234,179,8,.15);color:#FF9F36}
+.p-needsattention{background:rgba(211,84,0,.15);color:#D35400}
+.pillar-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.pillar-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;transition:transform .1s,box-shadow .1s;border-top:3px solid}
+.pillar-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.pillar-card h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8A999E;margin-bottom:10px}
+.pillar-score{font-size:24px;font-weight:900;line-height:1}
+.pillar-sub{font-size:11px;color:#8A999E;margin-top:3px}
+.pillar-bar-bg{background:#EEF1F3;border-radius:4px;height:5px;margin-top:10px;overflow:hidden}
+.pillar-bar-fill{height:100%;border-radius:4px}
+.domain-row{display:grid;gap:14px;margin-bottom:20px}
+.domain-card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.domain-card h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8A999E;margin-bottom:10px}
+.domain-bar-bg{background:#EEF1F3;border-radius:8px;height:7px;margin-bottom:8px;overflow:hidden}
+.domain-bar-fill{height:100%;border-radius:8px}
+.domain-num{font-size:22px;font-weight:800}
+.domain-sub-text{font-size:11px;color:#8A999E;margin-top:2px}
+.checks-wrap{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto}
+.checks-wrap table{width:100%;border-collapse:collapse;min-width:900px}
+.checks-wrap th{background:#F7FAFB;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8A999E;padding:11px 16px;text-align:left;border-bottom:1px solid #D8DFE3;cursor:pointer;user-select:none;position:relative}
+.checks-wrap th:hover{background:#EEF1F3}
+.checks-wrap th::after{content:'\2195';margin-left:4px;opacity:.3;font-size:10px}
+.checks-wrap th.sort-asc::after{content:'\25B2';opacity:.7}
+.checks-wrap th.sort-desc::after{content:'\25BC';opacity:.7}
+.checks-wrap td{padding:11px 16px;font-size:13px;border-bottom:1px solid #EEF1F3;vertical-align:middle}
+.checks-wrap tr:last-child td{border-bottom:none}
+.checks-wrap tr:hover td{background:#F7FAFB}
+.dbadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.db-net{background:#D4EEF8;color:#11567F}
+.db-id{background:#E8E0F8;color:#5B2FA0}
+.db-mon{background:#dcfce7;color:#15803d}
+.db-compute{background:#fef3c7;color:#92400e}
+.db-gov{background:#fce7f3;color:#A3326A}
+.db-storage{background:#D6EEF9;color:#11567F}
+.db-bcdr{background:#FFF3DC;color:#A84300}
+.db-dp{background:#fdf4ff;color:#7e22ce}
+.sbadge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:12px;white-space:nowrap}
+.sb-ontrack{background:#dcfce7;color:#15803d}
+.sb-needsimprovement{background:#FFF3DC;color:#854d0e}
+.sb-needsattention{background:#FFF3DC;color:#D35400}
+.val-text{font-size:12px;color:#8A999E}
+.placeholder{background:#fff;border-radius:16px;padding:60px 32px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.placeholder-icon{font-size:48px;margin-bottom:16px}
+.placeholder h2{font-size:18px;font-weight:700;color:#003545;margin-bottom:8px}
+.placeholder p{font-size:14px;color:#8A999E;max-width:420px;margin:0 auto;line-height:1.6}
+.placeholder-badge{display:inline-block;margin-top:16px;padding:6px 16px;background:#EEF1F3;border-radius:20px;font-size:12px;font-weight:600;color:#8A999E}
+.summary-bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.rem-list{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.rem-list h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8A999E;margin-bottom:14px}
+.rem-item{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #EEF1F3;font-size:13px}
+.rem-item:last-child{border-bottom:none}
+.rem-id{font-weight:700;color:#D35400;font-size:13px}
+.rem-text{color:#8A999E;line-height:1.4}
+.status-summary{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.status-summary h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8A999E;margin-bottom:14px}
+.ss-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #EEF1F3;font-size:13px}
+.ss-row:last-child{border-bottom:none}
+.ss-label{color:#24323D;font-weight:500;min-width:140px}
+.ss-bar-wrap{flex:1;margin:0 12px;height:6px;background:#EEF1F3;border-radius:4px;overflow:hidden}
+.ss-bar{height:100%;border-radius:4px}
+.ss-val{font-size:12px;font-weight:700;min-width:40px;text-align:right}
+@media print{
+  .section{display:block!important;page-break-before:auto}
+  .section+.section{page-break-before:always}
+  .nav{display:none}
+  .topbar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .score-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pillar-card{break-inside:avoid}
+  .domain-card{break-inside:avoid}
+  .checks-wrap{break-inside:avoid}
+  .checks-wrap tr{break-inside:avoid}
+  .ring{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pill,.sbadge,.dbadge,.pillar-bar-fill,.domain-bar-fill,.ss-bar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  details{display:block}
+  details>summary{display:none}
+  details>.checks-wrap{display:block!important}
+}
+</style>
+</head>
+<body>
+<div id="app"><div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8A999E;font-size:14px">Loading report data...</div></div>
+
+<script>
+(function() {
+const RAW = __WAF_DATA_PLACEHOLDER__;
+
+const RESULT_META = {
+  on_track: { label: '\u{1F7E2} On Track', badge: 'sb-ontrack' },
+  needs_improvement: { label: '\u{1F7E1} Needs Improvement', badge: 'sb-needsimprovement' },
+  needs_attention: { label: '\u{1F7E0} Needs Attention', badge: 'sb-needsattention' }
+};
+const DOMAIN_META = {
+  'Network Security': { icon: '\u{1F310}', color: '#4A90D9', badge: 'db-net' },
+  'Authentication': { icon: '\u{1F511}', color: '#E67E22', badge: 'db-id' },
+  'Provisioning': { icon: '\u{1F464}', color: '#27AE60', badge: 'db-mon' },
+  'Audit / Monitoring': { icon: '\u{1F4CA}', color: '#8E44AD', badge: 'db-dp' },
+  'Data Security': { icon: '\u{1F6E1}\uFE0F', color: '#3498DB', badge: 'db-storage' },
+  'RBAC': { icon: '\u{1F4CB}', color: '#7B68EE', badge: 'db-id' },
+  'Connectivity': { icon: '\u{1F50C}', color: '#D35400', badge: 'db-bcdr' },
+  'Compute': { icon: '\u26A1', color: '#4A90D9', badge: 'db-compute' },
+  'Governance': { icon: '\u{1F4CB}', color: '#7B68EE', badge: 'db-gov' },
+  'Governance & FinOps': { icon: '\u{1F4CB}', color: '#7B68EE', badge: 'db-gov' },
+  'Storage': { icon: '\u{1F4BE}', color: '#E8A838', badge: 'db-storage' },
+  'Clustering': { icon: '\u{1F9E9}', color: '#16A085', badge: 'db-net' },
+  'SQL Optimization': { icon: '\u{1F527}', color: '#9B59B6', badge: 'db-dp' },
+  'Automation': { icon: '\u{1F916}', color: '#2980B9', badge: 'db-net' },
+  'Observability': { icon: '\u{1F441}\uFE0F', color: '#F39C12', badge: 'db-compute' },
+  'Collaboration': { icon: '\u{1F91D}', color: '#1ABC9C', badge: 'db-mon' },
+  'BCR': { icon: '\u{1F4EC}', color: '#D35400', badge: 'db-bcdr' },
+  'BCDR Readiness': { icon: '\u{1F504}', color: '#D35400', badge: 'db-bcdr' },
+  'Data Protection': { icon: '\u{1F6E1}\uFE0F', color: '#3498DB', badge: 'db-dp' },
+  'Release Readiness': { icon: '\u{1F680}', color: '#9B59B6', badge: 'db-bcdr' }
+};
+const DEFAULT_DOMAIN = { icon: '\u2753', color: '#8A999E', badge: 'db-net' };
+
+function enrichPillar(p) {
+  const controls = (p.controls||[]).map(c => {
+    const rm = RESULT_META[c.result] || RESULT_META.needs_attention;
+    const dm = DOMAIN_META[c.domain] || DEFAULT_DOMAIN;
+    return { ...c, result_label: rm.label, result_badge_class: rm.badge, domain_badge_class: dm.badge };
+  });
+  const checks = (p.checks||[]).map(c => {
+    const rm = RESULT_META[c.result] || RESULT_META.needs_attention;
+    const dm = DOMAIN_META[c.domain] || DEFAULT_DOMAIN;
+    return { ...c, result_label: rm.label, result_badge_class: rm.badge, domain_badge_class: dm.badge };
+  });
+  const counts = { on_track: 0, needs_improvement: 0, needs_attention: 0 };
+  controls.forEach(c => { if (counts[c.result] !== undefined) counts[c.result]++; });
+  const total = controls.length;
+  const pct = total > 0 ? Math.round(counts.on_track / total * 100) : 0;
+  const domainOrder = []; const domainMap = {};
+  controls.forEach(c => {
+    if (!domainMap[c.domain]) { domainMap[c.domain] = []; domainOrder.push(c.domain); }
+    domainMap[c.domain].push(c);
+  });
+  const domains = domainOrder.map(d => {
+    const dm = DOMAIN_META[d] || DEFAULT_DOMAIN;
+    const ctrls = domainMap[d];
+    const dTotal = ctrls.length;
+    const dOnTrack = ctrls.filter(c => c.result === 'on_track').length;
+    const dPct = dTotal > 0 ? Math.round(dOnTrack / dTotal * 100) : 0;
+    const parts = [dPct + '% on track'];
+    const na = ctrls.filter(c => c.result === 'needs_attention').length;
+    const ni = ctrls.filter(c => c.result === 'needs_improvement').length;
+    if (na) parts.push(na + ' needs attention');
+    if (ni) parts.push(ni + ' needs improvement');
+    return { name: d, icon: dm.icon, color: dm.color, on_track: dOnTrack, total: dTotal, pct: dPct, sub: parts.join(' \u00B7 '), bar_width: dPct };
+  });
+  const top_failures = [];
+  controls.filter(c => c.result === 'needs_attention').concat(controls.filter(c => c.result === 'needs_improvement')).slice(0, 6).forEach(c => {
+    top_failures.push({ id: c.name, text: c.value, suggestion: c.remediation || '' });
+  });
+  return { ...p, controls, checks, domains, top_failures, on_track: counts.on_track, needs_improvement: counts.needs_improvement, needs_attention: counts.needs_attention, total, pct };
+}
+
+const D = { ...RAW, pillars: RAW.pillars.map(enrichPillar) };
+
+const pillarMeta = {
+  sec:  { label: 'Security & Gov.', color: '#29b5e8', cssClass: 'pc-sec' },
+  opex: { label: 'Operational Ex.', color: '#7D44CF', cssClass: 'pc-opex' },
+  rel:  { label: 'Reliability',     color: '#22c55e', cssClass: 'pc-rel' },
+  perf: { label: 'Performance',     color: '#FF9F36', cssClass: 'pc-perf' },
+  cost: { label: 'Cost Optimization', color: '#3B82F6', cssClass: 'pc-cost' }
+};
+const pillarOrder = ['sec','opex','rel','perf','cost'];
+const pillarDescriptions = {
+  sec: 'Implement robust controls to protect your Snowflake Organizations and Accounts',
+  opex: 'Establish reliable, continuously improving systems leveraging deep observability and automation to proactively control cost, risk, and performance.',
+  rel: 'Help ensure systems run correctly, recover from failures, and adapt to change',
+  perf: 'Streamline operations, enhance user experience and improve business value by achieving highly responsive and cost-optimized data workloads.',
+  cost: 'Optimize cloud spending, gain clear visibility into expenses and improve ROI'
+};
+const pillarDisclaimers = {
+  overall: 'This report is intended to help you evaluate your account against a set of recommended well architected framework best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user.',
+  sec: 'This report is intended to help you evaluate your account against a set of recommended security best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user. You are responsible for securing your own Snowflake account and determining your compliance requirements.',
+  opex: 'This report is intended to help you evaluate your account against a set of recommended operational excellence best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user. You are responsible for identifying gaps in observability within your Snowflake account.',
+  rel: 'This report is intended to help you evaluate your account against a set of recommended reliability best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user. You are responsible for assessing reliability gaps within your Snowflake account.',
+  perf: 'This report is intended to help you evaluate your account against a set of recommended performance best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user. You are responsible for assessing the performance of your Snowflake account.',
+  cost: 'This report is intended to help you evaluate your account against a set of recommended cost optimization best practices; it is not a comprehensive audit. Results may vary based on the model chosen by the user. You are responsible for assessing opportunities for optimization within your Snowflake account.'
+};
+const pillarPlaceholderIcons = { sec: '\u{1F512}', opex: '\u{1F527}', rel: '\u{1F6E1}\uFE0F', perf: '\u26A1', cost: '\u{1F4B0}' };
+
+const assessed = {};
+D.pillars.forEach(p => { assessed[p.pillar] = p; });
+const overallPass = D.pillars.reduce((s,p) => s + p.on_track, 0);
+const overallTotal = D.pillars.reduce((s,p) => s + p.total, 0);
+const overallNI = D.pillars.reduce((s,p) => s + (p.needs_improvement||0), 0);
+const overallNA = D.pillars.reduce((s,p) => s + (p.needs_attention||0), 0);
+const overallPct = overallTotal > 0 ? Math.round(overallPass / overallTotal * 100) : 0;
+const pendingCount = pillarOrder.filter(k => !assessed[k]).length;
+const topFailures = D.pillars.flatMap(p => (p.top_failures||[]).map(f => ({...f, pillar: p.pillar}))).slice(0, 6);
+
+function esc(s) { const el = document.createElement('span'); el.textContent = s||''; return el.innerHTML; }
+function renderRing(pct, color) {
+  return `<div class="ring-wrap"><div class="ring" style="background:conic-gradient(${color} 0% ${pct}%, #24323D ${pct}% 100%)"><div class="ring-inner"><div class="ring-pct">${pct}%</div><div class="ring-lbl">on track</div></div></div></div>`;
+}
+
+function renderPillarSection(p) {
+  const meta = pillarMeta[p.pillar];
+  const cols = p.domains.length <= 3 ? p.domains.length : 4;
+  let html = `<div class="score-header">${renderRing(p.pct, meta.color)}<div class="score-meta"><h1>${esc(p.pillar_name)}</h1><div class="acct">${esc(pillarDescriptions[p.pillar])}</div><div class="pills"><span class="pill p-ontrack">\u{1F7E2} ${p.on_track} On Track</span><span class="pill p-needsimprovement">\u{1F7E1} ${p.needs_improvement||0} Needs Improvement</span><span class="pill p-needsattention">\u{1F7E0} ${p.needs_attention||0} Needs Attention</span></div></div></div>`;
+  html += `<p style="font-style:italic;color:#8A999E;font-size:13px;margin-bottom:20px">${esc(pillarDisclaimers[p.pillar])}</p>`;
+  html += `<div class="domain-row" style="grid-template-columns:repeat(${cols},1fr)">`;
+  p.domains.forEach(d => {
+    html += `<div class="domain-card"><h3>${d.icon} ${esc(d.name)}</h3><div class="domain-bar-bg"><div class="domain-bar-fill" style="width:${d.bar_width}%;background:${d.color}"></div></div><div class="domain-num" style="color:${d.color}">${d.on_track} / ${d.total}</div><div class="domain-sub-text">${esc(d.sub)}</div></div>`;
+  });
+  html += `</div>`;
+  html += `<div class="checks-wrap"><table><thead><tr><th>Control</th><th>Domain</th><th>Result</th><th>Value</th><th>Remediation</th></tr></thead><tbody>`;
+  (p.controls||[]).forEach(c => {
+    html += `<tr><td><b>${esc(c.name)}</b></td><td><span class="dbadge ${c.domain_badge_class}">${esc(c.domain)}</span></td><td><span class="sbadge ${c.result_badge_class}">${esc(c.result_label)}</span></td><td class="val-text">${esc(c.value)}</td><td class="val-text" style="color:#8A999E;font-size:12px">${esc(c.remediation||'')}</td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+  html += `<details style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;color:#8A999E;font-weight:600">Show Check-Level Detail</summary><div class="checks-wrap" style="margin-top:8px"><table><thead><tr><th>Control</th><th>Check</th><th>Domain</th><th>Result</th><th>Value</th></tr></thead><tbody>`;
+  const ctrlGroups = {}; const ctrlOrder = [];
+  (p.checks||[]).forEach(c => {
+    const key = c.control || '';
+    if (!ctrlGroups[key]) { ctrlGroups[key] = []; ctrlOrder.push(key); }
+    ctrlGroups[key].push(c);
+  });
+  ctrlOrder.forEach(key => {
+    const grp = ctrlGroups[key];
+    grp.forEach((c, i) => {
+      html += `<tr>`;
+      if (i === 0) html += `<td rowspan="${grp.length}" style="vertical-align:top;font-weight:600;border-right:2px solid #E8EFF5">${esc(key)}</td>`;
+      html += `<td>${esc(c.name)}</td><td><span class="dbadge ${c.domain_badge_class}">${esc(c.domain)}</span></td><td><span class="sbadge ${c.result_badge_class}">${esc(c.result_label)}</span></td><td class="val-text">${esc(c.value)}</td></tr>`;
+    });
+  });
+  html += `</tbody></table></div></details>`;
+  return html;
+}
+
+function renderPlaceholder(key) {
+  return `<div class="placeholder"><div class="placeholder-icon">${pillarPlaceholderIcons[key]}</div><h2>${esc(pillarMeta[key].label)}</h2><p>${esc(pillarDescriptions[key])}</p><span class="placeholder-badge">Assessment not yet run</span></div>`;
+}
+
+let out = '';
+out += `<div class="topbar"><div class="topbar-left"><span class="sf-logo">\u2744</span><span class="topbar-title">Well-Architected Framework Assessment</span><span class="topbar-sep">|</span><span class="topbar-sub">${esc(D.customer_name)} &nbsp;\u00B7&nbsp; ${esc(D.account_name)} &nbsp;\u00B7&nbsp; ${esc(D.edition)}</span></div><div class="topbar-right">${esc(D.date)}</div></div>`;
+out += `<div class="nav"><div class="tab active" data-tab="overall"><span class="tab-dot" style="background:#29b5e8"></span> Overall Summary</div>`;
+pillarOrder.forEach(k => { const m = pillarMeta[k]; out += `<div class="tab" data-tab="${k}"><span class="tab-dot" style="background:${m.color}"></span> ${esc(m.label)}</div>`; });
+out += `</div>`;
+
+out += `<div id="s-overall" class="section active">`;
+out += `<div class="score-header">${renderRing(overallPct, '#29b5e8')}<div class="score-meta"><h1>WAF Assessment \u2014 Overall Score</h1><div class="acct">${overallPass} of ${overallTotal} assessed controls on track &nbsp;\u00B7&nbsp; ${pendingCount} pillars pending assessment</div><div class="pills"><span class="pill p-ontrack">\u{1F7E2} ${overallPass} On Track</span><span class="pill p-needsimprovement">\u{1F7E1} ${overallNI} Needs Improvement</span><span class="pill p-needsattention">\u{1F7E0} ${overallNA} Needs Attention</span></div></div></div>`;
+out += `<p style="font-style:italic;color:#8A999E;font-size:13px;margin-bottom:20px">${esc(pillarDisclaimers.overall)}</p>`;
+out += `<div class="pillar-cards">`;
+pillarOrder.forEach(k => {
+  const m = pillarMeta[k]; const p = assessed[k];
+  if (p) { out += `<div class="pillar-card ${m.cssClass}" data-nav="${k}"><h4>${esc(m.label)}</h4><div class="pillar-score" style="color:${m.color}">${p.on_track}/${p.total}</div><div class="pillar-sub">${p.pct}% on track</div><div class="pillar-bar-bg"><div class="pillar-bar-fill" style="width:${p.pct}%;background:${m.color}"></div></div></div>`; }
+  else { out += `<div class="pillar-card ${m.cssClass}" data-nav="${k}"><h4>${esc(m.label)}</h4><div class="pillar-score" style="color:#B5C0C4">\u2014</div><div class="pillar-sub">Not yet assessed</div><div class="pillar-bar-bg"><div class="pillar-bar-fill" style="width:0%;background:${m.color}"></div></div></div>`; }
+});
+out += `</div>`;
+out += `<div class="summary-bottom"><div class="rem-list"><h3>\u{1F7E0} Top Needs Improvement Items</h3>`;
+topFailures.forEach(f => { const combined = f.suggestion ? f.text + '. ' + f.suggestion : f.text; out += `<div class="rem-item"><div class="rem-id">${esc(f.id)}</div><div class="rem-text">${esc(combined)}</div></div>`; });
+if (!topFailures.length) out += `<div class="rem-item"><div class="rem-text" style="color:#8A999E">No failures detected</div></div>`;
+out += `</div><div class="status-summary"><h3>Domain Breakdown \u2014 All Pillars</h3>`;
+D.pillars.forEach(p => {
+  out += `<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8A999E;margin-bottom:6px">${esc(p.pillar_name)}</div>`;
+  (p.domains||[]).forEach(d => { out += `<div class="ss-row"><span class="ss-label">${d.icon} ${esc(d.name)}</span><div class="ss-bar-wrap"><div class="ss-bar" style="width:${d.bar_width}%;background:${d.color}"></div></div><span class="ss-val" style="color:${d.color}">${d.on_track}/${d.total}</span></div>`; });
+  out += `</div>`;
+});
+out += `</div></div></div>`;
+
+pillarOrder.forEach(k => {
+  out += `<div id="s-${k}" class="section">`;
+  if (assessed[k]) { out += renderPillarSection(assessed[k]); }
+  else { out += `<p style="font-style:italic;color:#8A999E;font-size:13px;margin-bottom:20px">${esc(pillarDisclaimers[k])}</p>` + renderPlaceholder(k); }
+  out += `</div>`;
+});
+
+document.getElementById('app').innerHTML = out;
+document.title = `WAF Assessment \u2014 ${D.customer_name}`;
+const tabs = document.querySelectorAll('.tab');
+const allIds = ['overall', ...pillarOrder];
+tabs.forEach((t, i) => { t.addEventListener('click', () => { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); tabs.forEach(tb => tb.classList.remove('active')); document.getElementById('s-' + allIds[i]).classList.add('active'); t.classList.add('active'); }); });
+document.querySelectorAll('.pillar-card[data-nav]').forEach(card => { card.addEventListener('click', () => { const idx = allIds.indexOf(card.dataset.nav); if (idx >= 0) tabs[idx].click(); }); });
+
+function makeSortable(table) {
+  const headers = table.querySelectorAll('th');
+  headers.forEach((th, colIdx) => {
+    th.addEventListener('click', () => {
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const isAsc = th.classList.contains('sort-asc');
+      headers.forEach(h => { h.classList.remove('sort-asc', 'sort-desc'); });
+      th.classList.add(isAsc ? 'sort-desc' : 'sort-asc');
+      const dir = isAsc ? -1 : 1;
+      const resultOrder = { 'needs_attention': 0, 'needs_improvement': 1, 'on_track': 2 };
+      rows.sort((a, b) => {
+        const aCell = a.cells[colIdx]; const bCell = b.cells[colIdx];
+        if (!aCell || !bCell) return 0;
+        const aText = aCell.textContent.trim(); const bText = bCell.textContent.trim();
+        const aBadge = aCell.querySelector('.sbadge'); const bBadge = bCell.querySelector('.sbadge');
+        if (aBadge && bBadge) {
+          const aKey = Object.keys(RESULT_META).find(k => RESULT_META[k].label === aText) || '';
+          const bKey = Object.keys(RESULT_META).find(k => RESULT_META[k].label === bText) || '';
+          const aOrd = resultOrder[aKey] !== undefined ? resultOrder[aKey] : 99;
+          const bOrd = resultOrder[bKey] !== undefined ? resultOrder[bKey] : 99;
+          return (aOrd - bOrd) * dir;
+        }
+        return aText.localeCompare(bText, undefined, { numeric: true, sensitivity: 'base' }) * dir;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+document.querySelectorAll('.checks-wrap table').forEach(makeSortable);
+})();
+</script>
+</body>
+</html>
