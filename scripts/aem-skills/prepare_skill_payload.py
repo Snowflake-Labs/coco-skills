@@ -17,9 +17,6 @@ def build_cf_payload(parsed: dict) -> str:
     if parsed.get('summary'):
         form_data.append(('./data/master/summary', parsed['summary']))
 
-    if parsed.get('description'):
-        form_data.append(('./data/master/description', parsed['description']))
-
     body = parsed.get('body', '')
     if body:
         form_data.append(('./data/master/prompt', body))
@@ -39,10 +36,6 @@ def build_cf_payload(parsed: dict) -> str:
     if type_tag:
         form_data.append(('./data/master/type@TypeHint', 'String[]'))
         form_data.append(('./data/master/type', type_tag))
-        form_data.append(('./data/master/verificationTag@TypeHint', 'String[]'))
-        form_data.append(('./data/master/verificationTag', type_tag))
-        form_data.append(('./data/master/cq:tags@TypeHint', 'String[]'))
-        form_data.append(('./data/master/cq:tags', type_tag))
 
     return urllib.parse.urlencode(form_data, safe=":/")
 
