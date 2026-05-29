@@ -40,7 +40,7 @@ Manages the full lifecycle of the SAP BDC <=> Snowflake zero-copy integration an
 - User needs to troubleshoot SAP BDC connector states, privileges, or connectivity
 - Do NOT use for: general Snowflake data sharing (non-SAP), SAP HANA direct connections, or SAP BTP non-BDC services
 
-## Prerequisites 4
+## Prerequisites 5
 
 - An ORGADMIN must have accepted the SAP® BDC Connect for Snowflake Terms (Admin » Terms » Snowflake Marketplace section in Snowsight). This only needs to be done once per Snowflake organization.
 - SAP Business Data Cloud (BDC) setup must be complete
