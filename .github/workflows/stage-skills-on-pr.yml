@@ -1,0 +1,62 @@
+name: Stage Skills to AEM on PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/**/SKILL.md'
+
+jobs:
+  detect_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      skills_json: ${{ steps.detect.outputs.skills_json }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+    steps:
+      - name: Detect changed SKILL.md files
+        id: detect
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          pr_number="${{ github.event.pull_request.number }}"
+          repo="${{ github.repository }}"
+
+          changed_files=$(curl -sS \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${repo}/pulls/${pr_number}/files?per_page=100" \
+            | jq -r '.[] | select(.status != "removed") | .filename | select(startswith("skills/")) | select(endswith("/SKILL.md"))')
+
+          if [ -z "$changed_files" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "skills_json=[]" >> $GITHUB_OUTPUT
+            echo "No changed SKILL.md files"
+            exit 0
+          fi
+
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          objs='[]'
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            skill_name=$(echo "$file" | sed -E 's|skills/([^/]+)/SKILL.md|\1|')
+            objs=$(echo "$objs" | jq -c --arg name "$skill_name" '. + [{name:$name}]')
+          done <<< "$changed_files"
+          echo "skills_json=$objs" >> $GITHUB_OUTPUT
+          echo "Changed skills: $objs"
+
+  stage_skills:
+    needs: detect_changes
+    if: needs.detect_changes.outputs.has_changes == 'true'
+    strategy:
+      matrix:
+        skill: ${{ fromJson(needs.detect_changes.outputs.skills_json) }}
+      max-parallel: 2
+      fail-fast: false
+    uses: ./.github/workflows/publish-skill-to-aem.yml
+    with:
+      skill_name: ${{ matrix.skill.name }}
+      commit_sha: ${{ github.event.pull_request.head.sha }}
+    secrets:
+      AEM_USERNAME: ${{ secrets.AEM_USERNAME_STAGING }}
+      AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_STAGING }}
+      AEM_AUTHOR_URL: ${{ secrets.AEM_AUTHOR_URL_STAGING }}
