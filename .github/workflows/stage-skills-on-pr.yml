@@ -9,6 +9,10 @@ on:
 jobs:
   detect_changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     outputs:
       skills_json: ${{ steps.detect.outputs.skills_json }}
       has_changes: ${{ steps.detect.outputs.has_changes }}
@@ -56,6 +60,7 @@ jobs:
     with:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.event.pull_request.head.sha }}
+      pr_number: ${{ github.event.pull_request.number }}
     secrets:
       AEM_USERNAME: ${{ secrets.AEM_USERNAME_STAGING }}
       AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_STAGING }}
