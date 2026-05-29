@@ -65,3 +65,4 @@ jobs:
       AEM_USERNAME: ${{ secrets.AEM_USERNAME_STAGING }}
       AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_STAGING }}
       AEM_AUTHOR_URL: ${{ secrets.AEM_AUTHOR_URL_STAGING }}
+      AEM_PUBLISH_URL: ${{ secrets.AEM_PUBLISH_URL_STAGING }}
