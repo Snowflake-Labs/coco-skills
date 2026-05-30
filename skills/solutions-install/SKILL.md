@@ -1,6 +1,6 @@
 ---
-name: solutions-installer
-id: solutions-installer
+name: solutions-install
+id: solutions-install
 title: Install Snowflake Solutions
 summary: Install pre-built industry solutions into your Snowflake account from the sf-solutions repository.
 description: >-
@@ -20,7 +20,7 @@ tools:
   - Glob
   - Grep
   - WebFetch
-prompt: "$solutions-installer <solution-name>"
+prompt: "$solutions-install <solution-name>"
 language: en
 status: beta
 authors: Sho Tanaka
@@ -33,7 +33,7 @@ categories: solutions, demo, installer
 Installs a pre-built industry solution from the [sf-solutions](https://github.com/Snowflake-Labs/sf-solutions) repository into the user's Snowflake account. Each solution contains a `manifest.json` describing its metadata and a `scripts/` directory with SQL setup/teardown files.
 
 # When to Use
-- User wants to install a solution: `$solutions-installer <solution-name>` where `<solution-name>` is a directory name in the [sf-solutions](https://github.com/Snowflake-Labs/sf-solutions) repository (e.g., `manufacturing-predictive-maintenance`)
+- User wants to install a solution: `$solutions-install <solution-name>` where `<solution-name>` is a directory name in the [sf-solutions](https://github.com/Snowflake-Labs/sf-solutions) repository (e.g., `manufacturing-predictive-maintenance`)
 - User wants to tear down / uninstall a solution
 - User wants to set up a demo environment for an industry use case
 - Do NOT use for editing the solutions catalog website
@@ -100,11 +100,13 @@ Each solution follows this structure:
 
 **Actions:**
 1. Parse the solution slug from the user's prompt (e.g., `manufacturing-predictive-maintenance`)
-2. If no slug is provided, list available solutions by scanning `<repo>/**/manifest.json` and present a table:
-   ```
-   | Slug | Name | Industry | Database | Role Required |
-   ```
-3. **Ask** the user to pick one if not specified
+2. If no slug is provided:
+   a. Scan `<repo>/**/manifest.json` to discover all available solutions
+   b. Present a numbered list of available solutions to the user using `ask_user_question` tool with options:
+      - Each option's `label` = solution slug
+      - Each option's `description` = `<display_name> | Industry: <industry> | DB: <database>`
+   c. Use the user's selection as the solution slug and proceed to Step 1
+3. If a slug is provided but does not match any directory, check for typos or suggest similar names
 
 **If the slug does not match any directory:**
 - Check if the repo has new solutions (git pull or re-scan)
@@ -210,7 +212,7 @@ Features enabled: <features>
 
 Next steps:
   - See README: <slug>/README.md
-  - Teardown: $solutions-installer teardown <slug>
+  - Teardown: $solutions-install teardown <slug>
 ```
 
 
@@ -237,7 +239,7 @@ Next steps:
 # Examples
 
 ## Example 1: Install manufacturing predictive maintenance
-User: $solutions-installer manufacturing-predictive-maintenance
+User: $solutions-install manufacturing-predictive-maintenance
 Assistant:
 1. Finds repo at ~/project/sf-solutions/
 2. Reads manufacturing-predictive-maintenance/manifest.json
@@ -247,6 +249,10 @@ Assistant:
 6. Shows summary with next steps
 
 
-## Example 2: List available solutions
-User: $solutions-installer
-Assistant: Scans repo for manifest.json files, shows table of available solutions, asks user to pick one
+## Example 2: List available solutions (no slug provided)
+User: $solutions-install
+Assistant:
+1. Scans repo for manifest.json files
+2. Uses `ask_user_question` to present available solutions as selectable options
+3. User picks a solution from the interactive list
+4. Proceeds with installation of the selected solution
