@@ -26,7 +26,7 @@ on:
         required: true
 
 env:
-  CF_BASE_PATH: /content/dam/snowflake-site/en/content-fragments/webinars/product-demo/manage-data-pipelines
+  CF_BASE_PATH: /content/dam/snowflake-site/en/content-fragments/skills-library/cortex-code-skills-base-cf
   CF_DEST_BASE: /content/dam/snowflake-site/en/content-fragments/skills-library
 
 jobs:
