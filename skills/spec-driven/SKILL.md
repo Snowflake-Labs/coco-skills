@@ -53,11 +53,11 @@ Analyze user request and route to appropriate sub-skill:
 
 | Intent | Trigger Phrases | Load Sub-Skill |
 |--------|----------------|----------------|
-| FEATURE | "new feature", "implement", "add capability", "build" | `feature/SKILL.md` |
-| BUGFIX | "fix bug", "not working", "broken", "error", "issue" | `bugfix/SKILL.md` |
-| REFACTOR | "refactor", "improve", "optimize", "clean up", "reorganize" | `refactor/SKILL.md` |
-| IMPLEMENT | "implement spec", "execute spec", "build from spec" | `implement/SKILL.md` |
-| EVOLVE | "modify feature", "add to existing", "extend", "change feature", "update spec", "add page", "add requirement" | `evolve/SKILL.md` |
+| FEATURE | "new feature", "implement", "add capability", "build" | `feature/SUBSKILL.md` |
+| BUGFIX | "fix bug", "not working", "broken", "error", "issue" | `bugfix/SUBSKILL.md` |
+| REFACTOR | "refactor", "improve", "optimize", "clean up", "reorganize" | `refactor/SUBSKILL.md` |
+| IMPLEMENT | "implement spec", "execute spec", "build from spec" | `implement/SUBSKILL.md` |
+| EVOLVE | "modify feature", "add to existing", "extend", "change feature", "update spec", "add page", "add requirement" | `evolve/SUBSKILL.md` |
 
 If intent unclear, ASK:
 ```
@@ -218,8 +218,8 @@ How would you like to proceed?
 3. Ignore — Continue without updating specs
 ```
 
-5. If user selects "Evolve", load `evolve/SKILL.md`
-6. If user selects "New Feature", load `feature/SKILL.md`
+5. If user selects "Evolve", load `evolve/SUBSKILL.md`
+6. If user selects "New Feature", load `feature/SUBSKILL.md`
 
 ## Quick Commands
 
@@ -260,7 +260,7 @@ If implementation fails or user requests changes:
 3. Resume from appropriate phase
 4. Document changes in spec history
 
-For post-completion changes (code modified after spec is complete), use the **Evolve** workflow (`evolve/SKILL.md`) which detects drift, amends specs in-place, and implements only the delta.
+For post-completion changes (code modified after spec is complete), use the **Evolve** workflow (`evolve/SUBSKILL.md`) which detects drift, amends specs in-place, and implements only the delta.
 
 ---
 
