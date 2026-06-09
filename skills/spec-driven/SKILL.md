@@ -21,9 +21,9 @@ tools:
   - task_update
 prompt: "$spec-driven I want to build a new feature for user authentication"
 language: en
-status: Published
+status: stable
 author: Tianxia Jia
-type: Snowflake Staff
+type: snowflake
 ---
 
 # Spec-Driven Development Skill

@@ -1,8 +1,3 @@
----
-name: refactor
-parent_skill: spec-driven
-description: "Refactor specification workflow ensuring behavior preservation"
----
 
 # Refactor Spec Sub-Skill
 

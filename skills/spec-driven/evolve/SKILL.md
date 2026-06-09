@@ -1,8 +1,3 @@
----
-name: evolve
-parent_skill: spec-driven
-description: "Evolve an existing completed feature — detect spec drift, amend requirements/design/tasks, implement the delta"
----
 
 # Evolve Spec Sub-Skill
 

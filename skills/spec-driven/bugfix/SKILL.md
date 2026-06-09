@@ -1,8 +1,3 @@
----
-name: bugfix
-parent_skill: spec-driven
-description: "Bugfix specification workflow with regression prevention"
----
 
 # Bugfix Spec Sub-Skill
 

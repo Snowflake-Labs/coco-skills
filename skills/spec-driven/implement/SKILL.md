@@ -1,8 +1,3 @@
----
-name: implement
-parent_skill: spec-driven
-description: "Implementation workflow for executing existing specifications"
----
 
 # Implement Sub-Skill
 

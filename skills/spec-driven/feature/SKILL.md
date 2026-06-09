@@ -1,8 +1,3 @@
----
-name: feature
-parent_skill: spec-driven
-description: "Feature specification workflow for new capabilities"
----
 
 # Feature Spec Sub-Skill
 
