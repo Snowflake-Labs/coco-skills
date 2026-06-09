@@ -1,12 +1,12 @@
 ---
 name: spec-driven
 title: Spec-Driven Development
-summary: A comprehensive SDLC workflow that creates specifications BEFORE implementation using EARS notation, with mandatory approval gates at each phase.
+summary: SDLC workflow enforcing EARS-notation specs and approval gates before any code is written.
 description: >-
-  Spec-driven development following SDLC best practices. Creates specifications BEFORE implementation
-  using EARS notation, ensuring alignment, traceability, and regression prevention.
-  Use when: implement feature, fix bug, refactor code, create spec, write specification,
-  plan implementation, follow structured development workflow, design first, plan before coding.
+  Use when implementing a feature, fixing a bug, refactoring code, creating a spec, writing
+  a specification, planning implementation, or following a structured development workflow.
+  Creates specifications BEFORE implementation using EARS notation, ensuring alignment,
+  traceability, and regression prevention.
   Triggers: spec-driven, specification, SDLC, EARS, implement feature, fix bug, refactor,
   create spec, plan implementation, design first, spec workflow, structured development.
 tools:
