@@ -24,11 +24,25 @@ This skill solves these problems by enforcing a structured workflow with **manda
 
 ## Installation
 
-```bash
-# From this repo
-cortex skill add ./skills/spec-driven
+### User Installation (Available in All Sessions)
 
-# Verify it's installed
+```bash
+# Clone from Snowflake-Labs
+git clone https://github.com/Snowflake-Labs/coco-skills.git
+cp -r coco-skills/skills/spec-driven ~/.snowflake/cortex/skills/spec-driven
+```
+
+### Project Installation (Available in One Project)
+
+```bash
+# From your project root
+git clone https://github.com/Snowflake-Labs/coco-skills.git
+cp -r coco-skills/skills/spec-driven .cortex/skills/spec-driven
+```
+
+### Verify Installation
+
+```bash
 cortex skill list
 ```
 
