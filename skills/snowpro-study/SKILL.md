@@ -1,10 +1,18 @@
 ---
 name: snowpro-study
+id: snowpro-study
+title: SnowPro Certification Study Skill
+summary: A comprehensive skill for generating study materials for SnowPro certifications.
 description: >
   Generate SnowPro certification study materials including study plans, domain
   deep-dives, flashcards, and practice exam questions for any SnowPro exam.
   Dynamically discovers current certifications and exam versions from Snowflake.
   Use when asked to study, prep for, or generate content for SnowPro certifications.
+language: en
+status: beta
+authors: Andy Brown
+type: Community
+prompt: "$snowpro-study Core Deep Dive Domain 2"
 tools:
   - web_fetch
   - Write
