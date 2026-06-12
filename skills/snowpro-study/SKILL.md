@@ -78,12 +78,25 @@ cortex agents discover
 
 If a Cortex Agent is available that has documentation tools configured, it can also be used as a grounding source. Prefer the Knowledge extension directly (`cortex search docs`) over an agent when both are available, as it's more targeted.
 
+### Important: Two Content Types, Distinct Fallback Sources
+
+This skill uses two types of documentation. Both should attempt `cortex search docs` first, but their web fetch fallbacks differ:
+
+| Content Type | Primary Source | Web Fetch Fallback |
+|---|---|---|
+| **Snowflake product docs** (features, SQL syntax, architecture, behavior) | `cortex search docs` (CKE) | `https://docs.snowflake.com/en/...` |
+| **Exam information** (certifications, exam guides, domains, weights, scheduling) | `cortex search docs` (CKE) | `https://learn.snowflake.com/en/certifications/...` |
+
+When `cortex search docs` does not return results for exam-specific queries (e.g., domain names, weights, question counts, prerequisites), fall back to `web_fetch` against `learn.snowflake.com` — NOT `docs.snowflake.com`.
+
 ### Priority Order for Documentation Access
 
-1. `cortex search docs` — Snowflake Documentation Knowledge extension (fastest, most reliable)
+1. `cortex search docs` — Snowflake Documentation Knowledge extension (fastest, most reliable for both product docs and exam info)
 2. Cortex Agent with documentation tools — if Knowledge extension is unavailable
 3. Prompt user to install CKE (on current, different, or new connection)
-4. `web_fetch` against docs.snowflake.com — only if user declines CKE installation
+4. `web_fetch` — only if user declines CKE installation:
+   - Product documentation → `https://docs.snowflake.com/en/...`
+   - Exam/certification information → `https://learn.snowflake.com/en/certifications/...`
 5. LLM knowledge with `[VERIFY]` markers — last resort only
 
 ---
