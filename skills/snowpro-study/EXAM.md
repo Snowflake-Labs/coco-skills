@@ -213,9 +213,23 @@ D. {Option D}
 
 ## Mode 2: Interactive Exam Execution
 
+### Content-First Principle
+
+**CRITICAL:** All exam content (questions, options, correct answers, explanations, references) MUST be fully generated upfront before any interactive delivery begins. This means:
+
+1. **Generate the full exam** using the same question generation process and format as Mode 1 (Write to File)
+2. **Write it to a file** — save as `SnowPro_{CertName}_Practice_{DomainN|Full}.md` (identical to Mode 1 output)
+3. **Then deliver interactively** by reading from the generated file during the session
+
+This approach:
+- Reduces context/state overhead during the interactive session (questions are referenced, not held in memory)
+- Ensures exam content is reproducible and reviewable after the session
+- Allows the user to review all questions and explanations later regardless of how far they got interactively
+- Decouples content quality (generation step) from delivery mechanics (interaction step)
+
 ### Exam Mode Selection
 
-Before starting, ask the user via `ask_user_question`:
+After generating the exam file, ask the user via `ask_user_question`:
 
 | Mode | Behavior |
 |------|----------|
@@ -225,12 +239,21 @@ Before starting, ask the user via `ask_user_question`:
 
 ### Execution Flow
 
+#### Setup (All Modes)
+
+```
+1. Generate full exam content (questions + answer key) following the Question Generation Process
+2. Write to file: SnowPro_{CertName}_Practice_{scope}.md
+3. Inform the user: "Exam generated and saved to {filename}. Starting interactive session..."
+4. Read questions from the file during delivery (do NOT regenerate or hold in context)
+```
+
 #### Mode: One at a Time + Instant Feedback
 
 ```
-1. Present question with options (no answer visible)
+1. Read next question from generated file, present with options (no answer visible)
 2. Wait for user to respond (A/B/C/D or the text of their choice)
-3. Immediately show:
+3. Read the corresponding answer from the file, immediately show:
    - Correct or Incorrect (your answer: X, correct: Y)
    - Full explanation (why correct answer is right, why chosen distractor is wrong)
    - Reference link
@@ -242,20 +265,20 @@ Before starting, ask the user via `ask_user_question`:
 #### Mode: One at a Time, Results at End
 
 ```
-1. Present question with options
+1. Read next question from generated file, present with options
 2. Wait for user response
 3. Acknowledge only: "Recorded: B. Next question (4 of 15):"
 4. Do NOT reveal correctness until all questions are answered
-5. After final question: show complete answer key with explanations
+5. After final question: read answer key from file, show complete results with explanations
 6. Show score summary and domain breakdown
 ```
 
 #### Mode: Batched
 
 ```
-1. Present 5-10 questions in a numbered block
+1. Read next 5-10 questions from generated file, present in a numbered block
 2. User responds with answers (e.g., "1-B, 2-A, 3-D, 4-C, 5-B")
-3. Show batch results:
+3. Read corresponding answers from file, show batch results:
    - Per-question: correct/incorrect + brief explanation
    - Batch score: "Batch 1: 4/5 (80%)"
 4. Present next batch
@@ -267,6 +290,7 @@ Before starting, ask the user via `ask_user_question`:
 - Track question number, domain, cognitive level, and user's answer
 - Accept flexible answer formats: "B", "b", "Option B", full option text, or key phrase
 - If ambiguous, ask for clarification
+- Reference the generated file for all content — do not reconstruct questions or explanations from memory
 - Allow user commands mid-exam:
   - **skip** / **pass** — mark unanswered (counted as incorrect)
   - **flag** / **mark** — note for review, still require an answer
