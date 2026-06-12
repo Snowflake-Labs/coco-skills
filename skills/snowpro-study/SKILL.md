@@ -46,10 +46,27 @@ cortex search docs "Snowflake architecture overview"
 - Supplement with `web_fetch` only when the search doesn't cover a specific topic
 
 **If the command fails or returns no results:**
+
+Prompt the user via `ask_user_question` to install the Cortex Knowledge Extension (CKE), which provides the best documentation grounding:
+
+> "The Snowflake Documentation Knowledge Extension isn't available on this connection. The CKE provides the most accurate and reliable documentation grounding for study content. Would you like to install it?"
+
+Options:
+1. **Install on current connection** — Install the CKE on the active Snowflake connection
+2. **Install on a different connection** — Let the user pick another existing connection to install on
+3. **Install on a new connection** — Guide the user through setting up a new connection and installing
+4. **Skip — use web fetch instead** — Fall back to `web_fetch` against docs.snowflake.com (less reliable, slower)
+
+**If the user chooses to install (options 1-3):**
+- Guide them through CKE installation on the selected connection
+- After installation, re-run `cortex search docs "Snowflake architecture overview"` to confirm it works
+- Proceed with `cortex search docs` as the primary documentation source
+
+**If the user declines (option 4):**
 - Fall back to `web_fetch` against `https://docs.snowflake.com/en/...` URLs
 - Note in output: "Documentation sourced via web fetch (Knowledge extension not available)"
 
-**If both fail:**
+**If web fetch also fails:**
 - Mark all factual claims with `[VERIFY]`
 - Warn the user that content could not be grounded in live documentation
 
@@ -65,8 +82,9 @@ If a Cortex Agent is available that has documentation tools configured, it can a
 
 1. `cortex search docs` — Snowflake Documentation Knowledge extension (fastest, most reliable)
 2. Cortex Agent with documentation tools — if Knowledge extension is unavailable
-3. `web_fetch` against docs.snowflake.com — fallback for specific pages
-4. LLM knowledge with `[VERIFY]` markers — last resort only
+3. Prompt user to install CKE (on current, different, or new connection)
+4. `web_fetch` against docs.snowflake.com — only if user declines CKE installation
+5. LLM knowledge with `[VERIFY]` markers — last resort only
 
 ---
 
