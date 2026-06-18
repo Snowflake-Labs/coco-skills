@@ -21,9 +21,11 @@ jobs:
         id: detect
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_REPO: ${{ github.repository }}
         run: |
-          pr_number="${{ github.event.pull_request.number }}"
-          repo="${{ github.repository }}"
+          pr_number="$PR_NUMBER"
+          repo="$PR_REPO"
 
           changed_files=$(curl -sS \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
