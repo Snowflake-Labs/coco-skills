@@ -1,7 +1,7 @@
 name: Stage Skills to AEM on PR
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [main]
     paths:
       - 'skills/**/SKILL.md'
@@ -66,5 +66,6 @@ jobs:
     with:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.event.pull_request.head.sha }}
+      base_sha: ${{ github.event.pull_request.base.sha }}
       pr_number: ${{ github.event.pull_request.number }}
       aws_secret_name: github-snowflake-labs-aem-staging-secrets

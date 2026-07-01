@@ -19,6 +19,11 @@ on:
         description: 'AWS Secrets Manager secret name containing AEM credentials'
         required: true
         type: string
+      base_sha:
+        description: 'Base branch SHA for trusted script checkout (prevents fork PR script injection)'
+        required: false
+        type: string
+        default: ''
 
 env:
   CF_BASE_PATH: /content/dam/snowflake-site/en/content-fragments/skills-library/cortex-code-skills-base-cf
@@ -57,14 +62,22 @@ jobs:
           echo "AEM_URL=$aem_author_url" >> $GITHUB_ENV
           echo "AEM_PUBLISH_URL=$aem_publish_url" >> $GITHUB_ENV
 
-      - name: Checkout repository
+      - name: Checkout skill content (from PR branch)
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit_sha }}
           sparse-checkout: |
             skills/${{ inputs.skill_name }}
+          sparse-checkout-cone-mode: true
+
+      - name: Checkout trusted scripts (from base branch)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base_sha || inputs.commit_sha }}
+          sparse-checkout: |
             scripts/aem-skills
           sparse-checkout-cone-mode: true
+          path: trusted-scripts
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -87,7 +100,7 @@ jobs:
 
       - name: Parse SKILL.md
         run: |
-          python3 scripts/aem-skills/parse_skill.py \
+          python3 trusted-scripts/scripts/aem-skills/parse_skill.py \
             "${{ steps.find_md.outputs.md_file }}" \
             --output-json parsed_skill.json
           echo "📄 Parsed skill:"
@@ -95,7 +108,7 @@ jobs:
 
       - name: Prepare AEM payload
         run: |
-          python3 scripts/aem-skills/prepare_skill_payload.py \
+          python3 trusted-scripts/scripts/aem-skills/prepare_skill_payload.py \
             parsed_skill.json \
             --output-json skill_payload.json
           echo "📦 Payload prepared"
