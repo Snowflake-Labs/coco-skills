@@ -46,6 +46,9 @@ jobs:
   publish_skills:
     needs: detect_changes
     if: needs.detect_changes.outputs.has_changes == 'true'
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         skill: ${{ fromJson(needs.detect_changes.outputs.skills_json) }}
@@ -55,8 +58,4 @@ jobs:
     with:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.sha }}
-    secrets:
-      AEM_USERNAME: ${{ secrets.AEM_USERNAME_STAGING }}
-      AEM_PASSWORD: ${{ secrets.AEM_PASSWORD_STAGING }}
-      AEM_AUTHOR_URL: ${{ secrets.AEM_AUTHOR_URL_STAGING }}
-      AEM_PUBLISH_URL: ${{ secrets.AEM_PUBLISH_URL_STAGING }}
+      aws_secret_name: github-snowflake-labs-aem-staging-secrets

@@ -15,15 +15,10 @@ on:
         description: 'PR number for commenting (optional, omit for merge runs)'
         required: false
         type: number
-    secrets:
-      AEM_USERNAME:
+      aws_secret_name:
+        description: 'AWS Secrets Manager secret name containing AEM credentials'
         required: true
-      AEM_PASSWORD:
-        required: true
-      AEM_AUTHOR_URL:
-        required: true
-      AEM_PUBLISH_URL:
-        required: true
+        type: string
 
 env:
   CF_BASE_PATH: /content/dam/snowflake-site/en/content-fragments/skills-library/cortex-code-skills-base-cf
@@ -32,12 +27,36 @@ env:
 jobs:
   publish_skill:
     runs-on: ubuntu-latest
-    env:
-      AEM_URL: ${{ secrets.AEM_AUTHOR_URL }}
-      AEM_USERNAME: ${{ secrets.AEM_USERNAME }}
-      AEM_PASSWORD: ${{ secrets.AEM_PASSWORD }}
-      AEM_PUBLISH_URL: ${{ secrets.AEM_PUBLISH_URL }}
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::886692307588:role/github-snowflake-labs-aem-iam-role
+          aws-region: us-west-1
+
+      - name: Fetch AEM secrets
+        run: |
+          secret=$(aws secretsmanager get-secret-value \
+            --secret-id "${{ inputs.aws_secret_name }}" \
+            --query SecretString --output text)
+
+          aem_username=$(echo "$secret" | jq -r '.AEM_USERNAME')
+          aem_password=$(echo "$secret" | jq -r '.AEM_PASSWORD')
+          aem_author_url=$(echo "$secret" | jq -r '.AEM_AUTHOR_URL')
+          aem_publish_url=$(echo "$secret" | jq -r '.AEM_PUBLISH_URL')
+
+          echo "::add-mask::$aem_username"
+          echo "::add-mask::$aem_password"
+
+          echo "AEM_USERNAME=$aem_username" >> $GITHUB_ENV
+          echo "AEM_PASSWORD=$aem_password" >> $GITHUB_ENV
+          echo "AEM_URL=$aem_author_url" >> $GITHUB_ENV
+          echo "AEM_PUBLISH_URL=$aem_publish_url" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -170,7 +189,7 @@ jobs:
         if: inputs.pr_number != 0
         uses: actions/github-script@v7
         env:
-          AEM_PUBLISH_URL: ${{ secrets.AEM_PUBLISH_URL }}
+          AEM_PUBLISH_URL: ${{ env.AEM_PUBLISH_URL }}
         with:
           script: |
             const skillName = '${{ inputs.skill_name }}';
