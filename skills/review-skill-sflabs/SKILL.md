@@ -115,3 +115,4 @@ A single rendered report per `references/report-template.md`. Includes verdict, 
 - This skill is purely advisory. It does not gate PR acceptance. Reviewers on the pull request make the final call.
 - Every check is heuristic, sourced from on-disk + live data + reasoning. There is no closed list of approved skills, banned patterns, or canonical sources baked into this skill.
 - When the data-policy principles update, only `references/data-policy-principles.md` changes — the workflows reason against whatever the current file says.
+
