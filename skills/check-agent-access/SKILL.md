@@ -18,7 +18,7 @@ description: |
   or auditing non-agent Snowflake objects.
 prompt: Audit which Cortex Agents a role can access and fix any gaps.
 language: en
-status: Published
+status: beta
 author: Martin Seifert
 type: community
 tools:
