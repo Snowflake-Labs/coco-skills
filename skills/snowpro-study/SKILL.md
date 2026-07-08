@@ -409,3 +409,4 @@ Before generating ANY files (applies to all sub-skills):
 | User specifies a cert that doesn't exist | Show available certs from cache/discovery and ask them to choose |
 | User specifies a domain number that doesn't exist | Show available domains for that cert and ask them to choose |
 | Cache file is corrupted | Delete and re-fetch |
+

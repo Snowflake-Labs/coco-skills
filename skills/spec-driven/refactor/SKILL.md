@@ -246,3 +246,4 @@ CLARIFY → SPECIFY → IMPLEMENT (iterative) → VALIDATE
 - Event emissions
 - Error messages and codes
 - Performance characteristics
+

@@ -241,3 +241,4 @@ LOCATE → VALIDATE → PLAN → EXECUTE → VALIDATE → FINALIZE
 - Features: `specs/features/{name}/requirements.md`
 - Bugfixes: `specs/bugfixes/{id}/bugfix-spec.md`
 - Refactors: `specs/refactors/{name}/spec.md`
+

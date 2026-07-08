@@ -292,3 +292,4 @@ CLARIFY → SPECIFY (3-part) → IMPLEMENT → VALIDATE
 3. Unchanged Behavior - Regression prevention
 
 **Key Principle**: The Unchanged Behavior section is NOT optional. Every bugfix MUST document what should NOT change.
+

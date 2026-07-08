@@ -103,3 +103,4 @@ Print generated file list and next steps (run provider setup, run consumer setup
 - `discover/INSTRUCTIONS.md` — V1 introspection queries
 - `generate/INSTRUCTIONS.md` — V2 Collaboration API script generation
 - `v1_v2_mapping.md` — reference mapping table
+
