@@ -11,7 +11,7 @@ description: >
 language: en
 status: beta
 authors: Andy Brown
-type: Community
+type: community
 prompt: "$snowpro-study Core Deep Dive Domain 2"
 tools:
   - web_fetch
