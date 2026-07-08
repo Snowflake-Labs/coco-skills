@@ -59,4 +59,4 @@ jobs:
     with:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.sha }}
-      aws_secret_name: github-snowflake-labs-aem-staging-secrets
+      aws_secret_name: github-snowflake-labs-aem-prod-secrets
