@@ -82,3 +82,4 @@ DDL-only features (no YAML equivalent): `AI_QUESTION_CATEGORIZATION`, `WITH TAG`
 - **Cardinality wrong on a relationship** — silently inflates metrics; verify with `SHOW METRICS` and a row-count sanity query.
 - **Fan trap from two facts joined through a shared dim without `USING`** — disambiguate with the `USING (relationship)` clause on each metric.
 - **Forgetting to switch roles** in access-control snippets before running query blocks.
+

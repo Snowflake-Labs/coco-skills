@@ -325,3 +325,4 @@ DETECT → AMEND SPEC → IMPLEMENT (delta only) → VALIDATE (full)
 - The change is a bug fix → use `bugfix/SKILL.md`
 - The change is purely structural (no behavior change) → use `refactor/SKILL.md`
 - The change is so large it's effectively a new feature → use `feature/SKILL.md` with a new spec folder
+

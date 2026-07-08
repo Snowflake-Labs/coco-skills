@@ -101,3 +101,4 @@ This skill tells you which roles to reference. Those skills handle policy implem
 This router skill issues no SQL on its own. Each sub-flow that creates roles, applies grants, or alters schemas defines its own stopping points. The general rule across all sub-flows:
 
 ⚠️ STOPPING POINT: Before running any `CREATE ROLE`, `GRANT`, `REVOKE`, `ALTER SCHEMA … ENABLE MANAGED ACCESS`, or `DROP ROLE` statement, show the planned SQL to the user and wait for explicit confirmation. RBAC changes are easy to apply but painful to reverse once users start depending on them.
+

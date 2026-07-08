@@ -102,3 +102,4 @@ Refuse these rationalizations:
 - Assessment route: maturity scorecard + prioritized roadmap.
 - Patterns route: implementation playbook for the selected capability.
 - Full setup: complete architecture with sequenced implementation plan.
+

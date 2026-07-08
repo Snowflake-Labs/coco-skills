@@ -89,3 +89,4 @@ Use the returned content to answer the user's question.
 ## Output
 
 A concise answer to the user's Snowflake question, grounded in official documentation. **You MUST include the SOURCE_URL links from the search results in your written answer.** List them as references at the end so the user can read the full pages. Never omit the URLs.
+
