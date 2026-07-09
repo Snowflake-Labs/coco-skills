@@ -320,3 +320,4 @@ CLARIFY → SPECIFY → [DESIGN] → IMPLEMENT → VALIDATE
 - `specs/features/{name}/requirements.md`
 - `specs/features/{name}/design.md` (if complex)
 - `specs/features/{name}/tasks.md`
+

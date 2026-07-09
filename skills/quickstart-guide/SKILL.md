@@ -284,3 +284,4 @@ Assistant: Fetches the Cortex Agents Quickstart, checks environment, asks mode, 
 ### Example 2: Legacy URL
 User: $quickstart-guide https://quickstarts.snowflake.com/guide/getting_started_with_dataengineering_ml_using_snowpark_python
 Assistant: Detects legacy URL pattern, converts underscores to hyphens, fetches content, and delivers the Data Engineering with Snowpark experience.
+

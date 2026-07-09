@@ -417,3 +417,4 @@ Confirm:
 
 - **Primary:** Inline report in CoCo (metric cards, bar charts, markdown tables)
 - **Optional:** Single self-contained HTML report file (no sibling files)
+

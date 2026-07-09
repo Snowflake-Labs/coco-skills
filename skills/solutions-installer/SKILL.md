@@ -250,3 +250,4 @@ Assistant:
 ## Example 2: List available solutions
 User: $solutions-installer
 Assistant: Scans repo for manifest.json files, shows table of available solutions, asks user to pick one
+

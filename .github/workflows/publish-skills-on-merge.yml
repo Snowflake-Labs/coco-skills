@@ -24,7 +24,7 @@ jobs:
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${{ github.repository }}/commits/${commit_sha}" \
-            | jq -r '.files[]? | select(.status != "removed") | .filename | select(startswith("skills/")) | select(endswith("/SKILL.md"))')
+            | jq -r '.files[]? | select(.status != "removed") | .filename | select(test("^skills/[^/]+/SKILL\\.md$"))')
 
           if [ -z "$changed_files" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
@@ -37,7 +37,7 @@ jobs:
           objs='[]'
           while IFS= read -r file; do
             [ -z "$file" ] && continue
-            skill_name=$(echo "$file" | sed -E 's|skills/([^/]+)/SKILL.md|\1|')
+            skill_name=$(echo "$file" | sed -E 's|^skills/([^/]+)/SKILL\.md$|\1|')
             objs=$(echo "$objs" | jq -c --arg name "$skill_name" '. + [{name:$name}]')
           done <<< "$changed_files"
           echo "skills_json=$objs" >> $GITHUB_OUTPUT
@@ -59,4 +59,4 @@ jobs:
     with:
       skill_name: ${{ matrix.skill.name }}
       commit_sha: ${{ github.sha }}
-      aws_secret_name: github-snowflake-labs-aem-staging-secrets
+      aws_secret_name: github-snowflake-labs-aem-prod-secrets

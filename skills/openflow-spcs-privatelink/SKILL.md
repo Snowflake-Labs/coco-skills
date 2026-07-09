@@ -122,3 +122,4 @@ Order matters — Snowflake first, then AWS:
 ## Cost note
 
 NLB (hourly + LCU), VPC Endpoint Service (hourly), PrivateLink endpoint (hourly + per-GB), and cross-zone data transfer all incur AWS charges. Check current AWS pricing.
+

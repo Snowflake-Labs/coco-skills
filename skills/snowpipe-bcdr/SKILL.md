@@ -133,3 +133,4 @@ Catchup choices: `ALTER PIPE … REFRESH` (≤7 days), `COPY INTO … FROM @stag
 
 - [Stage, Pipe, and Load History Replication](https://docs.snowflake.com/en/user-guide/account-replication-stages-pipes-load-history)
 - [Automating Snowpipe for Azure Blob Storage](https://docs.snowflake.com/en/user-guide/data-load-snowpipe-auto-azure)
+
