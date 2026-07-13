@@ -1,367 +1,368 @@
----
-name: sap-bdc-csn-generator
-description: "Generate SAP CSN Interop v1.2 JSON from Snowflake metadata for SAP BDC integration. Triggers: SAP BDC, CSN interop, CSN json, generate CSN, Snowflake to SAP, data product, core schema notation."
-parent_skill: manage-zerocopy-sapbdc
----
+# Minimal CSN Generator - SAP BDC Compatible
 
-# SAP CSN Interop Generator
+Generate **minimal CSN Interop v1.0** from Snowflake (or other databases) that matches SAP BDC Connect requirements for maximum acceptance likelihood.
 
-Generate SAP CSN Interop v1.2 JSON documents from Snowflake table metadata or Semantic Views, for publishing data products to SAP Business Data Cloud (BDC).
+## When to Use This Skill
 
-**When to use this skill:**
-- Publishing Snowflake data as SAP BDC data products
-- Creating CSN Interop documents for SAP integration scenarios
-- Generating entity/element metadata with CSN Interop v1.2 annotation vocabularies (@ObjectModel, @Semantics, @PersonalData, @Aggregation, @EndUserText, @Consumption, @DataIntegration, @AnalyticsDetails, @ODM, @EntityRelationship)
-- Converting Snowflake schemas to CDS-typed entity definitions with foreign key associations
+Use this skill when:
+- Publishing Snowflake tables to SAP Datasphere/BDC via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
+- The user needs CSN that will be accepted by SAP BDC publishing APIs
+- CSN generation from database schema (Snowflake, Postgres, BigQuery, etc.)
+- Maximum compatibility with SAP BDC is more important than rich semantic metadata
 
-**Quick example** — Input: Snowflake table at `ECOMMERCE.PRODUCT` with columns `PRODUCT (VARCHAR 40)`, `PRODUCT_NAME (VARCHAR 100)`, `PRODUCT_TYPE (VARCHAR 2)`, `CREATION_DATE (DATE)`. Output (abbreviated):
+**DO NOT use** when:
+- User explicitly wants comprehensive annotations for SAP Datasphere consumption (use enhanced skill)
+- Building CSN for CAP applications (use full CSN with associations)
+
+## Critical Architecture Understanding (July 2026)
+
+### The Zero-Copy Materialization Pipeline
+
+```
+Snowflake Iceberg (parquet) → SAP Materialization Job (≤10 min) → HDL Files (Delta Table) → CSN Validation
+```
+
+**Key insight:** SAP validates CSN against the **materialized Delta table**, NOT directly against Iceberg. This is why:
+1. Type mappings must match what the Delta table reports (not Snowflake's nominal types)
+2. Empty tables fail ("Remote object not found") because no Delta table gets created
+3. You must wait ~10 minutes after publishing before deploying on SAP
+
+### Why INTEGER → cds.Decimal (Not cds.Integer)
+
+Snowflake stores INTEGER/BIGINT as `decimal(38,0)` in Iceberg metadata. When SAP materializes:
+- Iceberg `decimal(38,0)` → Delta table `DECIMAL(38,0)`
+- CSN `cds.Integer` fails: "inputDataType=INTEGER, actualDataType=DECIMAL"
+- CSN `cds.Decimal(38,0)` matches → ✅ Success
+
+### Why TIME → cds.Timestamp (Not cds.Time)
+
+Snowflake TIME in Iceberg metadata is `time`. When SAP materializes:
+- Iceberg `time` → Delta table `TIMESTAMP`
+- CSN `cds.Time` fails: "inputDataType=TIME, actualDataType=TIMESTAMP"
+- CSN `cds.Timestamp` matches → ✅ Success
+
+## What This Generates
+
+**Minimal CSN v1.0** with:
+- ✅ Core structure (`definitions`, `kind`, `elements`, `types`)
+- ✅ Primary key designation (`key: true`)
+- ✅ Foreign key associations (if FK constraints available)
+- ✅ Correct type mapping (Snowflake → Iceberg → Delta → CDS types)
+- ✅ `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
+- ✅ `@PersonalData.*` annotations (when PII columns detected)
+- ❌ NO display labels or i18n translations
+- ❌ NO semantic metadata (@Semantics, @Aggregation, etc.)
+
+## SAP BDC Valid CDS Types (Complete List)
+
+From SAP BDC REST API validation:
+```
+cds.Boolean, cds.Decimal, cds.Double, cds.String, cds.LargeString,
+cds.Date, cds.Timestamp, cds.UUID, cds.Association, cds.Composition
+```
+
+**⚠️ DO NOT USE (pass publish but fail deployment):**
+- `cds.Integer` / `cds.Integer64` → use `cds.Decimal(p,0)` instead
+- `cds.Time` → use `cds.Timestamp` instead
+- `cds.DateTime` → use `cds.Timestamp` instead
+
+## Type Mapping (Final - July 2026)
+
+| Snowflake Type | Iceberg Metadata | Delta Table | CDS Type | Status |
+|----------------|------------------|-------------|----------|--------|
+| BOOLEAN | boolean | BOOLEAN | `cds.Boolean` | ✅ Validated |
+| INTEGER | decimal(38,0) | DECIMAL(38,0) | `cds.Decimal(38,0)` | ✅ Validated |
+| BIGINT | decimal(38,0) | DECIMAL(38,0) | `cds.Decimal(38,0)` | ✅ Validated |
+| NUMBER(p,s) | decimal(p,s) | DECIMAL(p,s) | `cds.Decimal(p,s)` | ✅ Validated |
+| DECIMAL(p,s) | decimal(p,s) | DECIMAL(p,s) | `cds.Decimal(p,s)` | ✅ Validated |
+| FLOAT/FLOAT4/FLOAT8 | float | DOUBLE | `cds.Double` | ✅ Validated |
+| REAL/DOUBLE | double | DOUBLE | `cds.Double` | ✅ Validated |
+| VARCHAR/STRING/TEXT | string | NVARCHAR | `cds.String(5000)` | ✅ Validated |
+| DATE | date | DATE | `cds.Date` | ✅ Validated |
+| TIME | time | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
+| TIMESTAMP_NTZ | timestamp | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
+| TIMESTAMP_LTZ | timestamptz | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
+| VARIANT | string | NVARCHAR | `cds.String(5000)` | ✅ Validated |
+| BINARY | binary | ❌ FAILS | N/A | ⛔ Unsupported |
+| VARBINARY | N/A | N/A | N/A | ⛔ Blocked (Snowflake Iceberg doesn't support) |
+
+## CSN Structural Requirements
+
 ```json
 {
-  "csnInteropEffective": "1.2",
+  "csnInteropEffective": "1.0",
   "$version": "2.0",
-  "definitions": {
-    "ECOMMERCE": {
-      "kind": "context"
-    },
-    "ECOMMERCE.PRODUCT": {
-      "kind": "entity",
-      "@EndUserText.label": "{i18n>ECOMMERCE.PRODUCT@ENDUSERTEXT.LABEL}",
-      "elements": {
-        "PRODUCT": {
-          "key": true, "notNull": true, "type": "cds.String", "length": 40,
-          "@EndUserText.label": "{i18n>ECOMMERCE.PRODUCT.PRODUCT@ENDUSERTEXT.LABEL}",
-          "@ObjectModel.text.element": ["PRODUCT_NAME"]
-        },
-        "PRODUCT_NAME": {
-          "type": "cds.String", "length": 100,
-          "@EndUserText.label": "{i18n>ECOMMERCE.PRODUCT.PRODUCT_NAME@ENDUSERTEXT.LABEL}"
-        },
-        "PRODUCT_TYPE": {
-          "type": "cds.String", "length": 2,
-          "@EndUserText.label": "{i18n>ECOMMERCE.PRODUCT.PRODUCT_TYPE@ENDUSERTEXT.LABEL}"
-        },
-        "CREATION_DATE": {
-          "type": "cds.Date",
-          "@EndUserText.label": "{i18n>ECOMMERCE.PRODUCT.CREATION_DATE@ENDUSERTEXT.LABEL}"
-        }
-      }
-    }
+  "i18n": {},
+  "meta": {
+    "creator": "Snowflake CSN Interop Generator - Minimal",
+    "flavor": "inferred"
   },
-  "i18n": { "en": { "ECOMMERCE.PRODUCT@ENDUSERTEXT.LABEL": "Product", "ECOMMERCE.PRODUCT.PRODUCT@ENDUSERTEXT.LABEL": "Product", "ECOMMERCE.PRODUCT.PRODUCT_NAME@ENDUSERTEXT.LABEL": "Product Name", "ECOMMERCE.PRODUCT.PRODUCT_TYPE@ENDUSERTEXT.LABEL": "Product Type", "ECOMMERCE.PRODUCT.CREATION_DATE@ENDUSERTEXT.LABEL": "Creation Date" } }
+  "definitions": {
+    "PUBLIC": { "kind": "context" },
+    "PUBLIC.TABLE_NAME": {
+      "kind": "entity",
+      "elements": { ... }
+    }
+  }
 }
 ```
 
-> 🔴 **Critical naming convention shown above**: namespace (`ECOMMERCE`) and all entity/element keys are UPPERCASE matching Snowflake's actual schema and column names. Only the i18n VALUES (the human-readable labels like "Product Name") are humanized. SAP Datasphere resolves remote tables by entity key — any case mismatch causes import to fail with "Remote object could not be found".
+**Critical Rules:**
+1. Context = SCHEMA name (e.g., `PUBLIC`), NOT database name
+2. Entity names must EXACTLY match table names in the share
+3. At least one `key: true` element per entity
+4. All String columns → `length: 5000`
+5. UPPERCASE identifiers matching Snowflake
 
-> **CRITICAL: SAP CDS CSN ≠ CSN Interop v1.2 — Annotation Vocabulary Boundary**
-> 
-> CSN Interop v1.2 uses **ONLY** these 10 extension vocabularies: `@Aggregation`, `@AnalyticsDetails`, `@Consumption`, `@DataIntegration`, `@EndUserText`, `@EntityRelationship`, `@ObjectModel`, `@ODM`, `@PersonalData`, `@Semantics`.
-> 
-> SAP S/4HANA CDS exports and SAP CAP `.cds` files use a **much larger** annotation vocabulary that is **NOT** compatible with CSN Interop. The `sample-csn-files/` directory contains SAP CDS CSN exports — do **not** copy annotation patterns from them.
-> 
-> **Non-spec annotations that must NEVER appear in generated CSN Interop output:**
-> - `@Analytics.*` (entire vocabulary — not one of the 10 CSN Interop vocabularies)
-> - `@ObjectModel.sapObjectNodeType.name` (SAP CDS only)
-> - `@ObjectModel.usageType.dataClass` (SAP CDS only)
-> - `@ObjectModel.usageType.serviceQuality` (SAP CDS only)
-> - `@ObjectModel.dataCategory` (SAP CDS only — use `@ObjectModel.modelingPattern` instead)
-> - `@Semantics.systemDate.*` / `@Semantics.systemDateTime.*` (SAP CDS only)
-> - `@Semantics.user.*` (SAP CDS only)
-> - `@Semantics.booleanIndicator` (SAP CDS only)
-> Note: `@Semantics.time` IS in the CSN Interop spec (per `semantics.yaml`) and IS supported. Use it for TIMS-style 6-char time columns.
+## PII Detection (New - July 2026)
 
-## Prerequisites
+Detect and annotate PII columns:
 
-- Snowflake connection configured
+**Data Subject ID Detection:**
+- Column named `*_ID` where prefix is `CUSTOMER`, `USER`, `PERSON`, `EMPLOYEE`, `KUNNR`
+- → Add `@PersonalData.fieldSemantics: {"#": "DataSubjectIDType"}`
+
+**Potentially Personal Detection:**
+- Column named `*EMAIL*`, `*PHONE*`, `*SSN*`, `*ADDRESS*`, `*NAME*` (except company names)
+- → Add `@PersonalData.isPotentiallyPersonal: true`
+
+**Entity-Level PII:**
+- If entity has Data Subject ID column
+- → Add `@PersonalData.entitySemantics: "DataSubjectDetails"` to entity
+
+## Type Mapping Function (Python)
+
+```python
+def map_to_cds_type(source_type: str, precision: int, scale: int) -> dict:
+    """Map database type to CDS type following SAP materialization rules.
+    
+    CRITICAL: Types must match what SAP's Delta table reports, NOT Snowflake's nominal types.
+    """
+    upper_type = source_type.upper()
+    
+    # String types - ALWAYS use 5000 for remote mode compatibility
+    if any(t in upper_type for t in ['VARCHAR', 'STRING', 'TEXT', 'CHAR']):
+        return {"type": "cds.String", "length": 5000}
+    
+    # Integer types - MUST use cds.Decimal (SAP Delta reports DECIMAL)
+    # DO NOT use cds.Integer - it fails at deployment
+    if upper_type in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT']:
+        return {"type": "cds.Decimal", "precision": 38, "scale": 0}
+    if upper_type == 'BIGINT':
+        return {"type": "cds.Decimal", "precision": 38, "scale": 0}
+    
+    # Decimal/Number types - use exact precision from INFORMATION_SCHEMA
+    if upper_type in ['DECIMAL', 'NUMERIC', 'NUMBER']:
+        effective_precision = precision if precision is not None else 38
+        effective_scale = scale if scale is not None else 0
+        return {
+            "type": "cds.Decimal",
+            "precision": effective_precision,
+            "scale": effective_scale
+        }
+    
+    # Float types
+    if upper_type in ['FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DOUBLE']:
+        return {"type": "cds.Double"}
+    
+    # Boolean
+    if upper_type in ['BOOLEAN', 'BOOL']:
+        return {"type": "cds.Boolean"}
+    
+    # Date
+    if upper_type == 'DATE':
+        return {"type": "cds.Date"}
+    
+    # Time and Timestamp - ALL map to cds.Timestamp
+    # DO NOT use cds.Time or cds.DateTime - they fail at deployment
+    if upper_type == 'TIME':
+        return {"type": "cds.Timestamp"}  # NOT cds.Time
+    if upper_type in ['TIMESTAMP', 'TIMESTAMP_NTZ', 'TIMESTAMP_LTZ', 'DATETIME']:
+        return {"type": "cds.Timestamp"}  # NOT cds.DateTime
+    
+    # VARIANT (JSON) - map to String, NOT LargeString
+    # LargeString causes NCLOB vs NVARCHAR mismatch
+    if upper_type == 'VARIANT':
+        return {"type": "cds.String", "length": 5000}
+    
+    # Binary - UNSUPPORTED by SAP materialization
+    # VARBINARY is blocked at Snowflake Iceberg level entirely
+    if upper_type in ['BINARY', 'VARBINARY', 'BYTES']:
+        raise ValueError(f"BINARY type not supported - VARBINARY blocked by Snowflake Iceberg, BINARY blocked by SAP materialization")
+    
+    # Default fallback
+    return {"type": "cds.String", "length": 5000}
+```
+
+## Pre-Publish Checklist
+
+Before calling `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`:
+
+- [ ] **Tables have ≥1 row of data** (parquet files must exist for materialization)
+- [ ] CSN entity names match `DESCRIBE SHARE` table names exactly
+- [ ] All INTEGER/BIGINT columns use `cds.Decimal(38,0)` (NOT cds.Integer)
+- [ ] All TIME/TIMESTAMP columns use `cds.Timestamp` (NOT cds.Time/cds.DateTime)
+- [ ] DECIMAL columns use exact precision from `INFORMATION_SCHEMA.COLUMNS`
+- [ ] **No BINARY columns** (unsupported by SAP materialization)
+- [ ] Context is SCHEMA name (e.g., `PUBLIC`), not database name
+- [ ] All String columns have `length: 5000`
+
+After publishing:
+
+- [ ] **Wait ≥10 minutes** for SAP materialization job to complete before deploying
 
 ## Workflow
 
-### Step 1: Choose Generation Mode
-
-**Ask** user which mode to use:
-
-```
-Select CSN generation mode:
-
-1. Semantic View (recommended) - Generate CSN from an existing Snowflake Semantic View
-2. Create Semantic View first - Create a Semantic View from tables, then generate CSN
-3. Raw Tables - Generate CSN directly from INFORMATION_SCHEMA metadata
-```
-
-**If Option 1 (Semantic View):** Proceed to Step 2A
-**If Option 2 (Create SV first):** Proceed to Step 2B
-**If Option 3 (Raw Tables):** Proceed to Step 2C
-
-### Step 2A: Generate from Existing Semantic View
-
-**Ask** user for:
-- Database name
-- Schema name
-- Semantic View name
-- Namespace name (default: **UPPERCASE Snowflake schema name** as it appears in `INFORMATION_SCHEMA`, e.g., `ECOMMERCE`, `SALES` — must match the actual Snowflake schema for SAP Datasphere to resolve remote tables)
-- Output file path (default: `./outputs/<schema>.csn.json`)
-
-**Execute these SQL queries** using `snowflake_sql_execute`:
+### Step 1: Validate Tables Have Data
 
 ```sql
-DESCRIBE SEMANTIC VIEW "<DATABASE>"."<SCHEMA>"."<SEMANTIC_VIEW_NAME>";
+-- Check row counts before publishing
+SELECT TABLE_NAME, ROW_COUNT 
+FROM INFORMATION_SCHEMA.TABLES 
+WHERE TABLE_SCHEMA = 'PUBLIC' 
+  AND TABLE_NAME IN ('TABLE1', 'TABLE2');
+
+-- Tables with 0 rows will cause "Remote object not found" errors
 ```
 
-Optionally get DDL for context:
-```sql
-SELECT GET_DDL('SEMANTIC VIEW', '"<DATABASE>"."<SCHEMA>"."<SEMANTIC_VIEW_NAME>"');
-```
-
-**Then**: Construct the CSN JSON following [references/csn-construction-rules.md](references/csn-construction-rules.md).
-
-**Proceed to** Step 3.
-
-### Step 2B: Create Semantic View, Then Generate CSN
-
-1. **Ask** user for database, schema, and which tables to include.
-2. **Invoke** the `semantic-view` skill to create a Semantic View from the specified tables.
-3. Once the Semantic View is created, proceed with Step 2A using the newly created view.
-
-### Step 2C: Generate from Raw Table Metadata
-
-**Ask** user for:
-- Database name
-- Schema name (if left blank, run `SHOW SCHEMAS IN DATABASE` and present options)
-- Table names (comma-separated, or leave blank for all tables in schema)
-- Namespace name (default: **UPPERCASE Snowflake schema name** as it appears in `INFORMATION_SCHEMA`, e.g., `ECOMMERCE`, `SALES` — must match the actual Snowflake schema for SAP Datasphere to resolve remote tables)
-- Output file path (default: `./outputs/<schema>.csn.json`)
-
-**Execute these SQL queries** using `snowflake_sql_execute`:
-
-#### Query 0 (if schema is blank): Discover schemas
+### Step 2: Extract Metadata with Exact Precision
 
 ```sql
-SHOW SCHEMAS IN DATABASE "<DATABASE>";
+-- Get columns WITH exact precision (critical for DECIMAL mapping)
+SELECT 
+    TABLE_NAME,
+    COLUMN_NAME,
+    DATA_TYPE,
+    NUMERIC_PRECISION,  -- Use this exact value for cds.Decimal
+    NUMERIC_SCALE,      -- Use this exact value for cds.Decimal
+    IS_NULLABLE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = 'PUBLIC'
+  AND TABLE_NAME IN ('TABLE1', 'TABLE2')
+ORDER BY TABLE_NAME, ORDINAL_POSITION;
 ```
 
-Present non-system schemas (exclude `INFORMATION_SCHEMA`) and ask user to pick one.
+### Step 3: Generate CSN
 
-**IMPORTANT: Schema names in Snowflake are case-sensitive.** Use the exact schema name returned by `SHOW SCHEMAS` in all subsequent queries.
+Use the type mapping function above. Key points:
+- INTEGER → `cds.Decimal(38,0)`
+- BIGINT → `cds.Decimal(38,0)`
+- TIME → `cds.Timestamp`
+- TIMESTAMP_NTZ/LTZ → `cds.Timestamp`
+- Reject BINARY columns with error
 
-#### Query 1: Get table list
+### Step 4: Verify Entity Names Match Share
 
 ```sql
-SELECT t.TABLE_NAME, t.COMMENT
-FROM "<DATABASE>".INFORMATION_SCHEMA.TABLES t
-WHERE t.TABLE_SCHEMA = '<SCHEMA>'
-  AND t.TABLE_TYPE IN ('BASE TABLE', 'VIEW')
-ORDER BY t.TABLE_NAME;
+-- After publishing, verify CSN entity names match share
+DESCRIBE SHARE my_share;
+-- Compare table names against CSN definitions
 ```
 
-#### Query 2: Get column metadata
+### Step 5: Wait for Materialization
 
-```sql
-SELECT c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE, c.CHARACTER_MAXIMUM_LENGTH,
-       c.NUMERIC_PRECISION, c.NUMERIC_SCALE, c.IS_NULLABLE, c.COLUMN_DEFAULT,
-       c.COMMENT, c.ORDINAL_POSITION
-FROM "<DATABASE>".INFORMATION_SCHEMA.COLUMNS c
-WHERE c.TABLE_SCHEMA = '<SCHEMA>'
-ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION;
+```
+Publishing complete. 
+⏳ Wait 10 minutes for SAP materialization job before deploying.
 ```
 
-#### Query 3: Get primary keys
+## Example CSN Output
 
-```sql
-SELECT tc.TABLE_NAME, kcu.COLUMN_NAME
-FROM "<DATABASE>".INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-JOIN "<DATABASE>".INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-  ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-  AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
-WHERE tc.TABLE_SCHEMA = '<SCHEMA>'
-  AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-ORDER BY tc.TABLE_NAME, kcu.ORDINAL_POSITION;
+```json
+{
+  "csnInteropEffective": "1.0",
+  "$version": "2.0",
+  "i18n": {},
+  "meta": {
+    "creator": "Snowflake CSN Interop Generator - Minimal",
+    "flavor": "inferred"
+  },
+  "definitions": {
+    "PUBLIC": { "kind": "context" },
+    "PUBLIC.CUSTOMERS": {
+      "kind": "entity",
+      "@PersonalData.entitySemantics": "DataSubjectDetails",
+      "elements": {
+        "CUSTOMER_ID": {
+          "type": "cds.String",
+          "length": 5000,
+          "key": true,
+          "notNull": true,
+          "@PersonalData.fieldSemantics": {"#": "DataSubjectIDType"}
+        },
+        "EMAIL": {
+          "type": "cds.String",
+          "length": 5000,
+          "@PersonalData.isPotentiallyPersonal": true
+        },
+        "ORDER_COUNT": {
+          "type": "cds.Decimal",
+          "precision": 38,
+          "scale": 0
+        },
+        "TOTAL_AMOUNT": {
+          "type": "cds.Decimal",
+          "precision": 15,
+          "scale": 2
+        },
+        "CREATED_AT": {
+          "type": "cds.Timestamp"
+        }
+      }
+    }
+  }
+}
 ```
 
-#### Query 4: Get foreign keys
+## Troubleshooting
 
-```sql
-SELECT rc.TABLE_NAME AS source_table,
-       kcu.COLUMN_NAME AS source_column,
-       fk_kcu.TABLE_NAME AS target_table,
-       fk_kcu.COLUMN_NAME AS target_column
-FROM "<DATABASE>".INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS rc
-JOIN "<DATABASE>".INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-  ON rc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-  AND rc.CONSTRAINT_SCHEMA = kcu.CONSTRAINT_SCHEMA
-JOIN "<DATABASE>".INFORMATION_SCHEMA.KEY_COLUMN_USAGE fk_kcu
-  ON rc.UNIQUE_CONSTRAINT_NAME = fk_kcu.CONSTRAINT_NAME
-  AND rc.UNIQUE_CONSTRAINT_SCHEMA = fk_kcu.CONSTRAINT_SCHEMA
-WHERE rc.CONSTRAINT_SCHEMA = '<SCHEMA>'
-ORDER BY rc.TABLE_NAME, kcu.ORDINAL_POSITION;
-```
+### Error: "Remote object '{0}' could not be found"
 
-Note: Query 3 and Query 4 may fail if the user lacks access to constraint views. If they fail, proceed without PK/FK information and note this in the output summary.
+**Causes (in order of likelihood):**
+1. **Table has 0 rows** → Add data before publishing
+2. **Materialization not complete** → Wait 10 minutes after publishing
+3. **Context is DATABASE name** → Use SCHEMA name (e.g., `PUBLIC`)
+4. **Entity name mismatch** → Run `DESCRIBE SHARE` and verify names match
 
-#### Query 5: Discover masking policies (for @PersonalData annotations)
+### Error: "inputDataType=INTEGER, actualDataType=DECIMAL"
 
-```sql
-SELECT * FROM TABLE(
-  "<DATABASE>".INFORMATION_SCHEMA.POLICY_REFERENCES(
-    REF_ENTITY_NAME => '<DATABASE>.<SCHEMA>.<TABLE_NAME>',
-    REF_ENTITY_DOMAIN => 'TABLE'
-  )
-);
-```
+**Cause:** Using `cds.Integer` for INTEGER columns  
+**Fix:** Use `cds.Decimal(38,0)` for all INTEGER/BIGINT columns
 
-Record which columns have active masking policies — these are confirmed PII fields. Optionally check for classification tags via `TAG_REFERENCES`.
+### Error: "inputDataType=TIME, actualDataType=TIMESTAMP"
 
-#### Query 6: Get row counts (for @ObjectModel.usageType.sizeCategory)
+**Cause:** Using `cds.Time` for TIME columns  
+**Fix:** Use `cds.Timestamp` for TIME columns
 
-```sql
-SELECT TABLE_NAME, ROW_COUNT
-FROM "<DATABASE>".INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = '<SCHEMA>'
-  AND TABLE_TYPE IN ('BASE TABLE', 'VIEW')
-ORDER BY TABLE_NAME;
-```
+### Error: "MISMATCH IN DATA TYPE PRECISION"
 
-#### Post-Query: Filter CDC/Pipeline Columns
+**Cause:** Using assumed precision (38) instead of actual  
+**Fix:** Query `INFORMATION_SCHEMA.COLUMNS` for exact `NUMERIC_PRECISION`
 
-After retrieving column metadata, **exclude** columns matching these patterns:
+### Error: Materialization fails for BINARY column
 
-| Pattern | Source |
-|---|---|
-| `__OPERATION_TYPE`, `__TIMESTAMP` | Openflow CDC |
-| `LOAD_TYPE_*`, `RUN_ID_*` | Openflow pipeline |
-| `_FIVETRAN_SYNCED`, `_FIVETRAN_DELETED` | Fivetran CDC |
-| `_SDC_*` | Stitch/Singer CDC |
-| `_AIRBYTE_AB_ID`, `_AIRBYTE_EMITTED_AT` | Airbyte CDC |
+**Cause:** SAP cannot materialize Iceberg binary data to Delta format  
+**Fix:** Exclude BINARY/VARBINARY columns from the data product
 
-Count and report filtered columns in the Step 3 summary.
+## Annotations Included
 
-**Then**: Construct the CSN JSON following [references/csn-construction-rules.md](references/csn-construction-rules.md).
+| Annotation | Included | Condition | Test Evidence |
+|------------|----------|-----------|---------------|
+| `@ObjectModel.foreignKey.association` | ✅ | If FK constraints exist | sap_exp_assoc_01 |
+| `@PersonalData.fieldSemantics` | ✅ | Data subject ID columns | sap_exp_pii_01 |
+| `@PersonalData.entitySemantics` | ✅ | Entity has PII columns | sap_exp_pii_02 |
+| `@PersonalData.isPotentiallyPersonal` | ✅ | Potentially personal columns | sap_exp_pii_03 |
 
-**Proceed to** Step 3.
+## Success Criteria
+
+✅ **Primary Goal:** SAP BDC accepts minimal CSN and deployment succeeds
+
+**Validation:**
+1. CSN publishes successfully via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
+2. Wait 10 minutes for materialization
+3. Data product deploys successfully in SAP Datasphere
+4. No type mismatch errors during deployment
 
 ---
 
-## CSN Construction Rules
-
-**IMPORTANT**: Read [references/csn-construction-rules.md](references/csn-construction-rules.md) for the complete, detailed construction rules including:
-- Root structure and `meta.creator` field
-- Namespace and entity definitions
-- Mandatory entity-level annotations
-- Display-label convention (Original or PascalCase, label-only — entity/element keys always UPPERCASE)
-- Element definitions with i18n placeholder format and text differentiation rules
-- String length handling
-- Foreign key associations and cardinality rules
-- Auto-inferred semantic annotations (@Semantics, @ObjectModel, @PersonalData, etc.)
-- Auto-inferred analytical annotations (FACT/DIMENSION/TEXT classification)
-- Auto-inferred associations (heuristic patterns when PK/FK queries fail)
-- Snowflake to CDS type mapping
-
-Also see:
-- [references/annotation-patterns.md](references/annotation-patterns.md) — Column-name-to-annotation pattern tables
-- [references/snowflake-type-mapping.md](references/snowflake-type-mapping.md) — Complete type mapping
-- [references/csn-spec-reference.md](references/csn-spec-reference.md) — CSN Interop v1.2 quick reference
-- [references/pascal-case-dictionary.md](references/pascal-case-dictionary.md) — SAP word dictionary for PascalCase conversion
-- [references/supported-features.md](references/supported-features.md) — Feature support matrix
-
----
-
-### Step 3: Review and Validate Output
-
-After constructing the CSN JSON:
-
-1. **Validate** the structure:
-   - `csnInteropEffective` = `"1.2"`, `$version` = `"2.0"`, `meta.creator` exists
-   - Every definition has `"kind"`, first definition uses `kind: context`
-   - Every entity has `"elements"`, every element has `"type"`
-   - Every key element has both `"key": true` and `"notNull": true`
-   - All enum annotations use `{"#": "VALUE"}` notation
-   - `@PersonalData` uses camelCase keys
-   - `@ObjectModel.foreignKey.association` uses **Element Reference format** `{ "=": "_TargetEntity" }` (NOT direct string)
-   - `@ObjectModel.text.association` uses **Element Reference format** `{ "=": "_Composition" }`
-   - `@ObjectModel.semanticKey` uses **Element Reference array** `[ { "=": "KEY_COLUMN" } ]`
-   - 🔴 **`@ObjectModel.text.element` uses PLAIN STRING ARRAY** `[ "COLUMN_NAME" ]` — NOT `[ { "=": "COLUMN_NAME" } ]`. Wrong format crashes SAP Datasphere parser at import time with `"Cannot read properties of undefined (reading 'name')"`. This is the OPPOSITE format of the three annotations above — verify carefully.
-   - Association names use `_` prefix; `on` clauses follow `[association_target_field, =, source_field]` direction (target navigation first, source second) per CSN Interop spec
-   - `@EndUserText` label/heading/quickInfo are NOT all identical on any element
-   - Every entity has all mandatory entity-level annotations
-   - No non-spec annotations present (see CRITICAL note above)
-   - No text tables have `@ObjectModel.compositionRoot: true`
-   - Root-level `"i18n"` object exists with `"en"` translations for all placeholders
-   - No CDC/pipeline columns leaked into the output
-
-2. **Present** summary to user:
-   - Entity and element counts
-   - CDC columns filtered (count)
-   - String length handling and naming convention used
-   - Type mapping warnings, PK/FK status
-   - Associations detected/inferred, annotations applied
-   - Bridge/link tables detected, @PersonalData annotations applied
-
-3. **Write** the JSON to the specified output file path.
-
-**Stop**: Get user approval before proceeding to mandatory reviews.
-
-### Step 4: Mandatory Reviews and Optional Enhancements
-
-#### 4A: Review Associations (MANDATORY)
-
-Present inferred associations for user review:
-
-```
-| Source Entity | Association | Target Entity | Cardinality | Method |
-|---|---|---|---|---|
-| ProductPlant | _Product | Product | max: 1 | Heuristic (shared Product) |
-```
-
-**Ask** user: Are all correct? Any to remove/add? Any cardinality changes?
-
-#### 4B: Review @PersonalData Annotations (MANDATORY)
-
-Present PII summary for user confirmation:
-
-```
-| Entity | Element | Detection Source | entitySemantics | fieldSemantics |
-|---|---|---|---|---|
-| DocsPerms | UserEmails | Masking policy | DATA_SUBJECT_DETAILS | DATA_SUBJECT_ID_TYPE |
-```
-
-**Ask** user: All correct? Any false positives? Any missed PII?
-
-#### 4C: Optional Enhancements
-
-After mandatory reviews, **ask** user if they want any of:
-
-1. **Refine analytical annotations** — Adjust FACT/DIMENSION classifications and aggregation defaults
-2. **Refine currency/unit semantics** — Correct amount-to-currency and quantity-to-unit linkages
-3. **Add i18n languages** — Add translations beyond `"en"`
-4. **Customize namespace** — Rename entities, change namespace, add doc strings
-5. **Add @ODM annotations** — Map entities to SAP One Domain Model
-6. **Add @EntityRelationship annotations** — Cross-boundary entity references
-
-Read the CSN JSON file, apply changes, and write it back.
-
-### Step 5: Deliver Output
-
-1. **Read** the final CSN JSON file.
-2. **Validate** the structure (same checks as Step 3).
-3. **Present** final summary: file path, size, entity/element counts, annotations summary, warnings.
-
-## Known Limitations
-
-1. VARIANT/OBJECT/ARRAY/GEOGRAPHY/GEOMETRY/VECTOR → `cds.LargeString` (no CDS equivalent)
-2. Semantic View associations not exposed via DESCRIBE — use raw tables mode or add manually
-3. Heuristic associations may produce false positives — always reviewed in Step 4A
-4. PascalCase splitting unreliable for concatenated names — build explicit lookup dictionaries
-5. Iceberg/CLD/Openflow tables often report VARCHAR max (16777216) — skill detects and offers alternatives
-6. Custom types (`kind: type`) not auto-generated
-7. @ODM / @EntityRelationship require SAP-specific knowledge — manual in Step 4
-8. @PersonalData uses CSN Interop convention (camelCase + enum), not CAP CDS convention
-
-## Stopping Points
-
-- After Step 1: mode selection confirmed
-- After Element Naming Convention question: naming choice confirmed
-- After Step 3: review generated CSN before mandatory reviews
-- After Step 4A/4B: association and PII reviews approved before optional enhancements
-
-## Output
-
-A valid SAP CSN Interop v1.2 JSON file in the `./outputs/` directory, ready for import into SAP BDC or other SAP ecosystem tools.
+*Minimal CSN: Maximum compatibility, correct type mappings, essential PII annotations.*
