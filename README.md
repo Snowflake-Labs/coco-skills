@@ -1,6 +1,6 @@
-# Cortex Code Skills
+# Snowflake CoCo Skills
 
-This is a curated collection of [Agent Skills](https://agentskills.io) for [Cortex Code](https://www.snowflake.com/en/product/features/cortex-code/) ("CoCo") — Snowflake's CLI for building with AI.
+This is a curated collection of [Agent Skills](https://agentskills.io) for [Cortex Code](https://www.snowflake.com/en/product/features/cortex-code/) ("CoCo") — Snowflake's coding agent for building with AI faster.
 
 Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, coding standard, or domain-specific best practice. CoCo already ships with 50+ [bundled skills](https://docs.snowflake.com/en/user-guide/cortex-code/bundled-skills) (run `/skill` to browse). The skills here extend that catalog with workflows contributed by Data Superheroes, Snowflake employees, and partners.
 
@@ -15,7 +15,7 @@ Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, cod
 
 ## Install these skills
 
-Open Cortex Code and ask:
+Open CoCo and ask:
 
 ```
 Install the skills from https://github.com/Snowflake-Labs/cortex-code-skills
