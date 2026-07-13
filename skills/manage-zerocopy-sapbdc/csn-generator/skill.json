@@ -1,0 +1,54 @@
+{
+  "name": "csn-minimal-generator",
+  "version": "1.0.0",
+  "description": "Generate minimal CSN Interop v1.0 from database schemas matching SAP BDC Connect SDK output format",
+  "trigger": [
+    "minimal csn",
+    "sap bdc csn",
+    "csn for sap bdc",
+    "csn sdk format",
+    "csn 1.0",
+    "snowflake to sap bdc",
+    "publish to sap bdc",
+    "csn without annotations"
+  ],
+  "whenToUse": "When publishing database tables to SAP Datasphere/BDC and maximum compatibility is required. Generates CSN v1.0 with minimal annotations matching SDK format.",
+  "whenNotToUse": "When building CSN for SAP CAP applications, or when comprehensive semantic annotations are needed",
+  "capabilities": [
+    "Generate CSN Interop v1.0 from Snowflake",
+    "Generate CSN from Postgres/BigQuery",
+    "Map database types to CDS types (SDK rules)",
+    "Create associations from foreign keys",
+    "Validate CSN structure",
+    "Export minimal CSN JSON"
+  ],
+  "requirements": {
+    "python": ">=3.8",
+    "packages": [
+      "snowflake-connector-python (for Snowflake)",
+      "psycopg2-binary (for Postgres)",
+      "google-cloud-bigquery (for BigQuery)"
+    ]
+  },
+  "tags": [
+    "csn",
+    "sap",
+    "bdc",
+    "datasphere",
+    "snowflake",
+    "data-integration",
+    "schema-conversion"
+  ],
+  "author": "PTX Partner Skills",
+  "license": "MIT",
+  "references": [
+    {
+      "name": "CSN Interop Specification",
+      "url": "https://sap.github.io/csn-interop-specification/"
+    },
+    {
+      "name": "SAP BDC Connect SDK",
+      "description": "Reference implementation for CSN format"
+    }
+  ]
+}

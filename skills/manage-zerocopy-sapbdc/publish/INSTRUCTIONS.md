@@ -330,29 +330,19 @@ Main skill Step 1: User selects "Publish a data product"
      SET ENABLE_ICEBERG_MERGE_ON_READ = FALSE;
    ```
 
-### Step 3: Generate or Provide CSN Document
+### Step 3: Generate CSN Document
 
-**Goal:** Obtain the CSN Interop v1.2 JSON document that describes the schema structure of the data product for SAP BDC.
+**Goal:** Generate a minimal CSN Interop v1.0 JSON document (SDK-compatible) for SAP BDC.
 
 **Actions:**
 
-1. **Ask** user:
-   ```
-   A CSN Interop v1.2 JSON document describes the schema structure of your data product for SAP BDC.
-   Do you have a CSN document ready?
-   - If yes, provide the file path to the CSN JSON.
-   - If no, I will generate a full CSN Interop v1.2 document from your table metadata using the SAP CSN Generator skill.
-   ```
-
-**STOP**: Wait for user response.
-
-2. **If user has a CSN file**, read the file at the provided path and store its contents for use in Step 5.
-
-3. **If user needs a CSN document generated**, **Load** `csn-generator/INSTRUCTIONS.md` and run through its full workflow:
+1. **Load** `csn-generator/INSTRUCTIONS.md` and run through its workflow:
    - Use the database, schema, and tables already identified in Step 2 of this skill as inputs
-   - The CSN Generator skill supports three modes: Semantic View, Create Semantic View first, or Raw Tables — present these options to the user
-   - The skill will generate a complete CSN Interop v1.2 JSON with all SAP-compliant annotations (@ObjectModel, @Semantics, @PersonalData, @EndUserText, @Aggregation, etc.), associations, PascalCase naming, and i18n translations
-   - The skill includes mandatory reviews (associations + @PersonalData) and optional enhancements — complete all mandatory steps before proceeding
+   - The CSN Generator will generate **minimal** CSN Interop v1.0 matching SAP BDC Connect SDK output format
+   - NO user choices (no modes, no options) - generates minimal CSN only
+   - NO semantic annotations (except FK associations), NO i18n, NO entity classification
+   - NO mandatory reviews (no association review, no PII review)
+   - Fast generation (<1 sec), small file size (~400 bytes per entity)
    - Once the CSN Generator delivers the output file, read the generated CSN JSON and store its contents for use in Step 5
 
 ### Step 4: Create and Configure the Share
