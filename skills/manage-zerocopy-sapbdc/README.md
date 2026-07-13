@@ -1,6 +1,6 @@
 # SAP BDC <=> Snowflake Zero-Copy Integration - Cortex Code Skill
 
-**Authors:** Sanjay Nagamangalam, Amit Tapas (with field testing by Kevin Poskitt) | v1.2.0 (8-May-2026)
+**Authors:** Amit Tapas, Kevin Poskitt (from SAP)
 
 A Cortex Code skill that manages the end-to-end lifecycle of the [SAP and Snowflake Zero-Copy Integration](https://docs.snowflake.com/en/user-guide/data-integration/zero-copy/about-sap-snowflake) and connector - creating connectors, consuming data products from SAP BDC, publishing Snowflake data to SAP BDC, analyzing shared data, and troubleshooting issues, all through a conversational, step-by-step workflow.
 
