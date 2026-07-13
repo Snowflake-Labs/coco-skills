@@ -22,7 +22,7 @@ tools:
 prompt: "$manage-zerocopy-sapbdc create a connector and publish with minimal CSN"
 language: en
 status: Custom
-author: Kevin Poskitt (based on Sanjay Nagamangalam's original)
+author: Amit Tapas & Kevin Poskitt
 type: snowflake
 ---
 
