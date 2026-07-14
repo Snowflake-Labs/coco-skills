@@ -12,24 +12,15 @@
     "publish to sap bdc",
     "csn without annotations"
   ],
-  "whenToUse": "When publishing database tables to SAP Datasphere/BDC and maximum compatibility is required. Generates CSN v1.0 with minimal annotations matching SDK format.",
+  "whenToUse": "When publishing Snowflake tables to SAP Datasphere/BDC and maximum compatibility is required. Generates CSN v1.0 with minimal annotations matching SDK format.",
   "whenNotToUse": "When building CSN for SAP CAP applications, or when comprehensive semantic annotations are needed",
   "capabilities": [
     "Generate CSN Interop v1.0 from Snowflake",
-    "Generate CSN from Postgres/BigQuery",
-    "Map database types to CDS types (SDK rules)",
+    "Map Snowflake types to CDS types (Snowflake -> Iceberg -> CSN)",
     "Create associations from foreign keys",
     "Validate CSN structure",
     "Export minimal CSN JSON"
   ],
-  "requirements": {
-    "python": ">=3.8",
-    "packages": [
-      "snowflake-connector-python (for Snowflake)",
-      "psycopg2-binary (for Postgres)",
-      "google-cloud-bigquery (for BigQuery)"
-    ]
-  },
   "tags": [
     "csn",
     "sap",

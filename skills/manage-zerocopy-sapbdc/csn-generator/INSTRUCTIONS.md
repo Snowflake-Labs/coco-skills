@@ -7,7 +7,7 @@ Generate **minimal CSN Interop v1.0** from Snowflake (or other databases) that m
 Use this skill when:
 - Publishing Snowflake tables to SAP Datasphere/BDC via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
 - The user needs CSN that will be accepted by SAP BDC publishing APIs
-- CSN generation from database schema (Snowflake, Postgres, BigQuery, etc.)
+- CSN generation from a Snowflake schema
 - Maximum compatibility with SAP BDC is more important than rich semantic metadata
 
 **DO NOT use** when:

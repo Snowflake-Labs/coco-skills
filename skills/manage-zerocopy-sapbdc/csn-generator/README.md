@@ -1,16 +1,16 @@
 # Minimal CSN Generator - SAP BDC Compatible
 
-Generate CSN (Core Schema Notation) files that match the SAP BDC Connect SDK output format for maximum acceptance likelihood when publishing to SAP Datasphere/BDC.
+Generate minimal CSN (Core Schema Notation) Interop v1.0 files for maximum acceptance likelihood when publishing Snowflake data to SAP Datasphere/BDC.
 
 ## Why This Exists
 
-The SAP BDC Connect SDK generates **CSN Interop v1.0** with minimal annotations. When comprehensive CSN v1.2 files (with 68+ annotations, i18n translations, PII detection, etc.) are published to SAP BDC, they may be rejected due to:
+Comprehensive CSN v1.2 files (with 68+ annotations, i18n translations, PII detection, etc.) may be rejected by SAP BDC due to:
 - CSN version mismatch (1.2 vs 1.0)
 - Over-annotation complexity
 - Specific annotation format issues
 - Type mapping differences
 
-This skill generates CSN **exactly matching the SDK format** to maximize acceptance.
+This skill generates minimal CSN Interop v1.0 with correct type mappings to maximize acceptance.
 
 ## What Gets Generated
 
@@ -75,57 +75,22 @@ This skill generates CSN **exactly matching the SDK format** to maximize accepta
 
 **Result:** ~300-500 bytes per entity (vs 3-5KB for full CSN)
 
-## Key Differences from SDK
+## Structural Conventions
 
-This skill produces CSN **matching the SDK format** but with these awareness points:
-
-### ✅ Same as SDK
-1. CSN version `"1.0"` (not `"1.2"`)
-2. `$schema: "2.0"` (not full URL)
-3. Empty `i18n: {}` object
-4. `meta.flavor: "inferred"`
-5. Lowercase namespace and entity names
-6. Association names: lowercase without underscore prefix
-7. Cardinality: always `{"min": 0, "max": 1}`
-8. Strings: `cds.String` with **no length**
-9. Type mapping follows Snowflake → Iceberg → CSN (`INTEGER → cds.Integer`, `BIGINT → cds.Integer64`, `TIMESTAMP_*(6) → cds.Timestamp`)
-10. Float widening: `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`
-
-### ⚠️ Differences
-- SDK is specific to Databricks shares
-- This skill works with any database (Snowflake, Postgres, BigQuery, etc.)
-- SDK may have Databricks-specific metadata; this generates generic CSN
-
-## When to Use
-
-### ✅ Use Minimal CSN When
-- Publishing Snowflake tables to SAP BDC via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
-- Maximum SAP BDC acceptance is priority
-- User doesn't need rich semantic metadata
-- "Just get the data in" approach
-
-### ❌ Use Full CSN When
-- Building CSN for SAP CAP applications
-- User explicitly needs comprehensive annotations
-- Publishing directly to SAP Datasphere (not via BDC)
-- User needs i18n, PII detection, entity classification
+- CSN version `"1.0"` (not `"1.2"`)
+- `$schema: "2.0"` (not full URL)
+- Empty `i18n: {}` object
+- `meta.flavor: "inferred"`
+- Association names: lowercase without underscore prefix
+- Cardinality: always `{"min": 0, "max": 1}`
+- Strings: `cds.String` with **no length**
+- Type mapping follows Snowflake → Iceberg → CSN (`INTEGER → cds.Integer`, `BIGINT → cds.Integer64`, `TIMESTAMP_*(6) → cds.Timestamp`)
+- Float widening: `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`
 
 ## Quick Start
 
-### 1. Prerequisites
+### 1. Invoke the Skill
 
-**Python 3.8+** with:
-```bash
-pip install snowflake-connector-python  # For Snowflake
-# OR
-pip install psycopg2-binary            # For Postgres
-# OR
-pip install google-cloud-bigquery      # For BigQuery
-```
-
-### 2. Invoke the Skill
-
-In Claude Code:
 ```
 Generate a minimal CSN from my Snowflake tables for SAP BDC publishing
 
@@ -136,7 +101,7 @@ Namespace: analytics
 Output: ./outputs/analytics_minimal.csn.json
 ```
 
-### 3. Publish to SAP BDC
+### 2. Publish to SAP BDC
 
 **Snowflake:**
 ```sql
@@ -242,9 +207,9 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 
 ## Known Limitations
 
-These are **intentional** to match SDK:
+These are **intentional** trade-offs for maximum SAP BDC acceptance:
 
-1. ❌ No display labels → SAP UI shows raw lowercase names
+1. ❌ No display labels → SAP UI shows raw column names
 2. ❌ No semantic annotations → users enrich in SAP UI after import
 3. ❌ No PII detection → no privacy annotations
 4. ❌ No entity classification → SAP can't distinguish FACT/DIMENSION
@@ -252,18 +217,7 @@ These are **intentional** to match SDK:
 6. ❌ Simple associations → always optional
 7. ❌ CSN 1.0 limitations → missing features from 1.2
 8. ❌ No heuristic inference → if FK unavailable, no associations
-9. ❌ Lowercase naming → SDK convention
-10. ❌ Unsupported types excluded → TIME, nanosecond timestamps, BINARY, VARIANT, and complex types
-
-## Files in This Skill
-
-```
-skill/
-├── SKILL.md                        # Claude Code instructions
-├── README.md                       # This file (user docs)
-└── references/
-    └── type-mapping-sdk.md         # Detailed type mapping rules
-```
+9. ❌ Unsupported types excluded → TIME, nanosecond timestamps, BINARY, VARIANT, and complex types
 
 ## Testing Recommendations
 
@@ -280,13 +234,6 @@ Test with:
 - TIMESTAMP_NTZ(6) columns (verify `cds.Timestamp` acceptance)
 - Unsupported columns (TIME, TIMESTAMP_*(9), BINARY, VARIANT) are excluded/rejected
 
-### Test 3: Compare with SDK
-If you have access to Databricks SDK:
-1. Generate CSN via SDK
-2. Generate CSN via this skill
-3. Diff the outputs
-4. **Expected:** Structurally identical
-
 ## Next Steps
 
 After generating minimal CSN:
@@ -298,9 +245,7 @@ After generating minimal CSN:
 
 ## References
 
-- **SAP BDC Connect SDK:** Used as reference for CSN format
 - **CSN Interop Specification:** https://sap.github.io/csn-interop-specification/
-- **Analysis Docs:** See `/SkillCSN/*.md` for detailed analysis
 - **Type Mapping:** See `references/type-mapping-sdk.md`
 
 ## Support
