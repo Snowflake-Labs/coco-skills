@@ -39,7 +39,7 @@ Manages the full lifecycle of the SAP BDC <=> Snowflake zero-copy integration an
 - User needs to troubleshoot SAP BDC connector states, privileges, or connectivity
 - Do NOT use for: general Snowflake data sharing (non-SAP), SAP HANA direct connections, or SAP BTP non-BDC services
 
-## Prerequisites 3
+## Prerequisites
 
 - An ORGADMIN must have accepted the SAP® BDC Connect for Snowflake Terms (Admin » Terms » Snowflake Marketplace section in Snowsight). This only needs to be done once per Snowflake organization.
 - SAP Business Data Cloud (BDC) setup must be complete
@@ -91,7 +91,7 @@ What would you like to do with the SAP BDC <=> Snowflake zero-copy connector?
 | `ALTER ZEROCOPY CONNECTOR <name> CONNECT WITH CONFIG = (INVITATION_LINK = '...')` | Establish connection |
 | `DESC ZEROCOPY CONNECTOR <name>` | Check connector state |
 | `SHOW ZEROCOPY CONNECTORS IN SCHEMA <db>.<schema>` | List all connectors |
-| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<connector>')` | List available SAP data products |
+| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<db>.<schema>.<connector>')` | List available SAP data products |
 | `ALTER ZEROCOPY CONNECTOR <name> SET SHARE_BACK = TRUE` | Enable publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> ADD SHARE <share>` | Associate share for publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> DISCONNECT` | Disconnect (disable share-back and drop CLDs first) |
@@ -113,7 +113,7 @@ What would you like to do with the SAP BDC <=> Snowflake zero-copy connector?
 
 ### Example 1: Create and enroll a connector
 User: `$manage-zerocopy-sapbdc create a new zero-copy connector and enroll it with SAP BDC`
-Assistant: Asks for database/schema/connector name, runs CREATE ZEROCOPY CONNECTOR, provides Partner ID for SAP 4 Me registration, then connects with invitation link.
+Assistant: Asks for database/schema/connector name, runs CREATE ZEROCOPY CONNECTOR, provides the account URL for SAP for Me registration, then connects with invitation link.
 
 ### Example 2: Consume a data product
 User: `$manage-zerocopy-sapbdc mount the Workforce Persons data product from SAP`

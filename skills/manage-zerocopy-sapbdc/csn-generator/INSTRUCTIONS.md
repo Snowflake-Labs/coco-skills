@@ -1,18 +1,24 @@
+---
+name: sap-bdc-snowflake-csn-generator
+description: "Generate a minimal CSN Interop v1.0 document from a Snowflake schema for publishing to SAP BDC. Sub-routine of the Publish workflow."
+parent_skill: manage-zerocopy-sapbdc
+---
+
 # Minimal CSN Generator - SAP BDC Compatible
 
-Generate **minimal CSN Interop v1.0** from Snowflake (or other databases) that matches SAP BDC Connect requirements for maximum acceptance likelihood.
+Generate **minimal CSN Interop v1.0** from a Snowflake schema that matches SAP BDC Connect requirements for maximum acceptance likelihood.
 
 ## When to Use This Skill
 
 Use this skill when:
 - Publishing Snowflake tables to SAP Datasphere/BDC via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
 - The user needs CSN that will be accepted by SAP BDC publishing APIs
-- CSN generation from database schema (Snowflake, Postgres, BigQuery, etc.)
+- CSN generation from a Snowflake schema
 - Maximum compatibility with SAP BDC is more important than rich semantic metadata
 
 **DO NOT use** when:
-- User explicitly wants comprehensive annotations for SAP Datasphere consumption (use enhanced skill)
-- Building CSN for CAP applications (use full CSN with associations)
+- User explicitly wants comprehensive annotations for SAP Datasphere consumption (use a full CSN v1.2 document instead)
+- Building CSN for CAP applications (use a full CSN with rich associations instead)
 
 ## Critical Architecture Understanding (July 2026)
 
@@ -46,14 +52,14 @@ Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as 
 ## What This Generates
 
 **Minimal CSN v1.0** with:
-- ✅ Core structure (`definitions`, `kind`, `elements`, `types`)
-- ✅ Primary key designation (`key: true`)
-- ✅ Foreign key associations (if FK constraints available)
-- ✅ Correct type mapping (Snowflake → Iceberg → CDS types)
-- ✅ `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
-- ✅ `@PersonalData.*` annotations (when PII columns detected)
-- ❌ NO display labels or i18n translations
-- ❌ NO semantic metadata (@Semantics, @Aggregation, etc.)
+- Core structure (`definitions`, `kind`, `elements`)
+- Primary key designation (`key: true`)
+- Foreign key associations (if FK constraints available)
+- Correct type mapping (Snowflake → Iceberg → CDS types)
+- `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
+- `@PersonalData.*` annotations (when PII columns detected)
+- NO display labels or i18n translations
+- NO semantic metadata (@Semantics, @Aggregation, etc.)
 
 ## SAP BDC Valid CDS Types (Complete List)
 
@@ -63,7 +69,7 @@ cds.Boolean, cds.Integer, cds.Integer64, cds.Decimal, cds.Double,
 cds.String (no length), cds.Date, cds.Timestamp, cds.Association
 ```
 
-**⚠️ DO NOT USE:**
+**DO NOT USE:**
 - `cds.String(n)` / `length` on strings → emit `cds.String` with no length
 - `cds.Time` → TIME is not supported (exclude the column)
 - `cds.DateTime` → use `cds.Timestamp` for supported timestamps
@@ -261,8 +267,9 @@ SELECT
     TABLE_NAME,
     COLUMN_NAME,
     DATA_TYPE,
-    NUMERIC_PRECISION,  -- Use this exact value for cds.Decimal
-    NUMERIC_SCALE,      -- Use this exact value for cds.Decimal
+    NUMERIC_PRECISION,   -- Use this exact value for cds.Decimal
+    NUMERIC_SCALE,       -- Use this exact value for cds.Decimal
+    DATETIME_PRECISION,  -- Pass as precision for TIMESTAMP columns; > 6 (e.g. 9 / nanosecond) is unsupported
     IS_NULLABLE
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = 'PUBLIC'
@@ -293,7 +300,7 @@ DESCRIBE SHARE my_share;
 
 ```
 Publishing complete. 
-⏳ Wait 10 minutes for SAP materialization job before deploying.
+Wait 10 minutes for SAP materialization job before deploying.
 ```
 
 ## Example CSN Output
@@ -372,16 +379,16 @@ Publishing complete.
 
 ## Annotations Included
 
-| Annotation | Included | Condition | Test Evidence |
-|------------|----------|-----------|---------------|
-| `@ObjectModel.foreignKey.association` | ✅ | If FK constraints exist | sap_exp_assoc_01 |
-| `@PersonalData.fieldSemantics` | ✅ | Data subject ID columns | sap_exp_pii_01 |
-| `@PersonalData.entitySemantics` | ✅ | Entity has PII columns | sap_exp_pii_02 |
-| `@PersonalData.isPotentiallyPersonal` | ✅ | Potentially personal columns | sap_exp_pii_03 |
+| Annotation | Included | Condition |
+|------------|----------|-----------|
+| `@ObjectModel.foreignKey.association` | Yes | If FK constraints exist |
+| `@PersonalData.fieldSemantics` | Yes | Data subject ID columns |
+| `@PersonalData.entitySemantics` | Yes | Entity has PII columns |
+| `@PersonalData.isPotentiallyPersonal` | Yes | Potentially personal columns |
 
 ## Success Criteria
 
-✅ **Primary Goal:** SAP BDC accepts minimal CSN and deployment succeeds
+**Primary Goal:** SAP BDC accepts minimal CSN and deployment succeeds
 
 **Validation:**
 1. CSN publishes successfully via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`

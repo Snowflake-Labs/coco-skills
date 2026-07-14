@@ -210,8 +210,9 @@ The **csn-generator** sub-skill generates minimal [SAP CSN Interop v1.0](https:/
 - Core structure only: `definitions`, `kind`, `elements`, primary keys (`key: true`)
 - Type mappings follow the Snowflake → Iceberg → CSN chain (e.g. `INTEGER → cds.Integer`, `BIGINT → cds.Integer64`, `NUMBER(p,s) → cds.Decimal(p,s)`, `FLOAT → cds.Double`, `TIMESTAMP_*(6) → cds.Timestamp`, strings → `cds.String` with no length); `TIME`, nanosecond timestamps, `BINARY`, `VARIANT`, and complex types are unsupported
 - Foreign-key associations only when PK/FK constraints are available (`@ObjectModel.foreignKey.association`); no heuristic inference
-- `kind: context` namespacing (SAP BDC standard), lowercase entity/namespace names, empty `i18n: {}`
-- Intentionally omits display labels, i18n translations, semantic/PII/analytical annotations, and entity classification
+- Auto-adds `@PersonalData.*` annotations when PII columns are detected (no interactive review)
+- `kind: context` namespacing where the context is the schema name; UPPERCASE identifiers matching Snowflake; empty `i18n: {}`
+- Intentionally omits display labels, i18n translations, semantic/analytical annotations, and entity classification
 - Result: ~300–500 bytes per entity (vs 3–5 KB for full CSN)
 
 See `csn-generator/README.md` for full documentation.
