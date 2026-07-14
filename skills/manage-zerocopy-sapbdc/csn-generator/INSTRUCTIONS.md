@@ -372,12 +372,12 @@ Publishing complete.
 
 ## Annotations Included
 
-| Annotation | Included | Condition | Test Evidence |
-|------------|----------|-----------|---------------|
-| `@ObjectModel.foreignKey.association` | ✅ | If FK constraints exist | sap_exp_assoc_01 |
-| `@PersonalData.fieldSemantics` | ✅ | Data subject ID columns | sap_exp_pii_01 |
-| `@PersonalData.entitySemantics` | ✅ | Entity has PII columns | sap_exp_pii_02 |
-| `@PersonalData.isPotentiallyPersonal` | ✅ | Potentially personal columns | sap_exp_pii_03 |
+| Annotation | Included | Condition |
+|------------|----------|-----------|
+| `@ObjectModel.foreignKey.association` | ✅ | If FK constraints exist |
+| `@PersonalData.fieldSemantics` | ✅ | Data subject ID columns |
+| `@PersonalData.entitySemantics` | ✅ | Entity has PII columns |
+| `@PersonalData.isPotentiallyPersonal` | ✅ | Potentially personal columns |
 
 ## Success Criteria
 

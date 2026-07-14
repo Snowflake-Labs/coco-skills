@@ -500,8 +500,7 @@ REVOKE USAGE ON DATABASE <db> FROM SHARE <share_name>;
 ## Stopping Points
 
 - After Step 2, action 1: Wait for user to identify tables
-- After Step 3, action 1: Wait for CSN document path or generation request
-- During Step 3, action 3: CSN Generator skill has its own stopping points (mode selection, review, mandatory association/PII reviews)
+- After Step 3: Wait for CSN document path, or generate a minimal CSN via `csn-generator/INSTRUCTIONS.md` (no modes/reviews)
 - After Step 5, action 1: Wait for metadata confirmation
 
 ## Output
