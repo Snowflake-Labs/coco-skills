@@ -1,6 +1,12 @@
+---
+name: sap-bdc-snowflake-csn-generator
+description: "Generate a minimal CSN Interop v1.0 document from a Snowflake schema for publishing to SAP BDC. Sub-routine of the Publish workflow."
+parent_skill: manage-zerocopy-sapbdc
+---
+
 # Minimal CSN Generator - SAP BDC Compatible
 
-Generate **minimal CSN Interop v1.0** from Snowflake (or other databases) that matches SAP BDC Connect requirements for maximum acceptance likelihood.
+Generate **minimal CSN Interop v1.0** from a Snowflake schema that matches SAP BDC Connect requirements for maximum acceptance likelihood.
 
 ## When to Use This Skill
 
@@ -11,8 +17,8 @@ Use this skill when:
 - Maximum compatibility with SAP BDC is more important than rich semantic metadata
 
 **DO NOT use** when:
-- User explicitly wants comprehensive annotations for SAP Datasphere consumption (use enhanced skill)
-- Building CSN for CAP applications (use full CSN with associations)
+- User explicitly wants comprehensive annotations for SAP Datasphere consumption (use a full CSN v1.2 document instead)
+- Building CSN for CAP applications (use a full CSN with rich associations instead)
 
 ## Critical Architecture Understanding (July 2026)
 
@@ -46,7 +52,7 @@ Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as 
 ## What This Generates
 
 **Minimal CSN v1.0** with:
-- Core structure (`definitions`, `kind`, `elements`, `types`)
+- Core structure (`definitions`, `kind`, `elements`)
 - Primary key designation (`key: true`)
 - Foreign key associations (if FK constraints available)
 - Correct type mapping (Snowflake → Iceberg → CDS types)
@@ -261,8 +267,9 @@ SELECT
     TABLE_NAME,
     COLUMN_NAME,
     DATA_TYPE,
-    NUMERIC_PRECISION,  -- Use this exact value for cds.Decimal
-    NUMERIC_SCALE,      -- Use this exact value for cds.Decimal
+    NUMERIC_PRECISION,   -- Use this exact value for cds.Decimal
+    NUMERIC_SCALE,       -- Use this exact value for cds.Decimal
+    DATETIME_PRECISION,  -- Pass as precision for TIMESTAMP columns; > 6 (e.g. 9 / nanosecond) is unsupported
     IS_NULLABLE
 FROM INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_SCHEMA = 'PUBLIC'

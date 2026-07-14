@@ -84,7 +84,7 @@ Main skill: User selects "Consume shared data products"
 3. **Present** the data products in a table to the user.
 
 4. **Ask** user which data product(s) to mount:
-   For each data product, suggest a default Snowflake database name derived from the `display_name`: convert to UPPER_SNAKE_CASE (uppercase, spaces and hyphens replaced with underscores, remove special characters). For example, `display_name` "Sales Order" → `SALES_ORDER`, "Material Master - Full" → `MATERIAL_MASTER_FULL`.
+   For each data product, suggest a default Snowflake database name derived from the `display_name`. First strip any trailing parenthetical technical suffix (e.g. `"Sales Order (BDF730, sap.s4pce:apiResource:SalesOrder:v1)"` → `"Sales Order"`), then convert to UPPER_SNAKE_CASE (uppercase, spaces and hyphens replaced with underscores, remove remaining special characters). For example, "Sales Order" → `SALES_ORDER`, "Material Master - Full" → `MATERIAL_MASTER_FULL`.
    ```
    Which data product(s) would you like to mount as catalog-linked database(s)?
    Provide the share_name(s) from the list above.
@@ -144,7 +144,7 @@ Main skill: User selects "Consume shared data products"
 ## Stopping Points
 
 - After Step 1: If no connectors exist, route to create-connector sub-skill
-- After Step 2, action 2: If no data products shared, wait for user to share from SAP BDC Cockpit
+- After Step 2, action 2: If no data products shared, wait for user to share from the SAP Business Data Cloud catalog
 - After Step 2, action 4: Wait for user to select data products
 - After Step 3: Confirm databases created
 

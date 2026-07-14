@@ -30,8 +30,9 @@
     "data-integration",
     "schema-conversion"
   ],
-  "author": "PTX Partner Skills",
-  "license": "MIT",
+  "parent_skill": "manage-zerocopy-sapbdc",
+  "author": "Amit Tapas & Kevin Poskitt",
+  "license": "Snowflake Skills License",
   "references": [
     {
       "name": "CSN Interop Specification",

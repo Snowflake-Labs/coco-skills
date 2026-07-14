@@ -91,7 +91,7 @@ What would you like to do with the SAP BDC <=> Snowflake zero-copy connector?
 | `ALTER ZEROCOPY CONNECTOR <name> CONNECT WITH CONFIG = (INVITATION_LINK = '...')` | Establish connection |
 | `DESC ZEROCOPY CONNECTOR <name>` | Check connector state |
 | `SHOW ZEROCOPY CONNECTORS IN SCHEMA <db>.<schema>` | List all connectors |
-| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<connector>')` | List available SAP data products |
+| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<db>.<schema>.<connector>')` | List available SAP data products |
 | `ALTER ZEROCOPY CONNECTOR <name> SET SHARE_BACK = TRUE` | Enable publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> ADD SHARE <share>` | Associate share for publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> DISCONNECT` | Disconnect (disable share-back and drop CLDs first) |

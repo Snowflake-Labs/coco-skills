@@ -19,29 +19,29 @@ This skill generates minimal CSN Interop v1.0 with correct type mappings to maxi
 ```json
 {
   "csnInteropEffective": "1.0",
-  "$schema": "2.0",
+  "$version": "2.0",
   "definitions": {
-    "analytics": {
+    "PUBLIC": {
       "kind": "context"
     },
-    "analytics.customers": {
+    "PUBLIC.CUSTOMERS": {
       "kind": "entity",
       "elements": {
-        "customer_id": {
+        "CUSTOMER_ID": {
           "type": "cds.String",
           "key": true,
           "notNull": true
         },
-        "customer_name": {
+        "CUSTOMER_NAME": {
           "type": "cds.String"
         },
-        "email": {
+        "EMAIL": {
           "type": "cds.String"
         },
-        "created_date": {
+        "CREATED_DATE": {
           "type": "cds.Date"
         },
-        "total_purchases": {
+        "TOTAL_PURCHASES": {
           "type": "cds.Decimal",
           "precision": 15,
           "scale": 2
@@ -61,14 +61,13 @@ This skill generates minimal CSN Interop v1.0 with correct type mappings to maxi
 - Core CSN structure (definitions, kind, elements)
 - Primary key designation (`key: true`)
 - Type mappings following the Snowflake → Iceberg → CSN chain
-- Foreign key associations (if constraints available)
-- One annotation: `@ObjectModel.foreignKey.association` (FK only)
+- Foreign key associations (if constraints available): `@ObjectModel.foreignKey.association`
+- PII annotations when detected: `@PersonalData.*` (data subject IDs and potentially-personal columns)
 
 ### What's Omitted
 - Display labels (`@EndUserText.label`)
 - i18n translations
 - Semantic annotations (`@Semantics.*`)
-- PII detection (`@PersonalData.*`)
 - Entity classification (`@ObjectModel.modelingPattern`)
 - Analytical annotations (`@Aggregation.*`, `@AnalyticsDetails.*`)
 - Text differentiation (`@ObjectModel.text.element`)
@@ -77,10 +76,11 @@ This skill generates minimal CSN Interop v1.0 with correct type mappings to maxi
 
 ## Structural Conventions
 
-- CSN version `"1.0"` (not `"1.2"`)
-- `$schema: "2.0"` (not full URL)
+- CSN version `csnInteropEffective: "1.0"` (not `"1.2"`)
+- `$version: "2.0"` (mandatory, fixed)
 - Empty `i18n: {}` object
 - `meta.flavor: "inferred"`
+- Context is the schema name; entity and element identifiers are UPPERCASE matching Snowflake
 - Association names: lowercase without underscore prefix
 - Cardinality: always `{"min": 0, "max": 1}`
 - Strings: `cds.String` with **no length**
@@ -96,26 +96,15 @@ Generate a minimal CSN from my Snowflake tables for SAP BDC publishing
 
 Database: SALES_DB
 Schema: ANALYTICS
-Tables: customers, orders, products
-Namespace: analytics
+Tables: CUSTOMERS, ORDERS, PRODUCTS
 Output: ./outputs/analytics_minimal.csn.json
 ```
 
+The generated CSN uses the schema name (`ANALYTICS`) as the context and UPPERCASE entity/element identifiers matching Snowflake.
+
 ### 2. Publish to SAP BDC
 
-**Snowflake:**
-```sql
-CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
-    'analytics_product',
-    '{
-        "namespace": "analytics",
-        "tables": ["customers", "orders", "products"],
-        "csn_file": "s3://bucket/analytics_minimal.csn.json"
-    }'
-);
-```
-
-**Expected result:** Accepted
+Publish through the Publish workflow (`publish/INSTRUCTIONS.md`), which calls `SYSTEM$SAP_PUBLISH_DATA_PRODUCT(<connector>, <share>, <ord_metadata_json>, <csn_json>)` passing this CSN as the final argument.
 
 ## Type Mapping Reference
 
@@ -148,18 +137,18 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 ```json
 {
   "elements": {
-    "customer_id": {
+    "CUSTOMER_ID": {
       "type": "cds.String",
       "@ObjectModel.foreignKey.association": "customer"
     },
     "customer": {
       "type": "cds.Association",
-      "target": "analytics.customers",
+      "target": "PUBLIC.CUSTOMERS",
       "cardinality": {"min": 0, "max": 1},
       "on": [
-        {"ref": ["customer", "customer_id"]},
+        {"ref": ["customer", "CUSTOMER_ID"]},
         "=",
-        {"ref": ["customer_id"]}
+        {"ref": ["CUSTOMER_ID"]}
       ]
     }
   }
@@ -167,7 +156,8 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 ```
 
 **Conventions:**
-- Name: lowercase table name (no underscore)
+- Entity/element identifiers are UPPERCASE matching Snowflake; the target is `<SCHEMA>.<TABLE>`
+- Association nav-property name: lowercase table name (no underscore prefix)
 - Cardinality: always optional (`min: 0`)
 - ON clause: target → source direction
 - If FK unavailable: NO associations
@@ -237,7 +227,7 @@ Test with:
 ## Next Steps
 
 After generating minimal CSN:
-1. Validate CSN structure (use validation checklist in SKILL.md)
+1. Validate CSN structure (see the Pre-Publish Checklist in `INSTRUCTIONS.md`)
 2. Publish to SAP BDC
 3. Verify data product appears in catalog
 4. Test querying from SAP Datasphere
