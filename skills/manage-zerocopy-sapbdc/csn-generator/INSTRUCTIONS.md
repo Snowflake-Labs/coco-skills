@@ -46,14 +46,14 @@ Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as 
 ## What This Generates
 
 **Minimal CSN v1.0** with:
-- ✅ Core structure (`definitions`, `kind`, `elements`, `types`)
-- ✅ Primary key designation (`key: true`)
-- ✅ Foreign key associations (if FK constraints available)
-- ✅ Correct type mapping (Snowflake → Iceberg → CDS types)
-- ✅ `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
-- ✅ `@PersonalData.*` annotations (when PII columns detected)
-- ❌ NO display labels or i18n translations
-- ❌ NO semantic metadata (@Semantics, @Aggregation, etc.)
+- Core structure (`definitions`, `kind`, `elements`, `types`)
+- Primary key designation (`key: true`)
+- Foreign key associations (if FK constraints available)
+- Correct type mapping (Snowflake → Iceberg → CDS types)
+- `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
+- `@PersonalData.*` annotations (when PII columns detected)
+- NO display labels or i18n translations
+- NO semantic metadata (@Semantics, @Aggregation, etc.)
 
 ## SAP BDC Valid CDS Types (Complete List)
 
@@ -63,7 +63,7 @@ cds.Boolean, cds.Integer, cds.Integer64, cds.Decimal, cds.Double,
 cds.String (no length), cds.Date, cds.Timestamp, cds.Association
 ```
 
-**⚠️ DO NOT USE:**
+**DO NOT USE:**
 - `cds.String(n)` / `length` on strings → emit `cds.String` with no length
 - `cds.Time` → TIME is not supported (exclude the column)
 - `cds.DateTime` → use `cds.Timestamp` for supported timestamps
@@ -293,7 +293,7 @@ DESCRIBE SHARE my_share;
 
 ```
 Publishing complete. 
-⏳ Wait 10 minutes for SAP materialization job before deploying.
+Wait 10 minutes for SAP materialization job before deploying.
 ```
 
 ## Example CSN Output
@@ -374,14 +374,14 @@ Publishing complete.
 
 | Annotation | Included | Condition |
 |------------|----------|-----------|
-| `@ObjectModel.foreignKey.association` | ✅ | If FK constraints exist |
-| `@PersonalData.fieldSemantics` | ✅ | Data subject ID columns |
-| `@PersonalData.entitySemantics` | ✅ | Entity has PII columns |
-| `@PersonalData.isPotentiallyPersonal` | ✅ | Potentially personal columns |
+| `@ObjectModel.foreignKey.association` | Yes | If FK constraints exist |
+| `@PersonalData.fieldSemantics` | Yes | Data subject ID columns |
+| `@PersonalData.entitySemantics` | Yes | Entity has PII columns |
+| `@PersonalData.isPotentiallyPersonal` | Yes | Potentially personal columns |
 
 ## Success Criteria
 
-✅ **Primary Goal:** SAP BDC accepts minimal CSN and deployment succeeds
+**Primary Goal:** SAP BDC accepts minimal CSN and deployment succeeds
 
 **Validation:**
 1. CSN publishes successfully via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`

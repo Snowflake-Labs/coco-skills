@@ -58,20 +58,20 @@ This skill generates minimal CSN Interop v1.0 with correct type mappings to maxi
 ```
 
 ### What's Included
-- ✅ Core CSN structure (definitions, kind, elements)
-- ✅ Primary key designation (`key: true`)
-- ✅ Type mappings following the Snowflake → Iceberg → CSN chain
-- ✅ Foreign key associations (if constraints available)
-- ✅ One annotation: `@ObjectModel.foreignKey.association` (FK only)
+- Core CSN structure (definitions, kind, elements)
+- Primary key designation (`key: true`)
+- Type mappings following the Snowflake → Iceberg → CSN chain
+- Foreign key associations (if constraints available)
+- One annotation: `@ObjectModel.foreignKey.association` (FK only)
 
 ### What's Omitted
-- ❌ Display labels (`@EndUserText.label`)
-- ❌ i18n translations
-- ❌ Semantic annotations (`@Semantics.*`)
-- ❌ PII detection (`@PersonalData.*`)
-- ❌ Entity classification (`@ObjectModel.modelingPattern`)
-- ❌ Analytical annotations (`@Aggregation.*`, `@AnalyticsDetails.*`)
-- ❌ Text differentiation (`@ObjectModel.text.element`)
+- Display labels (`@EndUserText.label`)
+- i18n translations
+- Semantic annotations (`@Semantics.*`)
+- PII detection (`@PersonalData.*`)
+- Entity classification (`@ObjectModel.modelingPattern`)
+- Analytical annotations (`@Aggregation.*`, `@AnalyticsDetails.*`)
+- Text differentiation (`@ObjectModel.text.element`)
 
 **Result:** ~300-500 bytes per entity (vs 3-5KB for full CSN)
 
@@ -115,7 +115,7 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 );
 ```
 
-**Expected result:** ✅ Accepted
+**Expected result:** Accepted
 
 ## Type Mapping Reference
 
@@ -137,10 +137,10 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 | GEOMETRY / GEOGRAPHY | geometry / geography | — | Not supported |
 
 **Critical Differences:**
-- ✅ INTEGER → `cds.Integer`; BIGINT → `cds.Integer64` (only `NUMBER`/`DECIMAL` → `cds.Decimal`)
-- ✅ TIMESTAMP_*(6) → `cds.Timestamp` (no `cds.DateTime`/`cds.Time`)
-- ✅ Strings → `cds.String` with **no length**
-- ✅ `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`; `TIME`, nanosecond timestamps, `BINARY`, `VARIANT`, and complex types are rejected
+- INTEGER → `cds.Integer`; BIGINT → `cds.Integer64` (only `NUMBER`/`DECIMAL` → `cds.Decimal`)
+- TIMESTAMP_*(6) → `cds.Timestamp` (no `cds.DateTime`/`cds.Time`)
+- Strings → `cds.String` with **no length**
+- `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`; `TIME`, nanosecond timestamps, `BINARY`, `VARIANT`, and complex types are rejected
 
 ## Association Example
 
@@ -180,13 +180,13 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 | **File size/entity** | ~500B | ~3-5KB |
 | **Generation time** | <1s | 5-10s |
 | **Annotations** | 0-1 | 68+ |
-| **Display labels** | ❌ | ✅ |
-| **i18n** | ❌ | ✅ |
-| **PII detection** | ❌ | ✅ |
-| **Entity classification** | ❌ | ✅ |
-| **Associations** | ✅ Basic | ✅ Advanced |
-| **SAP BDC acceptance** | ✅ High | ❓ Unknown |
-| **SAP Datasphere value** | ⚠️ Low | ✅ High |
+| **Display labels** | No | Yes |
+| **i18n** | No | Yes |
+| **PII detection** | No | Yes |
+| **Entity classification** | No | Yes |
+| **Associations** | Basic | Advanced |
+| **SAP BDC acceptance** | High | Unknown |
+| **SAP Datasphere value** | Low | High |
 
 ## Troubleshooting
 
@@ -209,22 +209,22 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 
 These are **intentional** trade-offs for maximum SAP BDC acceptance:
 
-1. ❌ No display labels → SAP UI shows raw column names
-2. ❌ No semantic annotations → users enrich in SAP UI after import
-3. ❌ No PII detection → no privacy annotations
-4. ❌ No entity classification → SAP can't distinguish FACT/DIMENSION
-5. ❌ Strings carry no length → SAP infers from the materialized column
-6. ❌ Simple associations → always optional
-7. ❌ CSN 1.0 limitations → missing features from 1.2
-8. ❌ No heuristic inference → if FK unavailable, no associations
-9. ❌ Unsupported types excluded → TIME, nanosecond timestamps, BINARY, VARIANT, and complex types
+1. No display labels → SAP UI shows raw column names
+2. No semantic annotations → users enrich in SAP UI after import
+3. No PII detection → no privacy annotations
+4. No entity classification → SAP can't distinguish FACT/DIMENSION
+5. Strings carry no length → SAP infers from the materialized column
+6. Simple associations → always optional
+7. CSN 1.0 limitations → missing features from 1.2
+8. No heuristic inference → if FK unavailable, no associations
+9. Unsupported types excluded → TIME, nanosecond timestamps, BINARY, VARIANT, and complex types
 
 ## Testing Recommendations
 
 ### Test 1: Minimal CSN (High Priority)
 1. Generate minimal CSN from Snowflake tables
 2. Publish to SAP BDC via `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`
-3. **Expected:** ✅ Accepted
+3. **Expected:** Accepted
 
 ### Test 2: Edge Cases
 Test with:
@@ -237,11 +237,11 @@ Test with:
 ## Next Steps
 
 After generating minimal CSN:
-1. ✅ Validate CSN structure (use validation checklist in SKILL.md)
-2. ✅ Publish to SAP BDC
-3. ✅ Verify data product appears in catalog
-4. ✅ Test querying from SAP Datasphere
-5. ✅ Document any acceptance issues
+1. Validate CSN structure (use validation checklist in SKILL.md)
+2. Publish to SAP BDC
+3. Verify data product appears in catalog
+4. Test querying from SAP Datasphere
+5. Document any acceptance issues
 
 ## References
 

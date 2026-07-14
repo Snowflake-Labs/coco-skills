@@ -71,7 +71,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    **If any privilege is missing**, inform the user with the exact grant statements needed:
    ```
-   ⚠️ Missing privileges detected. The following grants are required for publishing:
+Missing privileges detected. The following grants are required for publishing:
 
    GRANT OPERATE ON ZEROCOPY CONNECTOR <connector_name> TO ROLE <current_role>;
    GRANT MODIFY ON ZEROCOPY CONNECTOR <connector_name> TO ROLE <current_role>;
@@ -116,7 +116,7 @@ Main skill Step 1: User selects "Publish a data product"
    **Decision rules** based on the comparison:
    - **If Query B returns 0 rows** → ALL tables are FDN (regular Snowflake tables). **STOP** the publish flow immediately. Inform the user:
      ```
-     ⚠️ Your tables in <db>.<schema> are standard Snowflake (FDN) tables, not Iceberg V3.
+Your tables in <db>.<schema> are standard Snowflake (FDN) tables, not Iceberg V3.
      SAP BDC zero-copy publishing requires Iceberg V3 tables with copy-on-write.
 
      I will guide you through converting them. You have two options:
@@ -144,7 +144,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    Use `DESC ICEBERG TABLE <db>.<schema>.<table>;` to inspect each. If any of these conditions are not met, inform the user and route to Step 2A (which sets these correctly during conversion).
 
-   > 🚧 **Why this multi-query check matters**: `SHOW ICEBERG TABLES` alone does not distinguish FDN from Iceberg-but-wrong-version. Earlier versions of this skill stopped at `SHOW ICEBERG TABLES` and would proceed to publish FDN tables, hitting cryptic copy-on-write errors deep in the flow. The two-query approach above detects FDN explicitly and routes to Step 2A *before* any share-creation work begins. Source: Kevin Poskitt's testing report (May 8, 2026).
+   > **Why this multi-query check matters**: `SHOW ICEBERG TABLES` alone does not distinguish FDN from Iceberg-but-wrong-version. Stopping at `SHOW ICEBERG TABLES` risks proceeding to publish FDN tables and hitting cryptic copy-on-write errors deep in the flow. The two-query approach above detects FDN explicitly and routes to Step 2A *before* any share-creation work begins.
 
 4. **Verify primary keys** — ALWAYS check this regardless of whether tables are already Iceberg or need conversion. SAP BDC requires a primary key on every shared table:
    ```sql
@@ -160,7 +160,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    Compare results against the tables selected for publishing. **For any table without a primary key:**
    ```
-   ⚠️ Primary key check: The following tables are missing primary key constraints.
+Primary key check: The following tables are missing primary key constraints.
    SAP BDC requires a primary key on every shared table.
 
    Tables without primary keys:
