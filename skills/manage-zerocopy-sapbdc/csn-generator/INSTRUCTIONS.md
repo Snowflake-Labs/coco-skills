@@ -22,24 +22,26 @@ Use this skill when:
 Snowflake Iceberg (parquet) → SAP Materialization Job (≤10 min) → HDL Files (Delta Table) → CSN Validation
 ```
 
-**Key insight:** SAP validates CSN against the **materialized Delta table**, NOT directly against Iceberg. This is why:
-1. Type mappings must match what the Delta table reports (not Snowflake's nominal types)
+**Key insight:** SAP validates CSN against the **materialized Delta table**, which is created from the Snowflake **Iceberg** column types. This is why:
+1. Type mappings must follow the Snowflake → Iceberg → CSN chain (not Snowflake's nominal types)
 2. Empty tables fail ("Remote object not found") because no Delta table gets created
 3. You must wait ~10 minutes after publishing before deploying on SAP
 
-### Why INTEGER → cds.Decimal (Not cds.Integer)
+### Why INTEGER → cds.Integer
 
-Snowflake stores INTEGER/BIGINT as `decimal(38,0)` in Iceberg metadata. When SAP materializes:
-- Iceberg `decimal(38,0)` → Delta table `DECIMAL(38,0)`
-- CSN `cds.Integer` fails: "inputDataType=INTEGER, actualDataType=DECIMAL"
-- CSN `cds.Decimal(38,0)` matches → ✅ Success
+When a column is declared as an Iceberg `int` (32-bit) it maps to `cds.Integer`; an Iceberg `long` (64-bit) maps to `cds.Integer64`. Snowflake `INTEGER` produces Iceberg `int` and `BIGINT` produces Iceberg `long`. Only fixed-point `NUMBER(p,s)`/`DECIMAL(p,s)` (Iceberg `decimal(p,s)`) maps to `cds.Decimal(p,s)`.
 
-### Why TIME → cds.Timestamp (Not cds.Time)
+### Why FLOAT → cds.Double
 
-Snowflake TIME in Iceberg metadata is `time`. When SAP materializes:
-- Iceberg `time` → Delta table `TIMESTAMP`
-- CSN `cds.Time` fails: "inputDataType=TIME, actualDataType=TIMESTAMP"
-- CSN `cds.Timestamp` matches → ✅ Success
+Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as `cds.Double` in CSN — MSA applies `floatToDoubleWidening` automatically. `REAL`/`DOUBLE PRECISION` are Iceberg `double` (64-bit) and also map to `cds.Double`.
+
+### Why strings have no length
+
+`VARCHAR`/`STRING`/`TEXT` map to Iceberg `string` → `cds.String` with **no length**. Do NOT emit `cds.String(255)` or `length: 5000` — the length must be omitted entirely.
+
+### Unsupported types
+
+`TIME`, high-precision timestamps (`TIMESTAMP_*(9)` → Iceberg `timestamp_ns`), `BINARY`/`BINARY(n)`, `VARIANT`, `OBJECT`, `ARRAY`, `MAP`, `GEOMETRY`, and `GEOGRAPHY` are **not supported**. Exclude or convert these columns before publishing.
 
 ## What This Generates
 
@@ -47,7 +49,7 @@ Snowflake TIME in Iceberg metadata is `time`. When SAP materializes:
 - ✅ Core structure (`definitions`, `kind`, `elements`, `types`)
 - ✅ Primary key designation (`key: true`)
 - ✅ Foreign key associations (if FK constraints available)
-- ✅ Correct type mapping (Snowflake → Iceberg → Delta → CDS types)
+- ✅ Correct type mapping (Snowflake → Iceberg → CDS types)
 - ✅ `@ObjectModel.foreignKey.association` on FK columns (if FKs exist)
 - ✅ `@PersonalData.*` annotations (when PII columns detected)
 - ❌ NO display labels or i18n translations
@@ -55,36 +57,51 @@ Snowflake TIME in Iceberg metadata is `time`. When SAP materializes:
 
 ## SAP BDC Valid CDS Types (Complete List)
 
-From SAP BDC REST API validation:
+Types produced by this mapping:
 ```
-cds.Boolean, cds.Decimal, cds.Double, cds.String, cds.LargeString,
-cds.Date, cds.Timestamp, cds.UUID, cds.Association, cds.Composition
+cds.Boolean, cds.Integer, cds.Integer64, cds.Decimal, cds.Double,
+cds.String (no length), cds.Date, cds.Timestamp, cds.Association
 ```
 
-**⚠️ DO NOT USE (pass publish but fail deployment):**
-- `cds.Integer` / `cds.Integer64` → use `cds.Decimal(p,0)` instead
-- `cds.Time` → use `cds.Timestamp` instead
-- `cds.DateTime` → use `cds.Timestamp` instead
+**⚠️ DO NOT USE:**
+- `cds.String(n)` / `length` on strings → emit `cds.String` with no length
+- `cds.Time` → TIME is not supported (exclude the column)
+- `cds.DateTime` → use `cds.Timestamp` for supported timestamps
+- `cds.Binary` → BINARY is not supported (exclude the column)
 
-## Type Mapping (Final - July 2026)
+## Type Mapping (Snowflake → Iceberg → CSN)
 
-| Snowflake Type | Iceberg Metadata | Delta Table | CDS Type | Status |
-|----------------|------------------|-------------|----------|--------|
-| BOOLEAN | boolean | BOOLEAN | `cds.Boolean` | ✅ Validated |
-| INTEGER | decimal(38,0) | DECIMAL(38,0) | `cds.Decimal(38,0)` | ✅ Validated |
-| BIGINT | decimal(38,0) | DECIMAL(38,0) | `cds.Decimal(38,0)` | ✅ Validated |
-| NUMBER(p,s) | decimal(p,s) | DECIMAL(p,s) | `cds.Decimal(p,s)` | ✅ Validated |
-| DECIMAL(p,s) | decimal(p,s) | DECIMAL(p,s) | `cds.Decimal(p,s)` | ✅ Validated |
-| FLOAT/FLOAT4/FLOAT8 | float | DOUBLE | `cds.Double` | ✅ Validated |
-| REAL/DOUBLE | double | DOUBLE | `cds.Double` | ✅ Validated |
-| VARCHAR/STRING/TEXT | string | NVARCHAR | `cds.String(5000)` | ✅ Validated |
-| DATE | date | DATE | `cds.Date` | ✅ Validated |
-| TIME | time | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
-| TIMESTAMP_NTZ | timestamp | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
-| TIMESTAMP_LTZ | timestamptz | TIMESTAMP | `cds.Timestamp` | ✅ Validated |
-| VARIANT | string | NVARCHAR | `cds.String(5000)` | ✅ Validated |
-| BINARY | binary | ❌ FAILS | N/A | ⛔ Unsupported |
-| VARBINARY | N/A | N/A | N/A | ⛔ Blocked (Snowflake Iceberg doesn't support) |
+| Snowflake Type | Iceberg Type | CSN Type | Notes |
+|----------------|--------------|----------|-------|
+| BOOLEAN | boolean | `cds.Boolean` | |
+| int | int | `cds.Integer` | Only when declared as Iceberg DDL `int` — produces Iceberg `int` (32-bit) |
+| long | long | `cds.Integer64` | Only when declared as Iceberg DDL `long` — produces Iceberg `long` (64-bit) |
+| INTEGER | int | `cds.Integer` | |
+| BIGINT | long | `cds.Integer64` | |
+| NUMBER(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Use matching precision and scale |
+| DECIMAL(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Snowflake alias for `NUMBER(p,s)` |
+| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` — MSA applies `floatToDoubleWidening` automatically |
+| FLOAT4 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
+| FLOAT8 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
+| REAL | double | `cds.Double` | Iceberg type is `double` (64-bit) |
+| DOUBLE PRECISION | double | `cds.Double` | Iceberg type is `double` (64-bit) |
+| VARCHAR | string | `cds.String` | Do **not** include a length (use `cds.String`, not `cds.String(255)`) |
+| STRING | string | `cds.String` | Snowflake synonym for `VARCHAR(134217728)`. Do **not** include a length |
+| TEXT | string | `cds.String` | Snowflake synonym for `VARCHAR(134217728)`. Do **not** include a length |
+| DATE | date | `cds.Date` | |
+| TIMESTAMP_NTZ(6) | timestamp | `cds.Timestamp` | |
+| TIMESTAMP_LTZ(6) | timestamptz | `cds.Timestamp` | |
+| TIMESTAMP_NTZ(9) | timestamp_ns | — | Not supported |
+| TIMESTAMP_LTZ(9) | timestamptz_ns | — | Not supported |
+| TIME(6) | time | — | Not supported |
+| BINARY | binary | — | Not supported |
+| BINARY(n) | fixed(n) | — | Not supported |
+| VARIANT | variant | — | Not supported |
+| OBJECT(...) | struct | — | Not supported in Datasphere |
+| ARRAY(...) | list | — | Not supported in Datasphere |
+| MAP(...) | map | — | Not supported in Datasphere |
+| GEOMETRY | geometry | — | Not supported |
+| GEOGRAPHY | geography | — | Not supported |
 
 ## CSN Structural Requirements
 
@@ -111,7 +128,7 @@ cds.Date, cds.Timestamp, cds.UUID, cds.Association, cds.Composition
 1. Context = SCHEMA name (e.g., `PUBLIC`), NOT database name
 2. Entity names must EXACTLY match table names in the share
 3. At least one `key: true` element per entity
-4. All String columns → `length: 5000`
+4. All String columns → `cds.String` with **no length**
 5. UPPERCASE identifiers matching Snowflake
 
 ## PII Detection (New - July 2026)
@@ -133,26 +150,27 @@ Detect and annotate PII columns:
 ## Type Mapping Function (Python)
 
 ```python
-def map_to_cds_type(source_type: str, precision: int, scale: int) -> dict:
-    """Map database type to CDS type following SAP materialization rules.
-    
-    CRITICAL: Types must match what SAP's Delta table reports, NOT Snowflake's nominal types.
+def map_to_cds_type(source_type: str, precision: int = None, scale: int = None) -> dict:
+    """Map a Snowflake type to a CDS type following the Snowflake -> Iceberg -> CSN chain.
+
+    Raises ValueError for types SAP BDC / Datasphere cannot materialize.
     """
     upper_type = source_type.upper()
-    
-    # String types - ALWAYS use 5000 for remote mode compatibility
+
+    # String types -> cds.String with NO length
     if any(t in upper_type for t in ['VARCHAR', 'STRING', 'TEXT', 'CHAR']):
-        return {"type": "cds.String", "length": 5000}
-    
-    # Integer types - MUST use cds.Decimal (SAP Delta reports DECIMAL)
-    # DO NOT use cds.Integer - it fails at deployment
-    if upper_type in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT']:
-        return {"type": "cds.Decimal", "precision": 38, "scale": 0}
+        return {"type": "cds.String"}  # no length
+
+    # 32-bit integer (Iceberg int)
+    if upper_type in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT', 'BYTEINT']:
+        return {"type": "cds.Integer"}
+
+    # 64-bit integer (Iceberg long)
     if upper_type == 'BIGINT':
-        return {"type": "cds.Decimal", "precision": 38, "scale": 0}
-    
-    # Decimal/Number types - use exact precision from INFORMATION_SCHEMA
-    if upper_type in ['DECIMAL', 'NUMERIC', 'NUMBER']:
+        return {"type": "cds.Integer64"}
+
+    # Fixed-point NUMBER/DECIMAL -> cds.Decimal(p,s) with exact precision/scale
+    if upper_type in ['NUMBER', 'DECIMAL', 'NUMERIC']:
         effective_precision = precision if precision is not None else 38
         effective_scale = scale if scale is not None else 0
         return {
@@ -160,38 +178,47 @@ def map_to_cds_type(source_type: str, precision: int, scale: int) -> dict:
             "precision": effective_precision,
             "scale": effective_scale
         }
-    
-    # Float types
-    if upper_type in ['FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DOUBLE']:
+
+    # Floating point -> cds.Double (MSA widens float -> double automatically)
+    if upper_type in ['FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DOUBLE', 'DOUBLE PRECISION']:
         return {"type": "cds.Double"}
-    
+
     # Boolean
     if upper_type in ['BOOLEAN', 'BOOL']:
         return {"type": "cds.Boolean"}
-    
+
     # Date
     if upper_type == 'DATE':
         return {"type": "cds.Date"}
-    
-    # Time and Timestamp - ALL map to cds.Timestamp
-    # DO NOT use cds.Time or cds.DateTime - they fail at deployment
-    if upper_type == 'TIME':
-        return {"type": "cds.Timestamp"}  # NOT cds.Time
+
+    # Timestamp at microsecond precision -> cds.Timestamp.
+    # Nanosecond precision (TIMESTAMP_*(9) -> Iceberg timestamp_ns) is NOT supported.
     if upper_type in ['TIMESTAMP', 'TIMESTAMP_NTZ', 'TIMESTAMP_LTZ', 'DATETIME']:
-        return {"type": "cds.Timestamp"}  # NOT cds.DateTime
-    
-    # VARIANT (JSON) - map to String, NOT LargeString
-    # LargeString causes NCLOB vs NVARCHAR mismatch
-    if upper_type == 'VARIANT':
-        return {"type": "cds.String", "length": 5000}
-    
-    # Binary - UNSUPPORTED by SAP materialization
-    # VARBINARY is blocked at Snowflake Iceberg level entirely
-    if upper_type in ['BINARY', 'VARBINARY', 'BYTES']:
-        raise ValueError(f"BINARY type not supported - VARBINARY blocked by Snowflake Iceberg, BINARY blocked by SAP materialization")
-    
-    # Default fallback
-    return {"type": "cds.String", "length": 5000}
+        if precision is not None and precision > 6:
+            raise ValueError(
+                f"{source_type}({precision}) not supported - nanosecond timestamps "
+                "map to Iceberg timestamp_ns, which SAP BDC cannot materialize. "
+                "Reduce to microsecond precision, e.g. TIMESTAMP_NTZ(6)."
+            )
+        return {"type": "cds.Timestamp"}
+
+    # Unsupported types -> reject with a clear message
+    unsupported = {
+        'TIMESTAMP_TZ': 'TIMESTAMP_TZ is not supported',
+        'TIME': 'TIME (Iceberg time) is not supported',
+        'BINARY': 'BINARY/VARBINARY (Iceberg binary/fixed) is not supported',
+        'VARIANT': 'VARIANT is not supported',
+        'OBJECT': 'OBJECT (struct) is not supported in Datasphere',
+        'ARRAY': 'ARRAY (list) is not supported in Datasphere',
+        'MAP': 'MAP is not supported in Datasphere',
+        'GEOMETRY': 'GEOMETRY is not supported',
+        'GEOGRAPHY': 'GEOGRAPHY is not supported',
+    }
+    for key, msg in unsupported.items():
+        if key in upper_type:
+            raise ValueError(f"{source_type} not supported: {msg}. Exclude or convert this column.")
+
+    raise ValueError(f"Unknown type '{source_type}' - no CSN mapping available")
 ```
 
 ## Pre-Publish Checklist
@@ -200,12 +227,13 @@ Before calling `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`:
 
 - [ ] **Tables have ≥1 row of data** (parquet files must exist for materialization)
 - [ ] CSN entity names match `DESCRIBE SHARE` table names exactly
-- [ ] All INTEGER/BIGINT columns use `cds.Decimal(38,0)` (NOT cds.Integer)
-- [ ] All TIME/TIMESTAMP columns use `cds.Timestamp` (NOT cds.Time/cds.DateTime)
-- [ ] DECIMAL columns use exact precision from `INFORMATION_SCHEMA.COLUMNS`
-- [ ] **No BINARY columns** (unsupported by SAP materialization)
+- [ ] INTEGER columns use `cds.Integer`; BIGINT columns use `cds.Integer64`
+- [ ] NUMBER/DECIMAL columns use `cds.Decimal` with exact precision/scale from `INFORMATION_SCHEMA.COLUMNS`
+- [ ] FLOAT/FLOAT4/FLOAT8/REAL/DOUBLE columns use `cds.Double`
+- [ ] Supported TIMESTAMP columns (microsecond precision) use `cds.Timestamp`
+- [ ] **No TIME, nanosecond timestamps, BINARY, VARIANT, OBJECT, ARRAY, MAP, GEOMETRY, or GEOGRAPHY columns** (unsupported)
 - [ ] Context is SCHEMA name (e.g., `PUBLIC`), not database name
-- [ ] All String columns have `length: 5000`
+- [ ] All String columns use `cds.String` with **no length**
 
 After publishing:
 
@@ -245,11 +273,13 @@ ORDER BY TABLE_NAME, ORDINAL_POSITION;
 ### Step 3: Generate CSN
 
 Use the type mapping function above. Key points:
-- INTEGER → `cds.Decimal(38,0)`
-- BIGINT → `cds.Decimal(38,0)`
-- TIME → `cds.Timestamp`
-- TIMESTAMP_NTZ/LTZ → `cds.Timestamp`
-- Reject BINARY columns with error
+- INTEGER → `cds.Integer`
+- BIGINT → `cds.Integer64`
+- NUMBER(p,s)/DECIMAL(p,s) → `cds.Decimal(p,s)` (exact precision/scale)
+- FLOAT/FLOAT4/FLOAT8/REAL/DOUBLE → `cds.Double`
+- VARCHAR/STRING/TEXT → `cds.String` (no length)
+- TIMESTAMP_NTZ(6)/LTZ(6) → `cds.Timestamp`
+- Reject TIME, nanosecond timestamps, BINARY, VARIANT, OBJECT, ARRAY, MAP, GEOMETRY, GEOGRAPHY columns with an error
 
 ### Step 4: Verify Entity Names Match Share
 
@@ -285,20 +315,16 @@ Publishing complete.
       "elements": {
         "CUSTOMER_ID": {
           "type": "cds.String",
-          "length": 5000,
           "key": true,
           "notNull": true,
           "@PersonalData.fieldSemantics": {"#": "DataSubjectIDType"}
         },
         "EMAIL": {
           "type": "cds.String",
-          "length": 5000,
           "@PersonalData.isPotentiallyPersonal": true
         },
         "ORDER_COUNT": {
-          "type": "cds.Decimal",
-          "precision": 38,
-          "scale": 0
+          "type": "cds.Integer"
         },
         "TOTAL_AMOUNT": {
           "type": "cds.Decimal",
@@ -324,25 +350,25 @@ Publishing complete.
 3. **Context is DATABASE name** → Use SCHEMA name (e.g., `PUBLIC`)
 4. **Entity name mismatch** → Run `DESCRIBE SHARE` and verify names match
 
-### Error: "inputDataType=INTEGER, actualDataType=DECIMAL"
+### Error: type mismatch on an integer column
 
-**Cause:** Using `cds.Integer` for INTEGER columns  
-**Fix:** Use `cds.Decimal(38,0)` for all INTEGER/BIGINT columns
+**Cause:** Emitting `cds.Decimal` (or a length) where the Iceberg type is `int`/`long`  
+**Fix:** Use `cds.Integer` for INTEGER and `cds.Integer64` for BIGINT; reserve `cds.Decimal(p,s)` for NUMBER/DECIMAL columns only
 
-### Error: "inputDataType=TIME, actualDataType=TIMESTAMP"
+### Error: type mismatch on a string column
 
-**Cause:** Using `cds.Time` for TIME columns  
-**Fix:** Use `cds.Timestamp` for TIME columns
+**Cause:** Emitting a `length` on `cds.String` (e.g. `cds.String(5000)`)  
+**Fix:** Emit `cds.String` with **no length** for VARCHAR/STRING/TEXT columns
 
 ### Error: "MISMATCH IN DATA TYPE PRECISION"
 
 **Cause:** Using assumed precision (38) instead of actual  
-**Fix:** Query `INFORMATION_SCHEMA.COLUMNS` for exact `NUMERIC_PRECISION`
+**Fix:** Query `INFORMATION_SCHEMA.COLUMNS` for exact `NUMERIC_PRECISION`/`NUMERIC_SCALE`
 
-### Error: Materialization fails for BINARY column
+### Error: materialization fails for TIME / BINARY / VARIANT / nanosecond timestamp
 
-**Cause:** SAP cannot materialize Iceberg binary data to Delta format  
-**Fix:** Exclude BINARY/VARBINARY columns from the data product
+**Cause:** These Iceberg types (`time`, `binary`/`fixed`, `variant`, `timestamp_ns`) cannot be materialized by SAP  
+**Fix:** Exclude the column, or convert it (e.g. cast to a supported type, reduce timestamp precision to `(6)`)
 
 ## Annotations Included
 
