@@ -29,17 +29,14 @@ This skill generates CSN **exactly matching the SDK format** to maximize accepta
       "elements": {
         "customer_id": {
           "type": "cds.String",
-          "length": 36,
           "key": true,
           "notNull": true
         },
         "customer_name": {
-          "type": "cds.String",
-          "length": 5000
+          "type": "cds.String"
         },
         "email": {
-          "type": "cds.String",
-          "length": 5000
+          "type": "cds.String"
         },
         "created_date": {
           "type": "cds.Date"
@@ -63,7 +60,7 @@ This skill generates CSN **exactly matching the SDK format** to maximize accepta
 ### What's Included
 - ✅ Core CSN structure (definitions, kind, elements)
 - ✅ Primary key designation (`key: true`)
-- ✅ Type mappings (Snowflake/Postgres/BigQuery → CDS)
+- ✅ Type mappings following the Snowflake → Iceberg → CSN chain
 - ✅ Foreign key associations (if constraints available)
 - ✅ One annotation: `@ObjectModel.foreignKey.association` (FK only)
 
@@ -90,9 +87,9 @@ This skill produces CSN **matching the SDK format** but with these awareness poi
 5. Lowercase namespace and entity names
 6. Association names: lowercase without underscore prefix
 7. Cardinality: always `{"min": 0, "max": 1}`
-8. String lengths: hardcoded `5000` for unbounded
-9. Type mapping: `INTEGER → cds.Integer`, `TIMESTAMP → cds.DateTime`
-10. Float rejection: warns to use DOUBLE
+8. Strings: `cds.String` with **no length**
+9. Type mapping follows Snowflake → Iceberg → CSN (`INTEGER → cds.Integer`, `BIGINT → cds.Integer64`, `TIMESTAMP_*(6) → cds.Timestamp`)
+10. Float widening: `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`
 
 ### ⚠️ Differences
 - SDK is specific to Databricks shares
@@ -157,26 +154,28 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 
 ## Type Mapping Reference
 
-| Source Type | CDS Type | Notes |
-|-------------|----------|-------|
-| VARCHAR(n) ≤ 5000 | `cds.String`, `length: n` | Exact length |
-| VARCHAR(n) > 5000 | `cds.String`, `length: 5000` | Hardcoded max |
-| STRING (unbounded) | `cds.String`, `length: 5000` | Hardcoded |
-| INTEGER | `cds.Integer` | **NOT** `cds.Decimal` |
-| BIGINT | `cds.Integer64` | |
-| DECIMAL(p,s) | `cds.Decimal`, `precision: p`, `scale: s` | |
-| FLOAT | **REJECTED** | Use DOUBLE |
-| DOUBLE | `cds.Double` | |
-| BOOLEAN | `cds.Boolean` | |
-| DATE | `cds.Date` | |
-| TIMESTAMP | `cds.DateTime` | **NOT** `cds.Timestamp` |
-| TIME | `cds.Time` | |
-| BINARY | `cds.Binary` | |
+| Snowflake Type | Iceberg Type | CDS Type | Notes |
+|----------------|--------------|----------|-------|
+| BOOLEAN | boolean | `cds.Boolean` | |
+| INTEGER | int | `cds.Integer` | 32-bit |
+| BIGINT | long | `cds.Integer64` | 64-bit |
+| NUMBER(p,s) / DECIMAL(p,s) | decimal(p,s) | `cds.Decimal`, `precision: p`, `scale: s` | Exact precision/scale |
+| FLOAT / FLOAT4 / FLOAT8 | float | `cds.Double` | MSA applies `floatToDoubleWidening` |
+| REAL / DOUBLE PRECISION | double | `cds.Double` | |
+| VARCHAR / STRING / TEXT | string | `cds.String` | **No length** |
+| DATE | date | `cds.Date` | |
+| TIMESTAMP_NTZ(6) / TIMESTAMP_LTZ(6) | timestamp / timestamptz | `cds.Timestamp` | Microsecond precision only |
+| TIME | time | — | Not supported |
+| TIMESTAMP_*(9) | timestamp_ns | — | Not supported |
+| BINARY / BINARY(n) | binary / fixed(n) | — | Not supported |
+| VARIANT / OBJECT / ARRAY / MAP | variant / struct / list / map | — | Not supported |
+| GEOMETRY / GEOGRAPHY | geometry / geography | — | Not supported |
 
 **Critical Differences:**
-- ✅ INTEGER → `cds.Integer` (NOT `cds.Decimal(38,0)`)
-- ✅ TIMESTAMP → `cds.DateTime` (NOT `cds.Timestamp`)
-- ✅ Unbounded strings → `length: 5000` (hardcoded)
+- ✅ INTEGER → `cds.Integer`; BIGINT → `cds.Integer64` (only `NUMBER`/`DECIMAL` → `cds.Decimal`)
+- ✅ TIMESTAMP_*(6) → `cds.Timestamp` (no `cds.DateTime`/`cds.Time`)
+- ✅ Strings → `cds.String` with **no length**
+- ✅ `FLOAT`/`FLOAT4`/`FLOAT8` → `cds.Double`; `TIME`, nanosecond timestamps, `BINARY`, `VARIANT`, and complex types are rejected
 
 ## Association Example
 
@@ -186,7 +185,6 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
   "elements": {
     "customer_id": {
       "type": "cds.String",
-      "length": 36,
       "@ObjectModel.foreignKey.association": "customer"
     },
     "customer": {
@@ -228,13 +226,13 @@ CALL SYSTEM$SAP_PUBLISH_DATA_PRODUCT(
 ## Troubleshooting
 
 ### "INTEGER type not recognized"
-**Solution:** Ensure mapping uses `cds.Integer`, not `cds.Decimal(38,0)`
+**Solution:** Use `cds.Integer` for INTEGER and `cds.Integer64` for BIGINT; reserve `cds.Decimal(p,s)` for NUMBER/DECIMAL
 
 ### "TIMESTAMP type not recognized"
-**Solution:** Use `cds.DateTime`, not `cds.Timestamp`
+**Solution:** Use `cds.Timestamp` for microsecond timestamps; exclude TIME and nanosecond (`(9)`) timestamps
 
-### "String length exceeds maximum"
-**Solution:** Cap all strings > 5000 to exactly 5000
+### "String type mismatch"
+**Solution:** Emit `cds.String` with **no length** (never `cds.String(n)`)
 
 ### "Association target not found"
 **Solution:** Use lowercase target name without underscore prefix
@@ -250,11 +248,12 @@ These are **intentional** to match SDK:
 2. ❌ No semantic annotations → users enrich in SAP UI after import
 3. ❌ No PII detection → no privacy annotations
 4. ❌ No entity classification → SAP can't distinguish FACT/DIMENSION
-5. ❌ Hardcoded string lengths → all unbounded → 5000
+5. ❌ Strings carry no length → SAP infers from the materialized column
 6. ❌ Simple associations → always optional
 7. ❌ CSN 1.0 limitations → missing features from 1.2
 8. ❌ No heuristic inference → if FK unavailable, no associations
 9. ❌ Lowercase naming → SDK convention
+10. ❌ Unsupported types excluded → TIME, nanosecond timestamps, BINARY, VARIANT, and complex types
 
 ## Files in This Skill
 
@@ -276,9 +275,10 @@ skill/
 ### Test 2: Edge Cases
 Test with:
 - Tables without FK constraints (Iceberg tables)
-- VARCHAR(16777216) columns
-- INTEGER columns (verify `cds.Integer` acceptance)
-- TIMESTAMP columns (verify `cds.DateTime` acceptance)
+- VARCHAR(16777216) columns (verify `cds.String` with no length)
+- INTEGER columns (verify `cds.Integer`) and BIGINT columns (verify `cds.Integer64`)
+- TIMESTAMP_NTZ(6) columns (verify `cds.Timestamp` acceptance)
+- Unsupported columns (TIME, TIMESTAMP_*(9), BINARY, VARIANT) are excluded/rejected
 
 ### Test 3: Compare with SDK
 If you have access to Databricks SDK:

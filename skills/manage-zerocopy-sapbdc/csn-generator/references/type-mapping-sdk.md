@@ -1,461 +1,250 @@
-# Type Mapping Reference - SDK Rules
+# Type Mapping Reference — Snowflake → Iceberg → CSN
 
-Complete Snowflake → CDS type mapping following the SAP BDC Connect SDK behavior.
+Complete Snowflake → CSN (CDS) type mapping for the SAP BDC zero-copy publish path.
 
 ## Overview
 
-The SDK's type mapping is **intentionally simplistic** to maximize compatibility with SAP BDC. It prioritizes:
-1. **Predictability** over sophistication
-2. **Compatibility** over precision
-3. **Simplicity** over optimization
+Publishing goes through the chain **Snowflake → Iceberg → CSN**. SAP materializes the Snowflake Iceberg column types into a Delta table and validates the CSN against them, so the CSN type must match the **Iceberg** type, not Snowflake's nominal type.
 
-This document captures those rules exactly.
+Guiding rules:
+1. Integer widths follow the Iceberg type: `int` → `cds.Integer`, `long` → `cds.Integer64`
+2. Fixed-point `NUMBER`/`DECIMAL` → `cds.Decimal(p,s)` with exact precision and scale
+3. All floating point → `cds.Double` (MSA widens `float` → `double` automatically)
+4. Strings → `cds.String` with **no length**
+5. Only microsecond timestamps are supported → `cds.Timestamp`
+6. Everything else in the "Not supported" list must be excluded or converted
 
-## String Types
+## Full Mapping
 
-| Snowflake Type | Max Length | CDS Type | Length | Notes |
-|----------------|------------|----------|--------|-------|
-| VARCHAR(n) | n ≤ 5000 | `cds.String` | n | Exact length preserved |
-| VARCHAR(n) | n > 5000 | `cds.String` | 5000 | **Hardcoded** max |
-| STRING (unbounded) | N/A | `cds.String` | 5000 | **Hardcoded** |
-| TEXT | N/A | `cds.String` | 5000 | **Hardcoded** |
-| CHAR(n) | any | `cds.String` | n | Fixed-width → variable |
-
-**Critical Rule:** All unbounded or oversized strings → **exactly 5000**, not `LargeString`
-
-### Python Implementation
-```python
-def map_string_type(length: Optional[int]) -> dict:
-    """Map string types following SDK rules."""
-    if length is None or length > 5000:
-        return {"type": "cds.String", "length": 5000}  # Hardcoded
-    return {"type": "cds.String", "length": length}
-```
-
-### Examples
-```json
-// VARCHAR(100)
-{"type": "cds.String", "length": 100}
-
-// VARCHAR(16777216) - Snowflake max
-{"type": "cds.String", "length": 5000}  // Capped
-
-// STRING (unbounded)
-{"type": "cds.String", "length": 5000}  // Hardcoded
-```
+| Snowflake Type | Iceberg Type | CSN Type | Notes |
+|----------------|--------------|----------|-------|
+| BOOLEAN | boolean | `cds.Boolean` | |
+| int | int | `cds.Integer` | Only when declared as Iceberg DDL `int` — produces Iceberg `int` (32-bit) |
+| long | long | `cds.Integer64` | Only when declared as Iceberg DDL `long` — produces Iceberg `long` (64-bit) |
+| INTEGER | int | `cds.Integer` | |
+| BIGINT | long | `cds.Integer64` | |
+| NUMBER(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Use matching precision and scale |
+| DECIMAL(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Snowflake alias for `NUMBER(p,s)` |
+| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` — MSA applies `floatToDoubleWidening` automatically |
+| FLOAT4 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
+| FLOAT8 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
+| REAL | double | `cds.Double` | Iceberg type is `double` (64-bit) |
+| DOUBLE PRECISION | double | `cds.Double` | Iceberg type is `double` (64-bit) |
+| VARCHAR | string | `cds.String` | Do **not** include a length (use `cds.String`, not `cds.String(255)`) |
+| STRING | string | `cds.String` | Snowflake synonym for `VARCHAR(134217728)`. Do **not** include a length |
+| TEXT | string | `cds.String` | Snowflake synonym for `VARCHAR(134217728)`. Do **not** include a length |
+| DATE | date | `cds.Date` | |
+| TIMESTAMP_NTZ(6) | timestamp | `cds.Timestamp` | |
+| TIMESTAMP_LTZ(6) | timestamptz | `cds.Timestamp` | |
+| TIMESTAMP_NTZ(9) | timestamp_ns | — | Not supported |
+| TIMESTAMP_LTZ(9) | timestamptz_ns | — | Not supported |
+| TIME(6) | time | — | Not supported |
+| BINARY | binary | — | Not supported |
+| BINARY(n) | fixed(n) | — | Not supported |
+| VARIANT | variant | — | Not supported |
+| OBJECT(...) | struct | — | Not supported in Datasphere |
+| ARRAY(...) | list | — | Not supported in Datasphere |
+| MAP(...) | map | — | Not supported in Datasphere |
+| GEOMETRY | geometry | — | Not supported |
+| GEOGRAPHY | geography | — | Not supported |
 
 ## Integer Types
 
-| Snowflake Type | CDS Type | Notes |
-|----------------|----------|-------|
-| INTEGER | `cds.Integer` | **NOT** `cds.Decimal(38,0)` |
-| SMALLINT | `cds.Integer` | Promoted to 32-bit |
-| TINYINT | `cds.Integer` | Promoted to 32-bit |
-| BIGINT | `cds.Integer64` | 64-bit integer |
-| NUMBER (scale=0) | `cds.Integer64` | Snowflake internal representation |
+`INTEGER`/`INT`/`SMALLINT`/`TINYINT`/`BYTEINT` produce Iceberg `int` → `cds.Integer` (32-bit). `BIGINT` produces Iceberg `long` → `cds.Integer64` (64-bit). Emit no precision/scale on these.
 
-**Critical Rule:** Do **NOT** map INTEGER to `cds.Decimal(38,0)` even though Snowflake stores all integers as NUMBER internally.
-
-### Why This Matters
-
-**Wrong (full CSN approach):**
 ```json
-// Snowflake INTEGER column
-{
-  "order_count": {
-    "type": "cds.Decimal",
-    "precision": 38,
-    "scale": 0
-  }
-}
+// INTEGER
+{"type": "cds.Integer"}
+
+// BIGINT
+{"type": "cds.Integer64"}
 ```
 
-**Right (SDK approach):**
-```json
-{
-  "order_count": {
-    "type": "cds.Integer"
-  }
-}
-```
-
-SAP BDC expects semantic INTEGER type, not "decimal that happens to have scale=0".
-
-### Python Implementation
-```python
-def map_integer_type(data_type: str) -> dict:
-    """Map integer types following SDK rules."""
-    upper = data_type.upper()
-    
-    if upper in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT']:
-        return {"type": "cds.Integer"}  # No precision/scale
-    
-    if upper in ['BIGINT', 'NUMBER']:  # NUMBER without scale
-        return {"type": "cds.Integer64"}
-    
-    raise ValueError(f"Not an integer type: {data_type}")
-```
+Do **not** map integers to `cds.Decimal` — that is only for `NUMBER`/`DECIMAL` columns.
 
 ## Decimal Types
 
-| Snowflake Type | CDS Type | Precision | Scale | Notes |
-|----------------|----------|-----------|-------|-------|
-| DECIMAL(p,s) | `cds.Decimal` | p | s | Exact mapping |
-| NUMERIC(p,s) | `cds.Decimal` | p | s | Synonym |
-| NUMBER(p,s) | `cds.Decimal` | p | s | Snowflake type |
-| NUMBER (no args) | `cds.Decimal` | 38 | 0 | Default precision |
+`NUMBER(p,s)`/`DECIMAL(p,s)`/`NUMERIC(p,s)` → `cds.Decimal` with the exact precision and scale from `INFORMATION_SCHEMA.COLUMNS`.
 
-### Python Implementation
-```python
-def map_decimal_type(precision: Optional[int], scale: Optional[int]) -> dict:
-    """Map decimal types following SDK rules.
-    
-    CRITICAL: Use 'is not None' checks, NOT 'or' operator.
-    The 'or' operator treats 0 as falsy, breaking DECIMAL(38,0) columns.
-    """
-    effective_precision = precision if precision is not None else 38  # Snowflake max
-    effective_scale = scale if scale is not None else 0
-    return {
-        "type": "cds.Decimal",
-        "precision": effective_precision,
-        "scale": effective_scale
-    }
-```
-
-### Examples
 ```json
-// DECIMAL(15,2) - currency
+// DECIMAL(15,2) — currency
 {"type": "cds.Decimal", "precision": 15, "scale": 2}
 
-// DECIMAL(13,3) - quantity
-{"type": "cds.Decimal", "precision": 13, "scale": 3}
-
-// NUMBER - unbounded
+// NUMBER(38,0)
 {"type": "cds.Decimal", "precision": 38, "scale": 0}
+```
+
+```python
+def map_decimal_type(precision, scale) -> dict:
+    """Use 'is not None' checks, NOT 'or' — 0 is a valid scale and is falsy."""
+    return {
+        "type": "cds.Decimal",
+        "precision": precision if precision is not None else 38,
+        "scale": scale if scale is not None else 0,
+    }
 ```
 
 ## Floating Point Types
 
-| Snowflake Type | CDS Type | Notes |
-|----------------|----------|-------|
-| FLOAT | **REJECTED** | Warn user to use DOUBLE |
-| DOUBLE | `cds.Double` | 64-bit floating point |
-| REAL | `cds.Double` | Synonym |
+`FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`; `REAL`/`DOUBLE PRECISION` are 64-bit Iceberg `double`. All map to `cds.Double` — MSA applies `floatToDoubleWidening` automatically.
 
-**Critical Rule:** **Reject FLOAT types** with a warning message.
-
-### Why Reject FLOAT?
-
-The SDK does not support FLOAT (32-bit) types. Reasons:
-1. Precision loss issues in data transfer
-2. SAP systems typically use DOUBLE for floating point
-3. Snowflake FLOAT is non-standard (variable precision)
-
-### Python Implementation
-```python
-def map_float_type(data_type: str) -> dict:
-    """Map float types following SDK rules."""
-    upper = data_type.upper()
-    
-    if upper == 'FLOAT':
-        raise ValueError(
-            "FLOAT type not supported by SAP BDC. "
-            "Use DOUBLE instead: ALTER TABLE ... MODIFY COLUMN ... DOUBLE"
-        )
-    
-    if upper in ['DOUBLE', 'REAL']:
-        return {"type": "cds.Double"}
-    
-    raise ValueError(f"Unknown float type: {data_type}")
+```json
+{"type": "cds.Double"}
 ```
 
-## Boolean Types
+## String Types
 
-| Snowflake Type | CDS Type | Notes |
-|----------------|----------|-------|
-| BOOLEAN | `cds.Boolean` | Direct mapping |
-| BOOL | `cds.Boolean` | Synonym |
+`VARCHAR`/`STRING`/`TEXT`/`CHAR` → `cds.String` with **no length**. `STRING` and `TEXT` are Snowflake synonyms for `VARCHAR(134217728)`.
 
-### Python Implementation
-```python
-def map_boolean_type() -> dict:
-    """Map boolean types."""
-    return {"type": "cds.Boolean"}
+```json
+// VARCHAR, VARCHAR(255), STRING, TEXT — all the same
+{"type": "cds.String"}
 ```
 
-## Date/Time Types
-
-| Snowflake Type | CDS Type | Notes |
-|----------------|----------|-------|
-| DATE | `cds.Date` | Date only (no time) |
-| TIME | `cds.Time` | Time only (no date) |
-| TIMESTAMP | `cds.DateTime` | **NOT** `cds.Timestamp` |
-| TIMESTAMP_NTZ | `cds.DateTime` | No timezone |
-| TIMESTAMP_LTZ | `cds.DateTime` | Local timezone |
-| TIMESTAMP_TZ | `cds.DateTime` | With timezone |
-| DATETIME | `cds.DateTime` | Synonym |
-
-**Critical Rule:** Map TIMESTAMP → `cds.DateTime`, **NOT** `cds.Timestamp`
-
-### Why DateTime, Not Timestamp?
-
-The SDK uses `cds.DateTime` for timestamp columns because:
-1. SAP systems use DATETIME semantics (not UNIX epoch)
-2. `cds.Timestamp` is reserved for audit fields (created_at, updated_at)
-3. `cds.DateTime` better matches Snowflake TIMESTAMP semantics
-
-### Python Implementation
 ```python
-def map_datetime_type(data_type: str) -> dict:
-    """Map date/time types following SDK rules."""
-    upper = data_type.upper()
-    
-    if upper == 'DATE':
-        return {"type": "cds.Date"}
-    
-    if upper == 'TIME':
-        return {"type": "cds.Time"}
-    
-    if 'TIMESTAMP' in upper or upper == 'DATETIME':
-        return {"type": "cds.DateTime"}  # NOT cds.Timestamp
-    
-    raise ValueError(f"Unknown date/time type: {data_type}")
+def map_string_type() -> dict:
+    return {"type": "cds.String"}  # never emit a length
 ```
 
-### Examples
+## Boolean Type
+
+```json
+{"type": "cds.Boolean"}
+```
+
+## Date / Time Types
+
+- `DATE` → `cds.Date`
+- `TIMESTAMP_NTZ(6)` / `TIMESTAMP_LTZ(6)` (Iceberg `timestamp` / `timestamptz`) → `cds.Timestamp`
+- `TIMESTAMP_NTZ(9)` / `TIMESTAMP_LTZ(9)` (Iceberg `timestamp_ns` / `timestamptz_ns`) → **not supported**
+- `TIME` (Iceberg `time`) → **not supported**
+
 ```json
 // DATE
 {"type": "cds.Date"}
 
-// TIMESTAMP_NTZ
-{"type": "cds.DateTime"}  // NOT cds.Timestamp
-
-// TIME
-{"type": "cds.Time"}
+// TIMESTAMP_NTZ(6)
+{"type": "cds.Timestamp"}
 ```
 
-## Binary Types
+Reduce nanosecond timestamps to microsecond precision (`(6)`) before publishing; exclude `TIME` columns.
 
-| Snowflake Type | CDS Type | Length | Notes |
-|----------------|----------|--------|-------|
-| BINARY(n) | `cds.Binary` | n | Fixed-width |
-| VARBINARY(n) | `cds.Binary` | n | Variable-width |
-| BINARY (unbounded) | `cds.Binary` | 5000 | Hardcoded max |
+## Not Supported
 
-### Python Implementation
-```python
-def map_binary_type(length: Optional[int]) -> dict:
-    """Map binary types following SDK rules."""
-    if length is None or length > 5000:
-        return {"type": "cds.Binary", "length": 5000}  # Hardcoded
-    return {"type": "cds.Binary", "length": length}
-```
+These Iceberg types cannot be materialized by SAP BDC / consumed in Datasphere. Exclude or convert the column:
 
-## Complex Types (Not Supported)
-
-| Snowflake Type | CDS Type | Notes |
-|----------------|----------|-------|
-| VARIANT | **NOT SUPPORTED** | Use STRING(5000) |
-| OBJECT | **NOT SUPPORTED** | Flatten to columns |
-| ARRAY | **NOT SUPPORTED** | Use separate table |
-| GEOGRAPHY | **NOT SUPPORTED** | Use STRING |
-| GEOMETRY | **NOT SUPPORTED** | Use STRING |
-
-**Rule:** Warn user that complex types must be flattened or converted.
-
-### Python Implementation
-```python
-def map_complex_type(data_type: str) -> dict:
-    """Handle complex types (unsupported)."""
-    upper = data_type.upper()
-    
-    if upper in ['VARIANT', 'GEOGRAPHY', 'GEOMETRY']:
-        warnings.warn(
-            f"{upper} type not supported by SAP BDC. "
-            f"Mapping to cds.String(5000) - consider flattening."
-        )
-        return {"type": "cds.String", "length": 5000}
-    
-    if upper in ['OBJECT', 'ARRAY']:
-        raise ValueError(
-            f"{upper} type not supported by SAP BDC. "
-            "Flatten nested structures before generating CSN."
-        )
-    
-    raise ValueError(f"Unknown complex type: {data_type}")
-```
+| Snowflake Type | Iceberg Type | Reason |
+|----------------|--------------|--------|
+| TIME(6) | time | Not materializable |
+| TIMESTAMP_*(9) | timestamp_ns / timestamptz_ns | Nanosecond precision not supported |
+| BINARY / BINARY(n) | binary / fixed(n) | Not materializable |
+| VARIANT | variant | Semi-structured not supported |
+| OBJECT(...) | struct | Not supported in Datasphere |
+| ARRAY(...) | list | Not supported in Datasphere |
+| MAP(...) | map | Not supported in Datasphere |
+| GEOMETRY | geometry | Not supported |
+| GEOGRAPHY | geography | Not supported |
 
 ## Complete Type Mapping Function
 
 ```python
 from typing import Optional, Dict, Any
-import warnings
+
 
 def map_snowflake_to_cds(
     data_type: str,
-    length: Optional[int] = None,
+    length: Optional[int] = None,      # accepted but unused: strings carry no length
     precision: Optional[int] = None,
-    scale: Optional[int] = None
+    scale: Optional[int] = None,
 ) -> Dict[str, Any]:
+    """Map a Snowflake type to a CSN (CDS) type following Snowflake -> Iceberg -> CSN.
+
+    Raises ValueError for unsupported types.
     """
-    Map Snowflake type to CDS type following SDK rules.
-    
-    Args:
-        data_type: Snowflake type name (e.g., 'VARCHAR', 'INTEGER')
-        length: For string/binary types
-        precision: For decimal types
-        scale: For decimal types
-    
-    Returns:
-        Dict with 'type' and optional type-specific properties
-    
-    Raises:
-        ValueError: For unsupported types or FLOAT usage
-    """
-    upper_type = data_type.upper()
-    
-    # String types
-    if any(t in upper_type for t in ['VARCHAR', 'STRING', 'TEXT', 'CHAR']):
-        if length is None or length > 5000:
-            return {"type": "cds.String", "length": 5000}
-        return {"type": "cds.String", "length": length}
-    
-    # Integer types - CRITICAL: use cds.Integer
-    if upper_type in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT']:
+    upper = data_type.upper()
+
+    # Strings -> cds.String with NO length
+    if any(t in upper for t in ['VARCHAR', 'STRING', 'TEXT', 'CHAR']):
+        return {"type": "cds.String"}
+
+    # Integers
+    if upper in ['INTEGER', 'INT', 'SMALLINT', 'TINYINT', 'BYTEINT']:
         return {"type": "cds.Integer"}
-    if upper_type in ['BIGINT']:
+    if upper == 'BIGINT':
         return {"type": "cds.Integer64"}
-    
-    # Decimal types - CRITICAL: use 'is not None', NOT 'or' operator
-    if upper_type in ['DECIMAL', 'NUMERIC']:
-        effective_precision = precision if precision is not None else 15
-        effective_scale = scale if scale is not None else 2
+
+    # Fixed-point
+    if upper in ['NUMBER', 'DECIMAL', 'NUMERIC']:
         return {
             "type": "cds.Decimal",
-            "precision": effective_precision,
-            "scale": effective_scale
+            "precision": precision if precision is not None else 38,
+            "scale": scale if scale is not None else 0,
         }
-    if upper_type == 'NUMBER':
-        if scale == 0:
-            return {"type": "cds.Integer64"}  # Integer NUMBER
-        effective_precision = precision if precision is not None else 38
-        effective_scale = scale if scale is not None else 0
-        return {
-            "type": "cds.Decimal",
-            "precision": effective_precision,
-            "scale": effective_scale
-        }
-    
-    # Float types - REJECT FLOAT
-    if upper_type == 'FLOAT':
-        raise ValueError(
-            "FLOAT type not supported. Use DOUBLE: "
-            "ALTER TABLE ... MODIFY COLUMN ... DOUBLE"
-        )
-    if upper_type in ['DOUBLE', 'REAL']:
+
+    # Floating point
+    if upper in ['FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DOUBLE', 'DOUBLE PRECISION']:
         return {"type": "cds.Double"}
-    
+
     # Boolean
-    if upper_type in ['BOOLEAN', 'BOOL']:
+    if upper in ['BOOLEAN', 'BOOL']:
         return {"type": "cds.Boolean"}
-    
-    # Date/Time - CRITICAL: TIMESTAMP → cds.DateTime
-    if upper_type == 'DATE':
+
+    # Date / supported timestamps
+    if upper == 'DATE':
         return {"type": "cds.Date"}
-    if upper_type == 'TIME':
-        return {"type": "cds.Time"}
-    if 'TIMESTAMP' in upper_type or upper_type == 'DATETIME':
-        return {"type": "cds.DateTime"}  # NOT cds.Timestamp
-    
-    # Binary
-    if 'BINARY' in upper_type:
-        if length is None or length > 5000:
-            return {"type": "cds.Binary", "length": 5000}
-        return {"type": "cds.Binary", "length": length}
-    
-    # Complex types (warn/reject)
-    if upper_type in ['VARIANT', 'GEOGRAPHY', 'GEOMETRY']:
-        warnings.warn(
-            f"{upper_type} not supported - mapping to cds.String(5000)"
-        )
-        return {"type": "cds.String", "length": 5000}
-    
-    if upper_type in ['OBJECT', 'ARRAY']:
-        raise ValueError(
-            f"{upper_type} not supported - flatten structure first"
-        )
-    
-    # Fallback
-    warnings.warn(f"Unknown type {data_type} - defaulting to cds.String(5000)")
-    return {"type": "cds.String", "length": 5000}
+    if upper in ['TIMESTAMP', 'TIMESTAMP_NTZ', 'TIMESTAMP_LTZ', 'DATETIME']:
+        if precision is not None and precision > 6:
+            raise ValueError(
+                f"{data_type}({precision}) not supported - nanosecond timestamps "
+                "(Iceberg timestamp_ns) cannot be materialized. Use precision 6."
+            )
+        return {"type": "cds.Timestamp"}
+
+    # Unsupported
+    unsupported = ['TIMESTAMP_TZ', 'TIME', 'BINARY', 'VARBINARY', 'VARIANT',
+                   'OBJECT', 'ARRAY', 'MAP', 'GEOMETRY', 'GEOGRAPHY']
+    for key in unsupported:
+        if key in upper:
+            raise ValueError(
+                f"{data_type} not supported by SAP BDC - exclude or convert this column."
+            )
+
+    raise ValueError(f"Unknown type '{data_type}' - no CSN mapping available")
 ```
 
 ## Validation Checklist
 
 After mapping types, validate:
-- [ ] No `cds.Decimal` for INTEGER columns (should be `cds.Integer`)
-- [ ] No `cds.Timestamp` for TIMESTAMP columns (should be `cds.DateTime`)
-- [ ] All string lengths > 5000 capped at exactly 5000
-- [ ] No FLOAT types (rejected with error)
-- [ ] No OBJECT/ARRAY types (rejected with error)
-- [ ] VARIANT/GEOGRAPHY/GEOMETRY mapped to String(5000) with warning
+- [ ] INTEGER → `cds.Integer`, BIGINT → `cds.Integer64` (never `cds.Decimal`)
+- [ ] NUMBER/DECIMAL → `cds.Decimal` with exact precision/scale (use `is not None`, not `or`)
+- [ ] FLOAT/FLOAT4/FLOAT8/REAL/DOUBLE → `cds.Double`
+- [ ] All strings → `cds.String` with **no length**
+- [ ] Supported timestamps (microsecond) → `cds.Timestamp`; no `cds.Time`/`cds.DateTime`
+- [ ] No TIME, nanosecond timestamps, BINARY, VARIANT, OBJECT, ARRAY, MAP, GEOMETRY, or GEOGRAPHY columns
 
 ## Testing Examples
 
-### Test Case 1: Integer Column
 ```python
-# Snowflake: INTEGER column
-result = map_snowflake_to_cds('INTEGER')
-assert result == {"type": "cds.Integer"}  # NOT cds.Decimal(38,0)
+assert map_snowflake_to_cds('INTEGER') == {"type": "cds.Integer"}
+assert map_snowflake_to_cds('BIGINT') == {"type": "cds.Integer64"}
+assert map_snowflake_to_cds('VARCHAR', length=255) == {"type": "cds.String"}
+assert map_snowflake_to_cds('FLOAT') == {"type": "cds.Double"}
+assert map_snowflake_to_cds('TIMESTAMP_NTZ', precision=6) == {"type": "cds.Timestamp"}
+
+import pytest
+with pytest.raises(ValueError):
+    map_snowflake_to_cds('TIME')
+with pytest.raises(ValueError):
+    map_snowflake_to_cds('TIMESTAMP_NTZ', precision=9)
+with pytest.raises(ValueError):
+    map_snowflake_to_cds('VARIANT')
 ```
-
-### Test Case 2: Timestamp Column
-```python
-# Snowflake: TIMESTAMP_NTZ column
-result = map_snowflake_to_cds('TIMESTAMP_NTZ')
-assert result == {"type": "cds.DateTime"}  # NOT cds.Timestamp
-```
-
-### Test Case 3: Large String
-```python
-# Snowflake: VARCHAR(16777216) column
-result = map_snowflake_to_cds('VARCHAR', length=16777216)
-assert result == {"type": "cds.String", "length": 5000}  # Capped
-```
-
-### Test Case 4: Float Rejection
-```python
-# Snowflake: FLOAT column
-with pytest.raises(ValueError, match="FLOAT type not supported"):
-    map_snowflake_to_cds('FLOAT')
-```
-
-## Cross-Database Notes
-
-### Postgres → CDS
-
-| Postgres Type | CDS Type | Notes |
-|---------------|----------|-------|
-| INTEGER | `cds.Integer` | Same as Snowflake |
-| TEXT | `cds.String`, `length: 5000` | Unbounded → capped |
-| TIMESTAMP | `cds.DateTime` | Same as Snowflake |
-| BYTEA | `cds.Binary`, `length: 5000` | Binary data |
-
-### BigQuery → CDS
-
-| BigQuery Type | CDS Type | Notes |
-|---------------|----------|-------|
-| INT64 | `cds.Integer64` | 64-bit integer |
-| STRING | `cds.String`, `length: 5000` | Unbounded → capped |
-| TIMESTAMP | `cds.DateTime` | Same as Snowflake |
-| BYTES | `cds.Binary`, `length: 5000` | Binary data |
 
 ## References
 
-- **SDK Source:** Reverse-engineered from `sap-bdc-connect-sdk`
 - **CSN Interop Spec:** https://sap.github.io/csn-interop-specification/
-- **Analysis:** See `/SkillCSN/sdk-csn-generator-source-analysis.md`
+- **Zero-Copy Integration:** https://docs.snowflake.com/en/user-guide/data-integration/zero-copy/about-sap-snowflake
 
 ---
 
-**Key Principle:** When in doubt, favor **simplicity** and **SDK compatibility** over sophistication.
+**Key Principle:** Match the **Iceberg** type, keep strings length-free, and exclude anything SAP cannot materialize.
