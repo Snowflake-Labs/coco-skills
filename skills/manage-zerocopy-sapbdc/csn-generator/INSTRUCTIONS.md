@@ -39,7 +39,7 @@ When a column is declared as an Iceberg `int` (32-bit) it maps to `cds.Integer`;
 
 ### Why FLOAT → cds.Double
 
-Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as `cds.Double` in CSN — MSA applies `floatToDoubleWidening` automatically. `REAL`/`DOUBLE PRECISION` are Iceberg `double` (64-bit) and also map to `cds.Double`.
+Snowflake `FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`. Declare them as `cds.Double` in CSN. `REAL`/`DOUBLE PRECISION` are Iceberg `double` (64-bit) and also map to `cds.Double`.
 
 ### Why strings have no length
 
@@ -86,7 +86,7 @@ cds.String (no length), cds.Date, cds.Timestamp, cds.Association
 | BIGINT | long | `cds.Integer64` | |
 | NUMBER(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Use matching precision and scale |
 | DECIMAL(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Snowflake alias for `NUMBER(p,s)` |
-| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` — MSA applies `floatToDoubleWidening` automatically |
+| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` |
 | FLOAT4 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
 | FLOAT8 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
 | REAL | double | `cds.Double` | Iceberg type is `double` (64-bit) |

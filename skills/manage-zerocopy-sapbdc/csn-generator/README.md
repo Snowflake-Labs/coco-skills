@@ -114,7 +114,7 @@ Publish through the Publish workflow (`publish/INSTRUCTIONS.md`), which calls `S
 | INTEGER | int | `cds.Integer` | 32-bit |
 | BIGINT | long | `cds.Integer64` | 64-bit |
 | NUMBER(p,s) / DECIMAL(p,s) | decimal(p,s) | `cds.Decimal`, `precision: p`, `scale: s` | Exact precision/scale |
-| FLOAT / FLOAT4 / FLOAT8 | float | `cds.Double` | MSA applies `floatToDoubleWidening` |
+| FLOAT / FLOAT4 / FLOAT8 | float | `cds.Double` | 32-bit float |
 | REAL / DOUBLE PRECISION | double | `cds.Double` | |
 | VARCHAR / STRING / TEXT | string | `cds.String` | **No length** |
 | DATE | date | `cds.Date` | |

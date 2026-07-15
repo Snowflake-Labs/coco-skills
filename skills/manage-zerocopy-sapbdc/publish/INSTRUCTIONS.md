@@ -464,6 +464,11 @@ Primary key check: The following tables are missing primary key constraints.
 
    And `csn_document_json` is the CSN content obtained in Step 3.
 
+   **IMPORTANT — publish back only through this system function:**
+   - Pass the ORD metadata JSON and the CSN JSON **only** as arguments to `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`. This is the only function used to publish back.
+   - Do **not** use any other system function to publish the data product.
+   - Do **not** run any separate "set CSN" (or equivalent) SQL statements to attach the CSN. The CSN is delivered exclusively via the `csn_document_json` argument of this call.
+
 3. **Confirm** success and present result to user.
 
 ### Step 6: Verify Publication

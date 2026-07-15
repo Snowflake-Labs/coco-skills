@@ -25,7 +25,7 @@ Guiding rules:
 | BIGINT | long | `cds.Integer64` | |
 | NUMBER(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Use matching precision and scale |
 | DECIMAL(p,s) | decimal(p,s) | `cds.Decimal(p,s)` | Snowflake alias for `NUMBER(p,s)` |
-| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` — MSA applies `floatToDoubleWidening` automatically |
+| FLOAT | float | `cds.Double` | Iceberg type is `float` (32-bit). Declare as `cds.Double` |
 | FLOAT4 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
 | FLOAT8 | float | `cds.Double` | Iceberg type is `float` (32-bit). Same widening as FLOAT |
 | REAL | double | `cds.Double` | Iceberg type is `double` (64-bit) |
@@ -86,7 +86,7 @@ def map_decimal_type(precision, scale) -> dict:
 
 ## Floating Point Types
 
-`FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`; `REAL`/`DOUBLE PRECISION` are 64-bit Iceberg `double`. All map to `cds.Double` — MSA applies `floatToDoubleWidening` automatically.
+`FLOAT`/`FLOAT4`/`FLOAT8` are 32-bit Iceberg `float`; `REAL`/`DOUBLE PRECISION` are 64-bit Iceberg `double`. All map to `cds.Double`.
 
 ```json
 {"type": "cds.Double"}
