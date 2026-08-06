@@ -6,6 +6,7 @@ Each skill is a folder containing a `SKILL.md` that teaches CoCo a workflow, cod
 
 - [Install these skills](#install-these-skills)
 - [Skill catalog](#skill-catalog)
+- [Plugins](#plugins)
 - [Authoring a skill](#authoring-a-skill)
 - [Repo structure](#repo-structure)
 - [Troubleshooting](#troubleshooting)
@@ -78,6 +79,12 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | [`mlops`](skills/mlops)               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
 | [`dcr-v1-to-v2`](skills/dcr-v1-to-v2) | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
 
+
+---
+
+## Plugins
+
+Some contributions are **plugins** rather than single skills. A plugin bundles one or more skills together with hooks, subagents, and other components under `plugins/<name>/`, and installs through CoCo's plugin mechanism (not the single-skill install above). See [`plugins/README.md`](plugins/README.md) for the layout and how to add one.
 
 ---
 
