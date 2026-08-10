@@ -86,6 +86,12 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 
 Some contributions are **plugins** rather than single skills. A plugin bundles one or more skills together with hooks, subagents, and other components under `plugins/<name>/`, and installs through CoCo's plugin mechanism (not the single-skill install above). See [`plugins/README.md`](plugins/README.md) for the layout and how to add one.
 
+Plugins in this repo:
+
+| Plugin | What it does |
+| --- | --- |
+| [`xo`](plugins/xo) | General purpose Data Engineering Harness — automatic cross-session memory and recall, composable workflow stages, and specialised subagents, amongst many other best-practice token-efficient strategies. |
+
 ---
 
 ## Authoring a skill
