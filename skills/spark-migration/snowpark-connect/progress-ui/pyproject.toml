@@ -1,0 +1,15 @@
+[project]
+name = "spark-migration-progress-ui"
+version = "0.1.0"
+description = "Experimental Progress UI server and window for spark-migration"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+# Native app window (WKWebView/macOS, Edge WebView2/Windows, WebKit2GTK/Linux)
+# Install with: uv pip install pywebview
+window = ["pywebview>=4.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

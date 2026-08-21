@@ -1,0 +1,42 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-3319145:delta_read_format","df = spark.read.format(""delta"").load(""/mnt/data/my_delta_table"")
+df = spark.read.format(""delta"").option(""versionAsOf"", 5).load(path)","format(""delta"").load(path) reads Delta Lake tables by path. Not supported in Snowpark Connect — Snowflake does not use Delta Lake format natively. Replace with session.table(""my_table"") for Snowflake-managed tables. For external Delta data: 1) Create an external table over Delta files using CREATE EXTERNAL TABLE ... WITH LOCATION = ... FILE_FORMAT = (TYPE = DELTA), or 2) Use Iceberg tables (preferred). Time travel: use Snowflake's AT(TIMESTAMP => ...) or AT(OFFSET => -N) instead of versionAsOf.",""
+"SNOW-3319145:delta_write_format","df.write.format(""delta"").mode(""overwrite"").save(""/mnt/data/output_table"")
+df.write.format(""delta"").partitionBy(""date"").mode(""append"").save(path)","format(""delta"").save(path) writes data in Delta Lake format. Not supported in Snowpark Connect. Replace with: df.write.save_as_table(""output_table"", mode=""overwrite"") for Snowflake-managed tables. partitionBy() is not needed — Snowflake handles micro-partitioning automatically. For external output, write to a Snowflake stage in Parquet format.",""
+"SNOW-3319145:delta_table_for_path","from delta.tables import DeltaTable
+deltaTable = DeltaTable.forPath(spark, ""/mnt/data/events"")
+deltaTable = DeltaTable.forName(spark, ""my_catalog.my_schema.events"")","DeltaTable.forPath()/forName() creates a DeltaTable reference for DML operations. Not available in Snowpark Connect — the delta.tables module does not exist. Replace with session.table(""events"") for read operations. For DML (merge, update, delete), use session.sql() with Snowflake SQL syntax.",""
+"SNOW-3319145:delta_merge","from delta.tables import DeltaTable
+deltaTable = DeltaTable.forPath(spark, path)
+deltaTable.alias(""target"").merge(
+    source_df.alias(""source""),
+    ""target.id = source.id""
+).whenMatchedUpdateAll().whenNotMatchedInsertAll().execute()","DeltaTable.merge() API for upsert operations. Not available in Snowpark Connect. Replace with Snowflake SQL MERGE: session.sql(""MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.col1 = source.col1, ... WHEN NOT MATCHED THEN INSERT (col1, ...) VALUES (source.col1, ...)""). Note: Snowflake does not support updateAll()/insertAll() shorthand — list columns explicitly.",""
+"SNOW-3319145:delta_merge_conditional","deltaTable.alias(""t"").merge(
+    source.alias(""s""), ""t.id = s.id""
+).whenMatchedUpdate(
+    condition=""s.updated_at > t.updated_at"",
+    set={""value"": ""s.value"", ""updated_at"": ""s.updated_at""}
+).whenNotMatchedInsert(
+    values={""id"": ""s.id"", ""value"": ""s.value"", ""updated_at"": ""s.updated_at""}
+).whenNotMatchedBySourceDelete().execute()","DeltaTable conditional merge with whenNotMatchedBySource. Snowflake MERGE supports WHEN MATCHED AND condition THEN UPDATE SET ... and WHEN NOT MATCHED THEN INSERT ... Use session.sql() with full MERGE syntax. Note: WHEN NOT MATCHED BY SOURCE is supported in Snowflake (DELETE or UPDATE the target rows with no match in source).",""
+"SNOW-3319145:delta_update","deltaTable.update(
+    condition=col(""status"") == ""pending"",
+    set={""status"": lit(""processed""), ""processed_at"": current_timestamp()}
+)","DeltaTable.update() for conditional updates. Replace with Snowflake SQL: session.sql(""UPDATE my_table SET status = 'processed', processed_at = CURRENT_TIMESTAMP() WHERE status = 'pending'""). Or use Snowpark DataFrame: session.table(""my_table"").update({""status"": lit(""processed"")}, col(""status"") == ""pending"").",""
+"SNOW-3319145:delta_delete","deltaTable.delete(col(""date"") < ""2023-01-01"")
+deltaTable.delete()  # delete all rows","DeltaTable.delete() for conditional/full deletes. Replace with Snowflake SQL: session.sql(""DELETE FROM my_table WHERE date < '2023-01-01'""). Or use Snowpark DataFrame: session.table(""my_table"").delete(col(""date"") < ""2023-01-01""). Full delete: session.sql(""TRUNCATE TABLE my_table"").",""
+"SNOW-3319145:delta_optimize","spark.sql(""OPTIMIZE delta.`/mnt/data/events`"")
+spark.sql(""OPTIMIZE my_table ZORDER BY (date, category)"")","Delta Lake OPTIMIZE command compacts small files and applies Z-ordering. Not needed in Snowpark Connect — Snowflake handles micro-partition compaction automatically. For query optimization, use CLUSTER BY on the table: ALTER TABLE my_table CLUSTER BY (date, category). Snowflake's automatic clustering replaces both OPTIMIZE and ZORDER.",""
+"SNOW-3319145:delta_vacuum","spark.sql(""VACUUM delta.`/mnt/data/events` RETAIN 168 HOURS"")
+spark.sql(""VACUUM my_table"")","Delta Lake VACUUM removes old files beyond retention period. Not applicable in Snowpark Connect — Snowflake manages storage automatically via Time Travel retention. Configure retention with: ALTER TABLE my_table SET DATA_RETENTION_TIME_IN_DAYS = 7. Snowflake automatically reclaims storage after the retention period.",""
+"SNOW-3319145:delta_history","spark.sql(""DESCRIBE HISTORY delta.`/mnt/data/events`"")
+deltaTable.history(10)","DeltaTable.history() shows the transaction log / version history. Replace with Snowflake's query history and Time Travel: session.sql(""SELECT * FROM my_table AT(TIMESTAMP => '2024-01-01'::TIMESTAMP)"") for point-in-time access. For change tracking, use Snowflake Streams: CREATE STREAM my_stream ON TABLE my_table.",""
+"SNOW-3319145:delta_time_travel","df = spark.read.format(""delta"").option(""versionAsOf"", 3).load(path)
+df = spark.read.format(""delta"").option(""timestampAsOf"", ""2024-01-01"").load(path)","Delta Lake time travel via versionAsOf/timestampAsOf options. Replace with Snowflake Time Travel: session.sql(""SELECT * FROM my_table AT(OFFSET => -3)"") for version-based, session.sql(""SELECT * FROM my_table AT(TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ)"") for timestamp-based. Max retention: 90 days (Enterprise edition).",""
+"SNOW-3319145:delta_schema_evolution","df.write.format(""delta"").option(""mergeSchema"", ""true"").mode(""append"").save(path)
+spark.conf.set(""spark.databricks.delta.schema.autoMerge.enabled"", ""true"")","Delta Lake schema evolution via mergeSchema option. Snowflake handles schema evolution differently: 1) For Snowflake-managed tables, use ALTER TABLE ... ADD COLUMN for explicit changes, 2) For COPY INTO, set MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE. Automatic schema evolution is available with Snowpipe for semi-structured data.",""
+"SNOW-3319145:delta_change_data_feed","spark.read.format(""delta"").option(""readChangeFeed"", ""true"").option(""startingVersion"", 0).table(""my_table"")
+spark.readStream.format(""delta"").option(""readChangeFeed"", ""true"").table(""my_table"")","Delta Lake Change Data Feed (CDF) for tracking row-level changes. Replace with Snowflake Streams: CREATE STREAM my_stream ON TABLE my_table SHOW_INITIAL_ROWS = TRUE. Query changes: SELECT * FROM my_stream. Streams track INSERT, UPDATE, DELETE with METADATA$ACTION and METADATA$ISUPDATE columns.",""
+"SNOW-3319145:delta_create_table","DeltaTable.createIfNotExists(spark).tableName(""events"").addColumn(""id"", ""LONG"").addColumn(""data"", ""STRING"").partitionedBy(""date"").execute()","DeltaTable.createIfNotExists() builder API. Replace with Snowflake DDL: session.sql(""CREATE TABLE IF NOT EXISTS events (id BIGINT, data VARCHAR, date DATE)""). No partitionedBy needed — Snowflake handles micro-partitioning automatically. Optionally add clustering: CLUSTER BY (date).",""
+"SNOW-3319145:delta_convert_to_delta","DeltaTable.convertToDelta(spark, ""parquet.`/mnt/data/legacy_parquet`"")","DeltaTable.convertToDelta() converts Parquet/Iceberg tables to Delta format in-place. No Snowpark Connect equivalent — this is a Delta Lake file management operation. To ingest Parquet data into Snowflake: session.sql(""COPY INTO my_table FROM @my_stage FILE_FORMAT = (TYPE = PARQUET)"") or create an external table over existing Parquet files.",""

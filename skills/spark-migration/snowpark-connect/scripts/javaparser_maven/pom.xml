@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  javaparser_maven/pom.xml
+  Pinned Maven build wrapper for SCOS Java Phase 0.5c AST preprocessing.
+  Analog of scripts/scalafix_sbt/build.sbt for the Scala path.
+
+  Purpose: builds a single fat-jar (target/scos-javaparser-runner.jar) containing:
+    ScosJavaFacts   - Java AST fact extractor (JSON, mirrors ScosMigrateFacts.scala)
+    ScosJavaRewrite - Java rewrite/annotate rules (12-rule parity with SCOSRules.scala)
+
+  preprocess_javaparser.py invokes this project with:
+    mvn -q -f scripts/javaparser_maven/pom.xml package
+  then runs the jar as:
+    java -jar target/scos-javaparser-runner.jar facts  [options]
+    java -jar target/scos-javaparser-runner.jar rewrite [options]
+
+  Source files live in ../javaparser_rules/ (single source of truth).
+  The _smoke/ subdirectory contains test fixtures excluded from compilation.
+
+  Version pinning (verified on Maven Central):
+    javaparser-symbol-solver-core  3.26.4
+    jackson-databind               2.17.2
+    Java source/target             11
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+           http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.snowflake.scos</groupId>
+  <artifactId>scos-javaparser-runner</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+  <name>scos-javaparser-runner</name>
+
+  <properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javaparser.version>3.26.4</javaparser.version>
+    <jackson.version>2.17.2</jackson.version>
+  </properties>
+
+  <dependencies>
+    <!-- javaparser with symbol-solver: full Java AST, LexicalPreservingPrinter,
+         and optional type resolution. Symbol-solver-core is specified explicitly
+         so the fat-jar contains the same transitive closure regardless of the
+         host project's own deps. -->
+    <dependency>
+      <groupId>com.github.javaparser</groupId>
+      <artifactId>javaparser-symbol-solver-core</artifactId>
+      <version>${javaparser.version}</version>
+    </dependency>
+
+    <!-- Jackson for JSON facts output (mirrors Circe role in the Scala path) -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Source files are in ../javaparser_rules/ — single source of truth.
+         Package-style subdirectory: com/snowflake/scos/javaparser/*.java -->
+    <sourceDirectory>${project.basedir}/../javaparser_rules</sourceDirectory>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <source>11</source>
+          <target>11</target>
+          <!-- Exclude smoke-test fixtures from the production jar -->
+          <excludes>
+            <exclude>_smoke/**/*.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Fat-jar: single artifact resolved by preprocess_javaparser.py -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <finalName>scos-javaparser-runner</finalName>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.snowflake.scos.javaparser.ScosJavaRunner</mainClass>
+                </transformer>
+                <!-- Merge META-INF/services from all jars (needed for javaparser SPI) -->
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

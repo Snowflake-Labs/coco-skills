@@ -1,0 +1,56 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-3347463:dbx_notebook_run","dbutils.notebook.run(""./child_notebook"", timeout_seconds=300, arguments={""param1"": ""value1""})","dbutils.notebook.run() executes another Databricks notebook as a child job. Not available in Snowpark Connect — there is no notebook orchestration API. Replace with: 1) Snowflake Tasks for scheduling, 2) Snowflake stored procedures for modular code, 3) Airflow/external orchestrator for complex DAGs. Pass parameters via session variables or stored procedure arguments.",""
+"SNOW-3347463:dbx_notebook_exit","dbutils.notebook.exit(""SUCCESS"")
+result = dbutils.notebook.run(""child"", 60)
+if result != ""SUCCESS"": raise Exception(""Child failed"")","dbutils.notebook.exit() returns a string value to the parent notebook. No Snowpark Connect equivalent. In Snowflake, use stored procedure RETURN values for inter-procedure communication, or write status to a control table.",""
+"SNOW-3347463:dbx_widgets_text","dbutils.widgets.text(""input_date"", ""2024-01-01"", ""Enter date"")
+dbutils.widgets.get(""input_date"")
+dbutils.widgets.dropdown(""env"", ""dev"", [""dev"", ""staging"", ""prod""])","dbutils.widgets API creates interactive notebook parameters in Databricks. Not available in Snowpark Connect. Replace with: 1) Stored procedure parameters, 2) Session variables via session.sql(""SET my_var = 'value'""), 3) Streamlit app widgets for interactive use cases.",""
+"SNOW-3347463:dbx_widgets_remove","dbutils.widgets.remove(""input_date"")
+dbutils.widgets.removeAll()","dbutils.widgets.remove/removeAll() manages notebook widget lifecycle. Not applicable in Snowpark Connect. Simply remove these calls — use stored procedure parameters or session variables instead of widget-based parameterization.",""
+"SNOW-3347463:dbx_fs_ls","dbutils.fs.ls(""/mnt/data/raw/"")
+dbutils.fs.head(""/mnt/data/file.csv"", maxBytes=1000)
+dbutils.fs.mkdirs(""/mnt/data/output/"")","dbutils.fs provides a filesystem abstraction over DBFS/cloud storage. Not available in Snowpark Connect. Replace with: 1) Snowflake stages (LIST @stage, GET @stage), 2) session.file.get/put for file operations, 3) For directory listing: session.sql(""LIST @my_stage/path/"").",""
+"SNOW-3347463:dbx_fs_cp_mv_rm","dbutils.fs.cp(""/mnt/source/file.parquet"", ""/mnt/dest/"", recurse=True)
+dbutils.fs.mv(""/mnt/old/data"", ""/mnt/new/data"")
+dbutils.fs.rm(""/mnt/temp/"", recurse=True)","dbutils.fs.cp/mv/rm for file operations on DBFS. Replace with Snowflake stage operations: COPY INTO for loading, PUT/GET for file transfer, REMOVE @stage/path for deletion. For cross-stage copies: COPY INTO @dest_stage FROM @source_stage.",""
+"SNOW-3347463:dbx_fs_mount","dbutils.fs.mount(
+  source=""wasbs://container@account.blob.core.windows.net"",
+  mount_point=""/mnt/my_data"",
+  extra_configs={""fs.azure.account.key.account.blob.core.windows.net"": dbutils.secrets.get(""scope"", ""key"")})
+dbutils.fs.unmount(""/mnt/my_data"")","dbutils.fs.mount/unmount attaches cloud storage as DBFS mount points. Not available in Snowpark Connect. Replace with Snowflake external stages: CREATE STAGE my_stage URL='azure://...' CREDENTIALS=(AZURE_SAS_TOKEN='...'). External stages provide equivalent cloud storage access without mount semantics.",""
+"SNOW-3347463:dbx_secrets","secret_value = dbutils.secrets.get(scope=""my_scope"", key=""my_key"")
+dbutils.secrets.list(scope=""my_scope"")
+dbutils.secrets.listScopes()","dbutils.secrets provides Databricks secret management. Not available in Snowpark Connect. Replace with: 1) Snowflake Secrets (CREATE SECRET), 2) External secrets via EXTERNAL ACCESS INTEGRATION, 3) For connection strings: use Snowflake connection parameters. Access via session.sql(""SELECT SYSTEM$GET_SECRET('my_secret')"").",""
+"SNOW-3347463:dbx_display_function","display(df)
+display(df.groupBy(""category"").count().orderBy(""count"", ascending=False))
+displayHTML(""<h1>Report</h1>"")","display() is Databricks' notebook-specific visualization function. Not available in Snowpark Connect. Replace with: 1) df.show() for console output, 2) df.toPandas() for pandas integration, 3) Streamlit st.dataframe() for interactive visualization. displayHTML() has no equivalent — use Streamlit for rich output.",""
+"SNOW-3347463:dbx_magic_sql","# In Databricks notebooks:
+%sql
+SELECT * FROM my_database.my_table WHERE date > '2024-01-01'
+%sql
+DESCRIBE TABLE my_database.my_table","Databricks %sql magic command runs SQL directly in notebook cells. Not available in Python scripts or Snowpark Connect. Replace with session.sql(""SELECT * FROM my_table WHERE date > '2024-01-01'"").show() or session.sql(""DESCRIBE TABLE my_table"").collect(). Note Snowflake SQL dialect differences (e.g., DESCRIBE vs DESC).",""
+"SNOW-3347463:dbx_magic_scala_python","%scala
+val scalaDF = spark.range(100).toDF(""id"")
+%python
+python_df = spark.range(100)","Databricks %scala/%python magic commands switch language context within a notebook. Not available in Snowpark Connect. Consolidate code into a single language (Python recommended for SCOS). Share data between languages via temporary views: df.createOrReplaceTempView(""shared_data"") then session.table(""shared_data"").",""
+"SNOW-3347463:dbx_magic_run","%run ./includes/setup_notebook
+%run /Workspace/Shared/common/utils","Databricks %run includes another notebook inline (like an import). Not available in Snowpark Connect. Replace with Python imports: extract shared code into .py modules and use standard 'import' statements. For SQL setup scripts, use session.sql() calls at the start of your script.",""
+"SNOW-3347463:dbx_magic_pip_sh","%pip install pandas==2.0.0 scikit-learn
+%sh ls -la /dbfs/mnt/data/","Databricks %pip and %sh magic commands for package installation and shell access. Not available in Snowpark Connect. For dependencies: use requirements.txt or pyproject.toml with uv/pip before running scripts. For file system access: use Snowflake stages and session.file operations instead of shell commands.",""
+"SNOW-3347463:dbx_spark_conf_databricks","spark.conf.set(""spark.databricks.delta.optimizeWrite.enabled"", ""true"")
+spark.conf.set(""spark.databricks.delta.autoCompact.enabled"", ""true"")
+spark.conf.set(""spark.databricks.io.cache.enabled"", ""true"")","Databricks-specific spark.conf settings (spark.databricks.*) have no effect in Snowpark Connect. Snowflake handles write optimization, compaction, and caching automatically. Remove these configuration calls — Snowflake's micro-partition architecture and automatic clustering replace Delta's optimize/compact features.",""
+"SNOW-3347463:dbx_delta_live_tables","import dlt
+@dlt.table
+def my_live_table():
+    return spark.read.format(""csv"").load(""/mnt/data/raw"")
+
+@dlt.expect_or_drop(""valid_date"", ""date IS NOT NULL"")","Databricks Delta Live Tables (DLT) declarative pipeline framework is not available in Snowpark Connect. Replace with: 1) Snowflake Dynamic Tables for incremental materialization, 2) Snowflake Streams + Tasks for change data capture pipelines. Data quality expectations (@dlt.expect) map to Snowflake Data Metric Functions.",""
+"SNOW-3347463:dbx_autoloader","df = spark.readStream.format(""cloudFiles"")
+  .option(""cloudFiles.format"", ""json"")
+  .option(""cloudFiles.schemaLocation"", ""/mnt/schema"")
+  .load(""/mnt/data/landing/"")","Databricks Auto Loader (cloudFiles format) for incremental file ingestion is not available in Snowpark Connect. Replace with: 1) Snowpipe for automatic file ingestion from stages, 2) Snowpipe Streaming for low-latency, 3) COPY INTO with pattern matching for batch loads. Schema evolution is handled by Snowflake's INFER_SCHEMA().",""
+"SNOW-3347463:dbx_unity_catalog","spark.sql(""USE CATALOG my_catalog"")
+spark.sql(""CREATE SCHEMA my_catalog.my_schema"")
+spark.table(""my_catalog.my_schema.my_table"")","Databricks Unity Catalog three-level namespace (catalog.schema.table). Snowpark Connect uses Snowflake's own three-level namespace (database.schema.table). Replace USE CATALOG with USE DATABASE. Table references map naturally: my_catalog.my_schema.my_table → my_database.my_schema.my_table.",""

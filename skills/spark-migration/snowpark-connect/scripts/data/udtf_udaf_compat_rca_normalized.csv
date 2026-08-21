@@ -1,0 +1,58 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-3319145:udtf_pyspark_decorator","@udtf(returnType=""id: int, value: string"")
+class MyUDTF:
+    def eval(self, x: int):
+        for i in range(x):
+            yield (i, str(i))
+spark.udtf.register(""my_udtf"", MyUDTF)","PySpark @udtf decorator is natively supported in SCOS. Set spark.conf.set('snowpark.connect.udtf.compatibility_mode', 'true') once per session. With compatibility mode on, the SCOS runtime auto-translates the Spark-style eval() method to the Snowpark UDTF handler contract, so no rename is needed. Keep the @udtf class, eval(), and spark.udtf.register() as written. For vectorized UDTFs also set spark.sql.execution.pythonUDTF.arrow.enabled=true.",""
+"SNOW-3319145:udtf_eval_to_process","class ExplodeRange:
+    def eval(self, n: int):
+        for i in range(n):
+            yield (i,)
+spark.udtf.register(""explode_range"", ExplodeRange, returnType=""idx: int"")","The eval()→process() rename is NOT required in SCOS. With snowpark.connect.udtf.compatibility_mode=true the runtime treats the Spark-style eval() as the UDTF body and invokes it automatically. The return-type string format (""idx: int"") is also supported directly — no conversion to StructType needed.",""
+"SNOW-3319145:udtf_end_partition","class SumPartition:
+    def __init__(self):
+        self._sum = 0
+    def eval(self, x: int):
+        self._sum += x
+    def terminate(self):
+        yield (self._sum,)","PySpark UDTFs with terminate() pattern are supported in SCOS with compatibility mode on. The wrapper treats a None return from eval() as accumulation and invokes terminate() to emit rows. Keep the Spark-style class; do NOT rename terminate() to endPartition(). Set spark.conf.set('snowpark.connect.udtf.compatibility_mode', 'true') and register via spark.udtf.register().",""
+"SNOW-3319145:udaf_grouped_agg","from pyspark.sql.functions import pandas_udf, PandasUDFType
+@pandas_udf(""double"", PandasUDFType.GROUPED_AGG)
+def mean_udf(v: pd.Series) -> float:
+    return v.mean()
+df.groupBy(""category"").agg(mean_udf(col(""value"")))","PySpark GROUPED_AGG pandas UDF for custom aggregation. PandasUDFType.GROUPED_AGG is deprecated in newer Spark and not available in Snowpark Connect. Replace with Snowpark UDAF: use @udaf decorator with handler class implementing aggregate/merge/finish methods. Or use Snowflake's built-in aggregate functions which cover most use cases (AVG, MEDIAN, PERCENTILE_CONT, etc.).",""
+"SNOW-3319145:udaf_user_defined","from pyspark.sql import UserDefinedAggregateFunction
+class AverageUDAF(UserDefinedAggregateFunction):
+    def inputSchema(self): ...
+    def bufferSchema(self): ...
+    def evaluate(self, buffer): ...","Spark's UserDefinedAggregateFunction (Scala-based UDAF) is not available in Snowpark Connect. Replace with Snowpark Python UDAF: @udaf decorator with a handler class defining aggregate(state, input), merge(state1, state2), and finish(state) methods. Register via session.udaf.register().",""
+"SNOW-3319145:pandas_udf_scalar","from pyspark.sql.functions import pandas_udf
+@pandas_udf(""double"")
+def multiply(a: pd.Series, b: pd.Series) -> pd.Series:
+    return a * b
+df.select(multiply(col(""x""), col(""y"")))","PySpark SCALAR pandas UDF (@pandas_udf returning Series). In Snowpark Connect, vectorized UDFs work differently. Replace with Snowpark vectorized UDF: from snowflake.snowpark.functions import pandas_udf; @pandas_udf(... packages=[""pandas""]). Alternatively, use built-in functions where possible: col(""x"") * col(""y"") for simple arithmetic.",""
+"SNOW-3319145:pandas_udf_grouped_map","@pandas_udf(schema, PandasUDFType.GROUPED_MAP)
+def normalize(pdf: pd.DataFrame) -> pd.DataFrame:
+    pdf['value_norm'] = (pdf['value'] - pdf['value'].mean()) / pdf['value'].std()
+    return pdf
+df.groupBy(""category"").apply(normalize)","PySpark GROUPED_MAP pandas UDF with groupBy().apply() pattern. In Snowpark Connect, use vectorized UDTF for group-level transformations: define a handler class with process() that receives a DataFrame partition. Alternatively, use Snowpark window functions: (col(""value"") - avg(""value"").over(w)) / stddev(""value"").over(w).",""
+"SNOW-3319145:pandas_udf_map_iter","@pandas_udf(""id long, value double"")
+def map_batches(iterator: Iterator[pd.DataFrame]) -> Iterator[pd.DataFrame]:
+    for batch in iterator:
+        batch['value'] = batch['value'] * 2
+        yield batch
+df.mapInPandas(map_batches, schema)","PySpark mapInPandas() with iterator-based pandas UDF. Not directly supported in Snowpark Connect. Replace with: 1) Snowpark vectorized UDF for row-level transforms, 2) Snowpark UDTF for stateful batch processing, 3) For simple transforms, use DataFrame operations: df.with_column(""value"", col(""value"") * 2).",""
+"SNOW-3319145:call_udf_function","from pyspark.sql.functions import call_udf
+df.select(call_udf(""my_custom_udf"", col(""input_col"")))
+spark.udf.register(""my_udf"", lambda x: x.upper(), StringType())","call_udf() invokes a registered UDF by name. Snowpark Connect supports call_udf() via snowflake.snowpark.functions.call_udf(). However, UDFs must be registered as Snowflake UDFs first (CREATE FUNCTION or session.udf.register()). Lambda-based UDF registration may need to be converted to named function handlers.",""
+"SNOW-3319145:udf_serialization_closure","outer_var = 42
+@udf(returnType=StringType())
+def my_udf(x):
+    return str(x + outer_var)  # captures closure variable","PySpark UDF closure capture (referencing outer variables) may not serialize correctly in Snowpark Connect. Snowflake UDFs execute on the server — closure variables must be serializable. Replace with: 1) Pass as additional UDF parameters, 2) Use SQL functions with literal values, 3) Use Snowpark's lit() for constants: df.select(col(""x"") + lit(42)).",""
+"SNOW-3319145:udf_broadcast_in_udf","broadcast_data = sc.broadcast(large_dict)
+@udf(returnType=StringType())
+def lookup_udf(key):
+    return broadcast_data.value.get(key, ""unknown"")","Using broadcast variables inside UDFs is not supported in Snowpark Connect — no SparkContext. Replace with: 1) Join with a lookup table, 2) Use Snowflake's OBJECT_CONSTRUCT + OBJECT_AGG for dictionary patterns, 3) For small lookups, embed as Python dict in the UDF handler (if <16MB).",""
+"SNOW-3319145:udtf_lateral_join","spark.sql(""SELECT t.*, u.* FROM my_table t, LATERAL TABLE(my_udtf(t.col1)) u"")
+df.join(my_udtf_result, how=""cross"")","UDTF LATERAL join syntax differs slightly. Snowpark Connect supports TABLE() function syntax. Use: session.sql(""SELECT t.*, u.* FROM my_table t, TABLE(my_udtf(t.col1)) u"") or df.join(session.table_function(my_udtf, col(""col1""))). Ensure UDTF is registered with session.udtf.register() first.",""

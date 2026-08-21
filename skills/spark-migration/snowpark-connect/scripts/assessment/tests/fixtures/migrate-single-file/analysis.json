@@ -1,0 +1,57 @@
+[
+  {
+    "file": "/Users/mayliu/Desktop/sp1/scos-test-runs/migrate-single-file/tiny_workload.py",
+    "lines": "17-27",
+    "code": "schema = (\n    StructType()\n    .add(\"struct\", StructType().add(\"x\", StringType()).add(\"x\", IntegerType()))\n    .add(\n        \"struct2\",\n        StructType()\n        .add(\"a\", IntegerType())\n        .add(\"x\", IntegerType())\n        .add(\"x\", StringType()),\n    )\n)",
+    "final_risk": 0.85,
+    "root_cause": "Duplicate field names 'x' within StructType definitions cause SQL errors in Snowflake SCOS",
+    "explanation": "The schema contains duplicate field names 'x' within both nested struct definitions, which will cause a 'Duplicate field name' SQL error when used with Snowflake SCOS.",
+    "fix": "Rename duplicate fields to have unique names within each struct, e.g., change the second 'x' fields to 'x2' or another unique identifier: .add('x', StringType()).add('x2', IntegerType())",
+    "confidence": "HIGH",
+    "language": "python"
+  },
+  {
+    "file": "/Users/mayliu/Desktop/sp1/scos-test-runs/migrate-single-file/tiny_workload.py",
+    "lines": "30-30",
+    "code": "spark.conf.set(\"spark.sql.shuffle.partitions\", \"200\")",
+    "final_risk": 0.60502744,
+    "root_cause": "Invalid values for duplicate_column_names_handling_mode configuration are not validated and rejected",
+    "explanation": "Potential compatibility issue: Invalid values for duplicate_column_names_handling_mode configuration are not validated and rejected",
+    "fix": null,
+    "confidence": "MEDIUM",
+    "language": "python"
+  },
+  {
+    "file": "/Users/mayliu/Desktop/sp1/scos-test-runs/migrate-single-file/tiny_workload.py",
+    "lines": "28-28",
+    "code": "spark.conf.set(\"spark.sql.session.timeZone\", \"UTC\")",
+    "final_risk": 0.59078926,
+    "root_cause": "Cannot use SELECT subquery as UDTF table argument",
+    "explanation": "Potential compatibility issue: Cannot use SELECT subquery as UDTF table argument",
+    "fix": null,
+    "confidence": "MEDIUM",
+    "language": "python"
+  },
+  {
+    "file": "/Users/mayliu/Desktop/sp1/scos-test-runs/migrate-single-file/tiny_workload.py",
+    "lines": "49-64",
+    "code": "rest_data_info = spark.read \\\n    .format(\"snowflake\") \\\n    .options(**sfOptions) \\\n    .option(\"sfDatabase\", \"BRAND_PLK\") \\\n    .option(\"sfSchema\", \"STORES\") \\\n    .option(\"sfWarehouse\", \"ANALYSIS_PLK\") \\\n    .option(\"query\", \"\"\"\n        select\n          store_id       as rest_no,\n          full_address   as rest_address,\n          country_code   as country_cd\n        from STORES\n        where status = 'OPEN'\n          and country_code in ('US', 'CA')\n    \"\"\") \\\n    .load()",
+    "final_risk": 0.5761162,
+    "root_cause": "Snowflake doesn't support snappy compression in CSV files",
+    "explanation": "Potential compatibility issue: Snowflake doesn't support snappy compression in CSV files",
+    "fix": null,
+    "confidence": "MEDIUM",
+    "language": "python"
+  },
+  {
+    "file": "/Users/mayliu/Desktop/sp1/scos-test-runs/migrate-single-file/tiny_workload.py",
+    "lines": "68-68",
+    "code": "open_stores = get_open_store_ids(spark)",
+    "final_risk": 0.5576171,
+    "root_cause": "isLocal function is not applicable for Snowpark Connect",
+    "explanation": "Potential compatibility issue: isLocal function is not applicable for Snowpark Connect",
+    "fix": null,
+    "confidence": "MEDIUM",
+    "language": "python"
+  }
+]

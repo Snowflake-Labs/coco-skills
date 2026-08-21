@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Tracker</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body { 
+            background: white; 
+            padding: 24px;
+            margin: 0;
+        }
+        .container { 
+            max-width: none; 
+            padding: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .type-badge.UserCodeFile { background: #dbeafe; color: #1e40af; }
+        .type-badge.IOSources { background: #fef3c7; color: #b45309; }
+        .type-badge.ThirdPartyLibraries { background: #dcfce7; color: #15803d; }
+        .type-badge.UnknownLibraries { background: #fee2e2; color: #dc2626; }
+        .type-badge.SqlObject { background: #f3e8ff; color: #7c3aed; }
+        .type-badge.Parents { background: #e0e7ff; color: #4338ca; }
+        .type-badge.EWI { background: #ffedd5; color: #c2410c; }
+        .type-badge.Other { background: #f1f5f9; color: #475569; }
+        
+        .island-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .status-dot.success { background: #10b981; }
+        .status-dot.failure { background: #ef4444; }
+        
+        .count-cell {
+            text-align: center;
+            font-weight: 500;
+        }
+        .count-cell.has-value { color: var(--text-primary); }
+        .count-cell.zero { color: #cbd5e1; }
+        .count-cell.has-issues { background: #fee2e2; color: #dc2626; }
+        .count-cell.has-pending { color: #FF9F36; }
+        .count-cell.has-in-progress { color: #29B5E8; }
+        .count-cell.has-resolved { color: #10b981; }
+        .count-cell.has-auto-resolved { color: #06b6d4; }
+        .count-cell.has-not-auto-resolved { color: #f43f5e; }
+        
+        .file-row {
+            cursor: pointer;
+        }
+        .file-row:hover {
+            background: #f0f9ff;
+        }
+        .file-row.selected {
+            background: #dbeafe;
+            border-left: 3px solid var(--sf-blue);
+        }
+        .file-row.selected:hover {
+            background: #bfdbfe;
+        }
+        .file-path-code {
+            font-size: 12px;
+            color: var(--text-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .dependency-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .dependency-list li {
+            padding: 6px 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+        .dependency-list li code {
+            font-size: 12px;
+            color: var(--text-primary);
+        }
+        
+        .empty-section {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .status-dot.in-progress { background: #29B5E8; }
+        .status-dot.pending { background: #FF9F36; }
+        
+        /* Visual dependency styles */
+        .detail-section {
+            margin-bottom: 24px;
+        }
+        .detail-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-section-title .count {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+        .dep-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dep-flow-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .dep-flow-item.clickable {
+            cursor: pointer;
+        }
+        .dep-flow-item.clickable:hover {
+            background: #f0f9ff;
+            border-color: var(--sf-blue);
+        }
+        .dep-flow-item:not(.clickable):hover {
+            background: white;
+        }
+        .dep-flow-source {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--sf-blue);
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .dep-flow-arrow {
+            color: #94a3b8;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .dep-flow-target {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .dep-flow-status {
+            flex-shrink: 0;
+        }
+        .dep-status-dropdown {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            min-width: 140px;
+        }
+        .dep-status-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+        .dep-status-option:hover {
+            background: #f1f5f9;
+        }
+        .dep-status-option.active {
+            background: #e0f2fe;
+            font-weight: 500;
+        }
+        .dep-status-option .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-badge.clickable {
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .status-badge.clickable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-badge.pending-status {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .status-badge.in_progress-status {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .status-badge.manual_resolved-status {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .status-badge.auto_resolved-status {
+            background: #cffafe;
+            color: #0e7490;
+        }
+        .status-badge.not_auto_resolved-status {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+        .status-badge.wont_fix-status {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .validation-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .validation-toggle label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .validation-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--sf-blue);
+        }
+        .validation-status {
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .validation-status.validated {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .validation-status.not-validated {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .validation-status.in-progress {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .validation-badge {
+            display: inline-block;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .validation-badge.validated {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .validation-badge.in-progress {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .validation-badge.not-validated {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .validation-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        .validation-select:focus {
+            outline: none;
+            border-color: var(--sf-blue);
+            box-shadow: 0 0 0 2px rgba(41, 182, 246, 0.2);
+        }
+        .recommended-actions {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+        }
+        .recommended-actions.success {
+            background: #ecfdf5;
+            border: 1px solid #6ee7b7;
+        }
+        .recommended-actions-header {
+            margin-bottom: 8px;
+        }
+        .recommended-actions-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #b45309;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .recommended-actions.success .recommended-actions-title {
+            color: #047857;
+        }
+        .recommended-actions-content {
+            font-size: 13px;
+            color: #78350f;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .recommended-actions.success .recommended-actions-content {
+            color: #065f46;
+        }
+        .dep-empty {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 12px;
+            text-align: center;
+            background: white;
+            border-radius: 6px;
+        }
+        .detail-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .detail-chart {
+            flex: 1;
+            min-width: 280px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .detail-chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .chart-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chart-bar-label {
+            width: 100px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .chart-bar-track {
+            flex: 1;
+            height: 20px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: visible;
+            display: flex;
+            position: relative;
+        }
+        .chart-bar-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            min-width: 24px;
+            transition: width 0.3s ease;
+            position: relative;
+            cursor: default;
+        }
+        .chart-bar-fill:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+        .chart-bar-fill:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+        .chart-bar-fill:only-child {
+            border-radius: 4px;
+        }
+        .chart-bar-fill[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 4px;
+        }
+        .chart-bar-fill[data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1e293b;
+            z-index: 100;
+        }
+        .chart-bar-fill.user-code { background: var(--sf-blue); }
+        .chart-bar-fill.unknown { background: #8b5cf6; }
+        .chart-bar-fill.third-party { background: #06b6d4; }
+        .chart-bar-fill.io { background: #f59e0b; }
+        .chart-bar-fill.sql { background: #10b981; }
+        .chart-bar-fill.success { background: #22c55e; }
+        .chart-bar-fill.failure { background: #ef4444; }
+        .chart-bar-fill.pending { background: #f59e0b; }
+        .chart-bar-fill.direct { background: #3b82f6; }
+        .chart-bar-fill.indirect { background: #a855f7; }
+        .chart-bar-value {
+            width: 36px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+        .chart-legend {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        .chart-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+        .detail-stat {
+            flex: 1;
+            min-width: 80px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .detail-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--sf-blue);
+            line-height: 1;
+        }
+        .detail-stat-value.warning {
+            color: #f59e0b;
+        }
+        .detail-stat-value.danger {
+            color: #dc2626;
+        }
+        .detail-stat-value.success {
+            color: #16a34a;
+        }
+        .detail-stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 900px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .ewi-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .ewi-item:hover {
+            background: #f0f9ff;
+            border-color: var(--sf-blue);
+        }
+        .ewi-code {
+            font-family: monospace;
+            font-size: 11px;
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .ewi-message {
+            font-size: 12px;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .ewi-source {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .status-badge.success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-badge.failure {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .status-badge.pending {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+        .status-badge.in-progress {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-badge.manual_resolved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-badge.auto_resolved {
+            background: #cffafe;
+            color: #0e7490;
+        }
+        .status-badge.not_auto_resolved {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+        .status-badge.unknown {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .file-link {
+            color: var(--sf-blue);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .file-link:hover {
+            text-decoration: underline;
+        }
+        
+        .path-cell {
+            color: var(--text-secondary);
+            font-size: 12px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Graph section */
+        .graph-section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+        }
+        .graph-header:hover {
+            background: #f0f9ff;
+        }
+        .graph-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .graph-toggle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .graph-container {
+            height: 450px;
+            border-bottom: 1px solid var(--border-color);
+            display: none;
+        }
+        .graph-container.active {
+            display: block;
+        }
+        #dependency-graph {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Islands summary */
+        .islands-summary {
+            padding: 16px 20px;
+            display: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .islands-summary.active {
+            display: block;
+        }
+        .islands-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .islands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+        }
+        .island-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .island-card:hover {
+            background: #e2e8f0;
+        }
+        .island-card.selected {
+            border-color: var(--sf-blue);
+            background: #eff6ff;
+        }
+        .island-info {
+            flex: 1;
+            font-size: 12px;
+        }
+        .island-info .files {
+            color: var(--text-secondary);
+        }
+        .island-info .issues {
+            color: #dc2626;
+        }
+        
+        /* Detail panel styles */
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-top: 16px;
+            margin-left: 0 !important;
+            align-items: flex-start;
+            width: 100%;
+            background: white;
+        }
+        .files-list-panel {
+            width: 40%;
+            min-width: 350px;
+            flex-shrink: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .panel-controls {
+            padding: 12px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .panel-controls input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .filter-row {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-row select, .filter-row button {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 12px;
+            background: white;
+        }
+        .filter-row button {
+            cursor: pointer;
+        }
+        .filter-row button:hover {
+            background: #f1f5f9;
+        }
+        .table-container {
+            padding: 0 2.5%;
+        }
+        .files-list-panel table {
+            width: 95%;
+            margin: 0 auto;
+            border: none;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            background: white;
+        }
+        .pagination button {
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #f1f5f9;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination button.active {
+            background: var(--sf-blue);
+            color: white;
+            border-color: var(--sf-blue);
+        }
+        .pagination-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0 8px;
+        }
+        .detail-panel {
+            flex: 1;
+            min-width: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+        }
+        .detail-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: var(--text-secondary);
+        }
+        .detail-placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .detail-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .detail-file-path {
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Chart section */
+        .chart-section {
+            margin-bottom: 24px;
+        }
+        .chart-container {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            height: 200px;
+            padding: 16px 0;
+        }
+        .chart-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .chart-bars {
+            display: flex;
+            gap: 2px;
+            align-items: flex-end;
+            height: 160px;
+        }
+        .chart-bar {
+            width: 24px;
+            min-height: 4px;
+            border-radius: 2px 2px 0 0;
+        }
+        .chart-bar.success { background: #10b981; }
+        .chart-bar.failure { background: #ef4444; }
+        .chart-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 80px;
+            word-wrap: break-word;
+        }
+        
+        /* Dependency sections */
+        .dependency-section {
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .dependency-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        .dependency-header:hover {
+            background: #f1f5f9;
+        }
+        .dependency-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .dependency-count {
+            background: var(--border-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .dependency-toggle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .dependency-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .dependency-content.active {
+            display: block;
+        }
+        .dependency-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .dependency-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .dependency-table th {
+            text-align: left;
+            padding: 8px;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+        .dependency-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dependency-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Status totals */
+        .status-totals {
+            display: flex;
+            gap: 16px;
+            justify-content: flex-end;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        .status-total {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        table th {
+            cursor: pointer;
+            user-select: none;
+        }
+        table th:hover {
+            background: #e2e8f0;
+        }
+        
+        /* Legend */
+        .graph-legend {
+            display: flex;
+            gap: 16px;
+            padding: 8px 20px;
+            background: white;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2>Dependency Tracker</h2>
+                <p class="module-description">
+                    Track and validate file dependencies across your codebase. This view shows how files are connected through imports, 
+                    grouped into islands of related code. Use it to identify dependency issues, track validation progress, 
+                    and understand the impact of changes across your migration.
+                </p>
+            </div>
+            <span class="generated-at">Generated: <span id="generated-at"></span></span>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-files">0</div>
+                <div class="label">Total Files</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="total-dependencies">0</div>
+                <div class="label">Total Dependencies</div>
+            </div>
+            <div class="card in-progress">
+                <div class="number" id="total-islands">0</div>
+                <div class="label">Islands</div>
+            </div>
+            <div class="card">
+                <div class="number" id="total-issues" style="color: #dc2626;">0</div>
+                <div class="label">Deps Issues</div>
+            </div>
+        </div>
+
+        <!-- Graph Section -->
+        <div class="graph-section">
+            <div class="graph-header" onclick="toggleGraphSection()">
+                <div class="graph-title">
+                    <span>🏝️</span>
+                    <span>File Dependency Islands</span>
+                    <span style="font-weight: normal; font-size: 13px; color: var(--text-secondary);">
+                        - Groups of files connected through imports
+                    </span>
+                </div>
+                <span class="graph-toggle" id="graph-toggle">▼ Show</span>
+            </div>
+            <div class="graph-container" id="graph-container">
+                <div id="dependency-graph"></div>
+            </div>
+            <div class="graph-legend" id="graph-legend" style="display: none;">
+                <span>Click on a node to select files. Colors represent different islands.</span>
+            </div>
+            <div class="islands-summary" id="islands-summary">
+                <div class="islands-title">Select Islands to Filter</div>
+                <div class="islands-grid" id="islands-grid"></div>
+            </div>
+        </div>
+
+        <div class="main-content" style="display: block;">
+            <!-- Files List Panel (full width) -->
+            <div class="files-list-panel" style="width: 100%; min-width: unset;">
+                <div class="panel-controls">
+                    <input type="text" id="search" placeholder="Search by file path...">
+                    <div class="filter-row">
+                        <select id="filter-island">
+                            <option value="">All Islands</option>
+                        </select>
+                        <select id="filter-status">
+                            <option value="">All Status</option>
+                            <option value="0">Pending</option>
+                            <option value="1">In Progress</option>
+                            <option value="2">Validated</option>
+                        </select>
+                        <select id="filter-issues">
+                            <option value="">All Files</option>
+                            <option value="with-issues">With Deps Issues</option>
+                            <option value="no-issues">No Deps Issues</option>
+                        </select>
+                        <button class="secondary" onclick="clearFilters()">Clear</button>
+                    </div>
+                </div>
+                <div class="table-container" style="padding: 0 16px;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('file_id')">File <span class="sort-indicator" data-col="file_id"></span></th>
+                                <th onclick="sortTable('island')" style="width: 80px;">Island <span class="sort-indicator" data-col="island"></span></th>
+                                <th onclick="sortTable('validated')" style="width: 100px;">Status <span class="sort-indicator" data-col="validated"></span></th>
+                                <th onclick="sortTable('total_user_code_file')" style="width: 100px;">User Code Deps <span class="sort-indicator" data-col="total_user_code_file"></span></th>
+                                <th onclick="sortTable('total_other_deps')" style="width: 100px;">Other Deps <span class="sort-indicator" data-col="total_other_deps"></span></th>
+                                <th onclick="sortTable('total_issues')" style="width: 100px;">Deps Issues <span class="sort-indicator" data-col="total_issues"></span></th>
+                                <th onclick="sortTable('total_ewis')" style="width: 80px;">EWIs <span class="sort-indicator" data-col="total_ewis"></span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table"></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination">
+                    <button onclick="goToPage(1)" id="btn-first">« First</button>
+                    <button onclick="goToPage(currentPage - 1)" id="btn-prev">‹ Prev</button>
+                    <span class="pagination-info" id="pagination-info">Page 1 of 1</span>
+                    <button onclick="goToPage(currentPage + 1)" id="btn-next">Next ›</button>
+                    <button onclick="goToPage(totalPages)" id="btn-last">Last »</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let summaryData = [];
+        let inventoryData = [];
+        let graphData = { nodes: [], edges: [], islands: [] };
+        let fileEwiData = {}; // Store full EWI data by file path
+        let currentSort = { column: 'file_id', direction: 'asc' };
+        let selectedFile = null;
+        let selectedIslands = new Set();
+        let network = null;
+        let graphVisible = false;
+        
+        // Pagination
+        const ROWS_PER_PAGE = 15;
+        let currentPage = 1;
+        let totalPages = 1;
+        let filteredData = [];
+        
+        // URL Hash State Management
+        function saveStateToHash() {
+            const state = {
+                page: currentPage,
+                sort: currentSort.column,
+                dir: currentSort.direction,
+                islands: Array.from(selectedIslands).join(',')
+            };
+            const hash = Object.entries(state)
+                .filter(([k, v]) => v !== '' && v !== null)
+                .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+                .join('&');
+            history.replaceState(null, '', `#${hash}`);
+        }
+        
+        function restoreStateFromHash() {
+            const hash = window.location.hash.slice(1);
+            if (!hash) return;
+            
+            const params = new URLSearchParams(hash);
+            
+            if (params.has('page')) {
+                currentPage = parseInt(params.get('page')) || 1;
+            }
+            if (params.has('sort')) {
+                currentSort.column = params.get('sort');
+            }
+            if (params.has('dir')) {
+                currentSort.direction = params.get('dir');
+            }
+            if (params.has('islands') && params.get('islands')) {
+                const islands = params.get('islands').split(',').map(Number).filter(n => !isNaN(n));
+                selectedIslands = new Set(islands);
+            }
+        }
+        
+        // Normalize path to use forward slashes consistently and remove leading slashes
+        function normalizePath(path) {
+            if (!path) return '';
+            // Convert backslashes to forward slashes and remove leading slashes
+            return path.replace(/\\/g, '/').replace(/^\/+/, '');
+        }
+        
+        // Island colors
+        const islandColors = [
+            '#FF5733', '#33FF57', '#3357FF', '#F3FF33', '#FF33A8', '#33FFF3',
+            '#FF8C00', '#8A2BE2', '#00CED1', '#DC143C', '#228B22', '#FFD700',
+            '#4B0082', '#FF69B4', '#20B2AA', '#FF4500', '#9370DB', '#3CB371'
+        ];
+        
+        function getIslandColor(island) {
+            return islandColors[(island - 1) % islandColors.length];
+        }
+
+        async function loadData() {
+            try {
+                const [summaryResponse, inventoryResponse, graphResponse, fileResponse] = await Promise.all([
+                    fetch('/api/dependency/summary'),
+                    fetch('/api/dependency/inventory'),
+                    fetch('/api/dependency/graph'),
+                    fetch('/api/file/data')
+                ]);
+                
+                if (summaryResponse.ok && inventoryResponse.ok && graphResponse.ok) {
+                    const summaryJson = await summaryResponse.json();
+                    const inventoryJson = await inventoryResponse.json();
+                    graphData = await graphResponse.json();
+                    
+                    // Normalize paths in graphData
+                    if (graphData.nodes) {
+                        graphData.nodes = graphData.nodes.map(node => ({
+                            ...node,
+                            file_id: normalizePath(node.file_id)
+                        }));
+                    }
+                    if (graphData.edges) {
+                        graphData.edges = graphData.edges.map(edge => ({
+                            ...edge,
+                            source: normalizePath(edge.source),
+                            target: normalizePath(edge.target)
+                        }));
+                    }
+                    
+                    // Load EWI data if available
+                    let fileDataMap = {};
+                    if (fileResponse.ok) {
+                        const fileJson = await fileResponse.json();
+                        const files = fileJson.files || [];
+                        files.forEach(f => {
+                            const normalizedPath = normalizePath(f.file_path);
+                            const ewis = f.ewis || [];
+                            let totalEwis = ewis.length;
+                            let pending = 0;
+                            let inProgress = 0;
+                            let completed = 0;
+                            
+                            // Count EWIs by their status (derived from lines)
+                            const completedStatuses = new Set(['manual_resolved', 'auto_resolved', 'wont_fix']);
+                            ewis.forEach(ewi => {
+                                const lines = ewi.lines || [];
+                                if (lines.length === 0) {
+                                    pending++; // No lines = pending by default
+                                } else {
+                                    // EWI status: completed if ALL lines have a completed status, in_progress if ANY in_progress, else pending
+                                    const allCompleted = lines.every(line => completedStatuses.has(line.status));
+                                    const anyInProgress = lines.some(line => line.status === 'in_progress');
+                                    
+                                    if (allCompleted) completed++;
+                                    else if (anyInProgress) inProgress++;
+                                    else pending++;
+                                }
+                            });
+                            
+                            fileDataMap[normalizedPath] = {
+                                direct_ewis: totalEwis,
+                                pending_ewis: pending,
+                                in_progress_ewis: inProgress,
+                                resolved_ewis: completed
+                            };
+                            
+                            // Store full EWI data for detail panel
+                            fileEwiData[normalizedPath] = ewis;
+                        });
+                    }
+                    
+                    summaryData = summaryJson.data || [];
+                    inventoryData = inventoryJson.data || [];
+                    
+                    // Normalize all paths in inventoryData
+                    inventoryData = inventoryData.map(d => ({
+                        ...d,
+                        file_id: normalizePath(d.file_id),
+                        dependency: normalizePath(d.dependency),
+                        indirect_dependencies: d.indirect_dependencies ? normalizePath(d.indirect_dependencies) : '',
+                        direct_parents: d.direct_parents ? normalizePath(d.direct_parents) : '',
+                        indirect_parents: d.indirect_parents ? normalizePath(d.indirect_parents) : ''
+                    }));
+                    
+                    // Calculate total EWIs (direct + indirect) for each file
+                    summaryData = summaryData.map(file => {
+                        const normalizedFileId = normalizePath(file.file_id);
+                        const parts = normalizedFileId.split('/');
+                        parts.pop();
+                        const ewiInfo = fileDataMap[normalizedFileId] || { direct_ewis: 0, pending_ewis: 0, in_progress_ewis: 0, resolved_ewis: 0 };
+                        
+                        // Get indirect dependencies for this file
+                        const fileDeps = inventoryData.filter(d => d.file_id === normalizedFileId);
+                        let indirectDeps = [];
+                        const recordWithIndirect = fileDeps.find(d => d.indirect_dependencies);
+                        if (recordWithIndirect && recordWithIndirect.indirect_dependencies) {
+                            indirectDeps = recordWithIndirect.indirect_dependencies.split(',').filter(d => d.trim());
+                        }
+                        
+                        // Get direct dependencies (UserCodeFile type)
+                        const directDeps = fileDeps.filter(d => d.type === 'UserCodeFile').map(d => d.dependency);
+                        
+                        // Calculate indirect EWIs from all dependencies (deduplicate paths)
+                        let indirectEwis = 0;
+                        const allDepPathsRaw = [...directDeps, ...indirectDeps];
+                        const uniqueDepPaths = [...new Set(allDepPathsRaw.map(p => normalizePath(p.trim())))];
+                        uniqueDepPaths.forEach(normalizedDepPath => {
+                            const depInfo = fileDataMap[normalizedDepPath] || { direct_ewis: 0 };
+                            indirectEwis += depInfo.direct_ewis;
+                        });
+                        
+                        // Calculate other deps (total - user code)
+                        const totalOtherDeps = (file.total_dependencies || 0) - (file.total_user_code_file || 0);
+                        
+                        return {
+                            ...file,
+                            file_id: normalizedFileId, // Store normalized path
+                            file_path: parts.join('/') || '/',
+                            total_other_deps: totalOtherDeps,
+                            direct_ewis: ewiInfo.direct_ewis,
+                            indirect_ewis: indirectEwis,
+                            total_ewis: ewiInfo.direct_ewis + indirectEwis,
+                            pending_ewis: ewiInfo.pending_ewis,
+                            in_progress_ewis: ewiInfo.in_progress_ewis,
+                            resolved_ewis: ewiInfo.resolved_ewis
+                        };
+                    });
+                    
+                    // Sort by file_id to match HTML file generation order (dep_N.html)
+                    // Use simple string comparison to match Python's ORDER BY (ASCII order)
+                    summaryData.sort((a, b) => {
+                        if (a.file_id < b.file_id) return -1;
+                        if (a.file_id > b.file_id) return 1;
+                        return 0;
+                    });
+                    
+                    document.getElementById('generated-at').textContent = new Date().toLocaleString();
+                    updateCounts();
+                    populateIslandFilter();
+                    renderIslandsSummary();
+                    restoreStateFromHash(); // Restore state before first render
+                    renderTable(false); // Don't reset page - use restored value
+                } else {
+                    showLoadError('Failed to load dependency data');
+                }
+            } catch (e) {
+                showLoadError(e.message);
+            }
+        }
+
+        function showLoadError(message) {
+            document.getElementById('summary-table').innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Could not load dependency data</div>
+                        <div style="color: #8A999E;">${message}</div>
+                        <div style="font-size: 14px; color: #8A999E; margin-top: 8px;">
+                            Make sure ArtifactDependencyInventory.csv was processed.
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function updateCounts() {
+            const totalFiles = summaryData.length;
+            const totalDeps = summaryData.reduce((sum, f) => sum + (f.total_dependencies || 0), 0);
+            const totalIssues = summaryData.reduce((sum, f) => sum + (f.total_issues || 0), 0);
+            const totalIslands = graphData.islands ? graphData.islands.length : 0;
+            
+            document.getElementById('total-files').textContent = totalFiles;
+            document.getElementById('total-dependencies').textContent = totalDeps.toLocaleString();
+            document.getElementById('total-islands').textContent = totalIslands;
+            document.getElementById('total-issues').textContent = totalIssues.toLocaleString();
+        }
+
+        function populateIslandFilter() {
+            const select = document.getElementById('filter-island');
+            select.innerHTML = '<option value="">All Islands</option>';
+            
+            if (graphData.islands) {
+                graphData.islands.forEach(island => {
+                    const option = document.createElement('option');
+                    option.value = island.island;
+                    option.textContent = `Island ${island.island} (${island.file_count} files)`;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        function renderIslandsSummary() {
+            const grid = document.getElementById('islands-grid');
+            grid.innerHTML = '';
+            
+            if (!graphData.islands || graphData.islands.length === 0) {
+                grid.innerHTML = '<div style="color: var(--text-secondary);">No islands detected</div>';
+                return;
+            }
+            
+            graphData.islands.forEach(island => {
+                const card = document.createElement('div');
+                card.className = 'island-card';
+                card.dataset.island = island.island;
+                card.onclick = () => toggleIslandSelection(island.island);
+                
+                const color = getIslandColor(island.island);
+                card.innerHTML = `
+                    <span class="island-badge" style="background: ${color};">Island ${island.island}</span>
+                    <div class="island-info">
+                        <div class="files">${island.file_count} files</div>
+                        ${island.total_issues > 0 ? `<div class="issues">${island.total_issues} issues</div>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleIslandSelection(island) {
+            if (selectedIslands.has(island)) {
+                selectedIslands.delete(island);
+            } else {
+                selectedIslands.add(island);
+            }
+            
+            // Update card selection state
+            document.querySelectorAll('.island-card').forEach(card => {
+                const cardIsland = parseInt(card.dataset.island);
+                card.classList.toggle('selected', selectedIslands.has(cardIsland));
+            });
+            
+            // Update filter dropdown
+            if (selectedIslands.size === 1) {
+                document.getElementById('filter-island').value = [...selectedIslands][0];
+            } else {
+                document.getElementById('filter-island').value = '';
+            }
+            
+            renderTable();
+            saveStateToHash();
+            
+            // Highlight in graph
+            if (network) {
+                highlightIslandsInGraph();
+            }
+        }
+
+        function highlightIslandsInGraph() {
+            if (!network) return;
+            
+            if (selectedIslands.size === 0) {
+                // Reset all nodes
+                network.setSelection({ nodes: [], edges: [] });
+            } else {
+                // Select nodes from selected islands
+                const nodesToSelect = graphData.nodes
+                    .filter(n => selectedIslands.has(n.island))
+                    .map(n => n.file_id);
+                network.setSelection({ nodes: nodesToSelect });
+            }
+        }
+
+        function toggleGraphSection() {
+            graphVisible = !graphVisible;
+            const container = document.getElementById('graph-container');
+            const legend = document.getElementById('graph-legend');
+            const summary = document.getElementById('islands-summary');
+            const toggle = document.getElementById('graph-toggle');
+            
+            container.classList.toggle('active', graphVisible);
+            legend.style.display = graphVisible ? 'flex' : 'none';
+            summary.classList.toggle('active', graphVisible);
+            toggle.textContent = graphVisible ? '▲ Hide' : '▼ Show';
+            
+            if (graphVisible && !network) {
+                renderGraph();
+            }
+        }
+
+        function renderGraph() {
+            if (!graphData.nodes || graphData.nodes.length === 0) {
+                document.getElementById('dependency-graph').innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary);">
+                        No dependency graph data available
+                    </div>
+                `;
+                return;
+            }
+            
+            // Prepare nodes
+            const nodes = new vis.DataSet(
+                graphData.nodes.map(node => {
+                    const fileName = node.file_id.split('/').pop();
+                    return {
+                        id: node.file_id,
+                        label: fileName,
+                        title: node.file_id,
+                        color: {
+                            background: getIslandColor(node.island),
+                            border: getIslandColor(node.island),
+                            highlight: { background: '#fff', border: getIslandColor(node.island) }
+                        },
+                        group: node.island
+                    };
+                })
+            );
+            
+            // Prepare edges
+            const edges = new vis.DataSet(
+                graphData.edges.map((edge, idx) => ({
+                    id: idx,
+                    from: edge.source,
+                    to: edge.target,
+                    arrows: 'to',
+                    title: `${edge.source.split('/').pop()} imports ${edge.target.split('/').pop()}`,
+                    color: { color: '#94a3b8', highlight: '#475569' }
+                }))
+            );
+            
+            const container = document.getElementById('dependency-graph');
+            const data = { nodes, edges };
+            const options = {
+                physics: {
+                    solver: 'forceAtlas2Based',
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 100,
+                        springConstant: 0.08
+                    },
+                    stabilization: {
+                        iterations: 150,
+                        fit: true
+                    }
+                },
+                nodes: {
+                    shape: 'dot',
+                    size: 16,
+                    font: {
+                        size: 12,
+                        color: '#333'
+                    },
+                    borderWidth: 2
+                },
+                edges: {
+                    width: 1,
+                    smooth: {
+                        type: 'continuous'
+                    }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    zoomView: true,
+                    dragView: true
+                }
+            };
+            
+            network = new vis.Network(container, data, options);
+            
+            // Handle node click
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    showFileDetail(nodeId);
+                }
+            });
+            
+            // Fit after stabilization
+            network.on('stabilizationIterationsDone', function() {
+                network.fit({ animation: true });
+            });
+        }
+
+        function renderTable(resetPage = true) {
+            const search = document.getElementById('search').value.toLowerCase();
+            const islandFilter = document.getElementById('filter-island').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            const issuesFilter = document.getElementById('filter-issues').value;
+            
+            filteredData = summaryData.filter(file => {
+                const matchesSearch = file.file_id.toLowerCase().includes(search);
+                
+                let matchesIsland = true;
+                if (selectedIslands.size > 0) {
+                    matchesIsland = selectedIslands.has(file.island);
+                } else if (islandFilter) {
+                    matchesIsland = file.island === parseInt(islandFilter);
+                }
+                
+                let matchesStatus = true;
+                if (statusFilter !== '') {
+                    matchesStatus = file.validated === parseInt(statusFilter);
+                }
+                
+                let matchesIssues = true;
+                if (issuesFilter === 'with-issues') {
+                    matchesIssues = file.total_issues > 0;
+                } else if (issuesFilter === 'no-issues') {
+                    matchesIssues = file.total_issues === 0;
+                }
+                
+                return matchesSearch && matchesIsland && matchesStatus && matchesIssues;
+            });
+            
+            // Sort
+            filteredData.sort((a, b) => {
+                let aVal = a[currentSort.column];
+                let bVal = b[currentSort.column];
+                
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' 
+                        ? aVal.localeCompare(bVal) 
+                        : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+            
+            // Calculate pagination
+            totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE) || 1;
+            if (resetPage) {
+                currentPage = 1;
+            }
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            
+            const tbody = document.getElementById('summary-table');
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">No files found</td>
+                    </tr>
+                `;
+                updatePagination();
+                return;
+            }
+            
+            // Get current page data
+            const startIdx = (currentPage - 1) * ROWS_PER_PAGE;
+            const endIdx = startIdx + ROWS_PER_PAGE;
+            const pageData = filteredData.slice(startIdx, endIdx);
+            
+            tbody.innerHTML = pageData.map(file => {
+                const isSelected = selectedFile === file.file_id ? 'selected' : '';
+                const validationStatus = file.validated || 0;
+                let validationBadge;
+                if (validationStatus === 2) {
+                    validationBadge = '<span class="validation-badge validated">Validated</span>';
+                } else if (validationStatus === 1) {
+                    validationBadge = '<span class="validation-badge in-progress">In Progress</span>';
+                } else {
+                    validationBadge = '<span class="validation-badge not-validated">Pending</span>';
+                }
+                return `
+                    <tr class="file-row ${isSelected}" onclick="showFileDetail('${file.file_id}')">
+                        <td>
+                            <code class="file-path-code">${file.file_id}</code>
+                        </td>
+                        <td class="count-cell">${file.island ? `<span class="island-badge" style="background: ${getIslandColor(file.island)};">Island ${file.island}</span>` : '-'}</td>
+                        <td class="count-cell">${validationBadge}</td>
+                        <td class="count-cell ${file.total_user_code_file > 0 ? 'has-value' : 'zero'}">${file.total_user_code_file || 0}</td>
+                        <td class="count-cell ${file.total_other_deps > 0 ? 'has-value' : 'zero'}">${file.total_other_deps || 0}</td>
+                        <td class="count-cell ${file.total_issues > 0 ? 'has-issues' : 'zero'}">${file.total_issues}</td>
+                        <td class="count-cell ${file.total_ewis > 0 ? 'has-value' : 'zero'}">${file.total_ewis}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                el.textContent = '';
+            });
+            const activeIndicator = document.querySelector(`.sort-indicator[data-col="${currentSort.column}"]`);
+            if (activeIndicator) {
+                activeIndicator.textContent = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+            }
+            
+            updatePagination();
+        }
+        
+        function updatePagination() {
+            const info = document.getElementById('pagination-info');
+            info.textContent = `Page ${currentPage} of ${totalPages} (${filteredData.length} files)`;
+            
+            document.getElementById('btn-first').disabled = currentPage === 1;
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = currentPage === totalPages;
+            document.getElementById('btn-last').disabled = currentPage === totalPages;
+        }
+        
+        function goToPage(page) {
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentPage = page;
+            renderTable(false);
+            saveStateToHash();
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = column === 'file_id' ? 'asc' : 'desc';
+            }
+            renderTable();
+            saveStateToHash();
+        }
+
+        function showFileDetail(fileId) {
+            const normalizedFileId = normalizePath(fileId);
+            // Find the index of this file in summaryData
+            const fileIndex = summaryData.findIndex(f => normalizePath(f.file_id) === normalizedFileId);
+            if (fileIndex >= 0) {
+                // Navigate to the detail page
+                window.location.href = `content/dep_${fileIndex}.html`;
+            }
+        }
+
+        function selectFileInTable(fileId) {
+            // Normalize the file path and navigate to detail page
+            const normalizedFileId = normalizePath(fileId);
+            const fileIndex = summaryData.findIndex(f => normalizePath(f.file_id) === normalizedFileId);
+            
+            if (fileIndex >= 0) {
+                window.location.href = `content/dep_${fileIndex}.html`;
+            } else {
+                alert(`File "${fileId}" is not in the current project files.`);
+            }
+        }
+
+        function closeDetailPanel() {
+            document.getElementById('detail-placeholder').style.display = 'flex';
+            document.getElementById('detail-content-wrapper').style.display = 'none';
+            selectedFile = null;
+            renderTable(false);
+        }
+
+        async function updateDependencyStatus(fileId, dependency, newStatus) {
+            try {
+                const response = await fetch('/api/dependency/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: fileId, dependency: dependency, status: newStatus })
+                });
+                
+                if (response.ok) {
+                    // Update local data
+                    const dep = inventoryData.find(d => d.file_id === fileId && d.dependency === dependency);
+                    if (dep) {
+                        dep.status = newStatus;
+                    }
+                    // Refresh the detail panel
+                    showFileDetail(fileId);
+                } else {
+                    console.error('Failed to update dependency status');
+                }
+            } catch (error) {
+                console.error('Error updating dependency status:', error);
+            }
+        }
+
+        function showDepStatusDropdown(event, fileId, dependency, currentStatus) {
+            event.stopPropagation();
+            
+            // Remove any existing dropdown
+            const existing = document.querySelector('.dep-status-dropdown');
+            if (existing) existing.remove();
+            
+            const statuses = [
+                { value: 'pending', label: 'Pending', color: '#6b7280' },
+                { value: 'in_progress', label: 'In Progress', color: '#f59e0b' },
+                { value: 'manual_resolved', label: 'Manual Resolved', color: '#22c55e' },
+                { value: 'auto_resolved', label: 'Auto Resolved', color: '#06b6d4' },
+                { value: 'not_auto_resolved', label: 'Not Auto Resolved', color: '#f43f5e' },
+                { value: 'wont_fix', label: "Won't Fix", color: '#ef4444' }
+            ];
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dep-status-dropdown';
+            dropdown.innerHTML = statuses.map(s => `
+                <div class="dep-status-option ${s.value === currentStatus ? 'active' : ''}" 
+                     onclick="updateDependencyStatus('${fileId}', '${dependency.replace(/'/g, "\\'")}', '${s.value}')"
+                     style="--status-color: ${s.color}">
+                    <span class="status-dot" style="background: ${s.color}"></span>
+                    ${s.label}
+                </div>
+            `).join('');
+            
+            // Position the dropdown near the clicked element
+            const rect = event.target.getBoundingClientRect();
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.zIndex = '1000';
+            
+            document.body.appendChild(dropdown);
+            
+            // Close dropdown when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            }, 0);
+        }
+
+        async function updateFileValidation(fileId, status) {
+            try {
+                const response = await fetch('/api/file/validation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: fileId, validated: status })
+                });
+                
+                if (response.ok) {
+                    // Update local data
+                    const file = summaryData.find(f => f.file_id === fileId);
+                    if (file) {
+                        file.validated = status;
+                    }
+                    // Also update in filteredData
+                    const filteredFile = filteredData.find(f => f.file_id === fileId);
+                    if (filteredFile) {
+                        filteredFile.validated = status;
+                    }
+                    // Refresh the detail panel and table
+                    showFileDetail(fileId);
+                    renderTable(false);
+                } else {
+                    console.error('Failed to update file validation');
+                }
+            } catch (error) {
+                console.error('Error updating file validation:', error);
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('filter-island').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-issues').value = '';
+            selectedIslands.clear();
+            
+            document.querySelectorAll('.island-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            renderTable();
+            
+            if (network) {
+                network.setSelection({ nodes: [], edges: [] });
+            }
+        }
+
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        document.getElementById('search').addEventListener('input', renderTable);
+        document.getElementById('filter-island').addEventListener('change', function() {
+            selectedIslands.clear();
+            if (this.value) {
+                selectedIslands.add(parseInt(this.value));
+            }
+            document.querySelectorAll('.island-card').forEach(card => {
+                const cardIsland = parseInt(card.dataset.island);
+                card.classList.toggle('selected', selectedIslands.has(cardIsland));
+            });
+            renderTable();
+            highlightIslandsInGraph();
+        });
+        document.getElementById('filter-issues').addEventListener('change', renderTable);
+        document.getElementById('filter-status').addEventListener('change', renderTable);
+
+        // Handle browser back/forward navigation (bfcache)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                // Page was restored from bfcache, restore state from hash
+                restoreStateFromHash();
+                renderTable(false); // Don't reset page
+            }
+        });
+
+        loadData();
+    </script>
+</body>
+</html>

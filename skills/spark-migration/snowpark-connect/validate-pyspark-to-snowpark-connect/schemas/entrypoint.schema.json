@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snowflake.com/scos/entrypoint.schema.json",
+  "title": "SCOS validation entrypoint",
+  "type": "object",
+  "required": ["id", "path", "run_mode", "source_runtime", "import_roots", "entrypoint_kwargs", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "path": { "type": "string", "minLength": 1 },
+    "run_mode": { "enum": ["script", "callable"] },
+    "source_runtime": {
+      "type": ["string", "null"],
+      "enum": ["databricks", "spark", null],
+      "description": "Phase A execution target. 'databricks' = needs a Databricks cluster; 'spark' = local PySpark. Set by schema_mine; confirm or override in Step 3."
+    },
+    "entrypoint_callable": { "type": ["string", "null"] },
+    "import_roots": { "type": "array", "items": { "type": "string" } },
+    "closure": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Workload-relative paths of the entrypoint file plus its transitive static import + %run closure (computed by schema_mine). The set of files patch/scan tooling must inspect for this entrypoint. Dynamic imports are not resolved here."
+    },
+    "entrypoint_kwargs": { "type": "object" },
+    "cli_args": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1 },
+          "description": "PySpark: map of kwarg-name -> CLI flag (e.g. {\"env\": \"--env\"})"
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Scala: ordered list of CLI argument strings (e.g. [\"--taskName\", \"gom_orders\"])"
+        }
+      ]
+    },
+    "tables": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/table_entry" }
+    },
+    "joins": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/join_edge" }
+    },
+    "range_join_edges": {
+      "type": "array",
+      "description": "Range-predicate join edges (A.low <= B.point <= A.high / .between) mined by schema_mine; datagen injects overlapping values so the join is non-empty.",
+      "items": { "$ref": "#/$defs/range_join_edge" }
+    },
+    "sql_validation": { "type": "object" },
+    "display_only": {
+      "type": "boolean",
+      "description": "True when the entrypoint has no real write targets; display() sites were synthesized into display_<n> capture sinks so a baseline can still be produced."
+    },
+    "display_sinks": {
+      "type": "array",
+      "description": "Provenance for synthesized display capture sinks.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "arg_src": { "type": "string" }
+        }
+      }
+    },
+    "referenced_columns": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Non-authoritative hint: column identifiers seen in filter/where/selectExpr/expr SQL-expression fragments, attributed to no specific table."
+    },
+    "error": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "run_mode": { "const": "callable" } }, "required": ["run_mode"] },
+      "then": {
+        "properties": {
+          "entrypoint_callable": { "type": "string", "minLength": 1 }
+        },
+        "required": ["entrypoint_callable"]
+      }
+    }
+  ],
+  "$defs": {
+    "join_edge": {
+      "type": "object",
+      "required": ["left", "right"],
+      "additionalProperties": false,
+      "properties": {
+        "left": { "type": "string", "minLength": 1 },
+        "right": { "type": "string", "minLength": 1 }
+      }
+    },
+    "range_join_edge": {
+      "type": "object",
+      "required": ["point", "low", "high"],
+      "additionalProperties": false,
+      "properties": {
+        "point": { "type": "string", "minLength": 1 },
+        "low": { "type": "string", "minLength": 1 },
+        "high": { "type": "string", "minLength": 1 }
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "nullable": { "type": "boolean" },
+        "values": {},
+        "join_key": { "type": "boolean" },
+        "unique": {
+          "type": "boolean",
+          "description": "Generate all-distinct values for this column (one per row). Use for a primary-key-like column, or a window/dedup orderBy column to break row_number tie non-determinism. Yields to a shared join key_pool (overlap wins) and to range-boundary injection (range correctness wins)."
+        },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "table_entry": {
+      "type": "object",
+      "required": ["access", "columns"],
+      "additionalProperties": false,
+      "properties": {
+        "access": { "enum": ["read", "write", "readwrite"] },
+        "columns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/column" }
+        },
+        "category": { "enum": ["file", "table", "connector"] },
+        "format": { "type": "string", "minLength": 1 },
+        "relational": { "type": "boolean" },
+        "reader_method": { "type": "string" },
+        "original_path": { "type": "string", "minLength": 1 },
+        "mock_file": { "type": "string", "minLength": 1 },
+        "reader_options": { "type": "object" },
+        "document_schema": {},
+        "natural_keys": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "allow_empty": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Rare sink-level override: this sink may legitimately produce zero rows for the current fixture. Value must explain why."
+        },
+        "llm_todo": { "type": "string" },
+        "llm_reason": { "type": "string" },
+        "defined_at": { "type": "string" },
+        "dynamic_read": { "type": "boolean" },
+        "fanout": {
+          "type": "object",
+          "description": "Constant fanout for a dynamic_read table: the looped-over values and their count.",
+          "properties": {
+            "count": { "type": ["integer", "null"] },
+            "values": {
+              "type": ["array", "null"],
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "path": { "type": "string" }
+      }
+    }
+  }
+}

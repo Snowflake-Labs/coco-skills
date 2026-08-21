@@ -1,0 +1,2 @@
+# Maven build artifacts — never commit (regenerated on demand by preprocess_javaparser.py)
+target/

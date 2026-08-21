@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spark Migration — Progress (Experimental)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+  <!-- ── Sidebar ─────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-inner">
+        <svg class="sidebar-brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37.24 37.24" role="img" aria-label="Snowflake">
+          <path fill="#29B5E8" fill-rule="evenodd" d="M11.8,19.37c.07-.24.11-.48.10-.72,0-.17-.03-.35-.08-.52-.14-.54-.49-1.02-1-1.32l-7.28-4.32c-1.03-.61-2.34-.25-2.93.81-.6,1.05-.25,2.39.78,3.01l4.07,2.42-4.07,2.41c-1.03.61-1.38,1.95-.78,3.01.59,1.05,1.9,1.41,2.93.8l7.28-4.32c.49-.29.82-.74.98-1.26h0ZM13.78,23.42c-.42-.03-.85.05-1.24.29l-7.29,4.32c-1.02.61-1.37,1.96-.78,3.02.6,1.05,1.9,1.41,2.93.8l4.08-2.42v4.83c0,1.22.96,2.2,2.14,2.2s2.15-.98,2.15-2.2v-8.63c0-1.16-.88-2.11-1.98-2.19h0ZM21.24,14.04c.42.03.85-.06,1.24-.29l7.29-4.32c1.03-.61,1.37-1.96.78-3.01-.59-1.05-1.90-1.41-2.93-.81l-4.08,2.42V3.2c0-1.21-.96-2.2-2.14-2.2s-2.14.98-2.14,2.2v8.64c0,1.16.87,2.11,1.98,2.2h0ZM5.25,9.43l7.29,4.32c.39.23.83.32,1.24.29,1.11-.08,1.98-1.04,1.98-2.2V3.2c0-1.21-.96-2.2-2.15-2.2s-2.14.98-2.14,2.2v4.83l-4.08-2.42c-1.02-.61-2.33-.25-2.93.81-.59,1.05-.24,2.4.78,3.01h0ZM18.94,18.71c0-.13-.07-.30-.16-.39l-.88-.90c-.09-.09-.26-.16-.38-.16h-.03c-.12,0-.29.07-.38.16l-.88.90c-.09.09-.15.27-.15.39v.03c0,.12.07.30.15.39l.88.90c.09.09.25.16.38.16h.03c.12,0,.29-.07.38-.16l.88-.90c.09-.09.16-.26.16-.39v-.03ZM21.36,19.57l-3.03,3.10c-.09.09-.25.17-.38.17h-.89c-.12,0-.29-.07-.38-.17l-3.03-3.10c-.09-.09-.16-.26-.16-.39v-.91c0-.13.07-.30.16-.39l3.03-3.10c.09-.09.26-.16.38-.16h.89c.12,0,.29.07.38.16l3.03,3.10c.09.09.16.26.16.39v.91c0,.12-.07.30-.16.39ZM29.77,28.02l-7.29-4.32c-.39-.23-.82-.32-1.24-.29-1.11.08-1.98,1.03-1.98,2.19v8.64c0,1.22.96,2.2,2.15,2.20s2.14-.98,2.14-2.20v-4.83l4.08,2.42c1.02.61,2.34.25,2.93-.80.59-1.05.24-2.40-.78-3.02h0ZM33.62,16.31l-4.07,2.42,4.07,2.41c1.03.61,1.38,1.95.78,3.01-.59,1.05-1.90,1.41-2.93.80l-7.29-4.32c-.49-.29-.82-.74-.97-1.26-.07-.24-.10-.48-.10-.72,0-.18.03-.35.07-.52.14-.54.49-1.02.99-1.32l7.29-4.32c1.02-.61,2.34-.24,2.93.81.60,1.05.25,2.39-.78,3.01h0Z"/>
+        </svg>
+        <h2>Spark migration<br>progress tracker <span class="exp-badge">Experimental</span></h2>
+      </div>
+    </div>
+
+    <div class="sidebar-project" id="sidebarProject" style="display:none">
+      <span class="sidebar-project-label">Project</span>
+      <span class="sidebar-project-name" id="sidebarProjectName"></span>
+      <span class="sidebar-project-type" id="sidebarProjectType"></span>
+    </div>
+
+    <nav id="stageNav">
+      <!-- stage nav rendered by JS -->
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="sidebar-status" id="sidebarStatus">
+        <span class="dot"></span>
+        <span class="sidebar-status-text" id="sidebarStatusText">Waiting</span>
+      </div>
+      <div class="sidebar-elapsed" id="sidebarElapsed" style="display:none">00:00:00 elapsed</div>
+    </div>
+  </aside>
+
+  <!-- ── Content ─────────────────────────────────────── -->
+  <main class="content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div class="page-header-row">
+        <div>
+          <h1>Migration progress <span class="exp-badge">Experimental</span></h1>
+          <p class="page-subheading" id="pageSub">Experimental live tracker — waiting for the migration run to start…</p>
+        </div>
+        <span class="status-badge pending" id="statusBadge">Waiting</span>
+      </div>
+    </div>
+
+    <!-- Overall progress -->
+    <div class="overall-card">
+      <div class="overall-head">
+        <span class="overall-label">Overall progress</span>
+        <span class="overall-pct" id="overallPct">0%</span>
+      </div>
+      <div class="progress-bar big">
+        <div class="progress-fill blue" id="overallFill" style="width:0%"></div>
+      </div>
+      <div class="overall-caption" id="overallCaption">Not started</div>
+    </div>
+
+    <!-- Metric tiles -->
+    <div class="tiles" id="tiles">
+      <!-- tiles rendered by JS -->
+    </div>
+
+    <!-- Now running -->
+    <div class="active-card" id="activeCard" style="display:none">
+      <div class="active-spinner"><span></span></div>
+      <div class="active-body">
+        <div class="active-head">
+          <span class="active-eyebrow">Now running</span>
+          <span class="active-phase" id="activePhase"></span>
+        </div>
+        <div class="active-detail" id="activeDetail"></div>
+      </div>
+    </div>
+
+    <!-- Stage tracker -->
+    <div class="section tracker-section">
+      <h2>Migration stages</h2>
+      <p class="section-desc">Each stage runs in sequence. Sub-steps light up as work progresses.</p>
+      <div class="tracker" id="tracker">
+        <!-- tracker rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Workload insights (populated from assessment data) -->
+    <div class="section insights-section" id="insightsSection" style="display:none">
+      <h2>Workload insights</h2>
+      <p class="section-desc" id="insightsSub"></p>
+      <div id="insightsBody"></div>
+    </div>
+
+    <!-- Live activity + Reports -->
+    <div class="two-col">
+      <div class="section" id="feedSection">
+        <h2>Live activity <span class="live-pill" id="livePill">live</span></h2>
+        <div class="feed" id="feed">
+          <div class="feed-empty">Waiting for activity…</div>
+        </div>
+      </div>
+
+      <div class="section" id="reportsSection">
+        <h2>Reports</h2>
+        <div class="reports" id="reports">
+          <div class="feed-empty">No reports generated yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completion summary -->
+    <div class="section done-section" id="doneSection" style="display:none">
+      <div class="done-head">
+        <svg class="done-check" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" fill="#DFF6DD"/>
+          <polyline points="12,20.5 17.5,26 28,14.5" stroke="#107C10" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h2>Migration complete</h2>
+          <p class="section-desc" id="doneSub">Migration complete.</p>
+        </div>
+      </div>
+      <div class="tiles" id="doneStats"></div>
+      <div class="done-cta" id="doneCta"></div>
+    </div>
+
+  </main>
+
+  <!-- ── Shared overlay (closes whichever drawer is open) ── -->
+  <div class="drawer-overlay" onclick="(document.getElementById('chatDrawer').classList.contains('open') ? closeChat : closeReportDrawer)()"></div>
+
+  <!-- ── Report drawer panel ──────────────────────────── -->
+  <div class="report-drawer" id="reportDrawer">
+    <div class="drawer-header">
+      <span class="msym report-icon">summarize</span>
+      <span class="drawer-title" id="reportDrawerTitle">Report</span>
+      <button class="drawer-close" onclick="closeReportDrawer()" title="Close">
+        <span class="msym">close</span>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <iframe id="reportFrame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+      <pre id="reportPre" class="report-pre" style="display:none"></pre>
+    </div>
+  </div>
+
+  <!-- ── Chat launcher (FAB) ──────────────────────────── -->
+  <button class="chat-fab" id="chatFab" onclick="toggleChat()" title="Ask about this migration">
+    <span class="msym">forum</span>
+    <span class="chat-fab-label">Ask</span>
+  </button>
+
+  <!-- ── Chat drawer panel ────────────────────────────── -->
+  <div class="chat-drawer" id="chatDrawer">
+    <div class="drawer-header">
+      <span class="msym report-icon">forum</span>
+      <span class="drawer-title">Ask about this migration</span>
+      <button class="drawer-close" onclick="closeChat()" title="Close">
+        <span class="msym">close</span>
+      </button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-intro">
+        <p>Ask about this run's progress, why a file failed, or how any part of the
+           Snowpark&nbsp;Connect migration &amp; validation process works.</p>
+      </div>
+    </div>
+
+    <div class="chat-suggest" id="chatSuggest">
+      <!-- suggested-prompt chips rendered by JS -->
+    </div>
+
+    <form class="chat-composer" id="chatComposer" onsubmit="return false">
+      <textarea id="chatInput" rows="1" placeholder="Ask a question…"
+                autocomplete="off"></textarea>
+      <button class="chat-cancel" id="chatCancel" title="Cancel" style="display:none">
+        <span class="msym">close</span>
+      </button>
+      <button class="chat-send" id="chatSend" title="Send (Enter)">
+        <span class="msym">send</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- ── App JS (must be after all DOM) ───────────────── -->
+  <script src="/static/app.js"></script>
+
+</body>
+</html>

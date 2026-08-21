@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{FILE_NAME}} - EWIs</title>
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        body { background: white; padding: 24px; margin: 0; }
+        .container { max-width: none; padding: 0; }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #29B5E8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .file-header {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .file-path {
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        /* EWI Card styles */
+        .ewi-card-wrapper {
+            margin-bottom: 12px;
+        }
+        .ewi-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .ewi-card.has-panel {
+            border-radius: 8px 8px 0 0;
+        }
+        .ewi-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ewi-code-link {
+            font-size: 16px;
+            color: var(--sf-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .ewi-code-link:hover { text-decoration: underline; }
+        .ewi-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        /* Toggle button and badges */
+        .toggle-lines-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--sf-blue);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+        }
+        .toggle-lines-btn:hover {
+            background: #f1f5f9;
+        }
+        .toggle-icon {
+            font-size: 10px;
+        }
+        .status-summary {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-left: 12px;
+        }
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .status-badge.pending { background: #f1f5f9; color: #64748b; }
+        .status-badge.in_progress { background: #fef3c7; color: #b45309; }
+        .status-badge.manual_resolved { background: #dcfce7; color: #15803d; }
+        .status-badge.auto_resolved { background: #cffafe; color: #0e7490; }
+        .status-badge.not_auto_resolved { background: #ffe4e6; color: #be123c; }
+        .status-badge.wont_fix { background: #e2e8f0; color: #475569; }
+        .ewi-status-select {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            margin-left: 12px;
+        }
+        .ewi-status-select.pending { border-color: #94a3b8; }
+        .ewi-status-select.in_progress { border-color: #f59e0b; background: #fef3c7; }
+        .ewi-status-select.manual_resolved { border-color: #22c55e; background: #dcfce7; }
+        .ewi-status-select.auto_resolved { border-color: #06b6d4; background: #cffafe; }
+        .ewi-status-select.not_auto_resolved { border-color: #f43f5e; background: #ffe4e6; }
+        .ewi-status-select.wont_fix { border-color: #64748b; background: #e2e8f0; }
+        /* Lines panel */
+        .lines-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 12px;
+        }
+        .lines-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .line-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .line-item:last-child { margin-bottom: 0; }
+        .line-number {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .line-status-select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+        }
+        .line-status-select.pending { border-color: #94a3b8; }
+        .line-status-select.in_progress { border-color: #f59e0b; background: #fef3c7; }
+        .line-status-select.manual_resolved { border-color: #22c55e; background: #dcfce7; }
+        .line-status-select.auto_resolved { border-color: #06b6d4; background: #cffafe; }
+        .line-status-select.not_auto_resolved { border-color: #f43f5e; background: #ffe4e6; }
+        .line-status-select.wont_fix { border-color: #64748b; background: #e2e8f0; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2>File EWI Details</h2>
+                <p class="module-description">
+                    Detailed view of all EWIs affecting this specific file. Review each issue, see the exact line numbers, 
+                    and update resolution status. Click on an EWI code to see its full documentation.
+                </p>
+            </div>
+            <a href="../file_tracker.html" class="back-link">← Back to File Tracker</a>
+        </div>
+
+        <div class="file-header">
+            <h3>{{FILE_NAME}}</h3>
+            <div class="file-path" id="file-path">{{FILE_PATH}}</div>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-ewis">0</div>
+                <div class="label">EWIs</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="pending-count">0</div>
+                <div class="label">Pending</div>
+            </div>
+            <div class="card in-progress">
+                <div class="number" id="in-progress-count">0</div>
+                <div class="label">In Progress</div>
+            </div>
+            <div class="card manual_resolved">
+                <div class="number" id="manual-resolved-count">0</div>
+                <div class="label">Manual Resolved</div>
+            </div>
+            <div class="card auto_resolved">
+                <div class="number" id="auto-resolved-count">0</div>
+                <div class="label">Auto Resolved</div>
+            </div>
+            <div class="card not_auto_resolved">
+                <div class="number" id="not-auto-resolved-count">0</div>
+                <div class="label">Not Auto Resolved</div>
+            </div>
+        </div>
+
+        <div class="ewi-list" id="ewi-list">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        const FILE_PATH = '{{FILE_PATH_JS}}';
+        let fileData = null;
+        let ewiData = null;
+        let currentFileInfo = null;
+        
+        async function loadData() {
+            try {
+                const [fileResponse, ewiResponse] = await Promise.all([
+                    fetch('/api/file/data'),
+                    fetch('/api/ewi/data')
+                ]);
+                
+                if (fileResponse.ok && ewiResponse.ok) {
+                    fileData = await fileResponse.json();
+                    ewiData = await ewiResponse.json();
+                    
+                    // Find this file's data
+                    currentFileInfo = fileData.files.find(f => f.file_path === FILE_PATH);
+                    
+                    if (currentFileInfo) {
+                        renderEwis();
+                        updateTotalCounts();
+                    } else {
+                        document.getElementById('ewi-list').innerHTML = '<div class="loading">File not found in data</div>';
+                    }
+                } else {
+                    throw new Error('Failed to load data');
+                }
+            } catch (e) {
+                document.getElementById('ewi-list').innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+            }
+        }
+        
+        function renderEwis() {
+            const ewis = currentFileInfo.ewis || [];
+            document.getElementById('total-ewis').textContent = ewis.length;
+            
+            const container = document.getElementById('ewi-list');
+            container.innerHTML = ewis.map(ewi => {
+                const code = ewi.code;
+                const lines = ewi.lines || [];
+                
+                // Get EWI info
+                const ewiInfo = ewiData.ewis.find(e => e.code === code) || {};
+                const description = ewiInfo.description || '';
+                const url = ewiInfo.url || '#';
+                
+                // Calculate status counts
+                const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+                lines.forEach(line => {
+                    const status = line.status || 'pending';
+                    if (counts.hasOwnProperty(status)) counts[status]++;
+                });
+                
+                // Build badges
+                let badges = '';
+                if (counts.in_progress > 0) badges += `<span class="status-badge in_progress">${counts.in_progress} in progress</span>`;
+                if (counts.manual_resolved > 0) badges += `<span class="status-badge manual_resolved">${counts.manual_resolved} manual resolved</span>`;
+                if (counts.auto_resolved > 0) badges += `<span class="status-badge auto_resolved">${counts.auto_resolved} auto resolved</span>`;
+                if (counts.not_auto_resolved > 0) badges += `<span class="status-badge not_auto_resolved">${counts.not_auto_resolved} not auto resolved</span>`;
+                if (counts.wont_fix > 0) badges += `<span class="status-badge wont_fix">${counts.wont_fix} won't fix</span>`;
+                if (counts.pending > 0) badges += `<span class="status-badge pending">${counts.pending} pending</span>`;
+                
+                // Build lines HTML
+                const linesHtml = lines.map(line => {
+                    const status = line.status || 'pending';
+                    return `
+                        <div class="line-item">
+                            <span class="line-number">Line ${line.line}</span>
+                            <select class="line-status-select ${status}" onchange="updateLineStatus('${code}', ${line.line}, this)">
+                                <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="manual_resolved" ${status === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                                <option value="auto_resolved" ${status === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                                <option value="not_auto_resolved" ${status === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                                <option value="wont_fix" ${status === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                            </select>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="ewi-card-wrapper">
+                        <div class="ewi-card" data-ewi="${code}">
+                            <div class="ewi-card-header">
+                                <a href="../ewi_tracker.html?ewi=${code}" class="ewi-code-link">${code}</a>
+                                <button class="toggle-lines-btn" onclick="toggleLinesPanel('${code}')">
+                                    <span class="toggle-icon" id="toggle-icon-${code}">▶</span>
+                                    <span>${lines.length} lines</span>
+                                </button>
+                                <div class="status-summary" id="status-summary-${code}">${badges}</div>
+                                <select class="ewi-status-select" onchange="updateEwiStatus('${code}', this)">
+                                    <option value="">Set All...</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="manual_resolved">Manual Resolved</option>
+                                    <option value="auto_resolved">Auto Resolved</option>
+                                    <option value="not_auto_resolved">Not Auto Resolved</option>
+                                    <option value="wont_fix">Won't Fix</option>
+                                </select>
+                            </div>
+                            <div class="ewi-description">${description}</div>
+                        </div>
+                        <div class="lines-panel" id="lines-panel-${code}" style="display: none;">
+                            <div class="lines-list">
+                                ${linesHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function toggleLinesPanel(ewiCode) {
+            const panel = document.getElementById('lines-panel-' + ewiCode);
+            const icon = document.getElementById('toggle-icon-' + ewiCode);
+            const card = document.querySelector(`.ewi-card[data-ewi="${ewiCode}"]`);
+            
+            if (panel) {
+                const isHidden = panel.style.display === 'none';
+                panel.style.display = isHidden ? 'block' : 'none';
+                if (icon) {
+                    icon.textContent = isHidden ? '▼' : '▶';
+                }
+                if (card) {
+                    if (isHidden) {
+                        card.classList.add('has-panel');
+                    } else {
+                        card.classList.remove('has-panel');
+                    }
+                }
+            }
+        }
+        
+        function updateStatusBadges(ewiCode) {
+            // Get line counts from local data (already updated)
+            const ewi = currentFileInfo?.ewis?.find(e => e.code === ewiCode);
+            if (!ewi) return;
+            
+            const lines = ewi.lines || [];
+            const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+            
+            lines.forEach(line => {
+                const status = line.status || 'pending';
+                if (counts.hasOwnProperty(status)) counts[status]++;
+            });
+            
+            let badgesHtml = '';
+            if (counts.in_progress > 0) badgesHtml += `<span class="status-badge in_progress">${counts.in_progress} in progress</span>`;
+            if (counts.manual_resolved > 0) badgesHtml += `<span class="status-badge manual_resolved">${counts.manual_resolved} manual resolved</span>`;
+            if (counts.auto_resolved > 0) badgesHtml += `<span class="status-badge auto_resolved">${counts.auto_resolved} auto resolved</span>`;
+            if (counts.not_auto_resolved > 0) badgesHtml += `<span class="status-badge not_auto_resolved">${counts.not_auto_resolved} not auto resolved</span>`;
+            if (counts.wont_fix > 0) badgesHtml += `<span class="status-badge wont_fix">${counts.wont_fix} won't fix</span>`;
+            if (counts.pending > 0) badgesHtml += `<span class="status-badge pending">${counts.pending} pending</span>`;
+            
+            const summary = document.getElementById('status-summary-' + ewiCode);
+            if (summary) summary.innerHTML = badgesHtml;
+            
+            updateTotalCounts();
+        }
+        
+        function updateTotalCounts() {
+            // Count EWIs by status (not lines)
+            const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+            
+            const ewis = currentFileInfo?.ewis || [];
+            ewis.forEach(ewi => {
+                const lines = ewi.lines || [];
+                if (lines.length === 0) {
+                    counts.pending++;
+                    return;
+                }
+                
+                // Get all statuses for this EWI's lines
+                const lineStatuses = lines.map(l => l.status || 'pending');
+                const uniqueStatuses = [...new Set(lineStatuses)];
+                
+                if (uniqueStatuses.length === 1) {
+                    // All lines have the same status
+                    const status = uniqueStatuses[0];
+                    if (counts.hasOwnProperty(status)) {
+                        counts[status]++;
+                    }
+                } else {
+                    // Mixed statuses - count as "in progress"
+                    counts.in_progress++;
+                }
+            });
+            
+            document.getElementById('pending-count').textContent = counts.pending;
+            document.getElementById('in-progress-count').textContent = counts.in_progress;
+            document.getElementById('manual-resolved-count').textContent = counts.manual_resolved;
+            document.getElementById('auto-resolved-count').textContent = counts.auto_resolved;
+            document.getElementById('not-auto-resolved-count').textContent = counts.not_auto_resolved;
+        }
+        
+        function updateLineStatus(ewiCode, lineNum, selectElement) {
+            const newStatus = selectElement.value;
+            selectElement.className = 'line-status-select ' + newStatus;
+            
+            // Update local data
+            const ewi = currentFileInfo.ewis.find(e => e.code === ewiCode);
+            if (ewi) {
+                const line = ewi.lines.find(l => l.line === lineNum);
+                if (line) line.status = newStatus;
+            }
+            
+            updateStatusBadges(ewiCode);
+            
+            fetch('/api/file/ewi/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: FILE_PATH,
+                    code: ewiCode,
+                    line: lineNum,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to update:', data.error);
+                }
+            })
+            .catch(err => console.error('Error:', err));
+        }
+        
+        function updateEwiStatus(ewiCode, selectElement) {
+            const newStatus = selectElement.value;
+            if (!newStatus) return; // "Set All..." selected
+            
+            // Update local data FIRST
+            const ewi = currentFileInfo.ewis.find(e => e.code === ewiCode);
+            if (ewi) {
+                ewi.lines.forEach(line => line.status = newStatus);
+            }
+            
+            // Update all line selects in the DOM
+            const panel = document.getElementById('lines-panel-' + ewiCode);
+            if (panel) {
+                const lineSelects = panel.querySelectorAll('.line-status-select');
+                lineSelects.forEach(sel => {
+                    sel.value = newStatus;
+                    sel.className = 'line-status-select ' + newStatus;
+                });
+            }
+            
+            // Update badges after local data is updated
+            updateStatusBadges(ewiCode);
+            
+            // Reset dropdown
+            selectElement.value = '';
+            
+            // Save to server
+            fetch('/api/file/ewi/update-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: FILE_PATH,
+                    code: ewiCode,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to update:', data.error);
+                }
+            })
+            .catch(err => console.error('Error:', err));
+        }
+        
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
