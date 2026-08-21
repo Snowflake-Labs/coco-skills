@@ -1,0 +1,10 @@
+Code,Description,Category,FileId,Line,Column
+SPRKPY-1001,Test conversion warning for PySpark,Conversion,src/main.py,10,5
+SPRKPY-1001,Test conversion warning for PySpark,Conversion,src/utils.py,20,10
+SPRKPY-1001,Test conversion warning for PySpark,Conversion,src/main.py,15,3
+SPRKPY-2002,Another PySpark warning,Performance,src/etl/loader.py,50,1
+SSC-EWI-0001,SQL conversion issue,SQL,queries/test.sql,5,1
+SSC-EWI-0001,SQL conversion issue,SQL,queries/analytics.sql,12,8
+SSC-FDM-0005,Functional difference marker,Functional,stored_procs/sp_main.sql,100,1
+SPRKSCL-1234,Scala Spark warning,Conversion,scala/App.scala,25,4
+SPRKSQL-5678,Spark SQL warning,SQL,spark_sql/query.sql,30,2

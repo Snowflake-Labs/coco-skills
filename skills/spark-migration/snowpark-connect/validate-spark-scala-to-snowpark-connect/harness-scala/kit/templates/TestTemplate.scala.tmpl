@@ -1,0 +1,136 @@
+// TestTemplate.scala.tmpl
+// ============================================================
+// TEMPLATE — NOT COMPILED AS SCALA SOURCE.
+// Rendered into Validation/tests/src/test/scala/phase_{a|b}/Test<EpId>Spec.scala
+// by run-phase-a / run-phase-b (one file per selected entrypoint; phase dirs keep
+// A/B specs from contaminating each other).
+//
+// The template is intentionally thin — it only declares WHAT to run
+// (per-entrypoint constants). All workload-agnostic logic (session setup,
+// workload invocation, capture, Phase A/B comparison) lives in the
+// ScosTrialFixture runtime, which runTrial() delegates to.
+// This mirrors PySpark's test_template.py, which only declares constants
+// and calls run_validation_trial(request, runtime).
+//
+// PLACEHOLDER LIST (replace all {{...}} tokens before compiling):
+//   {{EP_ID}}               e.g. "my_entrypoint"
+//   {{CLASS_NAME}}          e.g. "TestMyEntrypointSpec"
+//   {{JAR_PATH_SOURCE}}     path to the ORIGINAL source workload JAR (Phase A, local Spark)
+//   {{JAR_PATH_MIGRATED}}   path to the MIGRATED Output workload JAR (Phase B, SCOS)
+  //   {{EXTRA_CLASSPATH_SOURCE}}   pathsep-joined deps for thin source jars (Phase A); may be ""
+  //   {{EXTRA_CLASSPATH_MIGRATED}} pathsep-joined deps for thin migrated jars (Phase B); may be ""
+//   {{ENTRY_CLASS_NAME}}    FQN of workload class/object, e.g. "com.example.MyJob$"
+//   {{ENTRY_METHOD_NAME}}   entry method, e.g. "run" or "main"
+//   {{ENTRYPOINT_ARGS}}     Array[String] literal, e.g. Array("--env", "dev") or Array.empty[String]
+//   {{TRIAL_DIR}}           absolute path to results/phase_a|b/<ep_id>/
+//   {{PHASE_A_DIR}}         absolute path to results/phase_a/<ep_id>/ (for comparison)
+//   {{WIDGET_ENV_VARS}}     Map entries e.g. "SCOS_WIDGET_ENV" -> "dev", or empty
+//   {{ANALYSIS_JSON_PATH}}  absolute path to Validation/shared/analysis.json (shim fallback)
+//   {{SCHEMAS_DIR_PATH}}    absolute path to Validation/shared/schemas/ (preferred SoT)
+//   {{STATE_JSON_PATH}}     absolute path to Validation/state.json
+// ============================================================
+
+package com.snowflake.scos.kit.generated
+
+import java.io.File
+
+import com.snowflake.scos.kit._
+import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.matchers.should.Matchers
+
+// ----------------------------------------------------------------
+// Boilerplate (workload-agnostic)
+// ----------------------------------------------------------------
+
+class {{CLASS_NAME}} extends AnyFunSuite with ScosTrialFixture with Matchers {
+
+  // ----------------------------------------------------------------
+  // Per-entrypoint constants — CUSTOMIZE (rendered by local-runner)
+  // NOTE: kept inside the class for Scala 2.12 compatibility — top-level
+  //       val/def outside a class/object are Scala 3 only.
+  // ----------------------------------------------------------------
+
+  /** Entrypoint ID — must match analysis.json["entrypoints"][i]["id"]. */
+  val TRIAL_ID: String = "{{EP_ID}}"
+
+  /** Path to the ORIGINAL source workload JAR — run in Phase A on local Spark. */
+  val JAR_PATH_SOURCE: String = """{{JAR_PATH_SOURCE}}"""
+
+  /** Path to the MIGRATED Output workload JAR — run in Phase B on SCOS. */
+  val JAR_PATH_MIGRATED: String = """{{JAR_PATH_MIGRATED}}"""
+
+  /** The jar to load for THIS run, selected by SCOS_FLAVOR (source=Phase A, migrated=Phase B). */
+  val JAR_PATH: String =
+    if (sys.env.getOrElse("SCOS_FLAVOR", "source") == "migrated") JAR_PATH_MIGRATED
+    else JAR_PATH_SOURCE
+
+  /** Extra dependency jars for thin source jars (Phase A). Spark/Delta/Hadoop filtered out. */
+  val EXTRA_CLASSPATH_SOURCE: String = """{{EXTRA_CLASSPATH_SOURCE}}"""
+
+  /** Extra dependency jars for migrated jars (Phase B). Empty this pass. */
+  val EXTRA_CLASSPATH_MIGRATED: String = """{{EXTRA_CLASSPATH_MIGRATED}}"""
+
+  /** Extra jars for THIS run, selected by SCOS_FLAVOR. */
+  val EXTRA_CLASSPATH: Seq[String] = {
+    val raw =
+      if (sys.env.getOrElse("SCOS_FLAVOR", "source") == "migrated") EXTRA_CLASSPATH_MIGRATED
+      else EXTRA_CLASSPATH_SOURCE
+    if (raw == null || raw.trim.isEmpty) Seq.empty
+    else raw.split(File.pathSeparator).map(_.trim).filter(_.nonEmpty).toSeq
+  }
+
+  /** Fully-qualified class name of the workload entry point. */
+  val ENTRY_CLASS_NAME: String = "{{ENTRY_CLASS_NAME}}"
+
+  /** Method name to invoke on the entry class (default: "run"). */
+  val ENTRY_METHOD_NAME: String = "{{ENTRY_METHOD_NAME}}"
+
+  /** Command-line args for args-driven entrypoints. */
+  val ENTRYPOINT_ARGS: Array[String] = {{ENTRYPOINT_ARGS}}
+
+  /** Per-trial result directory.  Phase A writes here; Phase B compares here. */
+  val TRIAL_DIR: String = """{{TRIAL_DIR}}"""
+
+  /** Phase A baseline directory for comparison in Phase B. */
+  val PHASE_A_DIR: String = """{{PHASE_A_DIR}}"""
+
+  /** Widget env vars (keys must be SCOS_WIDGET_<NAME>). */
+  val WIDGET_ENV_VARS: Map[String, String] = Map({{WIDGET_ENV_VARS}})
+
+  /** Absolute path to Validation/shared/analysis.json — injected at spec render time. */
+  val ANALYSIS_JSON_PATH: String = """{{ANALYSIS_JSON_PATH}}"""
+
+  /** Absolute path to Validation/shared/schemas/ — preferred SoT (PySpark parity). */
+  val SCHEMAS_DIR_PATH: String = """{{SCHEMAS_DIR_PATH}}"""
+
+  /** Absolute path to Validation/state.json — injected at spec render time. */
+  val STATE_JSON_PATH: String = """{{STATE_JSON_PATH}}"""
+
+  override val epId: String = TRIAL_ID
+
+  // Bootstrap paths as system properties NOW — class-body code runs during construction,
+  // BEFORE ScalaTest calls beforeAll(). Belt-and-suspenders; canonical injection is via
+  // OS env vars on the sbt command line.
+  if (SCHEMAS_DIR_PATH.nonEmpty)  System.setProperty("SCOS_SCHEMAS_DIR", SCHEMAS_DIR_PATH)
+  if (ANALYSIS_JSON_PATH.nonEmpty) System.setProperty("SCOS_ANALYSIS_JSON", ANALYSIS_JSON_PATH)
+  if (STATE_JSON_PATH.nonEmpty)    System.setProperty("SCOS_STATE_JSON",    STATE_JSON_PATH)
+
+  // ----------------------------------------------------------------
+  // Test — mirrors test_template.py::test_main_entrypoint
+  // Only declares WHAT to run; all workload-agnostic logic is in
+  // ScosTrialFixture.runTrial (the runtime abstraction).
+  // ----------------------------------------------------------------
+
+  test(s"$epId: workload produces expected output tables") {
+    runTrial(
+      jarPath       = JAR_PATH,
+      entryClass    = ENTRY_CLASS_NAME,
+      entryMethod   = ENTRY_METHOD_NAME,
+      entryArgs     = ENTRYPOINT_ARGS,
+      trialDir      = TRIAL_DIR,
+      phaseADir     = PHASE_A_DIR,
+      widgetEnvVars = WIDGET_ENV_VARS,
+      extraJars     = EXTRA_CLASSPATH,
+    )
+  }
+}

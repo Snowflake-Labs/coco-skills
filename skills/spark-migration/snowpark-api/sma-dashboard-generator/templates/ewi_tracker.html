@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EWI Tracker</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+    <style>
+        /* Iframe-specific styles */
+        body { 
+            background: white; 
+            padding: 24px;
+            margin: 0;
+        }
+        .container { 
+            max-width: none; 
+            padding: 0;
+        }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .help-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #e2e8f0;
+            color: #64748b;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 4px;
+        }
+        .help-icon:hover {
+            background: #29B5E8;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2>EWI Tracker</h2>
+                <p class="module-description">
+                    Monitor and manage Errors, Warnings, and Information (EWIs) generated during the migration assessment. 
+                    Track resolution progress, add notes, and mark items as resolved or won't fix to measure your migration readiness.
+                </p>
+            </div>
+            <span class="generated-at">Generated: <span id="generated-at"></span></span>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-count">0</div>
+                <div class="label">Total EWIs</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="pending-count">0</div>
+                <div class="label">Pending</div>
+            </div>
+            <div class="card in-progress">
+                <div class="number" id="in-progress-count">0</div>
+                <div class="label">In Progress</div>
+            </div>
+            <div class="card manual_resolved">
+                <div class="number" id="manual-resolved-count">0</div>
+                <div class="label">Manual Resolved</div>
+            </div>
+            <div class="card auto_resolved">
+                <div class="number" id="auto-resolved-count">0</div>
+                <div class="label">Auto Resolved</div>
+            </div>
+            <div class="card not_auto_resolved">
+                <div class="number" id="not-auto-resolved-count">0</div>
+                <div class="label">Not Auto Resolved</div>
+            </div>
+            <div class="card wont-fix">
+                <div class="number" id="wont-fix-count">0</div>
+                <div class="label">Won't Fix</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar" id="progress-bar"></div>
+            <div class="progress-legend">
+                <span><span class="dot" style="background:#10b981"></span> Manual Resolved</span>
+                <span><span class="dot" style="background:#06b6d4"></span> Auto Resolved</span>
+                <span><span class="dot" style="background:#f43f5e"></span> Not Auto Resolved</span>
+                <span><span class="dot" style="background:#29B5E8"></span> In Progress</span>
+                <span><span class="dot" style="background:#8A999E"></span> Won't Fix</span>
+                <span><span class="dot" style="background:#FF9F36"></span> Pending</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="search" placeholder="Search by code or description...">
+            <select id="filter-category">
+                <option value="">All Categories</option>
+                {{CATEGORY_OPTIONS}}
+            </select>
+            <select id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="manual_resolved">Manual Resolved</option>
+                <option value="auto_resolved">Auto Resolved</option>
+                <option value="not_auto_resolved">Not Auto Resolved</option>
+                <option value="wont_fix">Won't Fix</option>
+            </select>
+            <select id="filter-blocker">
+                <option value="">All EWIs</option>
+                <option value="yes">Blockers Only</option>
+                <option value="no">Non-Blockers Only</option>
+            </select>
+            <span class="help-icon" title="Blockers are EWIs that require manual intervention and have no automated fix. They include:&#10;• Conversion Errors: Unsupported or unrecognized elements&#10;• Parsing Errors: Code syntax issues&#10;• No-Fix Cases: JDBC, ML, platform-specific features">?</span>
+            <button class="secondary" onclick="refreshPage()">↻ Refresh</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable('code')">Code <span class="sort-indicator" data-col="code"></span></th>
+                    <th onclick="sortTable('description')">Description <span class="sort-indicator" data-col="description"></span></th>
+                    <th onclick="sortTable('category')">Category <span class="sort-indicator" data-col="category"></span></th>
+                    <th onclick="sortTable('occurrences')">Occurrences <span class="sort-indicator" data-col="occurrences"></span></th>
+                    <th onclick="sortTable('files')">Files Affected <span class="sort-indicator" data-col="files"></span></th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody id="ewi-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let ewiData = null;
+        
+        // Critical blocker EWI codes based on SMA documentation
+        const BLOCKER_EWI_CODES = new Set([
+            // Category: Conversion Error
+            'PNDSPY1001',  // Element is not supported (generic unsupported Pandas)
+            'PNDSPY1003',  // Element is not yet recognized
+            'SPRKPY1002',  // Element is not supported (generic unsupported Spark)
+            'SPRKPY1003',  // Element is not yet recognized
+            'SPRKPY1032',  // Element is not defined
+            'SPRKPY1038',  // Element is not yet recognized
+            
+            // Category: Parsing Error
+            'SPRKPY1001',  // Parsing errors in code
+            'SPRKPY1004',  // Parsing errors in code
+            'SPRKPY1074',  // Mixed indentation (spaces and tabs)
+            
+            // No recommended fix available (from documentation)
+            'SPRKPY1054',  // JDBC format not supported - no fix
+            'SPRKPY1058',  // RuntimeConfig platform-specific keys - no fix
+            'SPRKPY1067',  // Split with regex pattern - no fix for regex case
+            'SPRKPY1084',  // ML element not supported - no fix
+            'SPRKPY1085',  // VectorAssembler not supported - no fix
+            'SPRKPY1086',  // VectorUDT not supported - no fix
+            
+            // SnowConvert SQL EWIs
+            'SSC-EWI-0001',  // Unrecognized token - parsing error
+        ]);
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/ewi/data');
+                if (response.ok) {
+                    ewiData = await response.json();
+                    initializeDashboard();
+                } else {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+            } catch (e) {
+                showLoadError(e.message);
+            }
+        }
+        
+        function showLoadError(message) {
+            document.getElementById('ewi-table').innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Could not load EWI data</div>
+                        <div style="color: #8A999E; margin-bottom: 16px;">${message}</div>
+                        <div style="font-size: 14px; color: #8A999E;">
+                            Make sure the server is running.
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        let currentSort = { column: 'occurrences', direction: 'desc' };
+
+        function updateCounts() {
+            const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+            ewiData.ewis.forEach(ewi => counts[ewi.status]++);
+            
+            document.getElementById('total-count').textContent = ewiData.ewis.length;
+            document.getElementById('pending-count').textContent = counts.pending;
+            document.getElementById('in-progress-count').textContent = counts.in_progress;
+            document.getElementById('manual-resolved-count').textContent = counts.manual_resolved;
+            document.getElementById('auto-resolved-count').textContent = counts.auto_resolved;
+            document.getElementById('not-auto-resolved-count').textContent = counts.not_auto_resolved;
+            document.getElementById('wont-fix-count').textContent = counts.wont_fix;
+
+            const total = ewiData.ewis.length;
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.innerHTML = `
+                <div class="segment manual_resolved" style="width:${(counts.manual_resolved/total)*100}%"></div>
+                <div class="segment auto_resolved" style="width:${(counts.auto_resolved/total)*100}%"></div>
+                <div class="segment not_auto_resolved" style="width:${(counts.not_auto_resolved/total)*100}%"></div>
+                <div class="segment in-progress" style="width:${(counts.in_progress/total)*100}%"></div>
+                <div class="segment wont-fix" style="width:${(counts.wont_fix/total)*100}%"></div>
+                <div class="segment pending" style="width:${(counts.pending/total)*100}%"></div>
+            `;
+        }
+
+        function renderTable() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const categoryFilter = document.getElementById('filter-category').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            const blockerFilter = document.getElementById('filter-blocker').value;
+
+            let filtered = ewiData.ewis.filter(ewi => {
+                const matchesSearch = ewi.code.toLowerCase().includes(search) || 
+                                     ewi.description.toLowerCase().includes(search);
+                const matchesCategory = !categoryFilter || ewi.category === categoryFilter;
+                const matchesStatus = !statusFilter || ewi.status === statusFilter;
+                const isBlocker = BLOCKER_EWI_CODES.has(ewi.code);
+                const matchesBlocker = !blockerFilter || 
+                                      (blockerFilter === 'yes' && isBlocker) || 
+                                      (blockerFilter === 'no' && !isBlocker);
+                return matchesSearch && matchesCategory && matchesStatus && matchesBlocker;
+            });
+
+            filtered.sort((a, b) => {
+                let aVal, bVal;
+                switch (currentSort.column) {
+                    case 'code': aVal = a.code; bVal = b.code; break;
+                    case 'description': aVal = a.description; bVal = b.description; break;
+                    case 'category': aVal = a.category; bVal = b.category; break;
+                    case 'occurrences': aVal = a.occurrences; bVal = b.occurrences; break;
+                    case 'files': aVal = a.files_affected.length; bVal = b.files_affected.length; break;
+                    default: aVal = a.occurrences; bVal = b.occurrences;
+                }
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            const tbody = document.getElementById('ewi-table');
+            tbody.innerHTML = filtered.map(ewi => `
+                <tr>
+                    <td class="code">${ewi.url ? `<a href="${ewi.url}" target="_blank">${ewi.code}</a>` : ewi.code}</td>
+                    <td>${ewi.description}</td>
+                    <td><span class="category ${ewi.category}">${ewi.category}</span></td>
+                    <td class="occurrences">${ewi.occurrences.toLocaleString()}</td>
+                    <td>
+                        <div class="files-count">
+                            ${ewi.files_affected.length > 0 
+                                ? `<a href="content/files_${ewi.code}.html">${ewi.files_affected.length} files</a>` 
+                                : '0 files'}
+                        </div>
+                    </td>
+                    <td>
+                        <select class="status-select ${ewi.status}" onchange="updateStatus('${ewi.code}', this)">
+                            <option value="pending" ${ewi.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="in_progress" ${ewi.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="manual_resolved" ${ewi.status === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                            <option value="auto_resolved" ${ewi.status === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                            <option value="not_auto_resolved" ${ewi.status === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                            <option value="wont_fix" ${ewi.status === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                        </select>
+                    </td>
+                    <td>
+                        <textarea class="notes-input" placeholder="Add notes..." onchange="updateNotes('${ewi.code}', this.value)">${ewi.notes}</textarea>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('active');
+            });
+            const activeIndicator = document.querySelector(`.sort-indicator[data-col="${currentSort.column}"]`);
+            if (activeIndicator) {
+                activeIndicator.textContent = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+                activeIndicator.classList.add('active');
+            }
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = column === 'occurrences' || column === 'files' ? 'desc' : 'asc';
+            }
+            renderTable();
+        }
+
+        function updateStatus(code, selectEl) {
+            const status = selectEl.value;
+            selectEl.className = 'status-select ' + status;
+            const ewi = ewiData.ewis.find(e => e.code === code);
+            if (ewi) {
+                ewi.status = status;
+                saveToServer(code, { status });
+                updateCounts();
+            }
+        }
+
+        function updateNotes(code, notes) {
+            const ewi = ewiData.ewis.find(e => e.code === code);
+            if (ewi) {
+                ewi.notes = notes;
+                saveToServer(code, { notes });
+            }
+        }
+
+        function saveToServer(code, updates) {
+            fetch('/api/ewi/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, ...updates })
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log(`✓ Saved ${code}`);
+                } else {
+                    console.error(`✗ Failed to save ${code}`);
+                    alert('Failed to save changes. Server returned error.');
+                }
+            })
+            .catch((err) => {
+                console.error(`✗ Failed to save ${code}:`, err.message);
+                alert('Failed to save changes. Server is not available.');
+            });
+        }
+
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        document.getElementById('search').addEventListener('input', renderTable);
+        document.getElementById('filter-category').addEventListener('change', renderTable);
+        document.getElementById('filter-status').addEventListener('change', renderTable);
+        document.getElementById('filter-blocker').addEventListener('change', renderTable);
+
+        function initializeDashboard() {
+            document.getElementById('generated-at').textContent = new Date(ewiData.generated_at).toLocaleString();
+            
+            // Check for URL parameter to filter by EWI code
+            const urlParams = new URLSearchParams(window.location.search);
+            const ewiFilter = urlParams.get('ewi');
+            if (ewiFilter) {
+                document.getElementById('search').value = ewiFilter;
+            }
+            
+            updateCounts();
+            renderTable();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overview - SMA Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/styles.css">
+    <style>
+        body {
+            background: var(--bg-secondary);
+            padding: 24px;
+        }
+        .overview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            margin-bottom: 24px;
+        }
+        .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 8px 0;
+        }
+        .page-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+        .workload-path {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            word-break: break-all;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-card.primary {
+            background: linear-gradient(135deg, #29B6F6 0%, #0288D1 100%);
+            color: white;
+        }
+        .stat-card.primary .stat-label {
+            color: rgba(255,255,255,0.9);
+        }
+        .stat-card.success {
+            border-left: 4px solid #10b981;
+        }
+        .stat-card.warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .stat-card.error {
+            border-left: 4px solid #ef4444;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .stat-card.primary .stat-value {
+            color: white;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .stat-sublabel {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+        .stat-card.primary .stat-sublabel {
+            color: rgba(255,255,255,0.7);
+        }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--sf-blue);
+        }
+        .section-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: -8px 0 16px 0;
+            line-height: 1.5;
+        }
+        .ewi-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        .ewi-category {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        .ewi-category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .ewi-category-icon.error {
+            background: #fee2e2;
+        }
+        .ewi-category-icon.warning {
+            background: #fef3c7;
+        }
+        .ewi-category-icon.info {
+            background: #dbeafe;
+        }
+        .ewi-category-icon.parsing {
+            background: #fce7f3;
+        }
+        .ewi-category-info {
+            flex: 1;
+        }
+        .ewi-category-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        .ewi-category-count {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .ewi-category-codes {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+        .file-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-type-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .file-type-label {
+            width: 100px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .file-type-bar {
+            flex: 1;
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .file-type-fill {
+            height: 100%;
+            background: var(--sf-blue);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            min-width: 30px;
+        }
+        .file-type-count {
+            width: 50px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .no-data-section {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        .generated-at {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            text-align: right;
+            margin-top: 24px;
+        }
+        /* Migration Readiness Section */
+        .readiness-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .readiness-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-top: 4px solid;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .readiness-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .readiness-card.active {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .readiness-card.ready {
+            border-top-color: #10b981;
+        }
+        .readiness-card.ready.active {
+            background: #ecfdf5;
+        }
+        .readiness-card.review {
+            border-top-color: #f59e0b;
+        }
+        .readiness-card.review.active {
+            background: #fffbeb;
+        }
+        .readiness-card.blocked {
+            border-top-color: #ef4444;
+        }
+        .readiness-card.blocked.active {
+            background: #fef2f2;
+        }
+        .readiness-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .readiness-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .readiness-card.ready .readiness-value { color: #10b981; }
+        .readiness-card.review .readiness-value { color: #f59e0b; }
+        .readiness-card.blocked .readiness-value { color: #ef4444; }
+        .readiness-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .readiness-sublabel {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+        .readiness-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 8px;
+            opacity: 0.7;
+        }
+        /* Readiness Detail Panel */
+        .readiness-detail {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            animation: slideDown 0.2s ease;
+        }
+        .readiness-detail.visible {
+            display: block;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .readiness-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .readiness-detail-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .readiness-detail-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-tertiary);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        .readiness-detail-close:hover {
+            background: var(--bg-secondary);
+        }
+        .readiness-file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .readiness-file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            background: var(--bg-secondary);
+        }
+        .readiness-file-item.clickable {
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .readiness-file-item.clickable:hover {
+            background: #e0f2fe;
+            transform: translateX(4px);
+        }
+        .readiness-file-name {
+            font-size: 13px;
+            font-family: 'SF Mono', Monaco, monospace;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+        .readiness-file-issues {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            margin-left: 12px;
+        }
+        .readiness-no-files {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-tertiary);
+        }
+        /* Blockers Section */
+        .blockers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .blocker-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: #fef2f2;
+            border-radius: 8px;
+            border-left: 4px solid #ef4444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .blocker-item:hover {
+            background: #fee2e2;
+            transform: translateX(4px);
+        }
+        .blocker-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .blocker-content {
+            flex: 1;
+        }
+        .blocker-code {
+            font-size: 13px;
+            font-weight: 600;
+            color: #dc2626;
+            font-family: monospace;
+        }
+        .blocker-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .blocker-stats {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 4px;
+        }
+        .no-blockers {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            background: #ecfdf5;
+            border-radius: 8px;
+            color: #047857;
+        }
+        .no-blockers-icon {
+            font-size: 24px;
+        }
+        /* Complexity Section */
+        .complexity-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .complexity-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .complexity-label {
+            width: 120px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .complexity-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .complexity-dot.simple { background: #10b981; }
+        .complexity-dot.moderate { background: #f59e0b; }
+        .complexity-dot.complex { background: #ef4444; }
+        .complexity-bar {
+            flex: 1;
+            height: 28px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .complexity-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            min-width: 40px;
+            transition: width 0.3s ease;
+        }
+        .complexity-fill.simple { background: #10b981; }
+        .complexity-fill.moderate { background: #f59e0b; }
+        .complexity-fill.complex { background: #ef4444; }
+        .complexity-count {
+            width: 60px;
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .conversion-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .conversion-badge.snowpark-api {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .conversion-badge.snowpark-connect {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+        .conversion-badge.unknown {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="overview-container">
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h1 class="page-title" style="margin: 0;">Workload Overview</h1>
+                <span class="conversion-badge" id="conversion-badge"></span>
+            </div>
+            <p class="page-description">Summary of your SMA conversion results including files processed, issues detected, and dependency analysis.</p>
+            <div class="workload-path" id="workload-path"></div>
+        </div>
+
+        <!-- Key Stats -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-value" id="total-files">0</div>
+                <div class="stat-label">Files Processed</div>
+                <div class="stat-sublabel" id="file-types-summary"></div>
+            </div>
+            <div class="stat-card error">
+                <div class="stat-value" id="total-ewis">0</div>
+                <div class="stat-label">Unique EWI Codes</div>
+                <div class="stat-sublabel" id="ewi-occurrences"></div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-value" id="total-islands">0</div>
+                <div class="stat-label">Dependency Islands</div>
+                <div class="stat-sublabel" id="island-files"></div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-value" id="ready-files">0</div>
+                <div class="stat-label">Files Ready</div>
+                <div class="stat-sublabel">No issues detected</div>
+            </div>
+        </div>
+
+        <!-- Migration Readiness -->
+        <div class="section">
+            <h2 class="section-title">
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                Migration Readiness
+            </h2>
+            <div class="readiness-grid" id="readiness-grid">
+                <div class="readiness-card ready" onclick="toggleReadinessDetail('ready')" data-category="ready">
+                    <div class="readiness-icon">✅</div>
+                    <div class="readiness-value" id="readiness-ready">0</div>
+                    <div class="readiness-label">Ready</div>
+                    <div class="readiness-sublabel">0-5 issues, no blockers</div>
+                    <div class="readiness-hint">Click to see files</div>
+                </div>
+                <div class="readiness-card review" onclick="toggleReadinessDetail('review')" data-category="review">
+                    <div class="readiness-icon">⚠️</div>
+                    <div class="readiness-value" id="readiness-review">0</div>
+                    <div class="readiness-label">Needs Review</div>
+                    <div class="readiness-sublabel">6+ issues, needs attention</div>
+                    <div class="readiness-hint">Click to see files</div>
+                </div>
+                <div class="readiness-card blocked" onclick="toggleReadinessDetail('blocked')" data-category="blocked">
+                    <div class="readiness-icon">🚫</div>
+                    <div class="readiness-value" id="readiness-blocked">0</div>
+                    <div class="readiness-label">Blocked</div>
+                    <div class="readiness-sublabel">Has critical blockers</div>
+                    <div class="readiness-hint">Click to see files</div>
+                </div>
+            </div>
+            
+            <!-- Detail Panel -->
+            <div class="readiness-detail" id="readiness-detail">
+                <div class="readiness-detail-header">
+                    <div class="readiness-detail-title" id="readiness-detail-title">
+                        <span id="readiness-detail-icon"></span>
+                        <span id="readiness-detail-label"></span>
+                    </div>
+                    <button class="readiness-detail-close" onclick="closeReadinessDetail()">×</button>
+                </div>
+                <div class="readiness-file-list" id="readiness-file-list">
+                    <!-- Files will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <!-- Blockers -->
+            <div class="section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"/></svg>
+                    Critical Blockers
+                </h2>
+                <p class="section-description">
+                    EWIs that require manual intervention with no automated fix available. Includes conversion errors (unsupported elements), 
+                    parsing errors (syntax issues), and platform-specific features (JDBC, ML, RuntimeConfig).
+                </p>
+                <div class="blockers-list" id="blockers-list">
+                    <div class="no-blockers">
+                        <span class="no-blockers-icon">✅</span>
+                        <span>No critical blockers detected. Workload appears ready for migration.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Complexity -->
+            <div class="section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                    Files by Complexity
+                </h2>
+                <div class="complexity-bars" id="complexity-bars">
+                    <div class="no-data-section">No complexity data available</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="two-columns">
+            <!-- EWI Breakdown -->
+            <div class="section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+                    EWI Breakdown by Category
+                </h2>
+                <div class="ewi-breakdown" id="ewi-breakdown">
+                    <div class="no-data-section">No EWI data available</div>
+                </div>
+            </div>
+
+            <!-- File Types -->
+            <div class="section">
+                <h2 class="section-title">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    Files by Type
+                </h2>
+                <div class="file-breakdown" id="file-breakdown">
+                    <div class="no-data-section">No file data available</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="generated-at">
+            Generated: <span id="generated-at"></span>
+        </div>
+    </div>
+
+    <script>
+        // Data will be injected by the generator
+        const overviewData = {{OVERVIEW_DATA}};
+        
+        function init() {
+            // Workload path
+            document.getElementById('workload-path').textContent = overviewData.workload_path || '';
+            
+            // Conversion type badge
+            const ct = overviewData.conversion_type || 'unknown';
+            const badge = document.getElementById('conversion-badge');
+            const badgeConfig = {
+                'snowpark_api':     { label: 'Snowpark API',              css: 'snowpark-api' },
+                'snowpark_connect': { label: 'Snowpark Connect (SCOS)',   css: 'snowpark-connect' },
+                'unknown':          { label: 'Unknown',                   css: 'unknown' }
+            };
+            const cfg = badgeConfig[ct] || badgeConfig['unknown'];
+            badge.textContent = cfg.label;
+            badge.classList.add(cfg.css);
+            
+            // Key stats
+            document.getElementById('total-files').textContent = overviewData.total_files || 0;
+            document.getElementById('file-types-summary').textContent = overviewData.file_types_summary || '';
+            
+            document.getElementById('total-ewis').textContent = overviewData.total_ewis || 0;
+            document.getElementById('ewi-occurrences').textContent = overviewData.ewi_occurrences ? 
+                `${overviewData.ewi_occurrences} total occurrences` : '';
+            
+            document.getElementById('total-islands').textContent = overviewData.total_islands || 0;
+            document.getElementById('island-files').textContent = overviewData.island_files ? 
+                `${overviewData.island_files} files with dependencies` : '';
+            
+            document.getElementById('ready-files').textContent = overviewData.ready_files || 0;
+            
+            // Migration Readiness
+            renderMigrationReadiness();
+            
+            // Critical Blockers
+            renderBlockers();
+            
+            // File Complexity
+            renderComplexity();
+            
+            // EWI Breakdown
+            renderEwiBreakdown();
+            
+            // File breakdown
+            renderFileBreakdown();
+            
+            // Generated timestamp
+            document.getElementById('generated-at').textContent = new Date().toLocaleString();
+        }
+        
+        function renderEwiBreakdown() {
+            const container = document.getElementById('ewi-breakdown');
+            const categories = overviewData.ewi_categories || {};
+            
+            if (Object.keys(categories).length === 0) {
+                container.innerHTML = '<div class="no-data-section">No EWI data available</div>';
+                return;
+            }
+            
+            const icons = {
+                'ConversionError': { icon: '❌', class: 'error' },
+                'Warning': { icon: '⚠️', class: 'warning' },
+                'Info': { icon: 'ℹ️', class: 'info' },
+                'ParsingError': { icon: '🔍', class: 'parsing' }
+            };
+            
+            let html = '';
+            for (const [category, data] of Object.entries(categories)) {
+                const iconInfo = icons[category] || { icon: '📋', class: 'info' };
+                html += `
+                    <div class="ewi-category">
+                        <div class="ewi-category-icon ${iconInfo.class}">${iconInfo.icon}</div>
+                        <div class="ewi-category-info">
+                            <div class="ewi-category-name">${category}</div>
+                            <div class="ewi-category-count">${data.count}</div>
+                            <div class="ewi-category-codes">${data.occurrences} occurrences</div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderFileBreakdown() {
+            const container = document.getElementById('file-breakdown');
+            const fileTypes = overviewData.file_types || {};
+            
+            if (Object.keys(fileTypes).length === 0) {
+                container.innerHTML = '<div class="no-data-section">No file data available</div>';
+                return;
+            }
+            
+            // Handle both formats: {type: count} and {type: {count: N, lines_of_code: M}}
+            const getCount = (value) => typeof value === 'object' ? (value.count || 0) : value;
+            
+            const maxCount = Math.max(...Object.values(fileTypes).map(getCount));
+            
+            let html = '';
+            const sortedTypes = Object.entries(fileTypes).sort((a, b) => getCount(b[1]) - getCount(a[1]));
+            
+            for (const [type, value] of sortedTypes) {
+                const count = getCount(value);
+                const percentage = (count / maxCount) * 100;
+                html += `
+                    <div class="file-type-row">
+                        <div class="file-type-label">${type}</div>
+                        <div class="file-type-bar">
+                            <div class="file-type-fill" style="width: ${percentage}%">${count}</div>
+                        </div>
+                        <div class="file-type-count">${count}</div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function renderMigrationReadiness() {
+            const readiness = overviewData.migration_readiness || {};
+            
+            // Update counts
+            document.getElementById('readiness-ready').textContent = readiness.ready || 0;
+            document.getElementById('readiness-review').textContent = readiness.review || 0;
+            document.getElementById('readiness-blocked').textContent = readiness.blocked || 0;
+        }
+        
+        // Track current active category
+        let activeReadinessCategory = null;
+        
+        function toggleReadinessDetail(category) {
+            const detailPanel = document.getElementById('readiness-detail');
+            const cards = document.querySelectorAll('.readiness-card');
+            
+            // If clicking the same category, close it
+            if (activeReadinessCategory === category) {
+                closeReadinessDetail();
+                return;
+            }
+            
+            // Remove active state from all cards
+            cards.forEach(card => card.classList.remove('active'));
+            
+            // Add active state to clicked card
+            const activeCard = document.querySelector(`.readiness-card[data-category="${category}"]`);
+            if (activeCard) {
+                activeCard.classList.add('active');
+            }
+            
+            // Update detail panel header
+            const icons = { ready: '✅', review: '⚠️', blocked: '🚫' };
+            const labels = { 
+                ready: 'Ready Files (0-5 issues, no blockers)', 
+                review: 'Files Needing Review (6+ issues)', 
+                blocked: 'Blocked Files (has critical blockers)' 
+            };
+            
+            document.getElementById('readiness-detail-icon').textContent = icons[category];
+            document.getElementById('readiness-detail-label').textContent = labels[category];
+            
+            // Populate file list
+            const fileList = document.getElementById('readiness-file-list');
+            const files = overviewData.readiness_files?.[category] || [];
+            
+            if (files.length === 0) {
+                fileList.innerHTML = '<div class="readiness-no-files">No files in this category</div>';
+            } else {
+                let html = '';
+                for (const file of files) {
+                    const fileName = file.path.split(/[/\\]/).pop();
+                    const issueText = file.issues === 1 ? '1 issue' : `${file.issues} issues`;
+                    const blockerText = file.has_blocker ? ' • has blocker' : '';
+                    const fileIndex = file.file_index;
+                    
+                    // Only make clickable if we have a valid file index
+                    if (fileIndex >= 0) {
+                        html += `
+                            <div class="readiness-file-item clickable" onclick="navigateToFileDetail(${fileIndex})" title="Click to view EWI details">
+                                <div class="readiness-file-name" title="${file.path}">${fileName}</div>
+                                <div class="readiness-file-issues">${issueText}${blockerText} →</div>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="readiness-file-item">
+                                <div class="readiness-file-name" title="${file.path}">${fileName}</div>
+                                <div class="readiness-file-issues">${issueText}${blockerText}</div>
+                            </div>
+                        `;
+                    }
+                }
+                fileList.innerHTML = html;
+            }
+            
+            // Show panel
+            detailPanel.classList.add('visible');
+            activeReadinessCategory = category;
+        }
+        
+        function closeReadinessDetail() {
+            const detailPanel = document.getElementById('readiness-detail');
+            const cards = document.querySelectorAll('.readiness-card');
+            
+            detailPanel.classList.remove('visible');
+            cards.forEach(card => card.classList.remove('active'));
+            activeReadinessCategory = null;
+        }
+        
+        function navigateToFileDetail(fileIndex) {
+            // Navigate directly to the file EWI details page
+            window.location.href = `content/file_ewis_${fileIndex}.html`;
+        }
+        
+        function renderBlockers() {
+            const container = document.getElementById('blockers-list');
+            const blockers = overviewData.blockers || [];
+            
+            if (blockers.length === 0) {
+                container.innerHTML = '<div class="no-blockers">No critical blockers detected</div>';
+                return;
+            }
+            
+            let html = '';
+            for (const blocker of blockers) {
+                html += `
+                    <div class="blocker-item" onclick="navigateToEwi('${blocker.code}')" title="Click to view details">
+                        <div class="blocker-code">${blocker.code}</div>
+                        <div class="blocker-info">
+                            <div class="blocker-desc">${blocker.description || 'No description'}</div>
+                            <div class="blocker-count">${blocker.occurrences} occurrence${blocker.occurrences !== 1 ? 's' : ''} in ${blocker.files_count} file${blocker.files_count !== 1 ? 's' : ''} →</div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+        
+        function navigateToEwi(ewiCode) {
+            // Navigate to EWI Tracker with the specific EWI selected
+            parent.postMessage({ 
+                type: 'navigate', 
+                module: 'ewi_tracker',
+                params: 'ewi=' + encodeURIComponent(ewiCode)
+            }, '*');
+        }
+        
+        function renderComplexity() {
+            const container = document.getElementById('complexity-bars');
+            const complexity = overviewData.file_complexity || {};
+            
+            const simple = complexity.simple || 0;
+            const moderate = complexity.moderate || 0;
+            const complex = complexity.complex || 0;
+            const total = simple + moderate + complex;
+            
+            if (total === 0) {
+                container.innerHTML = '<div class="no-data-section">No file complexity data available</div>';
+                return;
+            }
+            
+            const simplePct = Math.round(simple / total * 100);
+            const moderatePct = Math.round(moderate / total * 100);
+            const complexPct = Math.round(complex / total * 100);
+            
+            container.innerHTML = `
+                <div class="complexity-row">
+                    <div class="complexity-label">
+                        <span class="complexity-dot simple"></span>
+                        Simple (0-2 issues)
+                    </div>
+                    <div class="complexity-bar-container">
+                        <div class="complexity-bar simple" style="width: ${simplePct}%"></div>
+                    </div>
+                    <div class="complexity-value">${simple} files (${simplePct}%)</div>
+                </div>
+                <div class="complexity-row">
+                    <div class="complexity-label">
+                        <span class="complexity-dot moderate"></span>
+                        Moderate (3-5 issues)
+                    </div>
+                    <div class="complexity-bar-container">
+                        <div class="complexity-bar moderate" style="width: ${moderatePct}%"></div>
+                    </div>
+                    <div class="complexity-value">${moderate} files (${moderatePct}%)</div>
+                </div>
+                <div class="complexity-row">
+                    <div class="complexity-label">
+                        <span class="complexity-dot complex"></span>
+                        Complex (6+ issues)
+                    </div>
+                    <div class="complexity-bar-container">
+                        <div class="complexity-bar complex" style="width: ${complexPct}%"></div>
+                    </div>
+                    <div class="complexity-value">${complex} files (${complexPct}%)</div>
+                </div>
+            `;
+        }
+        
+        init();
+    </script>
+</body>
+</html>

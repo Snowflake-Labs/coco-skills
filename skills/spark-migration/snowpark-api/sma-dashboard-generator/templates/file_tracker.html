@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Tracker</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+    <style>
+        body { 
+            background: white; 
+            padding: 24px;
+            margin: 0;
+        }
+        .container { 
+            max-width: none; 
+            padding: 0;
+        }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .ewi-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .ewi-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .ewi-badge:hover {
+            opacity: 0.8;
+        }
+        .ewi-badge.pending {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+        .ewi-badge.in_progress {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fcd34d;
+        }
+        .ewi-badge.manual_resolved {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+        }
+        .ewi-badge.auto_resolved {
+            background: #cffafe;
+            color: #0e7490;
+            border: 1px solid #67e8f9;
+        }
+        .ewi-badge.not_auto_resolved {
+            background: #ffe4e6;
+            color: #be123c;
+            border: 1px solid #fda4af;
+        }
+        .ewi-badge.wont_fix {
+            background: #e2e8f0;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        .file-path-cell {
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .file-path-cell .filename {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .file-path-cell .dirname {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        .status-counts {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+        }
+        .status-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-count .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .status-count .dot.pending { background: #FF9F36; }
+        .status-count .dot.in_progress { background: #29B5E8; }
+        .status-count .dot.manual_resolved { background: #10b981; }
+        .status-count .dot.auto_resolved { background: #06b6d4; }
+        .status-count .dot.not_auto_resolved { background: #f43f5e; }
+        .status-count .dot.wont_fix { background: #8A999E; }
+        table td {
+            vertical-align: top;
+        }
+        .ewi-count-link {
+            color: var(--sf-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .ewi-count-link:hover {
+            text-decoration: underline;
+        }
+        .file-path-cell code {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+        .count-cell {
+            text-align: center;
+            font-weight: 500;
+            color: #94a3b8;
+        }
+        .count-cell.has-pending { color: #FF9F36; }
+        .count-cell.has-in-progress { color: #29B5E8; }
+        .count-cell.has-manual-resolved { color: #10b981; }
+        .count-cell.has-auto-resolved { color: #06b6d4; }
+        .count-cell.has-not-auto-resolved { color: #f43f5e; }
+        .count-cell.has-wont-fix { color: #8A999E; }
+        .count-cell.total { color: var(--text-primary); font-weight: 600; }
+        .status-select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+        }
+        .status-select.pending { border-color: #94a3b8; }
+        .status-select.in_progress { border-color: #29B5E8; background: #e0f2fe; }
+        .status-select.manual_resolved { border-color: #10b981; background: #dcfce7; }
+        .status-select.auto_resolved { border-color: #06b6d4; background: #cffafe; }
+        .status-select.not_auto_resolved { border-color: #f43f5e; background: #ffe4e6; }
+        .status-select.wont_fix { border-color: #64748b; background: #e2e8f0; }
+        .file-row td {
+            border-bottom: none;
+        }
+        .file-name-cell {
+            font-size: 14px;
+        }
+        .file-path-cell {
+            font-size: 12px;
+            color: var(--text-secondary);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        table th {
+            cursor: pointer;
+            user-select: none;
+        }
+        table th:hover {
+            background: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2>File Tracker</h2>
+                <p class="module-description">
+                    Track migration progress at the file level. View all files in your workload, see which EWIs affect each file, 
+                    and monitor resolution status. Use this to prioritize which files need attention and measure overall progress.
+                </p>
+            </div>
+            <span class="generated-at">Generated: <span id="generated-at"></span></span>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-files">0</div>
+                <div class="label">Total Files</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="pending-count">0</div>
+                <div class="label">Pending</div>
+            </div>
+            <div class="card in-progress">
+                <div class="number" id="in-progress-count">0</div>
+                <div class="label">In Progress</div>
+            </div>
+            <div class="card manual_resolved">
+                <div class="number" id="manual-resolved-count">0</div>
+                <div class="label">Manual Resolved</div>
+            </div>
+            <div class="card auto_resolved">
+                <div class="number" id="auto-resolved-count">0</div>
+                <div class="label">Auto Resolved</div>
+            </div>
+            <div class="card not_auto_resolved">
+                <div class="number" id="not-auto-resolved-count">0</div>
+                <div class="label">Not Auto Resolved</div>
+            </div>
+            <div class="card wont-fix">
+                <div class="number" id="wont-fix-count">0</div>
+                <div class="label">Won't Fix</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar" id="progress-bar"></div>
+            <div class="progress-legend">
+                <span><span class="dot" style="background:#10b981"></span> Manual Resolved</span>
+                <span><span class="dot" style="background:#06b6d4"></span> Auto Resolved</span>
+                <span><span class="dot" style="background:#f43f5e"></span> Not Auto Resolved</span>
+                <span><span class="dot" style="background:#29B5E8"></span> In Progress</span>
+                <span><span class="dot" style="background:#8A999E"></span> Won't Fix</span>
+                <span><span class="dot" style="background:#FF9F36"></span> Pending</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="search" placeholder="Search by file path...">
+            <select id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="manual_resolved">Manual Resolved</option>
+                <option value="auto_resolved">Auto Resolved</option>
+                <option value="not_auto_resolved">Not Auto Resolved</option>
+                <option value="wont_fix">Won't Fix</option>
+            </select>
+            <button class="secondary" onclick="refreshPage()">↻ Refresh</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable('path')">File Name <span class="sort-indicator" data-col="path"></span></th>
+                    <th onclick="sortTable('ewi_count')">EWIs <span class="sort-indicator" data-col="ewi_count"></span></th>
+                    <th>Status</th>
+                    <th onclick="sortTable('pending')">Pending <span class="sort-indicator" data-col="pending"></span></th>
+                    <th onclick="sortTable('in_progress')">In Progress <span class="sort-indicator" data-col="in_progress"></span></th>
+                    <th onclick="sortTable('manual_resolved')">Manual Resolved <span class="sort-indicator" data-col="manual_resolved"></span></th>
+                    <th onclick="sortTable('auto_resolved')">Auto Resolved <span class="sort-indicator" data-col="auto_resolved"></span></th>
+                    <th onclick="sortTable('not_auto_resolved')">Not Auto Resolved <span class="sort-indicator" data-col="not_auto_resolved"></span></th>
+                    <th onclick="sortTable('wont_fix')">Won't Fix <span class="sort-indicator" data-col="wont_fix"></span></th>
+                    <th onclick="sortTable('total')">Total <span class="sort-indicator" data-col="total"></span></th>
+                </tr>
+            </thead>
+            <tbody id="file-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let fileData = null;
+        let ewiData = null;
+
+        async function loadData() {
+            try {
+                const [fileResponse, ewiResponse] = await Promise.all([
+                    fetch('/api/file/data'),
+                    fetch('/api/ewi/data')
+                ]);
+                
+                if (fileResponse.ok && ewiResponse.ok) {
+                    fileData = await fileResponse.json();
+                    ewiData = await ewiResponse.json();
+                    initializeDashboard();
+                } else {
+                    throw new Error('Failed to load data');
+                }
+            } catch (e) {
+                showLoadError(e.message);
+            }
+        }
+        
+        function showLoadError(message) {
+            document.getElementById('file-table').innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Could not load file data</div>
+                        <div style="color: #8A999E; margin-bottom: 16px;">${message}</div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        let currentSort = { column: 'ewi_count', direction: 'desc' };
+
+        function getFileStats(fileInfo) {
+            let totalEwis = (fileInfo.ewis || []).length;
+            const ewiStatusCounts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0, mixed: 0 };
+            
+            for (const ewi of fileInfo.ewis || []) {
+                const lines = ewi.lines || [];
+                if (lines.length === 0) {
+                    ewiStatusCounts.pending++;
+                    continue;
+                }
+                
+                // Get all statuses for this EWI's lines
+                const lineStatuses = lines.map(l => l.status || 'pending');
+                const uniqueStatuses = [...new Set(lineStatuses)];
+                
+                if (uniqueStatuses.length === 1) {
+                    // All lines have the same status - count EWI in that status
+                    const status = uniqueStatuses[0];
+                    if (ewiStatusCounts.hasOwnProperty(status)) {
+                        ewiStatusCounts[status]++;
+                    }
+                } else {
+                    // Mixed statuses - count as "in progress" since work has started
+                    ewiStatusCounts.in_progress++;
+                }
+            }
+            
+            return { totalEwis, ewiStatusCounts };
+        }
+
+        function updateCounts() {
+            const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+            
+            for (const file of fileData.files || []) {
+                const status = file.file_status || 'pending';
+                if (counts.hasOwnProperty(status)) {
+                    counts[status]++;
+                }
+            }
+            
+            const total = fileData.files?.length || 0;
+            document.getElementById('total-files').textContent = total;
+            document.getElementById('pending-count').textContent = counts.pending;
+            document.getElementById('in-progress-count').textContent = counts.in_progress;
+            document.getElementById('manual-resolved-count').textContent = counts.manual_resolved;
+            document.getElementById('auto-resolved-count').textContent = counts.auto_resolved;
+            document.getElementById('not-auto-resolved-count').textContent = counts.not_auto_resolved;
+            document.getElementById('wont-fix-count').textContent = counts.wont_fix;
+
+            const progressBar = document.getElementById('progress-bar');
+            if (total > 0) {
+                progressBar.innerHTML = `
+                    <div class="segment manual_resolved" style="width:${(counts.manual_resolved/total)*100}%"></div>
+                    <div class="segment auto_resolved" style="width:${(counts.auto_resolved/total)*100}%"></div>
+                    <div class="segment not_auto_resolved" style="width:${(counts.not_auto_resolved/total)*100}%"></div>
+                    <div class="segment in-progress" style="width:${(counts.in_progress/total)*100}%"></div>
+                    <div class="segment wont-fix" style="width:${(counts.wont_fix/total)*100}%"></div>
+                    <div class="segment pending" style="width:${(counts.pending/total)*100}%"></div>
+                `;
+            }
+        }
+
+        function renderTable() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
+
+            let filtered = (fileData.files || []).filter(file => {
+                const matchesSearch = file.file_path.toLowerCase().includes(search);
+                const matchesStatus = !statusFilter || file.file_status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            // Add computed stats for sorting
+            filtered = filtered.map(file => {
+                const stats = getFileStats(file);
+                return {
+                    ...file,
+                    ewi_count: file.ewis?.length || 0,
+                    totalEwis: stats.totalEwis,
+                    ewiStatusCounts: stats.ewiStatusCounts
+                };
+            });
+
+            filtered.sort((a, b) => {
+                let aVal, bVal;
+                switch (currentSort.column) {
+                    case 'path': aVal = a.file_path; bVal = b.file_path; break;
+                    case 'ewi_count': aVal = a.ewi_count; bVal = b.ewi_count; break;
+                    case 'pending': aVal = a.ewiStatusCounts.pending; bVal = b.ewiStatusCounts.pending; break;
+                    case 'in_progress': aVal = a.ewiStatusCounts.in_progress; bVal = b.ewiStatusCounts.in_progress; break;
+                    case 'manual_resolved': aVal = a.ewiStatusCounts.manual_resolved; bVal = b.ewiStatusCounts.manual_resolved; break;
+                    case 'auto_resolved': aVal = a.ewiStatusCounts.auto_resolved; bVal = b.ewiStatusCounts.auto_resolved; break;
+                    case 'not_auto_resolved': aVal = a.ewiStatusCounts.not_auto_resolved; bVal = b.ewiStatusCounts.not_auto_resolved; break;
+                    case 'wont_fix': aVal = a.ewiStatusCounts.wont_fix; bVal = b.ewiStatusCounts.wont_fix; break;
+                    case 'total': aVal = a.totalEwis; bVal = b.totalEwis; break;
+                    default: aVal = a.ewi_count; bVal = b.ewi_count;
+                }
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            const tbody = document.getElementById('file-table');
+            tbody.innerHTML = filtered.map((file, idx) => {
+                const fileIndex = fileData.files.findIndex(f => f.file_path === file.file_path);
+                const sc = file.ewiStatusCounts;
+                const fileStatus = file.file_status || 'pending';
+                // Handle both / and \ as path separators
+                const pathParts = file.file_path.split(/[/\\]/);
+                const fileName = pathParts.pop();
+                
+                return `
+                <tr class="file-row">
+                    <td class="file-name-cell">
+                        <strong>${fileName}</strong>
+                    </td>
+                    <td class="occurrences">
+                        <a href="content/file_ewis_${fileIndex}.html" class="ewi-count-link">${file.ewi_count}</a>
+                    </td>
+                    <td>
+                        <select class="status-select ${fileStatus}" onchange="updateFileStatus('${file.file_path}', this.value)">
+                            <option value="pending" ${fileStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="in_progress" ${fileStatus === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="manual_resolved" ${fileStatus === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                            <option value="auto_resolved" ${fileStatus === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                            <option value="not_auto_resolved" ${fileStatus === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                            <option value="wont_fix" ${fileStatus === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                        </select>
+                    </td>
+                    <td class="count-cell ${sc.pending > 0 ? 'has-pending' : ''}">${sc.pending}</td>
+                    <td class="count-cell ${sc.in_progress > 0 ? 'has-in-progress' : ''}">${sc.in_progress}</td>
+                    <td class="count-cell ${sc.manual_resolved > 0 ? 'has-manual-resolved' : ''}">${sc.manual_resolved}</td>
+                    <td class="count-cell ${sc.auto_resolved > 0 ? 'has-auto-resolved' : ''}">${sc.auto_resolved}</td>
+                    <td class="count-cell ${sc.not_auto_resolved > 0 ? 'has-not-auto-resolved' : ''}">${sc.not_auto_resolved}</td>
+                    <td class="count-cell ${sc.wont_fix > 0 ? 'has-wont-fix' : ''}">${sc.wont_fix}</td>
+                    <td class="count-cell total">${file.totalEwis}</td>
+                </tr>
+                <tr class="path-row">
+                    <td colspan="10" class="full-path-cell">
+                        <code>${file.file_path}</code>
+                    </td>
+                </tr>
+            `}).join('');
+
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('active');
+            });
+            const activeIndicator = document.querySelector(`.sort-indicator[data-col="${currentSort.column}"]`);
+            if (activeIndicator) {
+                activeIndicator.textContent = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+                activeIndicator.classList.add('active');
+            }
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                // Numeric columns sort descending by default
+                const numericCols = ['ewi_count', 'pending', 'in_progress', 'manual_resolved', 'auto_resolved', 'not_auto_resolved', 'wont_fix', 'total'];
+                currentSort.direction = numericCols.includes(column) ? 'desc' : 'asc';
+            }
+            renderTable();
+        }
+
+        async function updateFileStatus(filePath, status) {
+            // Update local data immediately for responsiveness
+            const file = fileData.files.find(f => f.file_path === filePath);
+            if (file) {
+                file.file_status = status;
+                
+                // Also update all line statuses locally
+                for (const ewi of file.ewis || []) {
+                    for (const line of ewi.lines || []) {
+                        line.status = status;
+                    }
+                }
+                
+                updateCounts();
+                renderTable();
+                
+                try {
+                    // Save to server
+                    const response = await fetch('/api/file/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            file_path: filePath,
+                            file_status: status,
+                            update_all_ewis: true
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log(`✓ Updated ${filePath}`);
+                    }
+                } catch (err) {
+                    console.error('Failed to save:', err);
+                }
+            }
+        }
+
+        function refreshPage() {
+            window.location.reload();
+        }
+
+        document.getElementById('search').addEventListener('input', renderTable);
+        document.getElementById('filter-status').addEventListener('change', renderTable);
+
+        function initializeDashboard() {
+            document.getElementById('generated-at').textContent = new Date(fileData.generated_at || Date.now()).toLocaleString();
+            updateCounts();
+            
+            // Check URL for search parameter (from Overview navigation)
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('search');
+            if (searchParam) {
+                document.getElementById('search').value = searchParam;
+            }
+            
+            renderTable();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

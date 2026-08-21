@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Detail</title>
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        body { background: white; padding: 24px; margin: 0; }
+        .container { max-width: none; padding: 0; }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #29B5E8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .test-header {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+        .test-header h3 { margin: 0 0 8px 0; }
+        .test-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #64748b;
+        }
+        .test-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .test-meta-label {
+            font-weight: 600;
+            color: #334155;
+        }
+        .test-meta-value {
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .status-row label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        /* Section styling */
+        .section {
+            margin-bottom: 28px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .section-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #1e293b;
+        }
+        .section-description {
+            font-size: 13px;
+            color: #8A999E;
+            margin: 0;
+        }
+
+        /* Method card */
+        .method-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .method-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .method-card-header:hover {
+            background: #f8fafc;
+        }
+        .method-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .method-name {
+            font-weight: 600;
+            font-size: 14px;
+            font-family: monospace;
+            color: #334155;
+        }
+        .method-card-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .method-run-count {
+            font-size: 12px;
+            color: #8A999E;
+        }
+        .expand-icon {
+            font-size: 12px;
+            color: #8A999E;
+            transition: transform 0.2s;
+        }
+        .method-card.expanded .expand-icon {
+            transform: rotate(90deg);
+        }
+        .method-runs {
+            display: none;
+            padding: 0 16px 14px 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .method-card.expanded .method-runs {
+            display: block;
+        }
+
+        /* Run items inside method cards */
+        .run-item {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .run-item:last-child { border-bottom: none; }
+        .run-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .run-timestamp {
+            font-size: 13px;
+            color: #64748b;
+        }
+        .run-duration {
+            font-size: 13px;
+            color: #8A999E;
+            font-family: monospace;
+        }
+        .run-error {
+            font-size: 12px;
+            color: #ef4444;
+            background: #fef2f2;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-top: 6px;
+            word-break: break-word;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+        }
+        .status-badge.pending { background: #FF9F36; }
+        .status-badge.passed { background: #10b981; }
+        .status-badge.failed { background: #ef4444; }
+        .status-badge.skipped { background: #8A999E; }
+        .status-badge.error { background: #7D44CF; }
+        .status-badge.no-runs { background: #cbd5e1; }
+
+        .empty-runs {
+            text-align: center;
+            padding: 48px;
+            color: #64748b;
+        }
+        .empty-runs-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+        .no-runs-msg {
+            font-size: 12px;
+            color: #8A999E;
+            padding: 12px 0;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2 id="detail-title">Test Detail</h2>
+                <p class="module-description">
+                    Test results grouped by validation type. Click on each test to expand its run history.
+                </p>
+            </div>
+            <a href="../test_tracker.html" class="back-link">&larr; Back to Test Tracker</a>
+        </div>
+
+        <div class="test-header" id="test-header">
+            <h3 id="test-entrypoint">Loading...</h3>
+            <div class="test-meta">
+                <div class="test-meta-item">
+                    <span class="test-meta-label">Source:</span>
+                    <span class="test-meta-value" id="test-source">-</span>
+                </div>
+                <div class="test-meta-item">
+                    <span class="test-meta-label">Test File:</span>
+                    <span class="test-meta-value" id="test-file">-</span>
+                </div>
+                <div class="test-meta-item">
+                    <span class="test-meta-label">Type:</span>
+                    <span class="test-meta-value" id="test-type">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-row">
+            <label>Status:</label>
+            <select class="status-select pending" id="test-status" onchange="updateTestStatus(this)">
+                <option value="pending">Pending</option>
+                <option value="passed">Passed</option>
+                <option value="failed">Failed</option>
+                <option value="skipped">Skipped</option>
+                <option value="error">Error</option>
+            </select>
+        </div>
+
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-count">0</div>
+                <div class="label">Total Runs</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #10b981">
+                <div class="number" id="passed-count">0</div>
+                <div class="label">Passed</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #ef4444">
+                <div class="number" id="failed-count">0</div>
+                <div class="label">Failed</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #8A999E">
+                <div class="number" id="skipped-count">0</div>
+                <div class="label">Skipped</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #7D44CF">
+                <div class="number" id="error-count">0</div>
+                <div class="label">Error</div>
+            </div>
+        </div>
+
+        <div id="sections-container">
+            <div class="empty-runs">
+                <div class="empty-runs-icon">&#8987;</div>
+                <div>Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const testId = parseInt(urlParams.get('test_id'));
+        let testInfo = null;
+
+        const EXECUTION_METHODS = ['test_validate_pipeline_runs'];
+        const OUTPUT_METHODS = [
+            'test_all_outputs_have_data',
+            'test_all_outputs_match_baseline_row_count',
+            'test_all_outputs_match_baseline'
+        ];
+
+        const METHOD_DESCRIPTIONS = {
+            'test_validate_pipeline_runs': 'Verifies the workload executes without raising exceptions.',
+            'test_all_outputs_have_data': 'Checks every declared output exists and has at least one row.',
+            'test_all_outputs_match_baseline_row_count': 'Compares row counts against the expected baseline.',
+            'test_all_outputs_match_baseline': 'Full data comparison — schema and values must match the baseline.'
+        };
+
+        async function loadData() {
+            if (!testId) {
+                document.getElementById('sections-container').innerHTML = '<div class="empty-runs"><div style="color:#ef4444">No test_id provided in URL.</div></div>';
+                return;
+            }
+
+            try {
+                const [testsResponse, runsResponse] = await Promise.all([
+                    fetch('/api/test/data'),
+                    fetch(`/api/test/runs?test_id=${testId}`)
+                ]);
+
+                if (!testsResponse.ok || !runsResponse.ok) {
+                    throw new Error('Failed to fetch data from server');
+                }
+
+                const testsData = await testsResponse.json();
+                const runsData = await runsResponse.json();
+
+                testInfo = (testsData.tests || []).find(t => t.id === testId);
+                if (!testInfo) {
+                    document.getElementById('sections-container').innerHTML = '<div class="empty-runs"><div style="color:#ef4444">Test not found.</div></div>';
+                    return;
+                }
+
+                // Populate header
+                document.getElementById('detail-title').textContent = `Test: ${testInfo.entrypoint_name}`;
+                document.getElementById('test-entrypoint').textContent = testInfo.entrypoint_name;
+                document.getElementById('test-source').textContent = testInfo.entrypoint_source || '-';
+                document.getElementById('test-source').title = testInfo.entrypoint_source || '';
+                document.getElementById('test-file').textContent = testInfo.test_file || '-';
+                document.getElementById('test-file').title = testInfo.test_file || '';
+                document.getElementById('test-type').textContent = testInfo.test_type;
+
+                // Set status select
+                const statusSelect = document.getElementById('test-status');
+                statusSelect.value = testInfo.status;
+                statusSelect.className = 'status-select ' + testInfo.status;
+
+                const runs = runsData.runs || [];
+                updateCounts(runs);
+                renderSections(runs);
+            } catch (e) {
+                document.getElementById('sections-container').innerHTML = `<div class="empty-runs"><div style="color:#ef4444">Error: ${e.message}</div></div>`;
+            }
+        }
+
+        function groupRunsByMethod(runs) {
+            const groups = {};
+            runs.forEach(r => {
+                const method = r.test_method || '_unknown';
+                if (!groups[method]) groups[method] = [];
+                groups[method].push(r);
+            });
+            return groups;
+        }
+
+        function getLatestStatus(runs) {
+            if (!runs || runs.length === 0) return 'no-runs';
+            return runs[0].status; // runs are ordered by executed_at DESC
+        }
+
+        function renderSections(runs) {
+            const container = document.getElementById('sections-container');
+            const grouped = groupRunsByMethod(runs);
+
+            if (runs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-runs">
+                        <div class="empty-runs-icon">&#9745;</div>
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #334155;">No runs recorded yet</div>
+                        <div style="font-size: 13px; color: #8A999E;">Run your tests with pytest to record execution results here.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Check if we have test_method data (backward compat)
+            const hasMethodData = runs.some(r => r.test_method);
+
+            if (!hasMethodData) {
+                // Legacy data without test_method — show flat list
+                container.innerHTML = renderFlatSection('All Runs', 'Runs recorded before method tracking was enabled.', runs);
+                return;
+            }
+
+            let html = '';
+
+            // Section 1: Execution Validation Tests
+            html += renderSection(
+                'Execution Validation Tests',
+                'Verifies the workload runs without errors.',
+                EXECUTION_METHODS,
+                grouped
+            );
+
+            // Section 2: Output Data Validation Tests
+            html += renderSection(
+                'Output Data Validation Tests',
+                'Compares output data against the expected baseline.',
+                OUTPUT_METHODS,
+                grouped
+            );
+
+            // Unknown methods (if any)
+            const knownMethods = [...EXECUTION_METHODS, ...OUTPUT_METHODS];
+            const unknownMethods = Object.keys(grouped).filter(m => m !== '_unknown' && !knownMethods.includes(m));
+            if (unknownMethods.length > 0 || grouped['_unknown']) {
+                const otherMethods = [...unknownMethods];
+                if (grouped['_unknown']) otherMethods.push('_unknown');
+                html += renderSection('Other', 'Additional test methods.', otherMethods, grouped);
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderSection(title, description, methods, grouped) {
+            const methodCards = methods.map(method => {
+                const runs = grouped[method] || [];
+                return renderMethodCard(method, runs);
+            }).join('');
+
+            return `
+                <div class="section">
+                    <div class="section-header">
+                        <h3>${title}</h3>
+                        <p class="section-description">${description}</p>
+                    </div>
+                    ${methodCards}
+                </div>
+            `;
+        }
+
+        function renderFlatSection(title, description, runs) {
+            return `
+                <div class="section">
+                    <div class="section-header">
+                        <h3>${title}</h3>
+                        <p class="section-description">${description}</p>
+                    </div>
+                    ${runs.map(r => renderRunItem(r)).join('')}
+                </div>
+            `;
+        }
+
+        function renderMethodCard(method, runs) {
+            const latestStatus = getLatestStatus(runs);
+            const displayName = method === '_unknown' ? '(unknown method)' : method;
+            const desc = METHOD_DESCRIPTIONS[method] || '';
+            const runCount = runs.length;
+            const cardId = 'method-' + method.replace(/[^a-zA-Z0-9]/g, '_');
+
+            let runsHtml = '';
+            if (runs.length === 0) {
+                runsHtml = '<div class="no-runs-msg">No runs recorded for this test yet.</div>';
+            } else {
+                runsHtml = runs.map(r => renderRunItem(r)).join('');
+            }
+
+            return `
+                <div class="method-card" id="${cardId}">
+                    <div class="method-card-header" onclick="toggleMethod('${cardId}')">
+                        <div class="method-card-left">
+                            <span class="status-badge ${latestStatus}">${latestStatus === 'no-runs' ? 'no runs' : latestStatus}</span>
+                            <span class="method-name">${escapeHtml(displayName)}</span>
+                        </div>
+                        <div class="method-card-right">
+                            ${desc ? `<span style="font-size:12px;color:#8A999E;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(desc)}">${escapeHtml(desc)}</span>` : ''}
+                            <span class="method-run-count">${runCount} run${runCount !== 1 ? 's' : ''}</span>
+                            <span class="expand-icon">&#9654;</span>
+                        </div>
+                    </div>
+                    <div class="method-runs">
+                        ${runsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRunItem(r) {
+            return `
+                <div class="run-item">
+                    <div>
+                        <div class="run-item-left">
+                            <span class="status-badge ${r.status}">${r.status}</span>
+                            <span class="run-timestamp">${new Date(r.executed_at).toLocaleString()}</span>
+                            <span class="run-duration">${r.duration_seconds ? r.duration_seconds.toFixed(2) + 's' : '-'}</span>
+                        </div>
+                        ${r.error_message ? `<div class="run-error">${escapeHtml(r.error_message)}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleMethod(cardId) {
+            document.getElementById(cardId).classList.toggle('expanded');
+        }
+
+        function updateCounts(runs) {
+            const counts = { passed: 0, failed: 0, skipped: 0, error: 0 };
+            runs.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+
+            document.getElementById('total-count').textContent = runs.length;
+            document.getElementById('passed-count').textContent = counts.passed;
+            document.getElementById('failed-count').textContent = counts.failed;
+            document.getElementById('skipped-count').textContent = counts.skipped;
+            document.getElementById('error-count').textContent = counts.error;
+        }
+
+        function updateTestStatus(selectEl) {
+            const status = selectEl.value;
+            selectEl.className = 'status-select ' + status;
+
+            fetch('/api/test/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ test_id: testId, status })
+            }).catch(err => alert('Failed to save: ' + err.message));
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

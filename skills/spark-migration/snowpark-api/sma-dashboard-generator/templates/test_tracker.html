@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tracker</title>
+    <link rel="stylesheet" href="../assets/styles.css">
+    <style>
+        body { 
+            background: white; 
+            padding: 24px;
+            margin: 0;
+        }
+        .container { 
+            max-width: none; 
+            padding: 0;
+        }
+        .island-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-count">0</div>
+                <div class="label">Total Tests</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="pending-count">0</div>
+                <div class="label">Pending</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #10b981">
+                <div class="number" id="passed-count">0</div>
+                <div class="label">Passed</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #ef4444">
+                <div class="number" id="failed-count">0</div>
+                <div class="label">Failed</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #8A999E">
+                <div class="number" id="skipped-count">0</div>
+                <div class="label">Skipped</div>
+            </div>
+            <div class="card" style="border-left: 4px solid #7D44CF">
+                <div class="number" id="error-count">0</div>
+                <div class="label">Error</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-bar" id="progress-bar"></div>
+            <div class="progress-legend">
+                <span><span class="dot" style="background:#10b981"></span> Passed</span>
+                <span><span class="dot" style="background:#ef4444"></span> Failed</span>
+                <span><span class="dot" style="background:#7D44CF"></span> Error</span>
+                <span><span class="dot" style="background:#8A999E"></span> Skipped</span>
+                <span><span class="dot" style="background:#FF9F36"></span> Pending</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="search" placeholder="Search by entrypoint or file...">
+            <select id="filter-type">
+                <option value="">All Types</option>
+                <option value="source">Source</option>
+                <option value="migrated">Migrated</option>
+                <option value="migrated_scos">Migrated SCOS</option>
+            </select>
+            <select id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="passed">Passed</option>
+                <option value="failed">Failed</option>
+                <option value="skipped">Skipped</option>
+                <option value="error">Error</option>
+            </select>
+            <select id="filter-island">
+                <option value="">All Islands</option>
+            </select>
+            <button class="secondary" onclick="refreshPage()">↻ Refresh</button>
+            <button class="secondary" id="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="sortTable('entrypoint_name')">Entrypoint <span class="sort-indicator" data-col="entrypoint_name"></span></th>
+                    <th onclick="sortTable('island')">Island <span class="sort-indicator" data-col="island"></span></th>
+                    <th onclick="sortTable('entrypoint_source')">Source <span class="sort-indicator" data-col="entrypoint_source"></span></th>
+                    <th onclick="sortTable('test_file')">Test File <span class="sort-indicator" data-col="test_file"></span></th>
+                    <th onclick="sortTable('test_type')">Type <span class="sort-indicator" data-col="test_type"></span></th>
+                    <th>Status</th>
+                    <th>Runs</th>
+                </tr>
+            </thead>
+            <tbody id="test-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let testsData = [];
+        let currentSort = { column: 'entrypoint_name', direction: 'asc' };
+
+        const islandColors = [
+            '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
+            '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'
+        ];
+        function getIslandColor(island) {
+            return islandColors[(island - 1) % islandColors.length];
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/test/data');
+                if (response.ok) {
+                    const data = await response.json();
+                    testsData = data.tests || [];
+                    if (testsData.length === 0) {
+                        document.getElementById('test-table').innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 48px; color: #64748b;">
+                                    <div style="font-size: 40px; margin-bottom: 12px;">&#9745;</div>
+                                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #334155;">No tests registered yet</div>
+                                    <div style="font-size: 13px; color: #8A999E;">Run the DVP test setup generator and then <code>register_tests.py</code> to register your entrypoint tests.</div>
+                                </td>
+                            </tr>
+                        `;
+                        updateCounts();
+                        return;
+                    }
+                    populateIslandFilter();
+                    updateCounts();
+                    renderTable();
+                } else {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+            } catch (e) {
+                document.getElementById('test-table').innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #ef4444;">
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Could not load test data</div>
+                            <div style="color: #8A999E;">${e.message}</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updateCounts() {
+            const counts = { pending: 0, passed: 0, failed: 0, skipped: 0, error: 0 };
+            testsData.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; });
+
+            document.getElementById('total-count').textContent = testsData.length;
+            document.getElementById('pending-count').textContent = counts.pending;
+            document.getElementById('passed-count').textContent = counts.passed;
+            document.getElementById('failed-count').textContent = counts.failed;
+            document.getElementById('skipped-count').textContent = counts.skipped;
+            document.getElementById('error-count').textContent = counts.error;
+
+            const total = testsData.length || 1;
+            document.getElementById('progress-bar').innerHTML = `
+                <div class="segment" style="width:${(counts.passed/total)*100}%; background:#10b981"></div>
+                <div class="segment" style="width:${(counts.failed/total)*100}%; background:#ef4444"></div>
+                <div class="segment" style="width:${(counts.error/total)*100}%; background:#7D44CF"></div>
+                <div class="segment" style="width:${(counts.skipped/total)*100}%; background:#8A999E"></div>
+                <div class="segment pending" style="width:${(counts.pending/total)*100}%"></div>
+            `;
+        }
+
+        function populateIslandFilter() {
+            const islands = [...new Set(testsData.map(t => t.island).filter(i => i != null))].sort((a, b) => a - b);
+            const select = document.getElementById('filter-island');
+            select.innerHTML = '<option value="">All Islands</option>' +
+                islands.map(i => `<option value="${i}">Island ${i}</option>`).join('');
+        }
+
+        function renderTable() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-type').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            const islandFilter = document.getElementById('filter-island').value;
+
+            let filtered = testsData.filter(t => {
+                const matchesSearch = t.entrypoint_name.toLowerCase().includes(search) ||
+                                     (t.test_file || '').toLowerCase().includes(search) ||
+                                     (t.entrypoint_source || '').toLowerCase().includes(search);
+                const matchesType = !typeFilter || t.test_type === typeFilter;
+                const matchesStatus = !statusFilter || t.status === statusFilter;
+                const matchesIsland = !islandFilter || String(t.island ?? '') === islandFilter;
+                return matchesSearch && matchesType && matchesStatus && matchesIsland;
+            });
+
+            filtered.sort((a, b) => {
+                let aVal = a[currentSort.column] || '';
+                let bVal = b[currentSort.column] || '';
+                if (typeof aVal === 'string') {
+                    return currentSort.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            const tbody = document.getElementById('test-table');
+            tbody.innerHTML = filtered.map(t => `
+                <tr>
+                    <td style="font-weight:600">${t.entrypoint_name}</td>
+                    <td style="text-align:center">${t.island != null ? `<span class="island-badge" style="background: ${getIslandColor(t.island)};">Island ${t.island}</span>` : '-'}</td>
+                    <td style="font-size:13px;color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.entrypoint_source || ''}">${t.entrypoint_source || '-'}</td>
+                    <td style="font-size:13px;font-family:monospace">${t.test_file || '-'}</td>
+                    <td><span class="category">${t.test_type}</span></td>
+                    <td>
+                        <select class="status-select ${t.status}" onchange="updateStatus(${t.id}, this)">
+                            <option value="pending" ${t.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="passed" ${t.status === 'passed' ? 'selected' : ''}>Passed</option>
+                            <option value="failed" ${t.status === 'failed' ? 'selected' : ''}>Failed</option>
+                            <option value="skipped" ${t.status === 'skipped' ? 'selected' : ''}>Skipped</option>
+                            <option value="error" ${t.status === 'error' ? 'selected' : ''}>Error</option>
+                        </select>
+                    </td>
+                    <td><a href="content/test_detail.html?test_id=${t.id}" class="secondary" style="padding:4px 12px;font-size:12px;text-decoration:none;display:inline-block;border-radius:4px">View Runs</a></td>
+                </tr>
+            `).join('');
+
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                el.textContent = '';
+                el.classList.remove('active');
+            });
+            const activeIndicator = document.querySelector(`.sort-indicator[data-col="${currentSort.column}"]`);
+            if (activeIndicator) {
+                activeIndicator.textContent = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+                activeIndicator.classList.add('active');
+            }
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            renderTable();
+        }
+
+        function updateStatus(testId, selectEl) {
+            const status = selectEl.value;
+            selectEl.className = 'status-select ' + status;
+            const test = testsData.find(t => t.id === testId);
+            if (test) {
+                test.status = status;
+                updateCounts();
+            }
+            fetch('/api/test/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ test_id: testId, status })
+            }).catch(err => alert('Failed to save: ' + err.message));
+        }
+
+        function refreshPage() { window.location.reload(); }
+
+        async function exportCSV() {
+            const btn = document.getElementById('export-btn');
+            btn.disabled = true;
+            btn.textContent = 'Exporting...';
+            try {
+                const response = await fetch('/api/test/export');
+                if (!response.ok) throw new Error(`Server returned ${response.status}`);
+                const data = await response.json();
+                if (data.success) {
+                    // Download the CSV via blob to avoid iframe/popup-blocker issues
+                    const dlResponse = await fetch(`/api/test/export/download/${data.file}`);
+                    if (!dlResponse.ok) throw new Error(`Download failed: ${dlResponse.status}`);
+                    const blob = await dlResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = data.file;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+
+                    btn.textContent = `✓ ${data.file}`;
+                    btn.style.borderColor = '#10b981';
+                    btn.style.color = '#10b981';
+                    setTimeout(() => {
+                        btn.textContent = '⬇ Export CSV';
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                        btn.disabled = false;
+                    }, 3000);
+                } else {
+                    throw new Error(data.error || 'Export failed');
+                }
+            } catch (e) {
+                btn.textContent = 'Export failed';
+                btn.style.borderColor = '#ef4444';
+                btn.style.color = '#ef4444';
+                setTimeout(() => {
+                    btn.textContent = '⬇ Export CSV';
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        document.getElementById('search').addEventListener('input', renderTable);
+        document.getElementById('filter-type').addEventListener('change', renderTable);
+        document.getElementById('filter-status').addEventListener('change', renderTable);
+        document.getElementById('filter-island').addEventListener('change', renderTable);
+
+        loadData();
+    </script>
+</body>
+</html>

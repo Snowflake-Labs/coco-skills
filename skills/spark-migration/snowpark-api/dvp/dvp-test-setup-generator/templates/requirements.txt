@@ -1,0 +1,17 @@
+# DVP shared environment (dvp/.venv)
+# Superset of dependencies required by DVP skills + test harness.
+
+# Source tests (local)
+pyspark==3.5.4
+
+# Test harness
+pytest>=8.0.0,<9.0.0
+pytest-subtests>=0.13.0
+
+# Migrated tests (Snowflake)
+snowflake-snowpark-python>=1.20.0,<2.0.0
+snowpark-connect>=1.14.0
+
+# warp-suite embedded libs used by DVP skills
+pydantic
+sqlglot

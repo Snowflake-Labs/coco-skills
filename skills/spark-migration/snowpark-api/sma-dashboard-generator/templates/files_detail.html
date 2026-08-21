@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{EWI_CODE}} - Affected Files</title>
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        body { background: white; padding: 24px; margin: 0; }
+        .container { max-width: none; padding: 0; }
+        .module-description {
+            margin: 8px 0 0 0;
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.5;
+            max-width: 800px;
+        }
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #29B5E8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .ewi-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .ewi-code-link {
+            font-size: 16px;
+            color: var(--sf-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .ewi-code-link:hover { text-decoration: underline; }
+        .ewi-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .doc-link {
+            font-size: 13px;
+            color: var(--sf-blue);
+            text-decoration: none;
+        }
+        .doc-link:hover { text-decoration: underline; }
+        .detail-section {
+            padding-top: 20px;
+            padding-bottom: 20px;
+            border-top: 1px solid var(--border-color);
+            margin-top: 16px;
+        }
+        /* Lines panel styles */
+        .file-item-wrapper {
+            margin-bottom: 8px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            gap: 12px;
+        }
+        .file-item.has-panel {
+            border-radius: 8px 8px 0 0;
+        }
+        .file-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .file-icon.python { background: #fef3c7; color: #b45309; }
+        .file-icon.scala { background: #fee2e2; color: #dc2626; }
+        .file-icon.sql { background: #dbeafe; color: #2563eb; }
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .file-path {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .file-dir {
+            font-size: 12px;
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+        .toggle-lines-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--sf-blue);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 12px;
+        }
+        .toggle-lines-btn:hover {
+            background: #f1f5f9;
+        }
+        .toggle-icon {
+            font-size: 10px;
+        }
+        .lines-count {
+            color: var(--text-secondary);
+        }
+        .lines-panel {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 12px;
+            margin-top: -1px;
+        }
+        .lines-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .line-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .line-item:last-child {
+            margin-bottom: 0;
+        }
+        .line-number {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .line-status-select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+        }
+        .line-status-select.pending { border-color: #94a3b8; }
+        .line-status-select.in_progress { border-color: #f59e0b; background: #fef3c7; }
+        .line-status-select.manual_resolved { border-color: #22c55e; background: #dcfce7; }
+        .line-status-select.auto_resolved { border-color: #06b6d4; background: #cffafe; }
+        .line-status-select.not_auto_resolved { border-color: #f43f5e; background: #ffe4e6; }
+        .line-status-select.wont_fix { border-color: #64748b; background: #e2e8f0; }
+        /* Status summary badges */
+        .status-summary {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-right: 12px;
+        }
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .status-badge.pending {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .status-badge.in_progress {
+            background: #fef3c7;
+            color: #b45309;
+        }
+        .status-badge.manual_resolved {
+            background: #dcfce7;
+            color: #15803d;
+        }
+        .status-badge.auto_resolved {
+            background: #cffafe;
+            color: #0e7490;
+        }
+        .status-badge.not_auto_resolved {
+            background: #ffe4e6;
+            color: #be123c;
+        }
+        .status-badge.wont_fix {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        /* File status dropdown */
+        .file-status-select {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            cursor: pointer;
+            background: white;
+            margin-right: 12px;
+        }
+        .file-status-select.pending { border-color: #94a3b8; }
+        .file-status-select.in_progress { border-color: #f59e0b; background: #fef3c7; }
+        .file-status-select.manual_resolved { border-color: #22c55e; background: #dcfce7; }
+        .file-status-select.auto_resolved { border-color: #06b6d4; background: #cffafe; }
+        .file-status-select.not_auto_resolved { border-color: #f43f5e; background: #ffe4e6; }
+        .file-status-select.wont_fix { border-color: #64748b; background: #e2e8f0; }
+        .vscode-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            color: #475569;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .vscode-link:hover {
+            background: #e2e8f0;
+        }
+        .vscode-link svg {
+            width: 14px;
+            height: 14px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 1. Header with title and back link -->
+        <div class="module-header">
+            <div class="module-title-section">
+                <h2>EWI Details</h2>
+                <p class="module-description">
+                    View all files affected by this specific EWI. Expand each file to see exact line numbers where the issue occurs, 
+                    and update the resolution status for each occurrence individually.
+                </p>
+            </div>
+            <a href="../ewi_tracker.html" class="back-link">← Back to EWI Tracker</a>
+        </div>
+
+        <!-- 3. Separator + 4. EWI Code + 5. Description -->
+        <div class="detail-section">
+            <div class="ewi-header">
+                <a href="{{EWI_URL}}" target="_blank" class="ewi-code-link">{{EWI_CODE}}</a>
+                <span class="category {{EWI_CATEGORY}}">{{EWI_CATEGORY}}</span>
+            </div>
+            <div class="ewi-description">{{EWI_DESCRIPTION}}</div>
+            <a href="{{EWI_URL}}" target="_blank" class="doc-link">View Documentation →</a>
+        </div>
+
+        <!-- 6. Summary cards -->
+        <div class="summary-cards">
+            <div class="card total">
+                <div class="number" id="total-occurrences">0</div>
+                <div class="label">Total Occurrences</div>
+            </div>
+            <div class="card pending">
+                <div class="number" id="total-files">0</div>
+                <div class="label">Files Affected</div>
+            </div>
+        </div>
+
+        <!-- 7. Files list -->
+        <div class="controls">
+            <input type="text" id="search" placeholder="Search files..." onkeyup="filterFiles()">
+        </div>
+
+        <div class="files-list" id="files-list">
+            <div class="file-count"><span id="visible-count">0</span> files</div>
+            <div id="files-container">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PROJECT_BASE = '{{PROJECT_BASE}}';
+        const EWI_CODE = '{{EWI_CODE}}';
+        
+        let fileData = null;
+        let ewiData = null;
+        let currentEwi = null;
+        let filesForEwi = [];
+        
+        async function loadData() {
+            try {
+                const [fileResponse, ewiResponse] = await Promise.all([
+                    fetch('/api/file/data'),
+                    fetch('/api/ewi/data')
+                ]);
+                
+                if (fileResponse.ok && ewiResponse.ok) {
+                    fileData = await fileResponse.json();
+                    ewiData = await ewiResponse.json();
+                    
+                    // Find current EWI
+                    currentEwi = ewiData.ewis.find(e => e.code === EWI_CODE);
+                    
+                    if (currentEwi) {
+                        // Update summary cards
+                        document.getElementById('total-occurrences').textContent = currentEwi.occurrences;
+                        document.getElementById('total-files').textContent = currentEwi.files_affected.length;
+                        document.getElementById('visible-count').textContent = currentEwi.files_affected.length;
+                        
+                        // Build files data for this EWI
+                        filesForEwi = [];
+                        for (const filePath of currentEwi.files_affected) {
+                            const fileInfo = fileData.files.find(f => f.file_path === filePath);
+                            if (fileInfo) {
+                                // Find lines for this EWI in this file
+                                const ewiInFile = fileInfo.ewis.find(e => e.code === EWI_CODE);
+                                filesForEwi.push({
+                                    file_path: filePath,
+                                    file_status: fileInfo.file_status || 'pending',
+                                    lines: ewiInFile ? ewiInFile.lines : []
+                                });
+                            } else {
+                                filesForEwi.push({
+                                    file_path: filePath,
+                                    file_status: 'pending',
+                                    lines: []
+                                });
+                            }
+                        }
+                        
+                        renderFiles();
+                    } else {
+                        document.getElementById('files-container').innerHTML = '<div class="loading">EWI not found</div>';
+                    }
+                } else {
+                    throw new Error('Failed to load data');
+                }
+            } catch (e) {
+                document.getElementById('files-container').innerHTML = `<div class="loading">Error: ${e.message}</div>`;
+            }
+        }
+        
+        function getFileIconClass(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const icons = {
+                'py': ['python', 'py'],
+                'scala': ['scala', 'sc'],
+                'sql': ['sql', 'sql'],
+                'hql': ['sql', 'hql']
+            };
+            return icons[ext] || ['', ext.substring(0, 2) || '??'];
+        }
+        
+        function renderFiles() {
+            const container = document.getElementById('files-container');
+            
+            container.innerHTML = filesForEwi.map((file, idx) => {
+                const filename = file.file_path.split('/').pop();
+                const dirname = file.file_path.substring(0, file.file_path.lastIndexOf('/'));
+                const [iconClass, iconText] = getFileIconClass(filename);
+                const fileStatus = file.file_status || 'pending';
+                const lines = file.lines || [];
+                const normalizedPath = PROJECT_BASE.replace(/\/$/, '') + '/' + file.file_path.replace(/^\//, '');
+                
+                // Calculate status counts
+                const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+                lines.forEach(l => {
+                    const status = l.status || 'pending';
+                    if (counts.hasOwnProperty(status)) counts[status]++;
+                });
+                
+                // Build badges
+                let badges = '';
+                if (counts.in_progress > 0) badges += `<span class="status-badge in_progress">${counts.in_progress} in progress</span>`;
+                if (counts.manual_resolved > 0) badges += `<span class="status-badge manual_resolved">${counts.manual_resolved} manual resolved</span>`;
+                if (counts.auto_resolved > 0) badges += `<span class="status-badge auto_resolved">${counts.auto_resolved} auto resolved</span>`;
+                if (counts.not_auto_resolved > 0) badges += `<span class="status-badge not_auto_resolved">${counts.not_auto_resolved} not auto resolved</span>`;
+                if (counts.wont_fix > 0) badges += `<span class="status-badge wont_fix">${counts.wont_fix} won't fix</span>`;
+                if (counts.pending > 0) badges += `<span class="status-badge pending">${counts.pending} pending</span>`;
+                
+                // Build lines HTML
+                const linesHtml = lines.map(line => {
+                    const status = line.status || 'pending';
+                    return `
+                        <div class="line-item">
+                            <span class="line-number">Line ${line.line}</span>
+                            <select class="line-status-select ${status}" data-file="${file.file_path}" data-line="${line.line}" data-idx="${idx}" onchange="updateLineStatus(this)">
+                                <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="manual_resolved" ${status === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                                <option value="auto_resolved" ${status === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                                <option value="not_auto_resolved" ${status === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                                <option value="wont_fix" ${status === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                            </select>
+                        </div>
+                    `;
+                }).join('');
+                
+                const toggleBtn = lines.length > 0 ? `
+                    <button class="toggle-lines-btn" onclick="toggleLinesPanel(${idx})" title="Show/hide lines">
+                        <span class="toggle-icon" id="toggle-icon-${idx}">▶</span>
+                        <span class="lines-count">${lines.length} lines</span>
+                    </button>
+                    <div class="status-summary" id="status-summary-${idx}">${badges}</div>
+                ` : '';
+                
+                const linesPanel = lines.length > 0 ? `
+                    <div class="lines-panel" id="lines-panel-${idx}" style="display: none;">
+                        <div class="lines-list">
+                            ${linesHtml}
+                        </div>
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="file-item-wrapper" data-path="${file.file_path}">
+                        <div class="file-item" id="file-item-${idx}">
+                            <div class="file-icon ${iconClass}">${iconText}</div>
+                            <div class="file-info">
+                                <div class="file-path">${filename}</div>
+                                <div class="file-dir">${dirname}</div>
+                            </div>
+                            <select class="file-status-select ${fileStatus}" data-file="${file.file_path}" data-idx="${idx}" onchange="updateFileStatus(this)">
+                                <option value="pending" ${fileStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="in_progress" ${fileStatus === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="manual_resolved" ${fileStatus === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                                <option value="auto_resolved" ${fileStatus === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                                <option value="not_auto_resolved" ${fileStatus === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                                <option value="wont_fix" ${fileStatus === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                            </select>
+                            ${toggleBtn}
+                            <a href="vscode://file${normalizedPath}" class="vscode-link">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.583 2.583L12 8.167 6.417 2.583 2.583 6.417l5.584 5.583-5.584 5.583 3.834 3.834L12 15.833l5.583 5.584 3.834-3.834-5.584-5.583 5.584-5.583-3.834-3.834z"/></svg>
+                                Open in VS Code
+                            </a>
+                        </div>
+                        ${linesPanel}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterFiles() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const items = document.querySelectorAll('.file-item-wrapper');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                const path = item.getAttribute('data-path').toLowerCase();
+                if (path.includes(search)) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('visible-count').textContent = visibleCount;
+        }
+        
+        function toggleLinesPanel(index) {
+            const panel = document.getElementById('lines-panel-' + index);
+            const icon = document.getElementById('toggle-icon-' + index);
+            const fileItem = document.getElementById('file-item-' + index);
+            
+            if (panel) {
+                const isHidden = panel.style.display === 'none';
+                panel.style.display = isHidden ? 'block' : 'none';
+                if (icon) {
+                    icon.textContent = isHidden ? '▼' : '▶';
+                }
+                if (fileItem) {
+                    if (isHidden) {
+                        fileItem.classList.add('has-panel');
+                    } else {
+                        fileItem.classList.remove('has-panel');
+                    }
+                }
+            }
+        }
+        
+        function updateStatusBadges(idx) {
+            const panel = document.getElementById('lines-panel-' + idx);
+            if (!panel) return;
+            
+            // Count statuses from all line selects in this panel
+            const selects = panel.querySelectorAll('.line-status-select');
+            const counts = { pending: 0, in_progress: 0, manual_resolved: 0, auto_resolved: 0, not_auto_resolved: 0, wont_fix: 0 };
+            
+            selects.forEach(select => {
+                const status = select.value;
+                if (counts.hasOwnProperty(status)) {
+                    counts[status]++;
+                }
+            });
+            
+            // Build new badges HTML
+            let badgesHtml = '';
+            if (counts.in_progress > 0) {
+                badgesHtml += `<span class="status-badge in_progress">${counts.in_progress} in progress</span>`;
+            }
+            if (counts.manual_resolved > 0) {
+                badgesHtml += `<span class="status-badge manual_resolved">${counts.manual_resolved} manual resolved</span>`;
+            }
+            if (counts.auto_resolved > 0) {
+                badgesHtml += `<span class="status-badge auto_resolved">${counts.auto_resolved} auto resolved</span>`;
+            }
+            if (counts.not_auto_resolved > 0) {
+                badgesHtml += `<span class="status-badge not_auto_resolved">${counts.not_auto_resolved} not auto resolved</span>`;
+            }
+            if (counts.wont_fix > 0) {
+                badgesHtml += `<span class="status-badge wont_fix">${counts.wont_fix} won't fix</span>`;
+            }
+            if (counts.pending > 0) {
+                badgesHtml += `<span class="status-badge pending">${counts.pending} pending</span>`;
+            }
+            
+            // Update the summary container
+            const summary = document.getElementById('status-summary-' + idx);
+            if (summary) {
+                summary.innerHTML = badgesHtml;
+            }
+            
+            // Also update local data
+            if (filesForEwi[idx]) {
+                filesForEwi[idx].lines.forEach(line => {
+                    const select = panel.querySelector(`[data-line="${line.line}"]`);
+                    if (select) {
+                        line.status = select.value;
+                    }
+                });
+            }
+        }
+        
+        function updateLineStatus(selectElement) {
+            const filePath = selectElement.getAttribute('data-file');
+            const lineNum = parseInt(selectElement.getAttribute('data-line'), 10);
+            const idx = parseInt(selectElement.getAttribute('data-idx'), 10);
+            const newStatus = selectElement.value;
+            
+            // Update select styling
+            selectElement.className = 'line-status-select ' + newStatus;
+            
+            // Update local data
+            if (filesForEwi[idx]) {
+                const line = filesForEwi[idx].lines.find(l => l.line === lineNum);
+                if (line) line.status = newStatus;
+            }
+            
+            // Update badges
+            updateStatusBadges(idx);
+            
+            // Send update to server
+            fetch('/api/file/ewi/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    code: EWI_CODE,
+                    line: lineNum,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to update line status:', data.error);
+                }
+            })
+            .catch(err => console.error('Error updating line status:', err));
+        }
+        
+        function updateFileStatus(selectElement) {
+            const filePath = selectElement.getAttribute('data-file');
+            const idx = parseInt(selectElement.getAttribute('data-idx'), 10);
+            const newStatus = selectElement.value;
+            
+            // Update select styling
+            selectElement.className = 'file-status-select ' + newStatus;
+            
+            // Update all line statuses in this file's panel
+            const panel = document.getElementById('lines-panel-' + idx);
+            if (panel) {
+                const lineSelects = panel.querySelectorAll('.line-status-select');
+                lineSelects.forEach(lineSelect => {
+                    lineSelect.value = newStatus;
+                    lineSelect.className = 'line-status-select ' + newStatus;
+                });
+                
+                // Update local data
+                if (filesForEwi[idx]) {
+                    filesForEwi[idx].file_status = newStatus;
+                    filesForEwi[idx].lines.forEach(line => line.status = newStatus);
+                }
+                
+                // Update badges
+                updateStatusBadges(idx);
+            }
+            
+            // Send update to server (updates file and all its lines for this EWI)
+            fetch('/api/file/ewi/update-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    code: EWI_CODE,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Failed to update file status:', data.error);
+                }
+            })
+            .catch(err => console.error('Error updating file status:', err));
+        }
+        
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
