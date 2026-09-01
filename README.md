@@ -70,13 +70,12 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | [`manage-zerocopy-sapbdc`](skills/manage-zerocopy-sapbdc)       | Manage the SAP Business Data Cloud zero-copy connector lifecycle: create, enroll, consume, publish, analyze. |
 
 
-### Operations, MLOps & governance
+### Operations & governance
 
 
 | Skill                                 | What it does                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | [`rbac`](skills/rbac)                 | Design Snowflake RBAC hierarchies and access-role patterns.                                                   |
-| [`mlops`](skills/mlops)               | Router skill for MLOps on Snowflake — maturity assessment, promotion patterns, CI/CD, monitoring, governance. |
 | [`dcr-v1-to-v2`](skills/dcr-v1-to-v2) | Migrate a Data Clean Room from the V1 SAMOOHA Provider/Consumer API to the V2 Collaboration API.              |
 
 
