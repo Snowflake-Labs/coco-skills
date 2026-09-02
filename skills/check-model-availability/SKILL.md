@@ -1,7 +1,7 @@
 ---
 name: check-model-availability
 title: Check Model Availability
-summary: Verify whether a Cortex model is callable in base mode (AI SQL) and in agentic mode (the Cortex Code allow-list), with name-variant fallback.
+summary: Verify whether a Cortex model is callable in base mode (AI SQL) and agentic mode (the Cortex Code allow-list), with name-variant fallback.
 description: |
   Determines, for one or more Cortex models, whether each is usable in base mode
   (AI SQL: AI_COMPLETE / SNOWFLAKE.CORTEX.COMPLETE) and in agentic mode (the Cortex
