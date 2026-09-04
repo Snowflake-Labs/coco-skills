@@ -55,7 +55,7 @@ Inherited grants via role hierarchy are resolved automatically — only direct g
 
 ## Author
 
-Martin Fleischmann
+Martin Seifert
 
 ## License
 
