@@ -144,8 +144,26 @@ stat -f '%m' ~/.snowflake/cortex/memory/{file}    # macOS
 **Decision logic:**
 - **Hash matches** → skip (content unchanged).
 - **Hash differs AND local file is newer than SAVED_AT** → proceed to insert (local file was updated more recently).
-- **Hash differs AND local file is older than SAVED_AT** → **DO NOT insert**. The table has a newer version (from another machine or session). Report as: "SKIPPED (stale local): {file} — table has newer version from {SAVED_AT}."
+- **Hash differs AND local file is older than SAVED_AT** → **DO NOT insert**. The table has a newer version from another machine. **Pull down the newer content** (see Step 4B).
 - **No row exists** → proceed to insert (first time for this file).
+
+**Step 4B: Pull down newer files from Snowflake**
+
+For each file flagged as stale, fetch the newer content and update the local memory file:
+
+```sql
+SELECT CONTENT FROM {target_table}
+WHERE MEMORY_FILE = '{file}'
+ORDER BY SAVED_AT DESC LIMIT 1;
+```
+
+Overwrite the local file using the `memory` tool:
+
+```
+memory { command: "create", path: "/memories/{file}", file_text: "{content}" }
+```
+
+Report: "PULLED (remote newer): {file} — local file updated from table version ({SAVED_AT})." Do NOT insert a new row after pulling — the table already has the latest content.
 
 For each file that passes the check, insert:
 
@@ -254,7 +272,7 @@ Present a summary in chat:
 ```
 Memory Sync Complete — {today's date}
 
-Files: {total} scanned, {inserted} inserted, {skipped} unchanged, {stale} skipped (stale local)
+Files: {total} scanned, {inserted} inserted, {skipped} unchanged, {pulled} pulled (remote newer)
 Sessions: {checked} checked, {new} summarized, {already} already captured
 Validation: PASSED (or FAILED with details)
 Target: {database}.{schema}.{table}
@@ -302,4 +320,4 @@ Syncs only the memory file matching the current project directory.
 - `METADATA` must always have all three fields: `name`, `type`, `description`. For sessions, `type` is always `session`.
 - `SESSION_ID` must always be populated — never NULL.
 - Never insert a duplicate: if the latest row for a file has the same `CONTENT_HASH`, skip.
-- **Never overwrite newer with older**: if the table's latest `SAVED_AT` for a file is more recent than the local file's last-modified time, do NOT insert. The table version wins — it came from a more recent session on another machine. Report as a stale-local conflict.
+- **Never overwrite newer with older**: if the table's latest `SAVED_AT` for a file is more recent than the local file's last-modified time, do NOT insert. Instead, pull the table's content down to the local file using the `memory` tool. The table version wins — it came from a more recent session on another machine.
