@@ -124,19 +124,30 @@ For every file in scope, extract these fields:
 - **`SAVE_TRIGGER`**: `automation`.
 - **`NOTES`**: `Memory sync — {today's date}`.
 
-### Step 4: Dedup check and insert
+### Step 4: Dedup and staleness check, then insert
 
-For each file, check if the latest row already has the same content hash:
+For each file, check both the hash AND timestamp of the latest row:
 
 ```sql
-SELECT CONTENT_HASH FROM {target_table}
+SELECT CONTENT_HASH, SAVED_AT FROM {target_table}
 WHERE MEMORY_FILE = '{file}'
 ORDER BY SAVED_AT DESC LIMIT 1;
 ```
 
-If the hash matches, skip — content hasn't changed.
+Also get the local file's last-modified time via bash:
+```bash
+stat -f '%m' ~/.snowflake/cortex/memory/{file}    # macOS
+# or: stat -c '%Y' ~/.snowflake/cortex/memory/{file}  # Linux
+```
+(Returns Unix epoch seconds. Convert to compare with SAVED_AT.)
 
-If new or changed, insert:
+**Decision logic:**
+- **Hash matches** → skip (content unchanged).
+- **Hash differs AND local file is newer than SAVED_AT** → proceed to insert (local file was updated more recently).
+- **Hash differs AND local file is older than SAVED_AT** → **DO NOT insert**. The table has a newer version (from another machine or session). Report as: "SKIPPED (stale local): {file} — table has newer version from {SAVED_AT}."
+- **No row exists** → proceed to insert (first time for this file).
+
+For each file that passes the check, insert:
 
 ```sql
 INSERT INTO {target_table}
@@ -243,7 +254,7 @@ Present a summary in chat:
 ```
 Memory Sync Complete — {today's date}
 
-Files: {total} scanned, {inserted} inserted, {skipped} unchanged
+Files: {total} scanned, {inserted} inserted, {skipped} unchanged, {stale} skipped (stale local)
 Sessions: {checked} checked, {new} summarized, {already} already captured
 Validation: PASSED (or FAILED with details)
 Target: {database}.{schema}.{table}
@@ -291,3 +302,4 @@ Syncs only the memory file matching the current project directory.
 - `METADATA` must always have all three fields: `name`, `type`, `description`. For sessions, `type` is always `session`.
 - `SESSION_ID` must always be populated — never NULL.
 - Never insert a duplicate: if the latest row for a file has the same `CONTENT_HASH`, skip.
+- **Never overwrite newer with older**: if the table's latest `SAVED_AT` for a file is more recent than the local file's last-modified time, do NOT insert. The table version wins — it came from a more recent session on another machine. Report as a stale-local conflict.
