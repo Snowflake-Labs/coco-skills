@@ -1,0 +1,9 @@
+[project]
+name = "manage-external-lineage"
+version = "0.1.0"
+description = "Send and manage OpenLineage external lineage events for Snowflake"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.32.0",
+    "snowflake-connector-python>=3.6.0",
+]
