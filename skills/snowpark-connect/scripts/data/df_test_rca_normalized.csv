@@ -1,0 +1,162 @@
+"test_name","code","root_cause","additional_notes"
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_input_files","spark.range(1, 100, 1, 10).write.parquet(tpath)","We don't support partitioned write in local files. 4th argument i.e numPartitions in range function is a no-op in Snowpark Connect. ",""
+"pyspark.sql.tests.connect.test_parity_catalog.CatalogParityTests.test_get_function","spark.sql(""CREATE FUNCTION func1 AS 'org.apache.spark.data.bricks'"")","Not a valid syntax to create function in snowpark connect. Snowpark connect doesn't translate spark ddl statements to snowflake ddl statements",""
+"pyspark.sql.tests.connect.test_parity_catalog.CatalogParityTests.test_list_functions","dict((f.name, f) for f in spark.catalog.listFunctions())","Snowpark connect uses snowflake as the default catalog.  So catalog.listFunctions returns all the schemas present in the default database defined in the connection.toml",""
+"pyspark.sql.tests.connect.test_parity_catalog.CatalogParityTests.test_function_exists","spark.sql(""CREATE FUNCTION func1 AS 'org.apache.spark.data.bricks'"")","Not a valid syntax to create function in snowpark connect. Snowpark connect doesn't translate spark ddl statements to snowflake ddl statements",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_invalid_column[a]","df1.select(df2.a).schema"," when column a is not found in df1, sas throws AssertionError where as spark throws AnalysisException
+",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_udtf_with_lateral_join","SELECT f.* FROM values (0, 1), (1, 2) t(a, b), LATERAL testUDTF(a, b) f","Needs some involved fix, This fails for following query. SELECT f.* FROM values (0, 1), (1, 2) t(a, b), LATERAL testUDTF(a, b) f . Our column resolution logic doesn't know how to resolve f.*",""
+"pyspark.sql.tests.connect.test_parity_udtf.UDTFParityTests.test_udtf_with_lateral_join","SELECT f.* FROM values (0, 1), (1, 2) t(a, b), LATERAL testUDTF(a, b) f","Needs some involved fix, This fails for following query. SELECT f.* FROM values (0, 1), (1, 2) t(a, b), LATERAL testUDTF(a, b) f . Our column resolution logic doesn't know how to resolve f.*",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_join_hint","""BroadcastHashJoin"" in cdf1.join(cdf2.hint(""BROADCAST""), ""name"")._explain_string()","Join hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_hint","df.hint(""COALESCE"", 3000).toPandas()","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_hint","df.hint(""illegal"").toPandas()","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_hint","df.hint(""my awesome hint"", 1.2345, 2).toPandas()","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_hint","df.hint(""REPARTITION"", ""id+1"").toPandas()","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_extended_hint_types","hinted_df = df.hint(""my awesome hint"", 1.2345, ""what"", such_a_nice_list)","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_generic_hints","df1.join(df2.hint(""broadcast""), ""id"").explain(True)","hints are no-op in snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_is_local","spark.sql(""SHOW DATABASES"").isLocal()","isLocal function is not applicable for Snowpark Connect",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_is_local","spark.read.table(self.tbl_name).isLocal()","isLocal function is not applicable for Snowpark Connect",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_call_udf","CF.call_udf(""abs"", cdf.a), CF.call_udf(""xxhash64"", ""b"", cdf.c, ""d"")","Non-determinstic as xxhash64 produces different result compared to SAS implementation. ",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_misc_functions","df.select(call_udf(""abs"", df.a), call_udf(""xxhash64"", ""b"", df.c, ""d"")).toPandas()","Different hashing algo, Spark produces different hash results compared to Snowflake's hash function.\nIt is described in [github](https://github.com/apache/spark/blob/97241eb0cfc98f8911dc205d7a19f31a0eaad5fb/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/expressions/hash.scala#L266) and largely uses `murmur3`.\nHowever, getting exact hash matches needs reimplementation or adoption of the scala code, because Python's `mmh3` package produces\ndifferent results.""
+",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_window_functions_without_partitionBy","w = Window.partitionBy(""value"").orderBy(""key"")
+df.select(count(""key"").over(w.rowsBetween(float(""-inf""), float(""inf""))))
+df.select(row_number().over(w))","Not deterministic behaviour - Ordering within the partiion differs if window function yields same value.",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_window_functions","w = Window.partitionBy(""value"").orderBy(""key"")
+df.select(count(""key"").over(w.rowsBetween(float(""-inf""), float(""inf""))))
+df.select(row_number().over(w))","Not deterministic as row ordering within a partition with the same key's are different in Snowflake vs Sas; Spark's engine appears to be first partitioning, then sort, then perform MAX and ROW_NUMBER. The generated SQL is correct, so there is nothing we can do to fix it.",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_lambda_functions","cdf.select(CF.array_sort(cdf.b, lambda x, y: CF.abs(x) - CF.abs(y))).toPandas()","
+- array_sort not implemented in snowpark connect.
+",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_lambda_functions","cdf.select(zip_with(cdf.b, ""c"", lambda v1, v2: v1 - CF.abs(v2))).toPandas()","zip_with: Minor formatting difference where SAS displays None, while Spark displays Nan",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_lambda_functions","cdf.select(CF.map_zip_with(cdf.g, ""h"", lambda k, v1, v2: v1 + v2))","map_zip_with, transform_keys, transform_values: Difference in the order of items displayed in the map, as it is non deterministic ",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_repr_behaviors","df.__repr__()","df._repr_html_() has formatting differences compared to spark's represenation. ",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_schema","query =  SELECT * FROM VALUES
+            (MAP('a', 'ab'), MAP('a', 'ab'), MAP(1, 2, 3, 4)),
+            (MAP('x', 'yz'), MAP('x', NULL), NULL),
+            (MAP('c', 'de'), NULL, MAP(-1, NULL, -3, -4))
+            AS tab(a, b, c)
+       spark.sql(query).schema","Nullability of the MapType fields in structType are different in scos vs pyspark.",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_aggregation_functions","df.select(kurtosis(""col"")).show()"," kurtosis returns different precision. Kurtosis does not work within window functions ",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_aggregation_functions","df.select(last(""col"")).toPandas()","Return value for last function is not same for sas and snowpark connect.",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_aggregation_functions","df.select(mode(""col"")).toPandas()","Snowflake's mode(): Includes NaN/NULL in calculation",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_aggregation_functions","df.select(skewness(""col"")).toPandas()","Skewness does not work within window functions . Skewness includes NaN/NULL in calculation",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_normal_functions","cdf.select(CF.rand()).count()","Not deterministic behaviour because of rand and randn functions.",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_map_collection_functions","cdf.select(CF.map_concat(cdf.a, ""b""))","Different row ordering so output cannot be matched. Contents are the same but ordering is different.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_stat_freq_items","df.stat.freqItems([""col1"", ""col3""]).toPandas()","This is currently implemented using the approx_top_k function in Snowflake. It refactors the pretty printed return and does an exact calculation on which items pass PySpark's support parameter threshold. PySpark uses an approximation so there are some false positives in their result.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_random_split","df.filter(""id > 3"").randomSplit([1.0, 2.0, 3.0], 2)","D2 API - In Spark, each row from the original DataFrame is assigned to exactly one of the output DataFrames (though this behavior is not documented). In SAS, due to Snowflake's sampling implementation limitations, rows may appear in multiple output DataFrames or be excluded entirely.\n * The `seed` argument is ignored due to restrictions in Snowflake's sample implementation. Snowflake does not allow seed argument for sample queries that are on views, and due to the nested nature of queries we generate, all sample queries end up being queries on views.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_stat_sample_by","df.sampleBy(df.key, fractions={0: 0.1, 1: 0.2}, seed=0).groupBy(""key"").agg(count(lit(1)))","sampleBy is not deterministic in sas vs native spark.",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_functions_broadcast","df1.join(F.broadcast(df2), ""key"").explain(True)","Snowflake does not support join hint, so Broadcast won't appear in the plan. It's a no-op",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_repartition_by_expression","df.repartition(""id+1"").toPandas()","reparition is no-op in snowpark connect. We don't have any parameter validations for repartition api call.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_repartition_by_range","df.repartitionByRange(""id+1"").toPandas()","Fixable, but doesn't makes sense as this is no-op in SAS. reparition is no-op in snowpark connect. We don't have any parameter validations for repartition api call.",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_udtf_terminate","SELECT id, key, value FROM range(0, 10, 1, 2) LATERAL test_udtf(id) WHERE key != 'input'""","Range function doesn't support slices in sas. Aggregate is performed with in each slice so results are not matching. We don't support partitioned write in local files. 4th argument i.e numPartitions in range function is a no-op in Snowpark Connect. ",""
+"pyspark.sql.tests.connect.test_parity_catalog.CatalogParityTests.test_refresh_table","spark.catalog.refreshTable(""spark_catalog.default.my_tab"")","Refreshing a table is a no-op in Snowflake; Cannot be fixed",""
+"pyspark.sql.tests.connect.test_parity_group.GroupParityTests.test_aggregator","df.groupBy().agg(first(df.key), last(df.value)).first()","The test case uses functions.first, functions.last which is non-deterministic and causes different results in spark vs snowflake (snowpark connect uses snowpark_any for implementing first/last)",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_print_schema","","Datatype coercion. Long vs Int",""
+"pyspark.sql.tests.connect.test_parity_arrow_map.ArrowMapParityTests.test_multiple_columns","","Datatype coercion. Long vs Int",""
+"pyspark.sql.tests.connect.test_parity_catalog.CatalogParityTests.test_list_tables","spark.catalog.listTables(""some_db"")","Managed tables will not show up in listing tables; Catalog.listColumns does not support fully qualified names. The way we decided to deal with fully qualified names in tableExists would make the test not succeed anyway, because we do one more level for fully qualified identifiers compared to Spark",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_sql_with_command","spark.sql(""show functions"").collect()","Function definitions are always going to be different between spark and Snowflake. So this test itself is never going to work unless we fake the function definitions just to pass this test!",""
+"pyspark.sql.tests.connect.test_parity_readwriter.ReadwriterV2ParityTests.test_create_without_provider","","NOT_SUPPORTED_COMMAND_WITHOUT_HIVE_SUPPORT - SAS works on Snowflake directly and doesn't check for this configuration before creating a table or operating on the catalog",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_generator_functions","df.select(CF.explode(df.a), CF.col(""b"")).toPandas()","Snowpark explode/outer_explode ignores nulls before the explosion. Documented this behaviour in the expectation tests.",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_cache_dataframe","df.persist(StorageLevel.DISK_ONLY)","The test case verifies the behavior of StorageLevel. And in snowpark connect, we ignore that parameter; N/A; Not application in Snowflake",""
+"pyspark.sql.tests.connect.test_parity_arrow_python_udf.ArrowPythonUDFParityTests.test_nested_struct","df.select(udf(lambda x: str(x))(""nested_struct"")).first()","Output string represenation issue. Output expects Row object for struct type return Row(col1=1, col2=Row(col1='John', col2=30, col3=Row(col1='value', col2=10))) but snowpark connect returns dictionary",""
+"pyspark.sql.tests.connect.test_parity_arrow_python_udf.UDFParityTests.test_nested_struct","df.select(udf(lambda x: str(x))(""nested_struct"")).first()","Output string represenation issue. Output expects Row object for struct type return Row(col1=1, col2=Row(col1='John', col2=30, col3=Row(col1='value', col2=10))) but snowpark connect returns dictionary",""
+"pyspark.sql.tests.connect.test_parity_udf.UDFParityTests.test_nested_struct","df.select(udf(lambda x: str(x))(""nested_struct"")).first()","Output string represenation issue. Output expects Row object for struct type return Row(col1=1, col2=Row(col1='John', col2=30, col3=Row(col1='value', col2=10))) but snowpark connect returns dictionary",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_collection_functions","df.select(array_contains(df.a, ""dd"")).show()","columns with values like (ARRAY('x', NULL) returns None in native spark but SAS returns False when  column doesn't contain desitred value.",""
+"pyspark.sql.tests.connect.test_parity_conf.ConfParityTests.test_conf","","",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_date_ts_functions","","Test if flaky and it works in all the GitHub runners except macOS.
+
+Spark seems to recognize the following timestamp format: '1997/02/28 10:30:00' while this would require to_date to be fed a format string; AUTO format string doesn't recognize YYYY.MM.DD HH:MI:SS format and this is undetectable in SAS; Can't parse '1997/02/28 10:30:00' as date with format 'YYYY-MM-DD'; Date '1997/02/28 10:30:00' is not recognized; Parse in SAS before we hand it off to Snowpark for processing",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_create_global_temp_view","","Obselete test—The test creates a view in Spark Connect and verifies it using Spark Classic Catalog. Since they both operate on the Hive store, the test works in OSS.",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_nested_higher_order_function","df.select(flatten(transform( ""numbers"", lambda number: transform(""letters"", lambda letter: struct(number.alias(""n""), letter.alias(""l""))),))).first()[0]","Seems like when we nest lambda functions, the outermost function won't get the correct dataframe and ends up with an empty one. Maybe addressable in SAS; Identifier bug - invalid identifier 'letters-80000000-1'
+
+Cannot resolve variable 'x_0' within lambda function. Lambda functions can access their own parameters and parent dataframe columns. Current lambda parameters: ['x_1']. If 'x_0' is an outer scope lambda variable from a nested lambda, that is an unsupported feature in Snowflake SQL.",""
+"pyspark.sql.tests.connect.test_connect_column.SparkConnectColumnTests.test_cast","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_infer_schema_specification","data = [datetime.timedelta(microseconds=123456678)]
+spark.createDataFrame([data])","Numeric value 123456678 cannot be cast to Interval type INTERVAL_DAY_TIME[SB16](153,3){nullable}",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_daytime_interval_type","data = datetime.timedelta(microseconds=123)
+spark.createDataFrame([data])","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_yearmonth_interval_type","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_arrow_python_udf.ArrowPythonUDFParityTests.test_udf_daytime_interval","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_arrow_python_udf.UDFParityTests.test_udf_daytime_interval","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_udf.UDFParityTests.test_udf_daytime_interval","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_create_dataframe_from_pandas_with_day_time_interval","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_to_pandas","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_lit_day_time_interval","","Missing Datatype support: DayTimeIntervalType",""
+"pyspark.sql.tests.connect.test_connect_column.SparkConnectColumnTests.test_literal_null","","Missing NullType and DayTimeIntervalType support",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_struct_output_type_casting_row","","Expects PickleException but we throw a different exception.",""
+"pyspark.sql.tests.connect.test_parity_udtf.UDTFParityTests.test_struct_output_type_casting_row","","Expects PickleException but we throw a different exception.",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_complex_nested_udt_in_df","schema = StructType().add(""key"", LongType()).add(""val"", PythonOnlyUDT())
+udf = F.udf(lambda k, v: [(k, v[0])], ArrayType(df.schema))","UDT's are not supported as response type in UDFs",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_orc","df.write.mode(""overwrite"").format(""orc"").save(d)","ORC format is not supported.Feature Not Implemented - Not captured in product requirements",""
+"pyspark.sql.tests.connect.test_parity_datasources.DataSourcesParityTests.test_read_multiple_orc_file","spark.read.orc(path"").show()","ORC Format is not supported. Feature Not Implemented - Not captured in product requirements",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_simple_udt","from pyspark.ml.linalg import MatrixUDT, VectorUDT
+ StructType().add(""key"", LongType()).add(""vec"", VectorUDT())","Feature not supported in SAS - These need something from ml module",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_simple_udt_from_read","from pyspark.ml.linalg import Matrices, Vectors
+spark.createDataFrame(
+                [
+                    (Matrices.dense(3, 2, [0, 1, 4, 5, 9, 10]),),
+                    (Matrices.sparse(1, 1, [0, 1], [0], [2.0]),),
+                ],
+                [""mat""],
+            ).write.parquet(path7)","Feature not supported in SAS - These need something from ml module",""
+"pyspark.sql.tests.connect.test_parity_udtf.UDTFParityTests.test_udtf_terminate","SELECT id, key, value FROM range(0, 10, 1, 2) LATERAL test_udtf(id) WHERE key != 'input'""","Range function doesn't support slices in sas. Aggregate is performed with in each slice so results are not matching",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_explain_string","connect.sql(""SELECT ..."")._explain_string","Snowflake plan is different from pyspark plan. No impact on the customer workload.",""
+"pyspark.sql.tests.connect.test_parity_datasources.DataSourcesParityTests.test_linesep_json","spark.read.json(""test_path"", lineSep="","")","LineSep option is not supported in snowpark connect",""
+"pyspark.sql.tests.connect.test_parity_readwriter.ReadwriterParityTests.test_bucketed_write","df.write.bucketBy(3, ""x"").mode(""overwrite"").saveAsTable(""pyspark_bucket"")","Snowpark write to doesn't support bucketing",""
+"pyspark.sql.tests.connect.test_parity_dataframe.DataFrameParityTests.test_duplicate_field_names","data = [Row(Row(""a"", 1), Row(2, 3, ""b"", 4, ""c"", ""d"")), Row(Row(""w"", 6), Row(7, 8, ""x"", 9, ""y"", ""z""))]
+schema = (StructType()
+            .add(""struct"", StructType().add(""x"", StringType()).add(""x"", IntegerType()))
+            .add(""struct"", StructType().add(""a"", IntegerType())
+                .add(""x"", IntegerType())
+                .add(""x"", StringType())
+                .add(""y"", IntegerType())
+                .add(""y"", StringType())
+                .add(""x"", StringType()),
+            )
+        )","SQL error Duplicate field name 'x' . Also, duplicate columns in a df doesn't serve any practical purpose. Pyspark also fails when we try to select or perform any operation on the duplicate column. Only show df work.",""
+"pyspark.sql.tests.connect.test_connect_basic.SparkConnectBasicTests.test_observe","df.observe(observation_name, CF.min(""id""), CF.max(""id""), CF.sum(""id""))","Feature observe not supported in SAS",""
+"pyspark.sql.tests.connect.test_connect_column.SparkConnectColumnTests.test_decimal","df.select(df.b < decimal.Decimal(2.5)).toPandas()","PySpark converts decimal literals to integers using ceiling in comparisons (e.g., b < 2.5 becomes b < 3), while SAS preserves exact decimal values (keeps b < 2.5 as-is). We shouldn't fix it because SAS's behavior is mathematically correct and more intuitive - users expect 2.5 to remain 2.5, not be secretly converted to 3, which can produce incorrect results in edge cases.",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_negative_decimal","df.select(col(""value"").cast(DecimalType(1, -1))).collect()","Snowflake doesn't support negative decimals with negative scale. snowflake.snowpark.exceptions.SnowparkSQLException: (1304): 01bd9773-0e10-c16a-000c-a90ac0944cd3: 001812 (42601): SQL compilation error: error line 0 at position 0 Invalid number scale: -1. Must be between 0 and 37.",""
+"pyspark.sql.tests.connect.test_parity_serde.SerdeParityTests.test_struct_in_map","d = [Row(m={Row(i=1): Row(s="""")})]
+df = spark.createDataFrame(d)","Snowflake Map types doesn't allow complext types like struct as keys. Documented this behaviour in expecttation tests.",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_time_window_functions","","Uses compare_by_show which compares show output.  If we just compare df.collect, it runs fine",""
+"pyspark.sql.tests.connect.test_parity_functions.FunctionsParityTests.test_window_time","r = df.select(window_time(w.window).cast(""string"").alias(""window_time"")).collect()","Unsupported function name window_time",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_udtf_with_empty_output_types","@udtf(returnType=StructType())
+        class TestUDTF:
+            def eval(self):
+                yield tuple()","Needs SQL Change, we cannot have a table that doesn't return any colums/rows. SELECT  *
+ FROM (
+ TABLE (TestUDTF() )
+) throws SELECT with no columns as the output for TestUDTF is empty with out any columns",""
+"pyspark.sql.tests.connect.test_parity_udtf.UDTFParityTests.test_udtf_with_empty_output_types","@udtf(returnType=StructType())
+        class TestUDTF:
+            def eval(self):
+                yield tuple()","Needs SQL Change, we cannot have a table that doesn't return any colums/rows. SELECT  *
+ FROM (
+ TABLE (TestUDTF() )
+) throws SELECT with no columns as the output for TestUDTF is empty with out any columns",""
+"pyspark.sql.tests.connect.test_connect_function.SparkConnectFunctionTests.test_json_functions","df.select(CF.from_json(df.a, c_schema)).show()
+df.select(CF.json_tuple(df.c, ""f1"", ""f2"")).toPandas()","from_json only supports literal arguments for schema. It doesn't support column as the argument. also it doesn't support 3rd argument options.
+
+The options map (e.g., map('timestampFormat', 'dd/MM/yyyy')) is validated
+
+
+json_tuple: String values in JSON are returned with quotes in Snowpark but without quotes in Spark. The actual values and semantics remain the same.",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_udf_with_udt","","",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_cast_to_string_with_udt",""," TODO: invalid type [CAST(""values"".""point-00000038-0"" AS VARCHAR(134217728))] for parameter 'TO_VARCHAR'",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_cast_to_udt_with_udt","","TODO: invalid type [CAST(""values"".""point-00000038-0"" AS VARCHAR(134217728))] for parameter 'TO_VARCHAR'",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_infer_schema_with_udt","","TODO: [31m[1.0, 2.0] != ExamplePoint(1.0,2.0)[0m",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_infer_schema_with_udt_with_column_names","","TODO: AssertionError: [1.0, 2.0] != ExamplePoint(1.0,2.0)",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_parquet_with_udt","","TODO: Invalid UTF8 detected while decoding '0xAC��?0xC10x00@'",""
+"pyspark.sql.tests.connect.test_parity_types.TypesParityTests.test_udt_with_none","","",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_numeric_output_type_casting","class TestUDTF:
+            def eval(self):
+                yield 1,
+udtf(func_handler, returnType=""x: date"")","Fails to convert integer output to a date. Snowflake doesn't perform datatype casting to match the yield result type with return type.",""
+"pyspark.sql.tests.connect.test_parity_udtf.ArrowUDTFParityTests.test_numeric_string_output_type_casting","class TestUDTF:
+            def eval(self):
+                yield 1,
+udtf(func_handler, returnType=""x: date"")","Fails to convert integer output to a date. Snowflake doesn't perform datatype casting to match the yield result type with return type.",""
+"pyspark.sql.tests.connect.test_parity_arrow_python_udf.ArrowPythonUDFParityTests.test_type_coercion_string_to_numeric","","",""
+"pyspark.sql.tests.connect.test_parity_datasources.DataSourcesParityTests.test_encoding_json","spark.read.json(""path"", multiLine=True, encoding=""UTF-16LE"")","Encoding option is not supported in snowpark connect JSON reader",""

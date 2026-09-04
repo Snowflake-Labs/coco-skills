@@ -1,0 +1,82 @@
+[
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "46-46",
+    "code": "spark.sparkContext.setLogLevel(\"WARN\")",
+    "final_risk": 1.0,
+    "root_cause": "Uses '.sparkContext' which is not supported in SCOS",
+    "explanation": "RDD operations are not supported in SCOS.",
+    "fix": "Convert to DataFrame operations. RDD operations are not supported in SCOS.",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "50-50",
+    "code": "companies = spark.read.parquet(os.path.join(DATA_DIR, \"companies.parquet\"))",
+    "final_risk": 0.2,
+    "root_cause": "We don't support partitioned write in local files. 4th argument i.e numPartitions in range function is a no-op in Snowpark Connect. ",
+    "explanation": "Reading parquet files is supported in SCOS. The preliminary assessment notes a potential performance concern when reading from external paths rather than Snowflake stages, but this is not a compatibility failure.",
+    "fix": "For better performance, consider uploading files to a Snowflake stage first using session.file.put().",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "49-49",
+    "code": "jobs = spark.read.parquet(os.path.join(DATA_DIR, \"jobs.parquet\"))",
+    "final_risk": 0.2,
+    "root_cause": "We don't support partitioned write in local files. 4th argument i.e numPartitions in range function is a no-op in Snowpark Connect. ",
+    "explanation": "Reading parquet files is supported in SCOS. The warning is about potential performance differences when reading from external paths, not a compatibility failure.",
+    "fix": "For better performance, consider uploading files to a Snowflake stage first using session.file.put().",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "51-51",
+    "code": "applications = spark.read.parquet(os.path.join(DATA_DIR, \"applications.parquet\"))",
+    "final_risk": 0.2,
+    "root_cause": "We don't support partitioned write in local files. 4th argument i.e numPartitions in range function is a no-op in Snowpark Connect. ",
+    "explanation": "Reading parquet files is supported in SCOS. The warning relates to potential performance differences when reading from external paths, not a compatibility failure.",
+    "fix": "For better performance, consider uploading files to a Snowflake stage first using session.file.put().",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "100-104",
+    "code": "final.select(\n        \"job_id\", \"company_name\", \"industry\", \"title\", \"state\",\n        \"salary_bucket\", \"salary_midpoint\", \"posted_month\",\n        \"total_applications\", \"unique_applicants\", \"hires\",\n    ).coalesce(1).write.mode(\"overwrite\").parquet(os.path.join(OUTPUT_DIR, \"job_analytics\"))",
+    "final_risk": 0.2,
+    "root_cause": "coalesce() is a no-op in SCOS - the code will run but may produce multiple output files instead of the intended single file",
+    "explanation": "The coalesce(1) call is a no-op in SCOS, meaning the code will execute successfully but may not produce a single output file as intended. This is a behavioral difference rather than a failure.",
+    "fix": "If single-file output is required, consider post-processing to merge files or use Snowflake-native methods for file consolidation. Otherwise, the code will work but with potentially multiple output files.",
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "57-59",
+    "code": "jobs_deduped = jobs.withColumn(\"_rn\", F.row_number().over(w)) \\\n        .filter(F.col(\"_rn\") == 1) \\\n        .drop(\"_rn\")",
+    "final_risk": 0.15,
+    "root_cause": "Cannot filter using original DataFrame columns after transformation operations (drop, select, withColumn, etc.)",
+    "explanation": "The code uses standard window functions and filtering on a newly created column. Unlike the similar test cases which fail when referencing original DataFrame columns after transformations, this code filters on '_rn' which is created in the same transformation chain.",
+    "fix": null,
+    "confidence": "MEDIUM"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "60-62",
+    "code": "jobs_clean = jobs_deduped \\\n        .filter(F.col(\"salary_min\").isNotNull()) \\\n        .filter(F.col(\"salary_max\") > F.col(\"salary_min\"))",
+    "final_risk": 0.1,
+    "root_cause": "Cannot filter using original DataFrame columns after transformation operations (drop, select, withColumn, etc.)",
+    "explanation": "The input code performs standard filtering on existing columns. The similar test cases fail due to filtering on columns after drop() operations, which doesn't apply here since we're filtering directly on the DataFrame's own columns.",
+    "fix": null,
+    "confidence": "HIGH"
+  },
+  {
+    "file": "/Users/pjain/git/coco-work/test_scos_migration/example/pyspark_transform.py",
+    "lines": "76-80",
+    "code": "app_stats = applications.groupBy(\"job_id\").agg(\n        F.count(\"*\").alias(\"total_applications\"),\n        F.countDistinct(\"applicant_id\").alias(\"unique_applicants\"),\n        F.sum(F.when(F.col(\"status\") == \"hired\", 1).otherwise(0)).alias(\"hires\"),\n    )",
+    "final_risk": 0.1,
+    "root_cause": "Ambiguous column reference in select after groupBy and agg on the same column",
+    "explanation": "The input code uses proper aliasing for all aggregations, avoiding the ambiguous column reference issue from the similar test cases. The first/last non-determinism issue doesn't apply since those functions aren't used.",
+    "fix": null,
+    "confidence": "HIGH"
+  }
+]
