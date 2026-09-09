@@ -5,6 +5,18 @@ on:
     branches: [main]
     paths:
       - "skills/**"
+      - "plugins/**"
+      - ".github/**"
+
+# Runs against untrusted fork code. Read-only, and no secrets are exposed to
+# this workflow. Contributor files are read as data and never executed --
+# nothing here installs from the PR or invokes a skill's scripts/.
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-skill-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -13,14 +25,40 @@ jobs:
 
     steps:
       - name: Checkout PR
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
 
+      # The validator diffs against origin/main to find changed skills. On a
+      # pull_request event the checkout is a merge commit, so fetch the base
+      # branch explicitly rather than assuming the ref is present.
+      - name: Fetch base branch
+        run: git fetch --no-tags --depth=0 origin main:refs/remotes/origin/main || true
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
-      - name: Run skill validation
-        run: python .github/scripts/validate_skill.py
+      - name: Install dependencies
+        run: pip install --require-hashes --no-deps -r .github/scripts/requirements.txt
+
+      - name: Run validator self-tests
+        run: |
+          python .github/scripts/tests/test_validate_skill.py
+          python .github/scripts/tests/test_scan_internal_refs.py
+          python .github/scripts/tests/test_route_review.py
+
+      - name: Validate changed skills
+        run: python .github/scripts/validate_skill.py --json validation.json
+
+      - name: Scan for internal references
+        run: python .github/scripts/scan_internal_refs.py
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: validation-findings
+          path: validation.json
+          if-no-files-found: ignore

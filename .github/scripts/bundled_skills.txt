@@ -1,0 +1,34 @@
+# Skill names shipped with Cortex Code.
+#
+# A skill in this repo that reuses one of these names silently shadows the
+# bundled skill at runtime, which is hard to diagnose from a session. The
+# validator treats a collision as a blocking error.
+#
+# Refresh by running `/skill list` in a Cortex Code session and recording the
+# names grouped under the bundled location. Ordered alphabetically.
+
+agent-optimization
+agent-studio
+ai-functions-pipeline-builder
+build-app
+business-ontology
+certified-data-product-discovery
+certify-object
+find-skill-and-plugin
+github-plugin-installer
+html-authoring
+intent-driven-governance
+introduce-coco-desktop
+listing-observability
+local-plugin-installer
+manage-zerocopy-sapbdc
+marketplace-provider
+plugin-creator
+recommend-object
+restricted-session-scope
+sar-actions-desktop
+search-optimization
+share-skill-and-plugin
+snowflake-publish-report
+snowflake-workspace
+verification-skill

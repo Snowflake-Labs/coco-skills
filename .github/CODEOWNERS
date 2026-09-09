@@ -1,0 +1,45 @@
+# Review ownership.
+#
+# Requires "Require review from Code Owners" in branch protection to have any
+# effect. Without that setting these entries only auto-request reviewers; they
+# do not block a merge.
+#
+# Last match wins, so the most specific rules go last.
+#
+# Both handles below resolve to real GitHub accounts, but CODEOWNERS silently
+# ignores any entry naming a user without write access on this repo -- which
+# fails open, leaving a path you believed was protected unprotected. Confirm
+# write access, then check the repo's CODEOWNERS errors view after committing.
+
+# Default: any change needs a maintainer.
+*                               @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Skills and plugins: maintainer review.
+/skills/                        @sfc-gh-chorgan @sfc-gh-lhartzell
+/plugins/                       @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Contributor-facing process docs. Changing the review bar should itself be
+# reviewed by the people who hold that bar.
+/CONTRIBUTING.md                @sfc-gh-chorgan @sfc-gh-lhartzell
+/MAINTAINING.md                 @sfc-gh-chorgan @sfc-gh-lhartzell
+/README.md                      @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Automation runs with repository credentials. Any change here is
+# security-sensitive and needs the security owner in addition to a maintainer.
+#
+# TODO: SECURITY_OWNER is unassigned. Until a real handle replaces it, these
+# paths fall back to maintainer-only review -- which is the gap this section
+# exists to close.
+/.github/                       @sfc-gh-chorgan @sfc-gh-lhartzell
+/.github/workflows/             @sfc-gh-chorgan @sfc-gh-lhartzell
+/.github/scripts/               @sfc-gh-chorgan @sfc-gh-lhartzell
+/.github/CODEOWNERS             @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Executable code shipped inside a skill. Reviewed line by line, by someone
+# who owns that judgement.
+#
+# NOTE: CODEOWNERS has no recursive-glob syntax that reliably matches
+# 'scripts/' at any depth across all GitHub versions. The escalation labeler
+# covers these paths by content instead -- see
+# .github/workflows/route-review.yml. Do not rely on this line alone.
+/skills/*/scripts/              @sfc-gh-chorgan @sfc-gh-lhartzell
