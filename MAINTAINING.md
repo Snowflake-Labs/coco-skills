@@ -48,7 +48,7 @@ Don't re-check the left column by hand; do read for the right one.
 
 Implemented in [validate_skill.py](.github/scripts/validate_skill.py) and [scan_internal_refs.py](.github/scripts/scan_internal_refs.py). Both run read-only, with no secrets, and never execute contributor code.
 
-Credentials are covered account-wide by ArcticOwl and are not rechecked here.
+Credential scanning is handled separately and is not rechecked here.
 
 ### Internal-reference scan
 

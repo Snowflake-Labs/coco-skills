@@ -7,7 +7,7 @@ this file is public, so a deny-list of those would itself disclose them.
 Judgement-based review of internal content happens before a skill reaches
 this repo.
 
-Credential scanning is out of scope -- ArcticOwl covers that org-wide.
+Credential scanning is out of scope for this script.
 
 Pre-existing findings sit in a baseline, so this check can be required without
 a cleanup first. New findings fail; baselined ones report as debt. Suppress a
