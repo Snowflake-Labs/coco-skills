@@ -20,7 +20,7 @@ import snowflake.connector
 
 def get_session_token(conn):
     """Extract session token from active connection."""
-    return conn.rest._token
+    return conn.rest.token
 
 
 def get_account_url(conn):

@@ -14,7 +14,7 @@ usage() {
     echo "  -h           Show this help message"
     echo ""
     echo "Example:"
-    echo "  $0 -a SFPSCOGS-KHENG_AWS_DEMO -t ~/token.txt -p /tmp/lineage.json"
+    echo "  $0 -a MYORG-MYACCOUNT -t ~/token.txt -p /tmp/lineage.json"
     exit 1
 }
 
