@@ -45,7 +45,7 @@ SHOW GRANTS ON ACCOUNT;
 DESCRIBE TABLE <db>.<schema>.<table>;
 ```
 
-If missing: `GRANT INGEST LINEAGE ON ACCOUNT TO ROLE <role>;`
+If missing, tell the user. An admin can grant it with `GRANT INGEST LINEAGE ON ACCOUNT TO ROLE <role>;` — don't run this without their explicit approval.
 
 ### Step 2: Build the payload
 
