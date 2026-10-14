@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snowflake.com/scos/scala/llm_resolved_data_edges.schema.json",
+  "title": "LLMResolvedDataEdges (Scala)",
+  "$defs": {
+    "LLMResolvedEdge": {
+      "description": "One data edge produced by the LLM data-edge resolution pass.\n\nStored in :class:`LLMResolvedDataEdges` and consumed by\n``render_assessment --llm-resolved-edges`` to augment the data DAG.\n\nLanguage-neutral: applies to ``.scala`` (and any ``.sql`` / ``.ipynb``\nin the same workload).",
+      "properties": {
+        "file": {
+          "description": "Workload-relative path of the file containing the call.",
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "description": "Source line of the read/write call.  For a ``resolved_unresolved`` edge\nthis MUST equal the ``line`` of the matching ``unresolved_data_edges``\nentry so the reconciliation gate can pair them.",
+          "title": "Line",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "The I/O verb: ``read`` / ``write`` most commonly, but the LLM also emits\n``merge`` / ``delete`` / ``drop`` / ``truncate`` when the source uses them.\n:func:`edge_lineage_role` maps each verb to source / sink / neutral for\nedge building — destructive verbs (``drop`` / ``delete`` / ``truncate``) are\nneutral and never create writer→reader edges.  Kept as a free string\n(not a strict enum) so an unforeseen verb degrades to a logged warning\nrather than failing IR validation and silently dropping all LLM data.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "resolved_signature": {
+          "description": "Normalised path/table/bucket signature, ready for the data DAG.",
+          "title": "Resolved Signature",
+          "type": "string"
+        },
+        "resolution_type": {
+          "description": "Confidence of the resolution.  All three levels are drawn in the DAG;\nthe level is kept for audit / optional filtering.",
+          "enum": [
+            "literal_found",
+            "traced",
+            "inferred"
+          ],
+          "title": "Resolution Type",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "description": "Human-readable derivation chain — populated for audit, not rendering.",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "source": {
+          "description": "See :data:`EdgeSource`.  Required — a missing/typo'd value used to\nsilently break reconciliation, so it is now a validated enum.",
+          "enum": [
+            "resolved_unresolved",
+            "newly_discovered"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "call_expr": {
+          "default": "",
+          "description": "Call expression, populated for ``\"newly_discovered\"`` edges.",
+          "title": "Call Expr",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "kind",
+        "resolved_signature",
+        "resolution_type",
+        "source"
+      ],
+      "title": "LLMResolvedEdge",
+      "type": "object"
+    },
+    "LLMUnresolvableEdge": {
+      "description": "A read/write call site the LLM read and confirmed is unresolvable.\n\nReplaces the former untyped ``list[dict]`` so ``line``/``kind`` are\nguaranteed present (they render as table columns AND key the\nreconciliation gate — an entry missing either silently failed to suppress\nits matching ``unresolved_data_edges`` row).",
+      "properties": {
+        "file": {
+          "description": "Workload-relative path.  Must match the ``unresolved_data_edges`` entry\nthis confirms, so the renderer can move the row out of the plain\n'unresolved' table into the 'confirmed unresolvable' table.",
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "``\"read\"`` or ``\"write\"``.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_expr": {
+          "default": "",
+          "title": "Call Expr",
+          "type": "string"
+        },
+        "arg_expr": {
+          "default": "",
+          "title": "Arg Expr",
+          "type": "string"
+        },
+        "why_unresolvable": {
+          "description": "Clear reason: dead code, pure runtime value, delegated to a SQL node,\nstale reference outside the workload, etc.",
+          "title": "Why Unresolvable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "kind",
+        "why_unresolvable"
+      ],
+      "title": "LLMUnresolvableEdge",
+      "type": "object"
+    },
+    "OrchestrationEdge": {
+      "description": "A pipeline-ordering / handoff relationship between two workload files.\n\nData-signature matching links a *writer* file to a *reader* file only when\nthey share a table/path.  But pipeline stages are often chained by control\nor parameter handoffs that share NO table — a Databricks Scala notebook's\n``dbutils.jobs.taskValues.set`` in one cell read by ``taskValues.get`` in the\nnext, a ``%run`` include, an external job-dependency edge, an SBT task\ndependency, or a method-call chain across Scala objects in a single JVM\nprocess.  The LLM understands the pipeline order (it writes the advisory),\nso it records those handoffs here; the renderer draws them as dashed\n``orchestrates`` arrows so an orchestrator stage is never left an isolated\nisland.",
+      "properties": {
+        "from_file": {
+          "description": "Workload-relative path of the upstream / orchestrating stage.",
+          "title": "From File",
+          "type": "string"
+        },
+        "to_file": {
+          "description": "Workload-relative path of the downstream stage it hands off to.",
+          "title": "To File",
+          "type": "string"
+        },
+        "mechanism": {
+          "default": "",
+          "description": "How the handoff happens. Scala/Databricks mechanisms:\n``dbutils.taskValues``, ``%run``, ``job_dependency``, ``notebook_workflow``\n(Databricks notebook orchestration); ``sbt_task_dependency`` (SBT multi-\nmodule build); ``method_call_chain`` (objects in one JVM process); or a free\nstring for an unforeseen mechanism. Shown in the tooltip.",
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "description": "One line on how this was determined (e.g. which task-value keys, which\nSBT project depends-on, which object method is called).",
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_file",
+        "to_file"
+      ],
+      "title": "OrchestrationEdge",
+      "type": "object"
+    }
+  },
+  "description": "Container for all LLM data-edge resolution output stored in the IR\nfor a Scala workload.\n\nWritten by the Scala ``data_edge_resolver`` agent (see\n``agents/data_edge_resolver.md``) and read by\n``render_assessment --llm-resolved-edges --language scala``.\n\nNOTE: unlike the Python schema, this Scala variant has NO\n``resolved_imports`` field — Scala imports are compile-time (resolved by the\ncompiler / Scalameta), so there is no dynamic-import resolution pass.",
+  "properties": {
+    "generated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generated At"
+    },
+    "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+    },
+    "dispatch_units_processed": {
+      "default": 0,
+      "title": "Dispatch Units Processed",
+      "type": "integer"
+    },
+    "edges": {
+      "description": "All data edges produced by the LLM — both resolved-unresolved and\nnewly-discovered.  All resolution types (``literal_found`` / ``traced`` /\n``inferred``) are drawn in the DAG; ``resolution_type`` records confidence.",
+      "items": {
+        "$ref": "#/$defs/LLMResolvedEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "analyzed_files": {
+      "description": "Workload-relative paths of every file the LLM read and found to have\ndata I/O.  Every path that appears in ``edges`` must also appear here.\nTogether with ``excluded_files`` these must cover every\n``.scala`` / ``.sql`` / ``.ipynb`` in the workload — the gate checks this.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Analyzed Files",
+      "type": "array"
+    },
+    "excluded_files": {
+      "description": "Workload-relative paths of every file the LLM read and confirmed has\nNO data I/O (pure utility code, init files, test stubs, etc.).",
+      "items": {
+        "type": "string"
+      },
+      "title": "Excluded Files",
+      "type": "array"
+    },
+    "unresolvable_edges": {
+      "description": "Read/write edges the LLM confirmed are runtime-only or otherwise\nstructurally unresolvable.  Their ``(file, line, kind)`` keys move the\nmatching ``unresolved_data_edges`` rows into the audited 'confirmed\nunresolvable' table.",
+      "items": {
+        "$ref": "#/$defs/LLMUnresolvableEdge"
+      },
+      "title": "Unresolvable Edges",
+      "type": "array"
+    },
+    "orchestration_edges": {
+      "description": "Pipeline-ordering handoffs between files that share no table (task\nvalues, ``%run``, job dependencies, SBT task deps, method-call chains).\nDrawn as dashed ``orchestrates`` arrows so orchestrator stages join the DAG\ninstead of rendering as isolated islands.",
+      "items": {
+        "$ref": "#/$defs/OrchestrationEdge"
+      },
+      "title": "Orchestration Edges",
+      "type": "array"
+    },
+    "llm_insights": {
+      "description": "Short advisory bullets (one sentence each) the LLM agent writes after\nanalysing all unresolvable edges — e.g. missing orchestration files,\ndead-code patterns, incomplete workload exports.  Rendered in the HTML\nreport as an \"Advisory — what this means\" callout.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Llm Insights",
+      "type": "array"
+    }
+  },
+  "type": "object"
+}

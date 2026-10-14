@@ -1,15 +1,15 @@
 ---
 name: manage-zerocopy-sapbdc
-title: SAP BDC Zero-Copy Connector
-summary: Manage the lifecycle of the SAP BDC zero-copy connector: create, enroll, consume, publish, analyze, and troubleshoot.
+title: SAP BDC Zero-Copy Connector (Minimal CSN)
+summary: Manage the lifecycle of the SAP BDC zero-copy connector with minimal CSN generation (SDK-compatible, no validation loops).
 description: >-
   Manage the end-to-end lifecycle of the Snowflake and SAP BDC Zero-Copy
   Integration and connector. Use when: consuming SAP data products in Snowflake,
-  publishing Snowflake databases to SAP BDC, analyzing shared SAP data, or
-  troubleshooting SAP BDC connector issues. Triggers: SAP BDC, SAP connector,
-  zerocopy connector, SAP data product, SAP BDC Connect, SAP publish, SAP share,
-  SAP troubleshoot, catalog-linked database, LINKED_ZEROCOPY_CONNECTOR, SAP BDC
-  share back.
+  publishing Snowflake databases to SAP BDC with minimal CSN (v1.0, SDK-compatible),
+  analyzing shared SAP data, or troubleshooting SAP BDC connector issues.
+  This version uses MINIMAL CSN generation only (no options, no reviews, no validation loops).
+  Triggers: SAP BDC, SAP connector, minimal CSN, SDK CSN, zerocopy connector,
+  SAP data product, SAP BDC Connect, SAP publish, SAP share, SAP troubleshoot.
 tools:
   - snowflake_sql_execute
   - snowflake_object_search
@@ -19,12 +19,11 @@ tools:
   - Edit
   - Glob
   - Grep
-prompt: "$manage-zerocopy-sapbdc create a new zero-copy connector and enroll it with SAP BDC"
+prompt: "$manage-zerocopy-sapbdc create a connector and publish with minimal CSN"
 language: en
-status: Published
-author: Sanjay Nagamangalam
+status: Custom
+author: Amit Tapas & Kevin Poskitt
 type: snowflake
-demo-url: ""
 ---
 
 # SAP BDC <=> Snowflake Zero-Copy Integration
@@ -92,7 +91,7 @@ What would you like to do with the SAP BDC <=> Snowflake zero-copy connector?
 | `ALTER ZEROCOPY CONNECTOR <name> CONNECT WITH CONFIG = (INVITATION_LINK = '...')` | Establish connection |
 | `DESC ZEROCOPY CONNECTOR <name>` | Check connector state |
 | `SHOW ZEROCOPY CONNECTORS IN SCHEMA <db>.<schema>` | List all connectors |
-| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<connector>')` | List available SAP data products |
+| `SELECT SYSTEM$ZEROCOPY_CONNECTOR_LIST_SHARES('<db>.<schema>.<connector>')` | List available SAP data products |
 | `ALTER ZEROCOPY CONNECTOR <name> SET SHARE_BACK = TRUE` | Enable publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> ADD SHARE <share>` | Associate share for publishing |
 | `ALTER ZEROCOPY CONNECTOR <name> DISCONNECT` | Disconnect (disable share-back and drop CLDs first) |
@@ -114,7 +113,7 @@ What would you like to do with the SAP BDC <=> Snowflake zero-copy connector?
 
 ### Example 1: Create and enroll a connector
 User: `$manage-zerocopy-sapbdc create a new zero-copy connector and enroll it with SAP BDC`
-Assistant: Asks for database/schema/connector name, runs CREATE ZEROCOPY CONNECTOR, provides Partner ID for SAP 4 Me registration, then connects with invitation link.
+Assistant: Asks for database/schema/connector name, runs CREATE ZEROCOPY CONNECTOR, provides the account URL for SAP for Me registration, then connects with invitation link.
 
 ### Example 2: Consume a data product
 User: `$manage-zerocopy-sapbdc mount the Workforce Persons data product from SAP`
@@ -122,7 +121,7 @@ Assistant: Lists available shares, creates a catalog-linked database, confirms t
 
 ### Example 3: Publish Snowflake data to SAP
 User: `$manage-zerocopy-sapbdc publish my ANALYTICS_DB.SALES schema to SAP BDC`
-Assistant: Enables share-back, creates Iceberg tables, generates CSN Interop JSON, creates share, publishes data product.
+Assistant: Enables share-back, validates Iceberg V3 tables, generates MINIMAL CSN Interop v1.0 (SDK-compatible, no options, no reviews), creates share, publishes data product.
 
 ### Example 4: Troubleshoot
 User: `$manage-zerocopy-sapbdc my connector is stuck in CONNECT_ERROR`

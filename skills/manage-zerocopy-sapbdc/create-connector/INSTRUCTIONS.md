@@ -38,7 +38,7 @@ If a connector exists and is already CONNECTED, inform the user they can skip co
 
    **If privileges are missing**, inform the user:
    ```
-   ⚠️ Your current role needs the following privileges to create a connector:
+   Your current role needs the following privileges to create a connector:
 
    GRANT CREATE DATABASE ON ACCOUNT TO ROLE <current_role>;
    -- After database/schema exist:
@@ -95,7 +95,7 @@ If a connector exists and is already CONNECTED, inform the user they can skip co
 
 **Actions:**
 
-1. **Derive** the Snowflake account URL to use as the Partner Software System Instance Identifier:
+1. **Derive** the Snowflake account URL to use as the External System Instance Identifier:
    ```sql
    SELECT CURRENT_ORGANIZATION_NAME() || '-' || CURRENT_ACCOUNT_NAME();
    ```

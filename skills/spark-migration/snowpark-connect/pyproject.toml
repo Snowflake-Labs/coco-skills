@@ -1,0 +1,56 @@
+[project]
+name = "snowpark_connect_skills"
+version = "0.1.0"
+description = "Snowpark Connect - Migrate and validate PySpark workloads for Snowflake Snowpark Connect (SCOS)"
+requires-python = ">=3.10"
+dependencies = [
+    "snowpark-connect",
+    "jdk4py>=21.0.4.0",
+    "pyspark>=3.5,<4",
+    "snowflake-core>=0.10.0",
+    "snowflake-ml-python>=1.5.0",
+    "nbconvert",
+    "typing_extensions>=4.0",
+    "libcst>=1.0",
+    "pytest>=7.0",
+    "pytest-xdist>=3.0",
+    "pydantic>=2.0",
+    "jinja2>=3.0",
+    "sqlglot>=23.0",
+    "sqlframe>=3.0",
+    "faker>=24.0",
+    "html5validator>=0.4.2",
+    "streamlit>=1.28.0",
+    "pandas>=2.0.0",
+    "pyarrow>=16.0.0",
+    "pyyaml>=6.0",
+    "fastavro>=1.9",
+    "jsonschema>=4.0",
+    "databricks-sdk>=0.20.0",
+    "cortex-code-agent-sdk>=1.0.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts", "scripts/assessment"]
+testpaths = ["scripts/tests", "scripts/assessment/tests"]
+addopts = ["-n", "auto", "-m", "not slow"]
+markers = ["slow: git/worktree integration tests (run with -m slow)"]
+
+# SNOW-2275078: snowflake-ml-python pulls in shap -> numba -> llvmlite. Without
+# this constraint the resolver can pick numba 0.53.1 (Python <3.10 only),
+# whose setup.py hard-fails on Python 3.11+ with
+#   "RuntimeError: Cannot install on Python version 3.11.x; only versions
+#   >=3.6,<3.10 are supported."
+# That branch also forces an llvmlite==0.36.0 sdist build which requires the
+# LLVM 11 toolchain on the host. Pinning numba>=0.60.0 keeps the resolver on
+# wheel-shipping versions for every Python we support. Mirrors the fix
+# applied in streamlit-container-runtime#230.
+[tool.uv]
+constraint-dependencies = ["numba>=0.60.0", "snowpark-connect>=1.0.0"]

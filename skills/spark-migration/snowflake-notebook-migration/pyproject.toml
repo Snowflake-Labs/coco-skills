@@ -1,0 +1,6 @@
+[project]
+name = "snowflake-notebook-migration"
+version = "0.1.0"
+description = "Scripts for Databricks notebook detection, parsing, validation, and dependency scanning"
+requires-python = ">=3.10"
+dependencies = []

@@ -1,0 +1,120 @@
+# Range Join (SCD2 Temporal): Semantic View YAML
+#
+# This file is the canonical YAML for ORDERS_BY_SEGMENT, exported via:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('SEMANTIC_SKILLS.SNIPPETS.ORDERS_BY_SEGMENT');
+# then lightly formatted and annotated.
+#
+# KEY FINDING: Range join relationships ARE fully supported in YAML.
+# The syntax uses `type: range` on the date column and a `constraints`
+# block on the dimension table — no DDL required.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+
+name: ORDERS_BY_SEGMENT
+description: Orders joined to the subscription tier active at time of purchase via SCD2 range relationship.
+
+tables:
+  - name: CUSTOMER_SEGMENTS
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CUSTOMER_SEGMENTS
+    primary_key:
+      columns:
+        - SEGMENT_ID
+    unique_keys:
+      - columns:
+          - CUSTOMER_ID
+          - VALID_FROM
+          - VALID_TO
+    # DISTINCT RANGE constraint — enables the range join relationship below
+    constraints:
+      - name: SEGMENT_PERIOD
+        distinct_range:
+          start_column: VALID_FROM
+          end_column: VALID_TO
+    dimensions:
+      - name: SEGMENT
+        synonyms:
+          - tier
+          - subscription tier
+          - plan
+          - customer plan
+        description: Subscription tier active at time of order (historically resolved via range join)
+        expr: SEGMENT
+        data_type: VARCHAR(20)
+      - name: VALID_FROM
+        description: Start of this segment period (inclusive)
+        expr: VALID_FROM
+        data_type: DATE
+      - name: VALID_TO
+        description: End of this segment period (exclusive; 9999-12-31 = current)
+        expr: VALID_TO
+        data_type: DATE
+
+  - name: ORDERS
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: ORDERS
+    primary_key:
+      columns:
+        - ORDER_ID
+    dimensions:
+      - name: CUSTOMER_ID
+        expr: CUSTOMER_ID
+        data_type: VARCHAR(10)
+      - name: ORDER_DATE
+        expr: ORDER_DATE
+        data_type: DATE
+      - name: ORDER_ID
+        expr: ORDER_ID
+        data_type: NUMBER
+    facts:
+      - name: ORDER_REVENUE
+        description: Order amount in USD
+        expr: ORDER_AMOUNT
+        data_type: NUMBER(10,2)
+        access_modifier: public_access
+    metrics:
+      - name: ORDER_COUNT
+        synonyms:
+          - number of orders
+          - orders
+          - order volume
+        description: Number of orders
+        expr: COUNT(ORDER_ID)
+        access_modifier: public_access
+      - name: TOTAL_REVENUE
+        synonyms:
+          - revenue
+          - total sales
+          - gmv
+        description: Sum of order amounts
+        expr: SUM(ORDER_AMOUNT)
+        access_modifier: public_access
+
+relationships:
+  - name: ORDERS_TO_SEGMENT
+    left_table: ORDERS
+    right_table: CUSTOMER_SEGMENTS
+    relationship_columns:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID
+      # Range join: ORDER_DATE must fall within [VALID_FROM, VALID_TO)
+      - left_column: ORDER_DATE
+        type: range
+        right_range:
+          start_column: VALID_FROM
+          end_column: VALID_TO
+
+module_custom_instructions:
+  sql_generation: >
+    Use customer_segments.segment to break down order metrics by the subscription
+    tier the customer was on at the time of each order. The range relationship
+    automatically resolves the historically-correct segment — there is no need to
+    filter on valid_from/valid_to manually. Each order maps to exactly one segment record.

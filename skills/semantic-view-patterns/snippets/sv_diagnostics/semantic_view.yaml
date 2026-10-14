@@ -1,0 +1,136 @@
+# SV Diagnostics: Semantic View YAML
+#
+# The DEALS_FIXED_SV (the correctly-structured diagnostic SV) is exported via:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('SEMANTIC_SKILLS.SNIPPETS.DEALS_FIXED_SV');
+#
+# KEY YAML ADVANTAGE: verify_only=TRUE in SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML
+# provides a pre-deployment dry-run — the closest thing to a model linter:
+#
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML(
+#     'TARGET_DB.TARGET_SCHEMA',
+#     $$ <your yaml> $$,
+#     TRUE  -- verify_only: validates without deploying
+#   );
+#
+# DIAGNOSTIC SCENARIOS IN YAML:
+# Scenario 1 — Ambiguous path:      fully expressible (no using_relationships → same error)
+# Scenario 2 — Fan trap:            fully expressible (wrong grain → same error)
+# Scenario 3 — No relationship:     fully expressible (orphaned table → same error)
+# Scenario 4a — Duplicate name:     verify_only=TRUE catches this before deployment ✓
+# Scenario 4b — Ambiguous synonyms: fully expressible (same CA confusion)
+# Scenario 5a — Reversed direction: verify_only=TRUE catches this ✓
+# Scenario 5b — Wrong cardinality:  fully expressible (same silent wrong-result risk)
+# Scenario 6 — Semi-additive:       non_additive_dimensions is the YAML fix ✓
+#
+# For broken/error-triggering variants, see semantic_view.sql.
+#
+# Deploy:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+# Verify only:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+
+name: DEALS_FIXED_SV
+
+tables:
+  - name: DEALS
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DEALS
+    primary_key:
+      columns:
+        - DEAL_ID
+    dimensions:
+      - name: PRODUCT
+        expr: PRODUCT
+        data_type: VARCHAR(30)
+      - name: STAGE
+        expr: STAGE
+        data_type: VARCHAR(20)
+    facts:
+      - name: AMOUNT
+        expr: AMOUNT
+        data_type: NUMBER(10,2)
+        access_modifier: public_access
+    metrics:
+      # using_relationships is the YAML equivalent of DDL's USING (relationship_name)
+      # Scenario 1 fix: each metric declares its own date path — no ambiguity
+      - name: TOTAL_AMOUNT_CREATED
+        description: Total deal value, dated by when the deal was created
+        expr: SUM(AMOUNT)
+        access_modifier: public_access
+        using_relationships:
+          - DEALS_TO_CREATED_DATE
+      - name: DEAL_COUNT_CREATED
+        description: Count of deals, dated by creation date
+        expr: COUNT(DEAL_ID)
+        access_modifier: public_access
+        using_relationships:
+          - DEALS_TO_CREATED_DATE
+      - name: TOTAL_AMOUNT_CLOSED
+        description: Total deal value, dated by close date
+        expr: SUM(AMOUNT)
+        access_modifier: public_access
+        using_relationships:
+          - DEALS_TO_CLOSE_DATE
+      - name: DEAL_COUNT_CLOSED
+        description: Count of closed deals, dated by close date
+        expr: COUNT(DEAL_ID)
+        access_modifier: public_access
+        using_relationships:
+          - DEALS_TO_CLOSE_DATE
+
+  - name: DATE_DIM
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns:
+        - DATE_KEY
+    dimensions:
+      - name: MONTH_NAME
+        expr: MONTH_NAME
+        data_type: VARCHAR(10)
+      - name: MONTH_NUM
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: YEAR
+        expr: YEAR
+        data_type: NUMBER
+
+  - name: REP_DIM
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_REP
+    primary_key:
+      columns:
+        - REP_ID
+    dimensions:
+      - name: REP_NAME
+        expr: REP_NAME
+        data_type: VARCHAR(50)
+      - name: REGION
+        expr: REGION
+        data_type: VARCHAR(20)
+
+relationships:
+  - name: DEALS_TO_CREATED_DATE
+    left_table: DEALS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: CREATED_DATE
+        right_column: DATE_KEY
+  - name: DEALS_TO_CLOSE_DATE
+    left_table: DEALS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: CLOSE_DATE
+        right_column: DATE_KEY
+  - name: DEALS_TO_REP
+    left_table: DEALS
+    right_table: REP_DIM
+    relationship_columns:
+      - left_column: REP_ID
+        right_column: REP_ID

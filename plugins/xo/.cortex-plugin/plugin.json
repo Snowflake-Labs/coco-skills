@@ -1,0 +1,5 @@
+{
+  "name": "xo",
+  "description": "XO operator workflow system for Cortex Code: composable workflow stages with quality gates, specialised subagents (proposer/critic/verifier), behavioural-enforcement hooks (automatic session recording, context checkpointing, and process guidance), and persistent cross-session memory. Prereqs: node, git, gh, jq. After install, run the bundled plugin/setup.sh to set XOCORTEX_HOME, put node on the hooks' PATH, and optionally create a git-backed vault.",
+  "version": "3.3.1"
+}

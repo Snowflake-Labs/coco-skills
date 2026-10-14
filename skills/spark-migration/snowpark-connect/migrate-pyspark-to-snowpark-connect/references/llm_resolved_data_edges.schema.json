@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snowflake.com/scos/llm_resolved_data_edges.schema.json",
+  "title": "LLMResolvedDataEdges",
+  "$defs": {
+    "LLMResolvedEdge": {
+      "description": "One data edge produced by the LLM data-edge resolution pass.\n\nStored in :class:`LLMResolvedDataEdges` and consumed by\n``render_assessment --llm-resolved-edges`` to augment the data DAG.",
+      "properties": {
+        "file": {
+          "description": "Workload-relative path of the file containing the call.",
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "description": "Source line of the read/write call.  For a ``resolved_unresolved`` edge\nthis MUST equal the ``line`` of the matching ``unresolved_data_edges``\nentry so the reconciliation gate can pair them.",
+          "title": "Line",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "The I/O verb: ``read`` / ``write`` most commonly, but the LLM also emits\n``merge`` / ``delete`` / ``drop`` / ``truncate`` when the source uses them.\n:func:`edge_lineage_role` maps each verb to source / sink / neutral for\nedge building \u2014 destructive verbs (``drop`` / ``delete`` / ``truncate``) are\nneutral and never create writer\u2192reader edges.  Kept as a free string\n(not a strict enum) so an unforeseen verb degrades to a logged warning\nrather than failing IR validation and silently dropping all LLM data.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "resolved_signature": {
+          "description": "Normalised path/table/bucket signature, ready for the data DAG.",
+          "title": "Resolved Signature",
+          "type": "string"
+        },
+        "resolution_type": {
+          "description": "Confidence of the resolution.  All three levels are drawn in the DAG;\nthe level is kept for audit / optional filtering.",
+          "enum": [
+            "literal_found",
+            "traced",
+            "inferred"
+          ],
+          "title": "Resolution Type",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "description": "Human-readable derivation chain \u2014 populated for audit, not rendering.",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "source": {
+          "description": "See :data:`EdgeSource`.  Required \u2014 a missing/typo'd value used to\nsilently break reconciliation, so it is now a validated enum.",
+          "enum": [
+            "resolved_unresolved",
+            "newly_discovered"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "call_expr": {
+          "default": "",
+          "description": "Call expression, populated for ``\"newly_discovered\"`` edges.",
+          "title": "Call Expr",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "kind",
+        "resolved_signature",
+        "resolution_type",
+        "source"
+      ],
+      "title": "LLMResolvedEdge",
+      "type": "object"
+    },
+    "LLMResolvedImport": {
+      "description": "The LLM's verdict on one dynamic-import site.\n\nThe static dispatch (``scan_codebase._resolve_dynamic_import_site``) gives\nup on any runtime-computed target and files it under\n``unresolved_dynamic_imports``.  The LLM reads the orchestrator and either\nresolves the target file(s) or confirms it is genuinely unresolvable \u2014 so\nthe import graph gets the same correctness pass the data graph does.",
+      "properties": {
+        "file": {
+          "description": "Workload-relative path of the orchestrator containing the import call.\nMust match the ``unresolved_dynamic_imports`` entry's ``file``.",
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "description": "Must match the ``unresolved_dynamic_imports`` entry's ``line``.",
+          "title": "Line",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "The dispatch kind (``spec_from_file``, ``import_module``,\n``__import__``, ``imp_load_source``, ``entry_point``, ``factory_dict``).",
+          "title": "Kind",
+          "type": "string"
+        },
+        "resolved_targets": {
+          "description": "Workload-relative path(s) the import loads at runtime.  Non-empty when\n``resolution_type != \"unresolvable\"``; empty when unresolvable.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Resolved Targets",
+          "type": "array"
+        },
+        "resolution_type": {
+          "enum": [
+            "literal_found",
+            "traced",
+            "inferred",
+            "unresolvable"
+          ],
+          "title": "Resolution Type",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "description": "Derivation chain for a resolved import.",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "why_unresolvable": {
+          "default": "",
+          "description": "Reason, required when ``resolution_type == \"unresolvable\"``.",
+          "title": "Why Unresolvable",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "enum": [
+                "critical",
+                "informational",
+                "benign"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Severity of an *unresolvable* import (see :data:`UnresolvableSeverity`) \u2014\nset when ``resolution_type == \"unresolvable\"``, else ``null``.  A missing\norchestrator/module the workload needs is ``critical``; runtime-only\ndispatch is ``informational``; dead code is ``benign``.",
+          "title": "Severity"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "kind",
+        "resolution_type"
+      ],
+      "title": "LLMResolvedImport",
+      "type": "object"
+    },
+    "LLMUnresolvableEdge": {
+      "description": "A read/write call site the LLM read and confirmed is unresolvable.\n\nReplaces the former untyped ``list[dict]`` so ``line``/``kind`` are\nguaranteed present (they render as table columns AND key the\nreconciliation gate \u2014 an entry missing either silently failed to suppress\nits matching ``unresolved_data_edges`` row).",
+      "properties": {
+        "file": {
+          "description": "Workload-relative path.  Must match the ``unresolved_data_edges`` entry\nthis confirms, so the renderer can move the row out of the plain\n'unresolved' table into the 'confirmed unresolvable' table.",
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "kind": {
+          "description": "``\"read\"`` or ``\"write\"``.",
+          "title": "Kind",
+          "type": "string"
+        },
+        "call_expr": {
+          "default": "",
+          "title": "Call Expr",
+          "type": "string"
+        },
+        "arg_expr": {
+          "default": "",
+          "title": "Arg Expr",
+          "type": "string"
+        },
+        "why_unresolvable": {
+          "description": "Clear reason: dead code, pure runtime value, delegated to a SQL node,\nstale reference outside the workload, etc.",
+          "title": "Why Unresolvable",
+          "type": "string"
+        },
+        "severity": {
+          "description": "See :data:`UnresolvableSeverity`.  ``critical`` = a required input is\nmissing from the export (can block migration); ``informational`` = real I/O\nwhose target is only known at runtime (a lineage blind spot); ``benign`` =\na scanner misclassification / dead code.  Required \u2014 this is the LLM's\nseverity judgment that the outcome report groups on, so it must reflect the\nreason in ``why_unresolvable``.",
+          "enum": [
+            "critical",
+            "informational",
+            "benign"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "kind",
+        "why_unresolvable",
+        "severity"
+      ],
+      "title": "LLMUnresolvableEdge",
+      "type": "object"
+    },
+    "OrchestrationEdge": {
+      "description": "A pipeline-ordering / handoff relationship between two workload files.\n\nData-signature matching links a *writer* file to a *reader* file only when\nthey share a table/path.  But pipeline stages are often chained by control\nor parameter handoffs that share NO table \u2014 a Databricks\n``dbutils.jobs.taskValues.set`` in one notebook read by ``taskValues.get``\nin the next, a ``%run`` include, or an external job-dependency edge.  The\nLLM understands the pipeline order (it writes the advisory), so it records\nthose handoffs here; the renderer draws them as dashed ``orchestrates``\narrows so an orchestrator stage is never left an isolated island.",
+      "properties": {
+        "from_file": {
+          "description": "Workload-relative path of the upstream / orchestrating stage.",
+          "title": "From File",
+          "type": "string"
+        },
+        "to_file": {
+          "description": "Workload-relative path of the downstream stage it hands off to.",
+          "title": "To File",
+          "type": "string"
+        },
+        "mechanism": {
+          "default": "",
+          "description": "How the handoff happens: ``dbutils.taskValues``, ``%run``,\n``job_dependency``, ``notebook_workflow``, etc.  Shown in the tooltip.",
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "description": "One line on how this was determined (e.g. which task-value keys).",
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_file",
+        "to_file"
+      ],
+      "title": "OrchestrationEdge",
+      "type": "object"
+    }
+  },
+  "description": "Container for all LLM data-edge resolution output stored in the IR.\n\nWritten by the ``data_edge_resolver`` agent (see\n``agents/data_edge_resolver.md``) and read by\n``render_assessment --llm-resolved-edges``.",
+  "properties": {
+    "generated_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Generated At"
+    },
+    "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+    },
+    "dispatch_units_processed": {
+      "default": 0,
+      "title": "Dispatch Units Processed",
+      "type": "integer"
+    },
+    "edges": {
+      "description": "All data edges produced by the LLM \u2014 both resolved-unresolved and\nnewly-discovered.  All resolution types (``literal_found`` / ``traced`` /\n``inferred``) are drawn in the DAG; ``resolution_type`` records confidence.",
+      "items": {
+        "$ref": "#/$defs/LLMResolvedEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "analyzed_files": {
+      "description": "Workload-relative paths of every file the LLM read and found to have\ndata I/O.  Every path that appears in ``edges`` must also appear here.\nTogether with ``excluded_files`` these must cover every\n``.py`` / ``.sql`` / ``.ipynb`` in the workload \u2014 the gate checks this.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Analyzed Files",
+      "type": "array"
+    },
+    "excluded_files": {
+      "description": "Workload-relative paths of every file the LLM read and confirmed has\nNO data I/O (pure utility code, init files, test stubs, etc.).",
+      "items": {
+        "type": "string"
+      },
+      "title": "Excluded Files",
+      "type": "array"
+    },
+    "unresolvable_edges": {
+      "description": "Read/write edges the LLM confirmed are runtime-only or otherwise\nstructurally unresolvable.  Their ``(file, line, kind)`` keys move the\nmatching ``unresolved_data_edges`` rows into the audited 'confirmed\nunresolvable' table.",
+      "items": {
+        "$ref": "#/$defs/LLMUnresolvableEdge"
+      },
+      "title": "Unresolvable Edges",
+      "type": "array"
+    },
+    "resolved_imports": {
+      "description": "The LLM's verdict on every ``unresolved_dynamic_imports`` site \u2014 each\neither resolved to target file(s) or confirmed unresolvable.  Drives the\nreconciliation of the dynamic-import table (parallel to how ``edges`` +\n``unresolvable_edges`` reconcile the data-edge table).",
+      "items": {
+        "$ref": "#/$defs/LLMResolvedImport"
+      },
+      "title": "Resolved Imports",
+      "type": "array"
+    },
+    "orchestration_edges": {
+      "description": "Pipeline-ordering handoffs between files that share no table (task\nvalues, ``%run``, job dependencies).  Drawn as dashed ``orchestrates``\narrows so orchestrator stages join the DAG instead of rendering as\nisolated islands.",
+      "items": {
+        "$ref": "#/$defs/OrchestrationEdge"
+      },
+      "title": "Orchestration Edges",
+      "type": "array"
+    },
+    "llm_insights": {
+      "description": "Short advisory bullets (one sentence each) the LLM agent writes after\nanalysing all unresolvable edges \u2014 e.g. missing orchestration files,\ndead-code patterns, incomplete workload exports.  Rendered in the HTML\nreport as an \"Advisory \u2014 what this means\" callout.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Llm Insights",
+      "type": "array"
+    }
+  },
+  "type": "object"
+}

@@ -1,0 +1,5 @@
+# Files to exclude from skill package (maintainer-only)
+.skillignore
+Makefile
+scripts/__pycache__/
+scripts/tests/

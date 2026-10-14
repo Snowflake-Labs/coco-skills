@@ -1,0 +1,2 @@
+# Runtime-staged JARs (see scos_state._stage_scos_client_jar). Do not commit.
+*.jar

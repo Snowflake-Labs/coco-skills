@@ -1,0 +1,46 @@
+{
+  "name": "csn-minimal-generator",
+  "version": "1.0.0",
+  "description": "Generate minimal CSN Interop v1.0 from database schemas matching SAP BDC Connect SDK output format",
+  "trigger": [
+    "minimal csn",
+    "sap bdc csn",
+    "csn for sap bdc",
+    "csn sdk format",
+    "csn 1.0",
+    "snowflake to sap bdc",
+    "publish to sap bdc",
+    "csn without annotations"
+  ],
+  "whenToUse": "When publishing Snowflake tables to SAP Datasphere/BDC and maximum compatibility is required. Generates CSN v1.0 with minimal annotations matching SDK format.",
+  "whenNotToUse": "When building CSN for SAP CAP applications, or when comprehensive semantic annotations are needed",
+  "capabilities": [
+    "Generate CSN Interop v1.0 from Snowflake",
+    "Map Snowflake types to CDS types (Snowflake -> Iceberg -> CSN)",
+    "Create associations from foreign keys",
+    "Validate CSN structure",
+    "Export minimal CSN JSON"
+  ],
+  "tags": [
+    "csn",
+    "sap",
+    "bdc",
+    "datasphere",
+    "snowflake",
+    "data-integration",
+    "schema-conversion"
+  ],
+  "parent_skill": "manage-zerocopy-sapbdc",
+  "author": "Amit Tapas & Kevin Poskitt",
+  "license": "Snowflake Skills License",
+  "references": [
+    {
+      "name": "CSN Interop Specification",
+      "url": "https://sap.github.io/csn-interop-specification/"
+    },
+    {
+      "name": "SAP BDC Connect SDK",
+      "description": "Reference implementation for CSN format"
+    }
+  ]
+}

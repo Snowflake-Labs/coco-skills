@@ -1,0 +1,18 @@
+[project]
+name = "deploy-code-bundle"
+version = "0.1.0"
+description = "Deploy a migrated Snowpark/SCOS project to Snowflake as a Code Bundle (upload to stage + CREATE CODE BUNDLE, optional EXECUTE) on a warehouse or compute pool."
+requires-python = ">=3.10"
+dependencies = [
+    "snowflake-connector-python>=3.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "scripts/tests",
+]

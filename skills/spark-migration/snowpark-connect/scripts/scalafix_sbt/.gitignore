@@ -1,0 +1,6 @@
+# sbt build artifacts — never commit (regenerated on demand by preprocess_scalafix.py)
+target/
+project/target/
+project/project/
+.bsp/
+.classpath_cache.json

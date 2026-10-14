@@ -1,0 +1,5 @@
+# sbt build artifacts (regenerable via `sbt compile`)
+target/
+project/target/
+project/project/target/
+.bsp/

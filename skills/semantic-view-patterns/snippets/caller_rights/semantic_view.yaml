@@ -1,0 +1,81 @@
+# Caller Rights: Semantic View YAML
+#
+# ⚠️  CALLER RIGHTS IS A DDL-ONLY PATTERN:
+# The caller-rights access control pattern relies on role-based ownership
+# separation (SV_CREATOR, SV_OWNER, SV_USER roles) and specific GRANT sequences
+# that cannot be expressed in a YAML specification.
+#
+# Additionally, ASOF join syntax is not supported in YAML.
+#
+# Use semantic_view.sql for this entire pattern. This YAML is provided only
+# for structural reference.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('SV_CALLER_TEST.SV', $$ <contents> $$);
+# But note: role context (USE ROLE SV_CREATOR), grants, and ASOF join
+# must all be applied manually via DDL from semantic_view.sql.
+
+name: CUSTOMER_ORDERS_VIEW
+description: >
+  Customer orders attributed to the address active at time of order (ASOF join).
+  Used to demonstrate caller-rights access control.
+  NOTE: Full pattern (role switching, grants, ASOF join) requires DDL authoring.
+
+tables:
+  - name: orders
+    description: Order transactions
+    base_table:
+      database: SV_CALLER_TEST
+      schema: DATA
+      table: ORDERS
+    primary_key:
+      columns: [O_ORD_ID]
+    dimensions:
+      - name: dim_year_month
+        expr: DATE_TRUNC('month', O_ORD_DATE)
+        data_type: DATE
+    metrics:
+      - name: m_order_amount
+        expr: SUM(O_AMOUNT)
+
+  - name: customer_address
+    description: Customer address history
+    base_table:
+      database: SV_CALLER_TEST
+      schema: DATA
+      table: CUSTOMER_ADDRESS
+    primary_key:
+      columns: [CA_CUST_ID, CA_START_DATE]
+    facts:
+      - name: f_zipcode
+        expr: CA_ZIPCODE
+        data_type: VARCHAR
+    dimensions:
+      - name: f_cust_zipcode
+        expr: CA_ZIPCODE
+        data_type: VARCHAR
+
+  - name: customer
+    description: Customer master
+    base_table:
+      database: SV_CALLER_TEST
+      schema: DATA
+      table: CUSTOMER
+    primary_key:
+      columns: [C_CUST_ID]
+
+# NOTE: ASOF join syntax not supported in YAML.
+# DDL: orders(O_CUST_ID, O_ORD_DATE) REFERENCES customer_address(CA_CUST_ID, ASOF CA_START_DATE)
+relationships:
+  - name: customer_address_to_customer
+    left_table: customer_address
+    right_table: customer
+    relationship_columns:
+      - left_column: CA_CUST_ID
+        right_column: C_CUST_ID
+  - name: orders_to_customer_address
+    left_table: orders
+    right_table: customer_address
+    relationship_columns:
+      - left_column: O_CUST_ID
+        right_column: CA_CUST_ID

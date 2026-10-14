@@ -1,0 +1,263 @@
+meta:
+  title: "WAF Performance — 8 Controls"
+  pillar: Performance
+  total_controls: 8
+  total_checks: 8
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: PERF-1
+    name: Queueing %
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/warehouse Review warehouses with high queue times and recommend concurrency or sizing changes."
+    thresholds:
+      on_track: "Queue time is below 5% of total elapsed time"
+      needs_improvement: "Queue time is between 5% and 30% of total elapsed time"
+      needs_attention: "Queue time exceeds 30% of total elapsed time"
+    checks:
+      - id: PERF-1a
+        name: Queueing Percentage (30 Days)
+        type: automated
+        metric: queue_pct
+        sql: |
+          SELECT
+              COUNT(*) AS query_cnt,
+              COUNT_IF(queued_overload_time > 0) AS queue_cnt,
+              SUM(total_elapsed_time) AS total_ms,
+              SUM(queued_overload_time) AS queue_ms,
+              ROUND(DIV0(SUM(queued_overload_time), SUM(total_elapsed_time)) * 100, 1) AS queue_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: PERF-2
+    name: Spilling %
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/warehouse Review warehouses with remote spilling and recommend sizing changes."
+    thresholds:
+      on_track: "Remote spilling is below 0.5% of bytes scanned"
+      needs_improvement: "Remote spilling is between 0.5% and 2% of bytes scanned"
+      needs_attention: "Remote spilling exceeds 2% of bytes scanned"
+    checks:
+      - id: PERF-2a
+        name: Spilling Percentage (30 Days)
+        type: automated
+        metric: spill_pct
+        sql: |
+          SELECT
+              COUNT(*) AS query_cnt,
+              COUNT_IF(bytes_spilled_to_remote_storage > 0) AS spill_cnt,
+              SUM(COALESCE(bytes_scanned, 0)) AS total_bytes,
+              SUM(bytes_spilled_to_remote_storage) AS spill_bytes,
+              ROUND(DIV0(SUM(bytes_spilled_to_remote_storage), SUM(COALESCE(bytes_scanned, 0))) * 100, 1) AS spill_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: PERF-3
+    name: Failed Queries (Timeouts) %
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Analyse timed-out and cancelled queries and provide remediation actions."
+    thresholds:
+      on_track: "Timeout percentage is below 1%"
+      needs_improvement: "Timeout percentage is between 1% and 3%"
+      needs_attention: "Timeout percentage exceeds 3%"
+    checks:
+      - id: PERF-3a
+        name: Timeout Percentage (30 Days)
+        type: automated
+        metric: timeout_pct
+        sql: |
+          SELECT
+              COUNT(*) AS query_cnt,
+              COUNT_IF(error_code IN (630, 604)) AS timeout_cnt,
+              SUM(execution_time) AS exec_ms,
+              SUM(CASE WHEN error_code IN (630, 604) THEN execution_time ELSE 0 END) AS timeout_ms,
+              ROUND(
+                  DIV0(
+                      SUM(CASE WHEN error_code IN (630, 604) THEN execution_time ELSE 0 END),
+                      SUM(execution_time)
+                  ) * 100,
+                  1
+              ) AS timeout_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: PERF-4
+    name: Slow Compilation %
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Analyse queries with high compilation times and suggest simplification approaches."
+    thresholds:
+      on_track: "Compilation time is below 10% of total elapsed time"
+      needs_improvement: "Compilation time is between 10% and 20% of total elapsed time"
+      needs_attention: "Compilation time exceeds 20% of total elapsed time"
+    checks:
+      - id: PERF-4a
+        name: Slow Compilation Percentage (30 Days)
+        type: automated
+        metric: compile_pct
+        sql: |
+          SELECT
+              COUNT(*) AS query_cnt,
+              SUM(total_elapsed_time) AS total_ms,
+              SUM(compilation_time) AS compile_ms,
+              ROUND(
+                  DIV0(SUM(compilation_time), SUM(total_elapsed_time)) * 100,
+                  1
+              ) AS compile_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: PERF-5
+    name: Micropartition Churn (% Total Storage)
+    domain: Storage
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Help me analyse why my Time Travel and Failsafe storage is high relative to active storage."
+    thresholds:
+      on_track: "Micropartition churn is below 15% of total storage"
+      needs_improvement: "Micropartition churn is between 15% and 40% of total storage"
+      needs_attention: "Micropartition churn exceeds 40% of total storage"
+    checks:
+      - id: PERF-5a
+        name: Micropartition Churn Percentage
+        type: automated
+        metric: churn_pct
+        sql: |
+          WITH raw AS (
+              SELECT
+                  COUNT(*) AS table_cnt,
+                  SUM(COALESCE(active_bytes, 0)) AS active_bytes,
+                  SUM(COALESCE(time_travel_bytes, 0)) AS time_travel_bytes,
+                  SUM(COALESCE(failsafe_bytes, 0)) AS failsafe_bytes,
+                  SUM(COALESCE(retained_for_clone_bytes, 0)) AS clone_bytes
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TABLE_STORAGE_METRICS
+              WHERE ID IS NOT NULL
+                AND DELETED IS NULL
+                AND ACTIVE_BYTES > 0
+          )
+          SELECT
+              table_cnt,
+              ROUND(active_bytes / POWER(1024, 3), 2) AS active_gb,
+              ROUND(time_travel_bytes / POWER(1024, 3), 2) AS time_travel_gb,
+              ROUND(failsafe_bytes / POWER(1024, 3), 2) AS failsafe_gb,
+              ROUND(clone_bytes / POWER(1024, 3), 2) AS clone_gb,
+              ROUND(
+                  (active_bytes + time_travel_bytes + failsafe_bytes + clone_bytes) / POWER(1024, 3),
+                  2
+              ) AS total_gb,
+              ROUND(
+                  (time_travel_bytes + failsafe_bytes)
+                  / NULLIF(active_bytes + time_travel_bytes + failsafe_bytes + clone_bytes, 0) * 100,
+                  2
+              ) AS churn_pct
+          FROM raw;
+
+  - id: PERF-6
+    name: Partition Pruning Effectiveness
+    domain: Clustering
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Analyse partition pruning effectiveness and recommend clustering key improvements."
+    thresholds:
+      on_track: "More than 95% of partitions are pruned"
+      needs_improvement: "Between 80% and 95% of partitions are pruned"
+      needs_attention: "Less than 80% of partitions are pruned"
+    checks:
+      - id: PERF-6a
+        name: Partition Pruning Percentage (30 Days)
+        type: automated
+        metric: prune_pct
+        sql: |
+          SELECT
+              SUM(partitions_pruned) AS mp_pruned,
+              SUM(partitions_scanned) AS mp_scanned,
+              SUM(rows_pruned) AS rows_pruned,
+              SUM(rows_scanned) AS rows_scanned,
+              SUM(rows_matched) AS rows_matched,
+              SUM(rows_scanned - rows_matched) AS rows_discarded,
+              ROUND(DIV0(SUM(partitions_pruned), SUM(partitions_scanned) + SUM(partitions_pruned)) * 100, 1) AS prune_pct,
+              ROUND(DIV0(SUM(partitions_scanned), SUM(partitions_scanned) + SUM(partitions_pruned)) * 100, 1) AS scan_pct,
+              ROUND(DIV0(SUM(rows_scanned - rows_matched), SUM(rows_scanned)) * 100, 1) AS scan_discard_pct,
+              ROUND(
+                  SUM(partitions_scanned)
+                  * DIV0(SUM(rows_scanned - rows_matched), SUM(rows_scanned)),
+                  0
+              ) AS potential_prune_mp
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TABLE_QUERY_PRUNING_HISTORY
+          WHERE interval_start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: PERF-7
+    name: Exploding Joins %
+    domain: SQL Optimization
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Identify queries with exploding joins and suggest join condition improvements."
+    thresholds:
+      on_track: "Exploding joins account for less than 0.5% of total query time"
+      needs_improvement: "Exploding joins account for between 0.5% and 3% of total query time"
+      needs_attention: "Exploding joins account for more than 3% of total query time"
+    checks:
+      - id: PERF-7a
+        name: Exploding Joins Percentage (30 Days)
+        type: automated
+        metric: explode_pct
+        sql: |
+          WITH insight_queries AS (
+              SELECT
+                  query_id,
+                  ANY_VALUE(total_elapsed_time) AS insight_time
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_INSIGHTS
+              WHERE insight_topic = 'JOIN'
+                AND insight_type_id = 'QUERY_INSIGHT_EXPLODING_JOIN'
+                AND is_opportunity = TRUE
+                AND start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE
+              GROUP BY ALL
+          ),
+          total_time AS (
+              SELECT SUM(total_elapsed_time) AS total_query_time
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+              WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE
+          )
+          SELECT
+              COUNT(*) AS insight_cnt,
+              SUM(insight_time) AS sum_insight_time,
+              (SELECT total_query_time FROM total_time) AS total_query_time,
+              ROUND(DIV0(SUM(insight_time), (SELECT total_query_time FROM total_time)) * 100, 1) AS explode_pct
+          FROM insight_queries;
+
+  - id: PERF-8
+    name: Redundant Aggregates %
+    domain: SQL Optimization
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Identify queries with inefficient aggregates or unnecessary DISTINCT operations."
+    thresholds:
+      on_track: "Redundant aggregates account for less than 0.5% of total query time"
+      needs_improvement: "Redundant aggregates account for between 0.5% and 3% of total query time"
+      needs_attention: "Redundant aggregates account for more than 3% of total query time"
+    checks:
+      - id: PERF-8a
+        name: Redundant Aggregates Percentage (30 Days)
+        type: automated
+        metric: distinct_pct
+        sql: |
+          WITH insight_queries AS (
+              SELECT
+                  query_id,
+                  ANY_VALUE(total_elapsed_time) AS insight_time
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_INSIGHTS
+              WHERE insight_type_id = 'QUERY_INSIGHT_INEFFICIENT_AGGREGATE'
+                AND start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE
+              GROUP BY ALL
+          ),
+          total_time AS (
+              SELECT SUM(total_elapsed_time) AS total_query_time
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+              WHERE start_time BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE
+          )
+          SELECT
+              COUNT(*) AS insight_cnt,
+              SUM(insight_time) AS sum_insight_time,
+              (SELECT total_query_time FROM total_time) AS total_query_time,
+              ROUND(DIV0(SUM(insight_time), (SELECT total_query_time FROM total_time)) * 100, 1) AS distinct_pct
+          FROM insight_queries;

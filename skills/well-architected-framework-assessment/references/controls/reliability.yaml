@@ -1,0 +1,489 @@
+meta:
+  title: "WAF Reliability — 19 Controls"
+  pillar: Reliability
+  total_controls: 19
+  total_checks: 21
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: REL-1
+    name: Snowflake Edition (Account Profile)
+    domain: BCDR Readiness
+    remediation: >
+      Upgrade to Business Critical edition or above to unlock enterprise DR features, including failover groups, cross-region replication, and Tri-Secret Secure.
+    thresholds:
+      on_track: "The account is on Business Critical Edition or above"
+      needs_attention: "The account is on an edition below Business Critical"
+    checks:
+      - id: REL-1a
+        name: Account Edition Check
+        type: automated
+        metric: service_level
+        sql: |
+          SELECT
+              PARSE_JSON(SYSTEM$BOOTSTRAP_DATA_REQUEST('ACCOUNT')):accountInfo:serviceLevelName::STRING AS service_level;
+
+  - id: REL-2
+    name: Failover Group Configured
+    domain: BCDR Readiness
+    remediation: >
+      Configure at least one PRIMARY failover group with a corresponding SECONDARY failover group to enable atomic, coordinated failover of databases, users, roles, integrations, and warehouses.
+    thresholds:
+      on_track: "At least one PRIMARY and one SECONDARY failover group is configured"
+      needs_improvement: "Active database-level replication exists but no failover group is configured"
+      needs_attention: "No failover group and no replication of any kind is configured"
+    checks:
+      - id: REL-2a
+        name: Failover Group Count
+        type: automated
+        metric: rag_status
+        sql: |
+          SHOW FAILOVER GROUPS;
+          SELECT
+              COUNT(*) AS total_fg,
+              COUNT_IF("type" = 'FAILOVER' AND "is_primary" = 'true') AS primary_fg,
+              COUNT_IF("type" = 'FAILOVER' AND "is_primary" = 'false') AS secondary_fg,
+              CASE
+                  WHEN COUNT_IF("type" = 'FAILOVER' AND "is_primary" = 'true') >= 1
+                      AND COUNT_IF("type" = 'FAILOVER' AND "is_primary" = 'false') >= 1
+                  THEN 'ON TRACK'
+                  WHEN COUNT(*) > 0
+                  THEN 'NEEDS IMPROVEMENT'
+                  ELSE 'NEEDS ATTENTION'
+              END AS rag_status
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+  - id: REL-3
+    name: Cross-Region or Cross-Cloud DR
+    domain: BCDR Readiness
+    remediation: >
+      Ensure your DR secondary is in a different region or cloud provider from the primary to provide resilience against regional outages. Test failover regularly.
+    thresholds:
+      on_track: "Failover groups span multiple regions and the user confirms the DR secondary is in a different region or cloud"
+      needs_attention: "Only a single region is configured, or the user confirms the DR secondary is in the same region, or the user does not know"
+    checks:
+      - id: REL-3a
+        name: Cross-Region Failover Groups
+        type: automated
+        metric: distinct_regions
+        sql: |
+          SHOW FAILOVER GROUPS;
+          SELECT
+              COUNT(DISTINCT "snowflake_region") AS distinct_regions
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+      - id: REL-3b
+        name: Cross-Region DR Confirmation
+        type: manual
+        metric: user_response
+        question: "Is your DR secondary in a different region or cloud provider from the primary?"
+        question_options:
+          - "Yes — different region/cloud"
+          - "No — same region"
+          - "I don't know"
+
+  - id: REL-4
+    name: Connection / Client Redirect Configured
+    domain: BCDR Readiness
+    remediation: >
+      Create PRIMARY and SECONDARY CONNECTION objects and configure the Client Redirect URL so that applications use a stable hostname that follows failover via ALTER CONNECTION.
+    thresholds:
+      on_track: "Both PRIMARY and SECONDARY connection objects exist and have been tested alongside the Client Redirect URL"
+      needs_improvement: "A PRIMARY connection exists alongside the Client Redirect URL but the SECONDARY is missing or inactive"
+      needs_attention: "No CONNECTION object is configured for at least one account"
+    checks:
+      - id: REL-4a
+        name: Connection Objects Configured
+        type: automated
+        metric: rag_status
+        sql: |
+          SHOW CONNECTIONS;
+          SELECT
+              COUNT(*) AS total_connections,
+              COUNT_IF("primary" IS NOT NULL AND "primary" != '') AS primary_connections,
+              COUNT_IF("primary" IS NULL OR "primary" = '') AS secondary_connections,
+              CASE
+                  WHEN COUNT_IF("primary" IS NOT NULL AND "primary" != '') >= 1
+                      AND COUNT_IF("primary" IS NULL OR "primary" = '') >= 1
+                  THEN 'ON TRACK'
+                  WHEN COUNT_IF("primary" IS NOT NULL AND "primary" != '') >= 1
+                  THEN 'NEEDS IMPROVEMENT'
+                  ELSE 'NEEDS ATTENTION'
+              END AS rag_status
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+  - id: REL-5
+    name: DR Drill Performed
+    domain: BCDR Readiness
+    remediation: >
+      Perform a documented disaster-recovery failover drill at least every six months. Record the observed RPO and trend it over time.
+    thresholds:
+      on_track: "A DR failover drill is performed every 6 months with RPO documented and trended over time"
+      needs_improvement: "A drill was performed within the last 12 months with RPO documented"
+      needs_attention: "No DR drill has ever been performed, or the user does not know"
+    checks:
+      - id: REL-5a
+        name: DR Drill Frequency
+        type: manual
+        metric: user_response
+        question: "Have you performed a DR failover drill? If so, when was the last drill and what was the observed RPO?"
+        question_options:
+          - "Every 6 months with RPO trended"
+          - "Within last 12 months with RPO documented"
+          - "Never performed"
+          - "I don't know"
+
+  - id: REL-6
+    name: Time Travel Retention on Permanent Tables
+    domain: Data Protection
+    edition_gate: Enterprise+
+    remediation: >
+      Set RETENTION_TIME greater than 1 on permanent base tables to enable self-serve recovery via UNDROP, time-travel queries, and clones. Standard edition is capped at 1 day.
+    thresholds:
+      on_track: "70% or more of permanent tables have RETENTION_TIME greater than 1"
+      needs_improvement: "Between 30% and 69% of permanent tables have RETENTION_TIME greater than 1"
+      needs_attention: "Less than 30% of permanent tables have RETENTION_TIME greater than 1"
+    checks:
+      - id: REL-6a
+        name: Time Travel Retention Coverage
+        type: automated
+        metric: pct_gt_1day
+        sql: |
+          SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN RETENTION_TIME > 1 THEN 1 ELSE 0 END) AS gt_1day,
+              ROUND(
+                  SUM(CASE WHEN RETENTION_TIME > 1 THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(*), 0) * 100,
+                  1
+              ) AS pct_gt_1day
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
+          WHERE TABLE_TYPE = 'BASE TABLE'
+            AND IS_TRANSIENT = 'NO'
+            AND DELETED IS NULL;
+
+  - id: REL-7
+    name: Permanent vs Transient Composition for Curated Tables
+    domain: Data Protection
+    remediation: >
+      Ensure curated and critical tables are PERMANENT, not TRANSIENT. Transient tables have no Fail-safe and only zero-day Time Travel by default.
+    thresholds:
+      on_track: "60% or more of base tables are PERMANENT"
+      needs_improvement: "Between 40% and 59% of base tables are PERMANENT"
+      needs_attention: "Less than 40% of base tables are PERMANENT"
+    checks:
+      - id: REL-7a
+        name: Curated Environment Identification
+        type: manual
+        metric: user_response
+        question: "Can you provide the database(s) where the curated or critical tables are stored?"
+        question_options:
+          - "All databases are critical"
+          - "I don't know"
+
+      - id: REL-7b
+        name: Permanent vs Transient Composition
+        type: automated
+        metric: pct_permanent
+        sql: |
+          SELECT
+              COUNT(*) AS total,
+              SUM(CASE WHEN IS_TRANSIENT = 'NO' THEN 1 ELSE 0 END) AS permanent,
+              ROUND(
+                  SUM(CASE WHEN IS_TRANSIENT = 'NO' THEN 1 ELSE 0 END)
+                  / NULLIF(COUNT(*), 0) * 100,
+                  1
+              ) AS pct_permanent
+          FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
+          WHERE TABLE_TYPE = 'BASE TABLE'
+            AND DELETED IS NULL;
+
+  - id: REL-8
+    name: Backup Policies Exist
+    domain: Data Protection
+    remediation: >
+      Create backup policies with a schedule and expiration for critical databases. Ensure policies cover all critical data assets.
+    thresholds:
+      on_track: "Backup policies exist with a schedule and expiration configured for critical databases"
+      needs_improvement: "Backup policies exist but coverage is incomplete"
+      needs_attention: "No backup policies are configured"
+    checks:
+      - id: REL-8a
+        name: Backup Policy Inventory
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              bp.NAME AS policy_name,
+              bp.SCHEDULE,
+              bp.EXPIRE_AFTER_DAYS,
+              bp.HAS_RETENTION_LOCK,
+              COUNT(DISTINCT bs.NAME) AS backup_set_count
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_POLICIES bp
+          LEFT JOIN SNOWFLAKE.ACCOUNT_USAGE.BACKUP_SETS bs
+              ON bp.ID = bs.BACKUP_POLICY_ID
+              AND bs.DELETED IS NULL
+          WHERE bp.DELETED IS NULL
+          GROUP BY
+              bp.NAME,
+              bp.SCHEDULE,
+              bp.EXPIRE_AFTER_DAYS,
+              bp.HAS_RETENTION_LOCK
+          ORDER BY bp.NAME;
+
+  - id: REL-9
+    name: Backup Sets Configured
+    domain: Data Protection
+    remediation: >
+      Ensure all critical databases, schemas, and tables have backup sets assigned to backup policies.
+    thresholds:
+      on_track: "All critical databases, schemas, and tables have backup sets assigned"
+      needs_improvement: "Some critical objects are covered by backup sets"
+      needs_attention: "No backup sets are configured"
+    checks:
+      - id: REL-9a
+        name: Backup Set Coverage
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              bs.NAME AS backup_set_name,
+              bs.OBJECT_KIND,
+              bs.OBJECT_NAME AS backed_up_object,
+              bs.OBJECT_CATALOG_NAME AS object_database,
+              bp.NAME AS policy_name
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_SETS bs
+          INNER JOIN SNOWFLAKE.ACCOUNT_USAGE.BACKUP_POLICIES bp
+              ON bs.BACKUP_POLICY_ID = bp.ID
+              AND bp.DELETED IS NULL
+          WHERE bs.DELETED IS NULL
+          ORDER BY
+              bs.OBJECT_CATALOG_NAME,
+              bs.OBJECT_NAME;
+
+  - id: REL-10
+    name: Retention Lock Enabled
+    domain: Data Protection
+    remediation: >
+      Enable retention lock on backup policies for regulated data to prevent premature deletion of backups.
+    thresholds:
+      on_track: "Retention lock is enabled on backup policies for regulated data"
+      needs_improvement: "Backup policies exist but retention lock is not enabled"
+      needs_attention: "No backups are configured at all"
+    checks:
+      - id: REL-10a
+        name: Retention Lock Status
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              NAME AS policy_name,
+              SCHEDULE,
+              EXPIRE_AFTER_DAYS,
+              HAS_RETENTION_LOCK
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_POLICIES
+          WHERE DELETED IS NULL
+          ORDER BY
+              HAS_RETENTION_LOCK DESC,
+              NAME;
+
+  - id: REL-11
+    name: Backup Expiration Configured
+    domain: Data Protection
+    remediation: >
+      Set appropriate EXPIRE_AFTER_DAYS on backup policies. Use 90 days or more for compliance workloads and 30 days or more for recovery workloads.
+    thresholds:
+      on_track: "Backup policies have EXPIRE_AFTER_DAYS of 90 or more for compliance workloads, or 30 or more for recovery workloads"
+      needs_improvement: "Backup policies have EXPIRE_AFTER_DAYS between 7 and 30"
+      needs_attention: "Backup policies have EXPIRE_AFTER_DAYS below 7, or expiration is not set"
+    checks:
+      - id: REL-11a
+        name: Backup Expiration Settings
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              NAME AS policy_name,
+              EXPIRE_AFTER_DAYS,
+              CASE
+                  WHEN EXPIRE_AFTER_DAYS >= 90 THEN 'COMPLIANCE_READY'
+                  WHEN EXPIRE_AFTER_DAYS >= 30 THEN 'RECOVERY_READY'
+                  WHEN EXPIRE_AFTER_DAYS >= 7 THEN 'MINIMAL'
+                  ELSE 'INSUFFICIENT'
+              END AS retention_tier
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_POLICIES
+          WHERE DELETED IS NULL
+          ORDER BY EXPIRE_AFTER_DAYS DESC;
+
+  - id: REL-12
+    name: Backup Operations Healthy
+    domain: Data Protection
+    remediation: >
+      Monitor BACKUP_OPERATION_HISTORY for failures. Investigate and resolve any backup operation failures within 24 hours.
+    thresholds:
+      on_track: "No backup operation failures in the last 30 days"
+      needs_improvement: "Intermittent backup operation failures in the last 30 days"
+      needs_attention: "Frequent backup failures or no backup operations recorded in the last 30 days"
+    checks:
+      - id: REL-12a
+        name: Backup Operation Health (30 Days)
+        type: automated
+        metric: rag_status
+        sql: |
+          SELECT
+              COUNT(*) AS total_operations,
+              COUNT_IF(STATUS = 'SUCCESS') AS successful_operations,
+              COUNT_IF(STATUS != 'SUCCESS') AS failed_operations,
+              CASE
+                  WHEN COUNT(*) = 0 THEN 'NEEDS ATTENTION'
+                  WHEN COUNT_IF(STATUS != 'SUCCESS') = 0 THEN 'ON TRACK'
+                  WHEN COUNT_IF(STATUS != 'SUCCESS') * 100.0 / COUNT(*) > 25 THEN 'NEEDS ATTENTION'
+                  ELSE 'NEEDS IMPROVEMENT'
+              END AS rag_status
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_OPERATION_HISTORY
+          WHERE START_TIME >= DATEADD('day', -30, CURRENT_TIMESTAMP());
+
+  - id: REL-13
+    name: Backup Storage Monitored
+    domain: Data Protection
+    remediation: >
+      Review BACKUP_STORAGE_USAGE regularly to track storage growth and cost. Set up alerts for unexpected storage spikes.
+    thresholds:
+      on_track: "Backup storage data exists, indicating active backups are generating storage"
+      needs_improvement: "Minimal backup storage exists, possibly stale or test-only backups"
+      needs_attention: "No backup storage data found, indicating no backups are running"
+    checks:
+      - id: REL-13a
+        name: Backup Storage Usage
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              BACKUP_SET_ID,
+              BACKUP_ID,
+              LOGICAL_BYTES,
+              ROUND(LOGICAL_BYTES / POWER(1024, 3), 2) AS storage_gb
+          FROM SNOWFLAKE.ACCOUNT_USAGE.BACKUP_STORAGE_USAGE
+          ORDER BY LOGICAL_BYTES DESC
+          LIMIT 20;
+
+  - id: REL-14
+    name: Legal Hold Capability
+    domain: Data Protection
+    remediation: >
+      Grant the APPLY LEGAL HOLD privilege to a compliance role and test the capability to ensure backups can be preserved when required.
+    thresholds:
+      on_track: "The APPLY LEGAL HOLD privilege is granted to at least one role"
+      needs_attention: "The APPLY LEGAL HOLD privilege is not granted to any role"
+    checks:
+      - id: REL-14a
+        name: Legal Hold Privilege Check
+        type: automated
+        metric: rows_returned
+        sql: |
+          SELECT
+              GRANTEE_NAME,
+              PRIVILEGE,
+              GRANTED_ON,
+              NAME AS object_name
+          FROM SNOWFLAKE.ACCOUNT_USAGE.GRANTS_TO_ROLES
+          WHERE PRIVILEGE = 'APPLY LEGAL HOLD'
+            AND DELETED_ON IS NULL;
+
+  - id: REL-15
+    name: Backups Replicated
+    domain: Data Protection
+    remediation: >
+      Include backup sets in failover groups for cross-region protection. Single-region backups do not protect against regional outages.
+    thresholds:
+      on_track: "Backup sets are replicated cross-region for protection against regional outages"
+      needs_improvement: "Backups exist but are in a single region only"
+      needs_attention: "No backups are configured, or the user does not know"
+    checks:
+      - id: REL-15a
+        name: Backup Replication Status
+        type: manual
+        metric: user_response
+        question: "Are your backup sets included in failover groups for cross-region protection?"
+        question_options:
+          - "Yes — replicated cross-region"
+          - "No — single region only"
+          - "No backups configured"
+          - "I don't know"
+
+  - id: REL-16
+    name: BCR Bundle Tracking
+    domain: Release Readiness
+    remediation: >
+      Define a method or owner for tracking upcoming Snowflake BCR bundles and assessing which changes may impact your workloads.
+    thresholds:
+      on_track: "A defined method or owner exists for tracking upcoming Snowflake BCR bundles"
+      needs_attention: "No method or owner is defined, or the user does not know"
+    checks:
+      - id: REL-16a
+        name: BCR Tracking Process
+        type: manual
+        metric: user_response
+        question: "Do you have a defined method or owner for tracking upcoming Snowflake BCR bundles and assessing which changes may impact your workloads?"
+        question_options:
+          - "Yes"
+          - "No"
+          - "I don't know"
+
+  - id: REL-17
+    name: BCR Release Owner
+    domain: Release Readiness
+    remediation: >
+      Assign a clearly identified owner or group responsible for managing your BCR bundle release process end to end.
+    thresholds:
+      on_track: "A clearly identified owner or group is responsible for managing the BCR bundle release process"
+      needs_attention: "No owner or group is identified, or the user does not know"
+    checks:
+      - id: REL-17a
+        name: BCR Release Ownership
+        type: manual
+        metric: user_response
+        question: "Do you have a clearly identified owner or group responsible for managing your BCR bundle release process end to end?"
+        question_options:
+          - "Yes"
+          - "No"
+          - "I don't know"
+
+  - id: REL-18
+    name: BCR Non-Production Testing
+    domain: Release Readiness
+    remediation: >
+      Establish a standard process for testing BCR bundles in non-production environments before applying them to production.
+    thresholds:
+      on_track: "A standard process exists for testing BCR bundles in non-production environments before applying them to production"
+      needs_attention: "No testing process exists, or the user does not know"
+    checks:
+      - id: REL-18a
+        name: BCR Testing Process
+        type: manual
+        metric: user_response
+        question: "Do you have a standard process for testing BCR bundles in non-production environments before applying them to production?"
+        question_options:
+          - "Yes"
+          - "No"
+          - "I don't know"
+
+  - id: REL-19
+    name: BCR Retrospective & Learning
+    domain: Release Readiness
+    remediation: >
+      Periodically review outcomes of BCR-related changes (e.g., incidents, performance impacts) and update your process based on those learnings.
+    thresholds:
+      on_track: "Outcomes of BCR-related changes are periodically reviewed and the process is updated based on learnings"
+      needs_attention: "No retrospective process exists, or the user does not know"
+    checks:
+      - id: REL-19a
+        name: BCR Retrospective Process
+        type: manual
+        metric: user_response
+        question: "Do you periodically review outcomes of BCR-related changes (e.g., incidents or performance impacts) and update your process based on those learnings?"
+        question_options:
+          - "Yes"
+          - "No"
+          - "I don't know"

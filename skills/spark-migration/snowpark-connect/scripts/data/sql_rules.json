@@ -1,0 +1,308 @@
+{
+  "_comment": "Catalog-driven SQL rule set for SCOS detection + conversion. Each rule: id, anchor, severity, find (sqlglot exp class for find_all, or '*'), when (declarative predicates, ALL must hold) OR matcher (named predicate in rag.sql_matchers), optional transform (named statement transform), detect (default true), note, optional fixer_action, jira, sources. See rag/sql_engine.py.",
+  "rules": [
+    {
+      "id": "detector:window_without_order_by",
+      "anchor": "Window function without ORDER BY",
+      "severity": "high",
+      "find": "Window",
+      "matcher": "window_without_order_by",
+      "note": "Window function used in OVER(...) with no ORDER BY; Spark errors, SCOS returns a nondeterministic result. Add an explicit ORDER BY.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:in_subquery_in_on_clause",
+      "anchor": "IN (SELECT ...) in LEFT JOIN ON clause",
+      "severity": "high",
+      "find": "Join",
+      "matcher": "in_subquery_in_on_clause",
+      "note": "An IN (SELECT ...) subquery in a LEFT OUTER JOIN ON clause makes SCOS drop non-matching left rows (INNER semantics). Move the IN predicate into a WHERE clause or a derived table.",
+      "fixer_action": "Move the IN (SELECT ...) predicate out of the LEFT JOIN ON clause into a WHERE clause or a derived table so SCOS keeps LEFT OUTER semantics.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:lca_alias_collision",
+      "anchor": "SELECT alias collides with column name (LCA)",
+      "severity": "high",
+      "find": "Select",
+      "matcher": "lca_alias_collision",
+      "jira": "SNOW-3595425",
+      "note": "A SELECT output alias reuses the name of a GROUP BY column. Snowflake rejects this with `ambiguous column name`, while Spark resolves it by context. Rename the output alias so it does not shadow a grouped column.",
+      "fixer_action": "Rename the SELECT output alias so it no longer shadows a GROUP BY column, and update downstream references to the new alias.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:multicolumn_not_in",
+      "anchor": "Multi-column NOT IN",
+      "severity": "high",
+      "find": "In",
+      "matcher": "multicolumn_not_in",
+      "note": "Multi-column (tuple LHS) NOT IN evaluates NULL-aware anti-join semantics differently in SCOS than Spark. Rewrite as OR'd predicates or a NOT EXISTS anti-join.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:insert_overwrite_partition",
+      "anchor": "INSERT OVERWRITE ... PARTITION",
+      "severity": "medium",
+      "find": "Insert",
+      "matcher": "insert_overwrite_partition",
+      "note": "INSERT OVERWRITE ... PARTITION(...) on a Snowflake (FDN) table requires `snowpark.connect.sql.emulatePartitionOverwritesForSnowflakeTables=true` in SCOS; without it the partition overwrite is rejected. Enable that config, or use an Iceberg table.",
+      "fixer_action": "Set spark.conf.set('snowpark.connect.sql.emulatePartitionOverwritesForSnowflakeTables','true') before the statement, or migrate the target to an Iceberg table.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:grouping_sets_with_groupby",
+      "anchor": "GROUPING SETS with non-empty GROUP BY",
+      "severity": "medium",
+      "find": "Group",
+      "matcher": "grouping_sets_with_groupby",
+      "transform": "grouping_sets_fold",
+      "note": "SCOS rejects GROUPING SETS combined with a non-empty GROUP BY (and multi-expression ROLLUP/CUBE). The empty-GROUP-BY form is supported. Fold the grouping into the GROUPING SETS list, or UNION ALL per-grain aggregates.",
+      "sources": [
+        "scos-9"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "detector:lateral_view_unsupported_generator",
+      "anchor": "LATERAL VIEW with unsupported generator",
+      "severity": "medium",
+      "find": "Lateral",
+      "matcher": "lateral_view_unsupported_generator",
+      "note": "SCOS supports only FLATTEN and SPLIT_TO_TABLE as LATERAL VIEW generators. Rewrite using DataFrame .explode()/.posexplode() or a supported table function.",
+      "fixer_action": "Rewrite the LATERAL VIEW generator (EXPLODE/POSEXPLODE/INLINE/STACK) using DataFrame .explode()/.posexplode() or a supported table function; qualify the generated columns.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:multi_generator_select",
+      "anchor": "Multiple generators in one SELECT",
+      "severity": "medium",
+      "find": "Select",
+      "matcher": "multi_generator_select",
+      "note": "SCOS allows at most one table-valued generator (EXPLODE/POSEXPLODE/INLINE/STACK/LATERAL FLATTEN) per SELECT; multiple generators in the same projection raise. Chain successive .select(explode(...)) calls.",
+      "fixer_action": "Chain successive .select(explode(...)) calls (or LATERAL FLATTEN one array at a time) instead of multiple generators in one projection.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:tablesample_unsupported",
+      "anchor": "TABLESAMPLE",
+      "severity": "medium",
+      "find": "TableSample",
+      "when": [],
+      "note": "SQL TABLESAMPLE has no case in the SCOS relation mapper and is rejected. Use DataFrame .sample(fraction) on the read, or Snowflake SAMPLE via a SnowflakeSession passthrough query.",
+      "fixer_action": "Use DataFrame .sample(fraction) on the read, or Snowflake SAMPLE via a SnowflakeSession passthrough query, instead of TABLESAMPLE in spark.sql(...).",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:transform_using_unsupported",
+      "anchor": "TRANSFORM ... USING",
+      "severity": "high",
+      "find": "QueryTransform",
+      "when": [],
+      "note": "Hive script transform (SELECT TRANSFORM(...) USING 'cmd') is not supported in SCOS. Reimplement the external-script logic as a Snowflake UDF/UDTF or a DataFrame transformation.",
+      "fixer_action": "Reimplement the TRANSFORM ... USING external-script logic as a Snowflake UDF/UDTF or a DataFrame transformation.",
+      "sources": [
+        "scos-9"
+      ]
+    },
+    {
+      "id": "detector:explain_ddl_rejected",
+      "anchor": "EXPLAIN over DDL",
+      "severity": "medium",
+      "find": "Command",
+      "matcher": "explain_ddl",
+      "transform": "explain_drop",
+      "note": "Snowflake EXPLAIN covers DML only, so SCOS rejects EXPLAIN over DDL (CREATE/DROP/ALTER/...). Drop the EXPLAIN prefix and run the DDL directly.",
+      "sources": [
+        "scos-9"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "detector:explain_mode_ignored",
+      "anchor": "EXPLAIN <mode> ignored",
+      "severity": "low",
+      "find": "Command",
+      "matcher": "explain_mode",
+      "transform": "explain_drop",
+      "note": "SCOS emits a plain Snowflake EXPLAIN for every mode; the mode keyword is silently ignored.",
+      "sources": [
+        "scos-9"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "behavioral:sql.cache-table-unsupported",
+      "anchor": "CACHE/UNCACHE TABLE",
+      "severity": "medium",
+      "find": "Cache",
+      "detect": false,
+      "transform": "cache_delete",
+      "note": "CACHE/UNCACHE TABLE is a no-op on Snowflake/SCOS and may raise; the statement is removed.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:unsupported_window_frame",
+      "anchor": "Unsupported window frame for function",
+      "severity": "high",
+      "find": "Window",
+      "matcher": "unsupported_window_frame",
+      "note": "SCOS does not support an explicit ROWS/RANGE window frame for this function family (NTH_VALUE, LAST_VALUE, ANY_VALUE, PERCENTILE_DISC/CONT, boolean aggregates, LEAD/LAG, INTERVAL/RANGE bounds).",
+      "fixer_action": "Remove the explicit window frame (use a plain OVER(PARTITION BY ... ORDER BY ...)) or compute the value with a supported function; SCOS rejects cumulative/sliding frames for this function.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:qualify_unsupported",
+      "anchor": "QUALIFY clause",
+      "severity": "high",
+      "find": "Qualify",
+      "matcher": "qualify",
+      "transform": "rw_qualify",
+      "note": "QUALIFY is not in the Spark SQL grammar used by spark.sql(); the SCOS parser (Spark 3.5.3 SparkSqlParser) raises a PARSE_SYNTAX_ERROR. Rewrite it as a ROW_NUMBER()-style subquery with an outer WHERE on the window value.",
+      "sources": [
+        "rouses-etl-validation-2026-06-18"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "detector:listagg_within_group",
+      "anchor": "LISTAGG ... WITHIN GROUP",
+      "severity": "high",
+      "find": "WithinGroup",
+      "matcher": "listagg_within_group",
+      "transform": "rw_listagg_within_group",
+      "note": "LISTAGG(x, sep) WITHIN GROUP (ORDER BY y) is rejected by the Spark SQL parser (WITHIN GROUP is not in the grammar) and LISTAGG is not a SCOS function. Rewrite as array_join(array_sort([array_distinct] collect_list(CAST(x AS STRING))), sep). The deterministic rewrite is applied ONLY when WITHIN GROUP orders ascending by the LISTAGG expression itself (array_sort then reproduces the order exactly); a different/DESC/multi-key ORDER BY is left as a residual gap for the LLM fixer to reorder explicitly.",
+      "fixer_action": "If WITHIN GROUP orders by a column other than the LISTAGG expression (or DESC / multiple keys), reproduce that order explicitly before concatenating — e.g. collect the rows ordered by the key (array of structs sorted by the key, or a windowed/ordered subquery) then array_join — rather than array_sort over the values.",
+      "sources": [
+        "rouses-etl-validation-2026-06-18"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "dialect:colon_cast",
+      "anchor": ":: cast operator",
+      "severity": "high",
+      "find": "Cast",
+      "detect": false,
+      "note": "The :: cast operator is not in the Spark SQL grammar used by spark.sql() (it is a Spark 4.0 feature); the SCOS parser raises a PARSE_SYNTAX_ERROR. It leaves no distinct AST trace, so the engine detects it lexically and regenerates the statement (the spark generator always emits CAST(... AS ...)).",
+      "sources": [
+        "rouses-etl-validation-2026-06-18"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "detector:update_from_unsupported",
+      "anchor": "UPDATE ... FROM (join-update)",
+      "severity": "high",
+      "find": "Update",
+      "matcher": "update_from",
+      "transform": "rw_update_from",
+      "note": "UPDATE <target> SET col = s.col, ... FROM <source> WHERE <conds> (Snowflake join-update) is rejected by the Spark SQL parser — UPDATE has no FROM clause in the grammar (SCOS error 5001). Rewrite as MERGE INTO <target> USING <source> ON <WHERE> WHEN MATCHED THEN UPDATE SET .... SCOS supports MERGE (MergeIntoTable). Single-source-table form only; UPDATE ... FROM with joins is left as a residual gap. Multi-match raises a nondeterministic-merge error in Snowflake (vs an arbitrary pick) — equivalent for 1:1/filtered joins.",
+      "sources": [
+        "rouses-etl-validation-2026-06-18"
+      ],
+      "mechanical": true
+    },
+    {
+      "id": "detector:window_case_aggregate",
+      "anchor": "CASE expression as a window aggregate",
+      "severity": "high",
+      "find": "Window",
+      "when": [
+        {
+          "this_type": "Case"
+        }
+      ],
+      "note": "A CASE/WHEN expression used as the windowed value (e.g. `CASE WHEN ... THEN MIN(x) ELSE ANY_VALUE(x) END OVER (...)`) is rejected by Snowflake's window resolution — it cannot select the aggregate via a conditional branch. Spark handles it via its plan optimizer. Lift the CASE out of the window (compute each branch's window separately, then CASE over the results).",
+      "fixer_action": "Move the CASE out of the OVER(...): compute the window for each aggregate branch in its own column, then apply the CASE/WHEN over those windowed columns in an outer projection.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:cast_to_interval",
+      "anchor": "CAST(... AS INTERVAL ...)",
+      "severity": "high",
+      "find": "Cast",
+      "when": [
+        {
+          "sql_matches": "\\bAS\\s+INTERVAL\\b"
+        }
+      ],
+      "jira": "SNOW-3595418",
+      "note": "Casting an integer/decimal to an INTERVAL type (e.g. `CAST(-122 AS INTERVAL YEAR TO MONTH)`) fails in Snowflake; Spark supports it implicitly. SCOS has no translation. Construct the interval explicitly instead of casting a number to it.",
+      "fixer_action": "Build the interval explicitly from the numeric value (e.g. make_interval / a multiplied INTERVAL literal such as n * INTERVAL '1' MONTH) rather than CAST(<number> AS INTERVAL ...).",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:json_path_wildcard",
+      "anchor": "JSON path [*] wildcard",
+      "severity": "medium",
+      "find": "JSONPathWildcard",
+      "when": [],
+      "note": "A `[*]` array wildcard in a JSON path (e.g. `get_json_object(val, '$.store.book[*].category')`) is unsupported — Snowflake's GET_PATH/JSON path accepts only numeric indices. Spark returns the matched array. Rewrite with a LATERAL FLATTEN over the array and project the field per element.",
+      "fixer_action": "Replace the `[*]` path with a LATERAL FLATTEN over the array (FLATTEN(INPUT => <array>)) and select the target field from each flattened element, or use a UDF to extract the list.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:correlated_subquery_unsupported",
+      "anchor": "Correlated scalar subquery with set-op / GROUP BY",
+      "severity": "high",
+      "find": "Subquery",
+      "matcher": "correlated_subquery_unsupported",
+      "note": "A correlated scalar subquery whose body contains UNION/INTERSECT/EXCEPT or a GROUP BY is rejected by Snowflake as an unsupported subquery type (error 002031); Spark evaluates it via its plan optimizer. Candidate — the correlation check is heuristic.",
+      "fixer_action": "Decorrelate the scalar subquery: rewrite it as a LEFT JOIN to a pre-aggregated (or pre-UNIONed) derived table keyed on the correlation column, then select the aggregated value.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:identifier_dynamic",
+      "anchor": "Dynamic IDENTIFIER(...)",
+      "severity": "medium",
+      "find": "Anonymous",
+      "matcher": "identifier_dynamic",
+      "note": "IDENTIFIER(...) with a dynamic (non-literal) argument — used to call a table function by computed name or to build object names in DDL. Snowflake's IDENTIFIER() does not support dynamic TVF calls or dynamic object names in CREATE/DROP/ALTER.",
+      "fixer_action": "Resolve the identifier in Python and emit static SQL, or use a stored procedure / EXECUTE IMMEDIATE for the dynamic object name.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    },
+    {
+      "id": "detector:map_unsupported_key",
+      "anchor": "map() with non-VARCHAR/integer key",
+      "severity": "high",
+      "find": "VarMap",
+      "matcher": "map_unsupported_key",
+      "note": "map() with a float/decimal, boolean, or timestamp/date key. Snowflake's MAP type only allows VARCHAR or NUMBER(p,0) (integer) keys; Spark allows any hashable key. The map construction fails.",
+      "fixer_action": "Cast the map key to STRING (or an integer code) before constructing the map — e.g. map(CAST(k AS STRING), v). Note this changes the key type, so verify downstream map lookups.",
+      "sources": [
+        "behavioral-differences-2026-05-13"
+      ]
+    }
+  ]
+}

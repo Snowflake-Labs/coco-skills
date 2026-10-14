@@ -1,0 +1,78 @@
+# Row Access Policies: Semantic View YAML
+#
+# ⚠️  ROW ACCESS POLICIES ARE DDL-ONLY:
+# RAPs are attached to tables via ALTER TABLE ... ADD ROW ACCESS POLICY,
+# which cannot be expressed in a YAML SV specification. The YAML defines
+# the SV structure only; RAP setup must be done via DDL (semantic_view.sql).
+#
+# This YAML defines both the anti-pattern SV and the workaround SV.
+# The workaround (using a helper view with INNER JOIN) can be expressed
+# in YAML once the helper view is created as a physical object.
+#
+# Pre-requisite (run before deploying workaround YAML):
+#   CREATE OR REPLACE VIEW RAP_TEST.PUBLIC.ORDERS_FILTERED AS
+#     SELECT o.order_id, o.region_id, o.order_date, o.amount
+#     FROM RAP_TEST.PUBLIC.ORDERS o
+#     INNER JOIN RAP_TEST.PUBLIC.SALES_REGIONS r ON o.region_id = r.region_id;
+#
+# Deploy anti-pattern SV:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('RAP_TEST.PUBLIC', $$ <anti-pattern yaml> $$);
+
+# ── ANTI-PATTERN SV ──────────────────────────────────────────────────────────
+name: SALES_BY_REGION_SV
+description: >
+  Anti-pattern: RAP on dimension only. Query as REGION_A_ANALYST to see the
+  NULL-row problem — filtered region rows produce NULL dimension values for
+  orphaned ORDERS rows.
+
+tables:
+  - name: orders
+    description: Order transactions
+    base_table:
+      database: RAP_TEST
+      schema: PUBLIC
+      table: ORDERS
+    primary_key:
+      columns: [ORDER_ID]
+    dimensions:
+      - name: order_date
+        expr: ORDER_DATE
+        data_type: DATE
+    facts:
+      - name: revenue
+        description: Order amount in USD
+        expr: AMOUNT
+        data_type: NUMBER
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, sales, total sales]
+        description: Sum of order amounts in USD
+        expr: SUM(revenue)
+      - name: order_count
+        synonyms: [orders, number of orders, order volume]
+        description: Number of orders
+        expr: COUNT(ORDER_ID)
+
+  - name: regions
+    description: Sales regions (has RAP attached)
+    base_table:
+      database: RAP_TEST
+      schema: PUBLIC
+      table: SALES_REGIONS
+    primary_key:
+      columns: [REGION_ID]
+    dimensions:
+      - name: region_name
+        expr: REGION_NAME
+        data_type: VARCHAR
+      - name: reporting_manager
+        expr: REPORTING_MANAGER
+        data_type: VARCHAR
+
+relationships:
+  - name: orders_to_regions
+    left_table: orders
+    right_table: regions
+    relationship_columns:
+      - left_column: REGION_ID
+        right_column: REGION_ID

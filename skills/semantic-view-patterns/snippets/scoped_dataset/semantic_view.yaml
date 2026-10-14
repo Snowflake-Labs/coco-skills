@@ -1,0 +1,60 @@
+# Scoped Dataset: Semantic View YAML
+#
+# ⚠️  INLINE SQL SUBQUERIES IN TABLES NOT SUPPORTED IN YAML:
+# The core pattern of this snippet — embedding a SQL filter in the TABLES clause —
+# is DDL-only. YAML base_table must reference a physical table or view.
+#
+# Workaround: create helper views that apply the filters, then reference those
+# views as base_table entries. This YAML demonstrates that approach.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Pre-requisite helper views (run before deploying YAML):
+#   CREATE OR REPLACE VIEW TARGET_DB.TARGET_SCHEMA.ENT_ORDERS_VIEW AS
+#     SELECT t.*, c.customer_name, c.tier
+#     FROM TARGET_DB.TARGET_SCHEMA.SALES_TRANSACTIONS t
+#     JOIN TARGET_DB.TARGET_SCHEMA.LOB_CUSTOMERS c ON t.customer_id = c.customer_id
+#     WHERE t.lob = 'Enterprise';
+#
+#   CREATE OR REPLACE VIEW TARGET_DB.TARGET_SCHEMA.RETAIL_ORDERS_VIEW AS
+#     SELECT * FROM TARGET_DB.TARGET_SCHEMA.SALES_TRANSACTIONS
+#     WHERE lob = 'Retail';
+
+name: ENTERPRISE_ORDERS_SV
+description: >
+  Enterprise LOB only — scoped via helper view (WHERE lob='Enterprise').
+  In DDL, the filter is embedded inline in the TABLES clause; in YAML it
+  requires a pre-created helper view as the base_table.
+
+tables:
+  - name: ent_orders
+    description: >
+      Enterprise orders — pre-filtered helper view.
+      Equivalent to the inline SQL: SELECT ... WHERE lob = 'Enterprise'.
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: ENT_ORDERS_VIEW
+    primary_key:
+      columns: [TRANSACTION_ID]
+    dimensions:
+      - name: region
+        synonyms: [region, geo]
+        expr: REGION
+        data_type: VARCHAR
+      - name: customer_name
+        synonyms: [customer, account]
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+      - name: order_month
+        synonyms: [month, order month]
+        expr: DATE_TRUNC('month', ORDER_DATE)
+        data_type: DATE
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, enterprise revenue]
+        expr: SUM(AMOUNT)
+      - name: deal_count
+        synonyms: [deals, transactions]
+        expr: COUNT(TRANSACTION_ID)

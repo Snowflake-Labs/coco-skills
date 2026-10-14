@@ -1,0 +1,54 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-3347463:scala_hive_warehouse_session","val hive = com.hortonworks.spark.sql.hive.llap.HiveWarehouseSession.session(spark).build()
+hive.executeQuery(""SELECT * FROM my_table"")","HiveWarehouseSession is a Hortonworks/Cloudera-specific connector for accessing Hive LLAP from Spark. Not supported in Snowpark Connect. Replace with session.table(""my_table"") or session.sql(""SELECT * FROM my_table"") using Snowpark Connect's native Snowflake access. No HiveWarehouseBuilder equivalent exists.",""
+"SNOW-3347463:scala_hive_warehouse_table","val hive = HiveWarehouseSession.session(spark).build()
+hive.table(""db.my_table"").filter(col(""status"") === ""active"")","HiveWarehouseSession.table() fetches Hive-managed tables via LLAP. In Snowpark Connect, use session.table(""db.my_table"") directly — Snowflake tables are accessed natively without a separate Hive connector layer.",""
+"SNOW-3347463:scala_hive_warehouse_execute","hive.executeUpdate(""INSERT INTO target SELECT * FROM source"")","HiveWarehouseSession.executeUpdate() runs DML against Hive tables. Replace with session.sql(""INSERT INTO target SELECT * FROM source"") in Snowpark Connect. Note that Snowflake SQL dialect differences (e.g., MERGE syntax) may require query adjustments.",""
+"SNOW-3347463:scala_catalyst_sql_parser","import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
+val dataType = CatalystSqlParser.parseDataType(""STRUCT<name: STRING, age: INT>"")","CatalystSqlParser is Spark's internal SQL parser — not available in Snowpark Connect. For data type parsing, use StructType/StructField constructors directly: StructType(Seq(StructField(""name"", StringType), StructField(""age"", IntegerType))). There is no runtime SQL type parser in Snowpark.",""
+"SNOW-3347463:scala_catalyst_parse_expression","import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
+val expr = CatalystSqlParser.parseExpression(""col1 + col2"")","CatalystSqlParser.parseExpression() is an internal Spark API for parsing SQL expressions into Catalyst expressions. Not available in Snowpark Connect. Use col(""col1"") + col(""col2"") or functions.expr(""col1 + col2"") via Snowpark DataFrame API instead.",""
+"SNOW-3347463:scala_catalyst_parse_plan","import org.apache.spark.sql.catalyst.parser.CatalystSqlParser
+val plan = CatalystSqlParser.parsePlan(""SELECT * FROM t WHERE x > 1"")","CatalystSqlParser.parsePlan() returns a LogicalPlan object from Spark's Catalyst optimizer. This internal API has no equivalent in Snowpark Connect. If you need to execute SQL, use session.sql() directly. If you need plan inspection, use df.explain() which returns Snowflake's query plan.",""
+"SNOW-3347463:scala_merge_builder","import io.delta.tables.DeltaTable
+val deltaTable = DeltaTable.forPath(spark, ""/path/to/table"")
+deltaTable.merge(sourceDF, ""target.id = source.id"")
+  .whenMatched().updateAll()
+  .whenNotMatched().insertAll()
+  .execute()","DeltaTable.merge() / MergeBuilder is Delta Lake's Scala API for MERGE operations. Snowpark Connect does not support the Delta Lake API. Convert to Snowflake SQL MERGE: session.sql(""MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *""). Snowflake MERGE syntax differs slightly from Delta Lake (no updateAll/insertAll shorthand).",""
+"SNOW-3347463:scala_storage_level","import org.apache.spark.storage.StorageLevel
+df.persist(StorageLevel.MEMORY_AND_DISK_SER)
+df.unpersist()","StorageLevel (MEMORY_ONLY, MEMORY_AND_DISK, DISK_ONLY, etc.) controls Spark's caching tier. Snowpark Connect ignores persist/unpersist — Snowflake manages caching automatically via its result cache and warehouse cache. Remove StorageLevel references. df.cache() is a no-op but harmless.",""
+"SNOW-3347463:scala_storage_level_replication","df.persist(StorageLevel.MEMORY_AND_DISK_2)
+rdd.persist(StorageLevel.MEMORY_ONLY_SER_2)","StorageLevel with replication factor (_2 suffix) is Spark-specific for fault tolerance across executors. Snowpark Connect has no equivalent — Snowflake handles replication at the storage layer automatically. Remove all StorageLevel references.",""
+"SNOW-3347463:scala_broadcast_variable","val broadcastVar = sc.broadcast(lookupMap)
+df.map(row => broadcastVar.value.getOrElse(row.getString(0), ""unknown""))","SparkContext.broadcast() creates broadcast variables for efficient distribution across executors. Not supported in Snowpark Connect — there is no SparkContext. For lookup patterns, use DataFrame join with a small table or use Snowflake's automatic broadcast join optimization for small tables.",""
+"SNOW-3347463:scala_accumulator","val counter = sc.longAccumulator(""myCounter"")
+df.foreach(row => counter.add(1))
+println(counter.value)","Accumulators (sc.longAccumulator, sc.doubleAccumulator, sc.collectionAccumulator) are Spark distributed counters. Not available in Snowpark Connect — there is no SparkContext. Replace with aggregation queries: session.sql(""SELECT COUNT(*) FROM table"") or df.count(). For custom metrics, use Snowflake query history.",""
+"SNOW-3347463:scala_spark_listener","spark.sparkContext.addSparkListener(new SparkListener {
+  override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = { ... }
+})","SparkListener API for monitoring job/stage/task events is not available in Snowpark Connect. Snowflake provides query monitoring via QUERY_HISTORY view, ACCOUNT_USAGE schema, and event tables instead. For pipeline observability, use Snowflake's SYSTEM$LOG() or event tables.",""
+"SNOW-3347463:scala_exchange_partition","df.repartition(10, col(""key""))
+df.coalesce(1)
+df.repartitionByRange(5, col(""date""))","repartition(), coalesce(), and repartitionByRange() control Spark's physical partitioning. In Snowpark Connect, these are no-ops — Snowflake handles micro-partitioning automatically. Remove repartition/coalesce calls. For data clustering optimization, use Snowflake CLUSTER BY on the table instead.",""
+"SNOW-3347463:scala_checkpoint","spark.sparkContext.setCheckpointDir(""/tmp/checkpoints"")
+df.checkpoint()
+df.localCheckpoint()","Checkpointing (both reliable and local) is a Spark mechanism to truncate the lineage of a DataFrame for fault tolerance. Snowpark Connect does not support checkpointing — Snowflake's architecture handles fault tolerance at the storage and compute layer. Remove all checkpoint-related calls.",""
+"SNOW-3347463:scala_dataset_api","case class Person(name: String, age: Int)
+val ds: Dataset[Person] = spark.read.json(path).as[Person]
+ds.filter(_.age > 21).map(_.name)","Typed Dataset API (as[T], map with lambdas, filter with lambdas) is Scala-specific and not fully supported in Snowpark Connect. Use untyped DataFrame API instead: df.filter(col(""age"") > 21).select(""name""). Snowpark Connect translates DataFrame operations to SQL — typed transformations with Scala lambdas cannot be serialized to Snowflake.",""
+"SNOW-3347463:scala_implicit_encoders","import spark.implicits._
+val ds = Seq((""Alice"", 30), (""Bob"", 25)).toDS()
+val df = Seq(Person(""Alice"", 30)).toDF()","Spark's implicit encoders (spark.implicits._) for converting Scala collections/case classes to Datasets are not available in Snowpark Connect. Use session.createDataFrame() with explicit schema: session.createDataFrame(Seq(Row(""Alice"", 30)), StructType(...)). The toDS()/toDF() implicit conversions have no equivalent.",""
+"SNOW-3347463:scala_structured_streaming","val stream = spark.readStream
+  .format(""kafka"")
+  .option(""subscribe"", ""topic"")
+  .load()
+stream.writeStream
+  .outputMode(""append"")
+  .format(""console"")
+  .start()","Structured Streaming (readStream/writeStream) is not supported in Snowpark Connect. Snowflake handles streaming ingestion via Snowpipe, Snowpipe Streaming, or Dynamic Tables. Replace with: 1) Snowpipe for file-based ingestion, 2) Snowpipe Streaming API for low-latency row ingestion, 3) Dynamic Tables for incremental materialization.",""
+"SNOW-3347463:scala_udf_registration","val square = udf((x: Int) => x * x)
+spark.udf.register(""square"", (x: Int) => x * x)
+df.select(square(col(""value"")))","Scala UDF registration via udf() or spark.udf.register() with Scala lambdas is not supported in Snowpark Connect. Snowflake UDFs must be registered as SQL UDFs, JavaScript UDFs, or Python UDFs via CREATE FUNCTION. For simple transformations, use built-in Snowflake SQL functions or Snowpark DataFrame operations instead.",""

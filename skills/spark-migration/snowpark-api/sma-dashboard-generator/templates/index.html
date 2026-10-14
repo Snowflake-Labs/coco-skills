@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMA Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Side Panel -->
+        <aside class="side-panel">
+            <div class="side-header">
+                <div class="logo">
+                    <img src="assets/SF_only.svg" alt="Snowflake" class="sf-logo-img">
+                    <img src="assets/snowflake_logo.svg" alt="SMA" class="logo-img">
+                </div>
+                <div class="workload-info">
+                    <div class="workload-name" id="workload-name"></div>
+                    <div class="tool-info">
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Project</div>
+                            <div class="tool-info-value" id="project-name"></div>
+                        </div>
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Company</div>
+                            <div class="tool-info-value" id="owner-company"></div>
+                        </div>
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Email</div>
+                            <div class="tool-info-value" id="owner-email"></div>
+                        </div>
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Version</div>
+                            <div class="tool-info-value" id="tool-version"></div>
+                        </div>
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Execution</div>
+                            <div class="tool-info-value" id="execution-id"></div>
+                        </div>
+                        <div class="tool-info-item">
+                            <div class="tool-info-label">Migration</div>
+                            <div class="tool-info-value" id="conversion-type"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="side-nav" id="side-nav">
+                <!-- Navigation items will be populated by JavaScript -->
+            </nav>
+            
+            <div class="side-footer">
+                <div class="server-status">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="status-text">Checking...</span>
+                </div>
+                <button class="copy-cmd-btn" id="copy-cmd-btn" onclick="copyServerCommand()">Copy start command</button>
+                <button class="stop-server-btn" id="stop-server-btn" onclick="stopServer()">Stop Server</button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <iframe id="content-frame" src="" frameborder="0"></iframe>
+            <div id="no-data-message" class="no-data-message" style="display: none;">
+                <div class="no-data-content">
+                    <div class="no-data-header">
+                        <h1 id="no-data-workload"></h1>
+                        <div class="no-data-tool-info">
+                            <span><strong>Project:</strong> <span id="no-data-project"></span></span>
+                            <span><strong>Company:</strong> <span id="no-data-company"></span></span>
+                            <span><strong>Owner:</strong> <span id="no-data-owner"></span></span>
+                        </div>
+                        <div class="no-data-tool-info">
+                            <span><strong>Version:</strong> <span id="no-data-version"></span></span>
+                            <span><strong>Execution:</strong> <span id="no-data-execution"></span></span>
+                            <span><strong>Migration:</strong> <span id="no-data-conversion-type"></span></span>
+                        </div>
+                    </div>
+                    <div class="no-data-body">
+                        <svg viewBox="0 0 24 24" fill="currentColor" class="no-data-icon">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <h2>No data available</h2>
+                        <p id="no-data-description">No information found for this module.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const manifest = {{MANIFEST_DATA}};
+        const dashboardPath = "{{DASHBOARD_PATH}}";
+        let serverConnected = false;
+        
+        function initializeDashboard() {
+            // Populate workload info in side panel
+            const workloadName = manifest.workload_name || 'Unknown Workload';
+            document.getElementById('workload-name').textContent = workloadName;
+            document.getElementById('workload-name').title = workloadName;
+            
+            // Populate tool info in side panel (with title for tooltip on hover)
+            const toolInfo = manifest.tool_info || {};
+            const logInfo = manifest.log_info || {};
+            
+            const projectName = logInfo.project_name || 'Not detected';
+            const ownerCompany = logInfo.owner_company || 'Not detected';
+            const ownerEmail = logInfo.owner_email || 'Not detected';
+            const toolVersion = toolInfo.tool_version || 'Not detected';
+            const executionId = toolInfo.execution_id || 'Not detected';
+            
+            document.getElementById('project-name').textContent = projectName;
+            document.getElementById('project-name').title = projectName;
+            document.getElementById('owner-company').textContent = ownerCompany;
+            document.getElementById('owner-company').title = ownerCompany;
+            document.getElementById('owner-email').textContent = ownerEmail;
+            document.getElementById('owner-email').title = ownerEmail;
+            document.getElementById('tool-version').textContent = toolVersion;
+            document.getElementById('tool-version').title = toolVersion;
+            document.getElementById('execution-id').textContent = executionId;
+            document.getElementById('execution-id').title = executionId + ' (double-click to copy)';
+            
+            // Populate conversion type
+            const conversionTypeRaw = manifest.conversion_type || 'unknown';
+            const conversionLabels = {
+                'snowpark_api': 'Snowpark API',
+                'snowpark_connect': 'Snowpark Connect (SCOS)',
+                'unknown': 'Not detected'
+            };
+            const conversionLabel = conversionLabels[conversionTypeRaw] || conversionTypeRaw;
+            document.getElementById('conversion-type').textContent = conversionLabel;
+            document.getElementById('conversion-type').title = conversionLabel;
+            
+            // Add double-click to copy for execution ID
+            document.getElementById('execution-id').addEventListener('dblclick', function() {
+                navigator.clipboard.writeText(executionId).then(() => {
+                    const el = document.getElementById('execution-id');
+                    const original = el.textContent;
+                    el.textContent = 'Copied!';
+                    el.style.color = '#10b981';
+                    setTimeout(() => {
+                        el.textContent = original;
+                        el.style.color = '';
+                    }, 1000);
+                });
+            });
+            
+            // Populate workload info in no-data message
+            document.getElementById('no-data-workload').textContent = workloadName;
+            document.getElementById('no-data-project').textContent = projectName;
+            document.getElementById('no-data-company').textContent = ownerCompany;
+            document.getElementById('no-data-owner').textContent = ownerEmail;
+            document.getElementById('no-data-version').textContent = toolVersion;
+            document.getElementById('no-data-execution').textContent = executionId;
+            document.getElementById('no-data-conversion-type').textContent = conversionLabel;
+            
+            setupIframeTracking();
+            buildNavigation();
+            checkServerStatus();
+            setInterval(checkServerStatus, 10000);
+        }
+        
+        function buildNavigation() {
+            const nav = document.getElementById('side-nav');
+            nav.innerHTML = '';
+            
+            const modules = manifest.modules || {};
+            let firstEnabled = null;
+            let firstWithData = null;
+            
+            for (const [key, module] of Object.entries(modules)) {
+                if (!module.enabled) continue;
+                
+                if (!firstEnabled) firstEnabled = key;
+                if (!firstWithData && module.has_data) firstWithData = key;
+                
+                const item = document.createElement('a');
+                item.href = '#' + key;
+                item.className = 'nav-item';
+                item.dataset.module = key;
+                item.innerHTML = `
+                    <span class="nav-icon">${getIcon(module.icon)}</span>
+                    <span class="nav-label">${module.label}</span>
+                `;
+                item.onclick = (e) => {
+                    e.preventDefault();
+                    // Clear saved path when clicking nav to go to module root
+                    localStorage.removeItem('sma_iframe_' + key);
+                    navigateTo(key);
+                };
+                nav.appendChild(item);
+            }
+            
+            // Check URL hash for active module, otherwise prefer first with data, then first enabled
+            const hashFull = window.location.hash.replace('#', '');
+            const [hashModule, hashParams] = hashFull.split('?');
+            const targetModule = (hashModule && modules[hashModule]?.enabled) ? hashModule : (firstWithData || firstEnabled);
+            
+            if (targetModule) {
+                navigateTo(targetModule, null, hashParams);
+            }
+        }
+        
+        function getIcon(iconName) {
+            const icons = {
+                'dashboard': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>',
+                'warning': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+                'folder': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>',
+                'code': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>',
+                'link': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>',
+                'test': '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>'
+            };
+            return icons[iconName] || icons['folder'];
+        }
+        
+        function navigateTo(moduleKey, iframePath = null, queryParams = null) {
+            const module = manifest.modules[moduleKey];
+            if (!module) return;
+            
+            // Update URL hash for persistence on refresh (without query params)
+            window.location.hash = moduleKey;
+            
+            // Update active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.module === moduleKey);
+            });
+            
+            const frame = document.getElementById('content-frame');
+            const noDataMsg = document.getElementById('no-data-message');
+            const noDataDesc = document.getElementById('no-data-description');
+            
+            // Check if module has data
+            // test_tracker always loads the iframe — it fetches fresh data from the API
+            if (!module.has_data && moduleKey !== 'test_tracker') {
+                frame.style.display = 'none';
+                frame.src = '';
+                
+                // Set appropriate message based on module
+                const messages = {
+                    'ewi_tracker': 'No Issues.csv file found. Run SMA conversion to generate EWI data.',
+                    'file_tracker': 'No Issues.csv file found. Run SMA conversion to generate file tracking data.',
+                    'dependency_tracker': 'No ArtifactDependencyInventory.csv file found. Run SMA conversion to generate dependency data.'
+                };
+                noDataDesc.textContent = messages[moduleKey] || 'No information found for this module.';
+                noDataMsg.style.display = 'flex';
+                return;
+            }
+            
+            // Has data - show iframe, hide message
+            noDataMsg.style.display = 'none';
+            frame.style.display = 'block';
+            
+            // Load module content
+            let targetSrc;
+            
+            // Check if we have a saved iframe path for this module
+            // NOTE: If queryParams provided, skip savedPath to ensure we go to the base module page
+            if (iframePath) {
+                targetSrc = iframePath;
+            } else if (!queryParams) {
+                // Only use localStorage saved path if no query params (direct navigation)
+                const savedPath = localStorage.getItem('sma_iframe_' + moduleKey);
+                if (savedPath) {
+                    targetSrc = savedPath;
+                }
+            }
+            
+            // Set default paths if no targetSrc yet
+            if (!targetSrc) {
+                if (moduleKey === 'overview') {
+                    targetSrc = 'ewi-tracker/overview.html';
+                } else if (moduleKey === 'ewi_tracker') {
+                    targetSrc = 'ewi-tracker/ewi_tracker.html';
+                } else if (moduleKey === 'file_tracker') {
+                    targetSrc = 'ewi-tracker/file_tracker.html';
+                } else if (moduleKey === 'dependency_tracker') {
+                    targetSrc = 'ewi-tracker/dependency_tracker.html';
+                } else if (moduleKey === 'test_tracker') {
+                    targetSrc = 'ewi-tracker/test_tracker.html';
+                } else {
+                    targetSrc = `${module.data_path}/index.html`;
+                }
+            }
+            
+            // Append query parameters if provided (e.g., search=filename)
+            if (queryParams) {
+                targetSrc += (targetSrc.includes('?') ? '&' : '?') + queryParams;
+            }
+            
+            // Force fresh load for test_tracker so it always re-fetches from the API
+            if (moduleKey === 'test_tracker') {
+                targetSrc += (targetSrc.includes('?') ? '&' : '?') + '_t=' + Date.now();
+            }
+            
+            frame.src = targetSrc;
+        }
+        
+        // Track iframe navigation to persist on refresh
+        function setupIframeTracking() {
+            const frame = document.getElementById('content-frame');
+            frame.addEventListener('load', function() {
+                try {
+                    const iframePath = frame.contentWindow.location.pathname;
+                    // Strip query params from hash to get clean module name
+                    const currentModule = window.location.hash.replace('#', '').split('?')[0];
+                    if (currentModule && iframePath) {
+                        // Store relative path from dashboard root (without query params)
+                        let relativePath = iframePath.split('/sma-dashboard/')[1] || iframePath;
+                        // Remove any query params from the path
+                        relativePath = relativePath.split('?')[0];
+                        localStorage.setItem('sma_iframe_' + currentModule, relativePath);
+                    }
+                } catch (e) {
+                    // Cross-origin or other error, ignore
+                }
+            });
+        }
+        
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/health');
+                updateServerStatus(response.ok);
+            } catch (e) {
+                updateServerStatus(false);
+            }
+        }
+        
+        function updateServerStatus(connected) {
+            serverConnected = connected;
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const copyBtn = document.getElementById('copy-cmd-btn');
+            const stopBtn = document.getElementById('stop-server-btn');
+            
+            if (connected) {
+                dot.className = 'status-dot connected';
+                text.textContent = 'Server connected';
+                copyBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+            } else {
+                dot.className = 'status-dot disconnected';
+                text.textContent = 'Server offline';
+                copyBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+            }
+        }
+        
+        function copyServerCommand() {
+            const fullCommand = `python3 "${dashboardPath}/server/sma_server.py" "${dashboardPath}" --auto-port`;
+            
+            navigator.clipboard.writeText(fullCommand).then(() => {
+                const btn = document.getElementById('copy-cmd-btn');
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy start command';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                alert('Copy this command:\n\n' + fullCommand);
+            });
+        }
+        
+        async function stopServer() {
+            if (!confirm('Are you sure you want to stop the server?')) {
+                return;
+            }
+            
+            try {
+                const btn = document.getElementById('stop-server-btn');
+                btn.textContent = 'Stopping...';
+                btn.disabled = true;
+                
+                await fetch('/api/shutdown', { method: 'POST' });
+                
+                // Update UI after short delay
+                setTimeout(() => {
+                    updateServerStatus(false);
+                    btn.textContent = 'Stop Server';
+                    btn.disabled = false;
+                }, 500);
+            } catch (e) {
+                // Server might have already stopped
+                updateServerStatus(false);
+            }
+        }
+        
+        // Handle hash changes (e.g., from iframe navigation)
+        window.addEventListener('hashchange', function() {
+            const hashFull = window.location.hash.replace('#', '');
+            const [hashModule, hashParams] = hashFull.split('?');
+            if (hashModule && manifest.modules[hashModule]?.enabled) {
+                navigateTo(hashModule, null, hashParams);
+            }
+        });
+        
+        // Clean up corrupted localStorage entries on startup
+        function cleanupLocalStorage() {
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('sma_iframe_')) {
+                    const value = localStorage.getItem(key);
+                    // Remove entries with query params (corrupted from navigation)
+                    if (value && value.includes('?')) {
+                        localStorage.removeItem(key);
+                        console.log('Cleaned up bad localStorage entry:', key, value);
+                    }
+                }
+            });
+        }
+        
+        // Listen for navigation messages from iframes
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'navigate') {
+                const module = event.data.module;
+                const params = event.data.params || null;
+                if (module && manifest.modules[module]?.enabled) {
+                    navigateTo(module, null, params);
+                }
+            }
+        });
+        
+        // Initialize
+        cleanupLocalStorage();
+        initializeDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+meta:
+  title: "WAF Cost Optimization — 11 Controls"
+  pillar: Cost Optimization
+  total_controls: 11
+  total_checks: 12
+  result_scale: "ON_TRACK / NEEDS_IMPROVEMENT / NEEDS_ATTENTION"
+
+controls:
+
+  - id: COST-1
+    name: Compute Idle Rate
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/warehouse Please review my warehouses with more than 40% idle time for possible improvements."
+    thresholds:
+      on_track: "Idle percentage is below 25%"
+      needs_improvement: "Idle percentage is between 25% and 40%"
+      needs_attention: "Idle percentage exceeds 40%"
+    checks:
+      - id: COST-1a
+        name: Compute Idle Rate (30 Days)
+        type: automated
+        metric: idle_pct
+        sql: |
+          SELECT
+              SUM(CREDITS_USED_COMPUTE) AS compute_credits,
+              SUM(CREDITS_ATTRIBUTED_COMPUTE_QUERIES) AS query_credits,
+              SUM(CREDITS_USED_COMPUTE) - SUM(CREDITS_ATTRIBUTED_COMPUTE_QUERIES) AS idle_credits,
+              DIV0(
+                  SUM(CREDITS_USED_COMPUTE) - SUM(CREDITS_ATTRIBUTED_COMPUTE_QUERIES),
+                  SUM(CREDITS_USED_COMPUTE)
+              ) * 100 AS idle_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+          WHERE START_TIME BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE
+            AND CREDITS_ATTRIBUTED_COMPUTE_QUERIES IS NOT NULL;
+
+  - id: COST-2
+    name: Statement Timeout Param
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Provide guidance on how to set statement timeouts across my account."
+    thresholds:
+      on_track: "Statement timeout has been reduced below the 172,800-second default"
+      needs_attention: "Statement timeout is still at or above the 172,800-second default"
+    checks:
+      - id: COST-2a
+        name: Statement Timeout Parameter
+        type: automated
+        metric: timeout_seconds
+        sql: |
+          SHOW PARAMETERS LIKE 'STATEMENT_TIMEOUT_IN_SECONDS';
+          SELECT
+              "value"::NUMBER AS timeout_seconds,
+              ROUND("value"::NUMBER / 3600.0, 1) AS timeout_hours,
+              "default"::NUMBER AS default_seconds,
+              "level" AS configured_at
+          FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+          WHERE "key" = 'STATEMENT_TIMEOUT_IN_SECONDS';
+
+  - id: COST-3
+    name: Failed Query %
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/workload-performance-analysis Analyse my failed queries and provide remediation actions."
+    thresholds:
+      on_track: "Failed query percentage is below 1%"
+      needs_improvement: "Failed query percentage is between 1% and 3%"
+      needs_attention: "Failed query percentage exceeds 3%"
+    checks:
+      - id: COST-3a
+        name: Failed Query Percentage (30 Days)
+        type: automated
+        metric: failed_pct
+        sql: |
+          SELECT
+              COUNT(*) AS query_cnt,
+              COUNT_IF(ERROR_CODE IS NOT NULL) AS failed_cnt,
+              SUM(EXECUTION_TIME) AS exec_ms,
+              SUM(CASE WHEN ERROR_CODE IS NOT NULL THEN EXECUTION_TIME ELSE 0 END) AS failed_ms,
+              ROUND(DIV0(
+                  SUM(CASE WHEN ERROR_CODE IS NOT NULL THEN EXECUTION_TIME ELSE 0 END),
+                  SUM(EXECUTION_TIME)
+              ) * 100, 1) AS failed_pct
+          FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+          WHERE START_TIME BETWEEN DATEADD(DAY, -30, CURRENT_DATE) AND CURRENT_DATE;
+
+  - id: COST-4
+    name: Cloud Services Overhead
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Review my cloud services spend and explain why I am spending more than the 10% threshold."
+    thresholds:
+      on_track: "No billable cloud services overhead (0%)"
+      needs_improvement: "Cloud services overhead is above 0% but at or below 5%"
+      needs_attention: "Cloud services overhead exceeds 5%"
+    checks:
+      - id: COST-4a
+        name: Cloud Services Overhead Percentage (30 Days)
+        type: automated
+        metric: cloud_services_pct
+        sql: |
+          WITH cloud_services AS (
+              SELECT
+                  SUM(CREDITS_USED_CLOUD_SERVICES) AS credits_used_cloud_services,
+                  SUM(CREDITS_ADJUSTMENT_CLOUD_SERVICES) AS credits_adjustment_cloud_services,
+                  SUM(CREDITS_USED_CLOUD_SERVICES)
+                      + SUM(CREDITS_ADJUSTMENT_CLOUD_SERVICES) AS credits_billed_cloud_services,
+                  SUM(CREDITS_USED) AS total_credits_used
+              FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
+              WHERE USAGE_DATE >= DATEADD('day', -30, CURRENT_DATE())
+          )
+          SELECT
+              ROUND(
+                  IFF(
+                      cs.total_credits_used > 0,
+                      (cs.credits_billed_cloud_services / cs.total_credits_used) * 100,
+                      0
+                  ),
+                  2
+              ) AS cloud_services_pct
+          FROM cloud_services AS cs;
+
+  - id: COST-5
+    name: Credits per 1k Queries Trend
+    domain: Compute
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Analyse my spend to help me understand the trend and anomalies."
+    thresholds:
+      on_track: "Weekly slope is 5% or less with no anomalies detected"
+      needs_improvement: "Weekly slope is between 5% and 15%, or exactly one anomaly detected"
+      needs_attention: "Weekly slope exceeds 15%, or more than one anomaly detected"
+    checks:
+      - id: COST-5a
+        name: Credits per 1k Queries 6-Week Trend (Linear Regression Slope)
+        type: automated
+        metric: weekly_slope_pct
+        sql: |
+          WITH weekly_credits AS (
+              SELECT
+                  DATE_TRUNC('week', wm.START_TIME) AS week_start,
+                  SUM(wm.CREDITS_USED) AS total_credits
+              FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY AS wm
+              WHERE wm.START_TIME >= DATEADD('week', -6, DATE_TRUNC('week', CURRENT_DATE()))
+                AND wm.START_TIME < DATE_TRUNC('week', CURRENT_DATE())
+              GROUP BY ALL
+          ),
+          weekly_queries AS (
+              SELECT
+                  DATE_TRUNC('week', qh.START_TIME) AS week_start,
+                  COUNT(*) AS total_queries
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS qh
+              WHERE qh.START_TIME >= DATEADD('week', -6, DATE_TRUNC('week', CURRENT_DATE()))
+                AND qh.START_TIME < DATE_TRUNC('week', CURRENT_DATE())
+              GROUP BY ALL
+          ),
+          weekly_metrics AS (
+              SELECT
+                  wc.week_start,
+                  ROW_NUMBER() OVER (ORDER BY wc.week_start) AS week_num,
+                  ROUND(
+                      IFF(wq.total_queries > 0, (wc.total_credits / wq.total_queries) * 1000, 0),
+                      4
+                  ) AS credits_per_1k_queries
+              FROM weekly_credits AS wc
+              INNER JOIN weekly_queries AS wq
+                  ON wc.week_start = wq.week_start
+          ),
+          regression AS (
+              SELECT
+                  REGR_SLOPE(credits_per_1k_queries, week_num) AS slope,
+                  AVG(credits_per_1k_queries) AS avg_val
+              FROM weekly_metrics
+          )
+          SELECT
+              ROUND(r.slope, 6) AS slope_per_week,
+              ROUND(r.avg_val, 4) AS avg_credits_per_1k,
+              ROUND(r.slope / NULLIF(r.avg_val, 0) * 100, 2) AS weekly_slope_pct
+          FROM regression AS r;
+
+      - id: COST-5b
+        name: Credits per 1k Queries Anomaly Count (6 Weeks)
+        type: automated
+        metric: anomaly_count
+        sql: |
+          WITH weekly_credits AS (
+              SELECT
+                  DATE_TRUNC('week', wm.START_TIME) AS week_start,
+                  SUM(wm.CREDITS_USED) AS total_credits
+              FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY AS wm
+              WHERE wm.START_TIME >= DATEADD('week', -6, DATE_TRUNC('week', CURRENT_DATE()))
+                AND wm.START_TIME < DATE_TRUNC('week', CURRENT_DATE())
+              GROUP BY ALL
+          ),
+          weekly_queries AS (
+              SELECT
+                  DATE_TRUNC('week', qh.START_TIME) AS week_start,
+                  COUNT(*) AS total_queries
+              FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS qh
+              WHERE qh.START_TIME >= DATEADD('week', -6, DATE_TRUNC('week', CURRENT_DATE()))
+                AND qh.START_TIME < DATE_TRUNC('week', CURRENT_DATE())
+              GROUP BY ALL
+          ),
+          weekly_metrics AS (
+              SELECT
+                  wc.week_start,
+                  ROUND(
+                      IFF(wq.total_queries > 0, (wc.total_credits / wq.total_queries) * 1000, 0),
+                      4
+                  ) AS credits_per_1k_queries
+              FROM weekly_credits AS wc
+              INNER JOIN weekly_queries AS wq
+                  ON wc.week_start = wq.week_start
+          ),
+          averages AS (
+              SELECT AVG(credits_per_1k_queries) AS avg_val
+              FROM weekly_metrics
+          )
+          SELECT
+              COUNT_IF(
+                  ABS(wm.credits_per_1k_queries - a.avg_val)
+                  / NULLIF(a.avg_val, 0) * 100 > 10
+              ) AS anomaly_count,
+              ROUND(a.avg_val, 4) AS avg_credits_per_1k
+          FROM weekly_metrics AS wm
+          CROSS JOIN averages AS a
+          GROUP BY a.avg_val;
+
+  - id: COST-6
+    name: Credit Budget Config
+    domain: Governance
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Provide guidance on setting up budgets across my account."
+    thresholds:
+      on_track: "At least one non-default budget is configured"
+      needs_attention: "No non-default budgets are configured"
+    checks:
+      - id: COST-6a
+        name: Non-Default Budget Count
+        type: automated
+        metric: total_budgets_excl_auto
+        sql: |
+          SELECT
+              ARRAY_SIZE(PARSE_JSON(SYSTEM$SHOW_BUDGETS_IN_ACCOUNT())) - 1 AS total_budgets_excl_auto;
+
+  - id: COST-7
+    name: Resource Monitor Config
+    domain: Governance
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Provide guidance on setting up resource monitors across my account."
+    thresholds:
+      on_track: "More than 3 resource monitors are configured"
+      needs_improvement: "Between 1 and 3 resource monitors are configured"
+      needs_attention: "No resource monitors are configured"
+    checks:
+      - id: COST-7a
+        name: Resource Monitor Count
+        type: automated
+        metric: rm_count
+        sql: |
+          SELECT
+              COUNT(*) AS rm_count
+          FROM SNOWFLAKE.ACCOUNT_USAGE.RESOURCE_MONITORS;
+
+  - id: COST-8
+    name: FinOps Review Cadence
+    domain: Governance
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Provide guidance on best-practice FinOps reviews."
+    thresholds:
+      on_track: "Monthly cross-functional review (Engineering, Finance, and Business)"
+      needs_improvement: "Quarterly cross-functional review, or monthly technical-team only"
+      needs_attention: "Ad-hoc or no regular cadence, or unknown"
+    checks:
+      - id: COST-8a
+        name: FinOps Review Cadence
+        type: manual
+        metric: user_response
+        question: "Is there a regular FinOps or cost review meeting that includes Engineering, Finance, and business stakeholders? How frequently does it run?"
+        question_options:
+          - "Monthly cross-functional"
+          - "Quarterly cross-functional"
+          - "Monthly technical-team only"
+          - "Ad-hoc or no regular cadence"
+          - "I don't know"
+
+  - id: COST-9
+    name: Cost Attribution via Tagging
+    domain: Governance
+    remediation: >
+      CoCo Prompt: "/cost-intelligence Provide best-practice guidance on tagging for cost attribution."
+    thresholds:
+      on_track: "More than 75% of credits are attributed to tagged warehouses"
+      needs_improvement: "Between 10% and 75% of credits are attributed to tagged warehouses"
+      needs_attention: "Less than 10% of credits are attributed to tagged warehouses"
+    checks:
+      - id: COST-9a
+        name: Warehouse Credit Tagging Coverage (30 Days)
+        type: automated
+        metric: pct_credits_tagged
+        sql: |
+          WITH warehouse_credits AS (
+              SELECT
+                  wm.WAREHOUSE_NAME,
+                  SUM(wm.CREDITS_USED) AS credits_used
+              FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY AS wm
+              WHERE wm.START_TIME >= DATEADD('day', -30, CURRENT_DATE())
+              GROUP BY ALL
+          ),
+          tagged_warehouses AS (
+              SELECT DISTINCT
+                  tr.OBJECT_NAME AS warehouse_name
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TAG_REFERENCES AS tr
+              WHERE tr.DOMAIN = 'WAREHOUSE'
+                AND tr.TAG_VALUE IS NOT NULL
+          ),
+          combined AS (
+              SELECT
+                  wc.WAREHOUSE_NAME,
+                  wc.credits_used,
+                  IFF(tw.warehouse_name IS NOT NULL, TRUE, FALSE) AS is_tagged
+              FROM warehouse_credits AS wc
+              LEFT JOIN tagged_warehouses AS tw
+                  ON wc.WAREHOUSE_NAME = tw.warehouse_name
+          )
+          SELECT
+              COUNT(*) AS total_warehouses,
+              SUM(IFF(c.is_tagged, 1, 0)) AS tagged_warehouses,
+              ROUND(SUM(c.credits_used), 2) AS total_credits,
+              ROUND(SUM(IFF(c.is_tagged, c.credits_used, 0)), 2) AS tagged_credits,
+              ROUND(
+                  IFF(
+                      SUM(c.credits_used) > 0,
+                      SUM(IFF(c.is_tagged, c.credits_used, 0)) / SUM(c.credits_used) * 100,
+                      0
+                  ),
+                  2
+              ) AS pct_credits_tagged
+          FROM combined AS c;
+
+  - id: COST-10
+    name: Unused Storage
+    domain: Storage
+    remediation: >
+      CoCo Prompt: "Help me analyse tables that have not been accessed and provide guidance on what I can do with them."
+    thresholds:
+      on_track: "Less than 10% of storage is unused (no access in 90 days)"
+      needs_improvement: "Between 10% and 35% of storage is unused"
+      needs_attention: "More than 35% of storage is unused"
+    checks:
+      - id: COST-10a
+        name: Unused Storage Percentage (90 Days No Access)
+        type: automated
+        metric: unused_pct
+        sql: |
+          WITH read_tables AS (
+              SELECT DISTINCT
+                  UPPER(REGEXP_REPLACE(VALUE:objectName::STRING, '"', '')) AS full_name
+              FROM SNOWFLAKE.ACCOUNT_USAGE.ACCESS_HISTORY,
+                  LATERAL FLATTEN(INPUT => BASE_OBJECTS_ACCESSED)
+              WHERE QUERY_START_TIME > DATEADD('day', -90, CURRENT_TIMESTAMP())
+          ),
+          totals AS (
+              SELECT SUM(ACTIVE_BYTES) AS total
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TABLE_STORAGE_METRICS
+              WHERE TABLE_DROPPED IS NULL
+                AND ACTIVE_BYTES > 0
+          ),
+          unused AS (
+              SELECT SUM(ts.ACTIVE_BYTES) AS unread
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TABLE_STORAGE_METRICS ts
+              LEFT JOIN read_tables rt
+                  ON UPPER(ts.TABLE_CATALOG || '.' || ts.TABLE_SCHEMA || '.' || ts.TABLE_NAME) = rt.full_name
+              WHERE ts.TABLE_DROPPED IS NULL
+                AND rt.full_name IS NULL
+                AND ts.ACTIVE_BYTES > 0
+                AND ts.TABLE_CREATED < DATEADD('day', -90, CURRENT_TIMESTAMP())
+          )
+          SELECT
+              ROUND(na.unread / NULLIF(t.total, 0) * 100, 1) AS unused_pct
+          FROM unused na, totals t;
+
+  - id: COST-11
+    name: Inactive Storage (TT & FS)
+    domain: Storage
+    remediation: >
+      CoCo Prompt: "Help me analyse why my Time Travel and Failsafe storage is so high."
+    thresholds:
+      on_track: "Time Travel and Failsafe storage is below 20% of total"
+      needs_improvement: "Time Travel and Failsafe storage is between 20% and 50% of total"
+      needs_attention: "Time Travel and Failsafe storage exceeds 50% of total"
+    checks:
+      - id: COST-11a
+        name: Inactive Storage Percentage (Time Travel + Failsafe)
+        type: automated
+        metric: total_inactive_pct
+        sql: |
+          WITH storage_metrics AS (
+              SELECT
+                  SUM(ts.ACTIVE_BYTES) AS active_bytes,
+                  SUM(ts.TIME_TRAVEL_BYTES) AS time_travel_bytes,
+                  SUM(ts.FAILSAFE_BYTES) AS failsafe_bytes,
+                  SUM(ts.RETAINED_FOR_CLONE_BYTES) AS retained_for_clone_bytes,
+                  SUM(ts.ACTIVE_BYTES)
+                      + SUM(ts.RETAINED_FOR_CLONE_BYTES)
+                      + SUM(ts.TIME_TRAVEL_BYTES)
+                      + SUM(ts.FAILSAFE_BYTES) AS total_bytes
+              FROM SNOWFLAKE.ACCOUNT_USAGE.TABLE_STORAGE_METRICS AS ts
+              WHERE ts.DELETED IS NULL
+          )
+          SELECT
+              ROUND(sm.active_bytes / POWER(1024, 3), 2) AS active_gb,
+              ROUND(sm.time_travel_bytes / POWER(1024, 3), 2) AS time_travel_gb,
+              ROUND(sm.failsafe_bytes / POWER(1024, 3), 2) AS failsafe_gb,
+              ROUND((sm.time_travel_bytes + sm.failsafe_bytes) / POWER(1024, 3), 2) AS inactive_gb,
+              ROUND(
+                  IFF(sm.active_bytes > 0, sm.time_travel_bytes / sm.total_bytes * 100, 0),
+                  2
+              ) AS time_travel_pct,
+              ROUND(
+                  IFF(sm.active_bytes > 0, sm.failsafe_bytes / sm.total_bytes * 100, 0),
+                  2
+              ) AS failsafe_pct,
+              ROUND(
+                  IFF(sm.active_bytes > 0, (sm.time_travel_bytes + sm.failsafe_bytes) / sm.total_bytes * 100, 0),
+                  2
+              ) AS total_inactive_pct
+          FROM storage_metrics AS sm;

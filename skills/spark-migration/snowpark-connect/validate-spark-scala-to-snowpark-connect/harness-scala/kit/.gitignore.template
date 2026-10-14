@@ -1,0 +1,7 @@
+# Generated per validation run — do not commit
+target/
+project/target/
+.bloop/
+.metals/
+src/test/scala/com/snowflake/scos/kit/generated/
+*.class

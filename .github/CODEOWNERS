@@ -1,0 +1,30 @@
+# Review ownership.
+#
+# Requires "Require review from Code Owners" in branch protection to take
+# effect. Without it, these entries only auto-request reviewers.
+#
+# Last match wins, so the most specific rules go last.
+#
+# CODEOWNERS silently ignores an entry naming a user without write access on
+# this repo. Verify via the CODEOWNERS errors view after any change here.
+
+# Default: any change needs a maintainer.
+*                       @sfc-gh-chorgan @sfc-gh-lhartzell
+
+/skills/                @sfc-gh-chorgan @sfc-gh-lhartzell
+/plugins/               @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Process docs. Changing the review bar should be reviewed by the people who
+# hold that bar.
+/CONTRIBUTING.md        @sfc-gh-chorgan @sfc-gh-lhartzell
+/MAINTAINING.md         @sfc-gh-chorgan @sfc-gh-lhartzell
+/README.md              @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Automation runs with repository credentials.
+/.github/               @sfc-gh-chorgan @sfc-gh-lhartzell
+
+# Executable code shipped inside a skill.
+#
+# CODEOWNERS has no reliable recursive glob, so this matches one level only.
+# The escalation labeler covers nested script paths by content instead.
+/skills/*/scripts/      @sfc-gh-chorgan @sfc-gh-lhartzell

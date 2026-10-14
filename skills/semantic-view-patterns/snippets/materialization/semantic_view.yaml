@@ -1,0 +1,85 @@
+# Materialization: Semantic View YAML
+#
+# ⚠️  MATERIALIZATION NOT SUPPORTED IN YAML:
+# The MAX_STALENESS option and ALTER SEMANTIC VIEW ... ADD MATERIALIZATION
+# are DDL-only features. There is no YAML equivalent.
+#
+# This YAML defines the base SV structure. After deploying via
+# SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML, run the ALTER SEMANTIC VIEW DDL
+# commands from semantic_view.sql to add materializations.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+# Then add materializations via DDL:
+#   ALTER SEMANTIC VIEW TARGET_DB.TARGET_SCHEMA.REVENUE_ANALYSIS_SV SET MAX_STALENESS = '1 hour';
+#   ALTER SEMANTIC VIEW TARGET_DB.TARGET_SCHEMA.REVENUE_ANALYSIS_SV
+#     ADD MATERIALIZATION ... AS DIMENSIONS ... METRICS ...;
+
+name: REVENUE_ANALYSIS_SV
+description: >
+  Revenue analysis SV with materialization support. NOTE: MAX_STALENESS and
+  ADD MATERIALIZATION are DDL-only — apply them via semantic_view.sql after
+  deploying this YAML.
+
+tables:
+  - name: mat_orders
+    description: Order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: MAT_ORDERS
+    dimensions:
+      - name: region
+        synonyms: [region, geo]
+        expr: REGION
+        data_type: VARCHAR
+      - name: order_date
+        synonyms: [date, order date]
+        expr: ORDER_DATE
+        data_type: DATE
+      - name: order_year
+        synonyms: [year]
+        expr: YEAR(ORDER_DATE)
+        data_type: NUMBER
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, total sales]
+        expr: SUM(AMOUNT)
+      - name: order_count
+        synonyms: [orders, number of orders]
+        expr: COUNT(ORDER_ID)
+      - name: min_order
+        synonyms: [smallest order]
+        expr: MIN(AMOUNT)
+      - name: max_order
+        synonyms: [largest order]
+        expr: MAX(AMOUNT)
+      - name: avg_order
+        synonyms: [average order, AOV]
+        expr: AVG(AMOUNT)
+
+  - name: mat_customers
+    description: Customer master
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: MAT_CUSTOMERS
+    primary_key:
+      columns: [CUSTOMER_ID]
+    dimensions:
+      - name: customer_name
+        synonyms: [customer, account name]
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+      - name: segment
+        synonyms: [customer segment, tier]
+        expr: SEGMENT
+        data_type: VARCHAR
+
+relationships:
+  - name: orders_to_customers
+    left_table: mat_orders
+    right_table: mat_customers
+    relationship_columns:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID

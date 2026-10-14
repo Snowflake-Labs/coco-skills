@@ -1,6 +1,6 @@
 # SAP BDC <=> Snowflake Zero-Copy Integration - Cortex Code Skill
 
-**Authors:** Sanjay Nagamangalam, Amit Tapas (with field testing by Kevin Poskitt) | v1.2.0 (8-May-2026)
+**Authors:** Amit Tapas, Kevin Poskitt (from SAP)
 
 A Cortex Code skill that manages the end-to-end lifecycle of the [SAP and Snowflake Zero-Copy Integration](https://docs.snowflake.com/en/user-guide/data-integration/zero-copy/about-sap-snowflake) and connector - creating connectors, consuming data products from SAP BDC, publishing Snowflake data to SAP BDC, analyzing shared data, and troubleshooting issues, all through a conversational, step-by-step workflow.
 
@@ -159,7 +159,7 @@ A Snowflake account can have multiple zero-copy connectors (e.g., one per SAP BD
    - **CTAS (one-time snapshot)** — creates static Iceberg copies
    - **Dynamic Iceberg Tables (automatic sync)** — creates dynamic tables that refresh from the source on a configurable target lag
 4. Verifies all Iceberg table prerequisites (`CATALOG = 'SNOWFLAKE'`, `STORAGE_SERIALIZATION_POLICY = 'COMPATIBLE'`, `ENABLE_ICEBERG_MERGE_ON_READ = FALSE`)
-5. Generates a CSN Interop v1.2 document via the **SAP CSN Generator** sub-skill (or accepts a user-provided CSN file)
+5. Generates a minimal CSN Interop v1.0 document via the **SAP CSN Generator** sub-skill (or accepts a user-provided CSN file)
 6. Creates a Snowflake share with proper grants and associates it with the connector
 7. Generates ORD metadata (title, description) with intelligent defaults from table inspection
 8. Publishes the data product with ORD metadata and CSN schema
@@ -168,7 +168,7 @@ A Snowflake account can have multiple zero-copy connectors (e.g., one per SAP BD
 - An active (CONNECTED) zerocopy connector
 - Iceberg V3 tables with copy-on-write enabled (Snowflake-managed catalog), or standard FDN tables that the skill will convert
 - ORD metadata (title, description) for the data product — the skill proposes defaults
-- A CSN (Core Schema Notation) JSON document — the skill can generate a full CSN Interop v1.2 document via the CSN Generator
+- A CSN (Core Schema Notation) JSON document — the skill can generate a minimal CSN Interop v1.0 document via the CSN Generator
 
 ### Use Case 4: Analyze Shared Data
 
@@ -203,19 +203,17 @@ A Snowflake account can have multiple zero-copy connectors (e.g., one per SAP BD
 
 ## SAP CSN Generator (Sub-Skill)
 
-The **csn-generator** sub-skill generates [SAP CSN Interop v1.2](https://sap.github.io/csn-interop-specification/) JSON files from Snowflake table metadata or Semantic Views. It is invoked by the Publish workflow when the user needs a CSN document.
+The **csn-generator** sub-skill generates minimal [SAP CSN Interop v1.0](https://sap.github.io/csn-interop-specification/) JSON files that match the SAP BDC Connect SDK output format, maximizing acceptance when publishing to SAP Datasphere/BDC. It is invoked by the Publish workflow when the user needs a CSN document.
 
 **Key capabilities:**
-- Three generation modes: from a Semantic View, by creating a Semantic View first, or directly from raw INFORMATION_SCHEMA metadata
-- Auto-infers 40+ annotation types across all 10 CSN Interop extension vocabularies (@EndUserText, @Semantics, @ObjectModel, @PersonalData, @Aggregation, @AnalyticsDetails, @Consumption, @DataIntegration, @ODM, @EntityRelationship)
-- Detects PII from Snowflake masking policies and column name heuristics
-- Classifies entities as FACT, DIMENSION, TEXT, bridge/link, or DATA_STRUCTURE
-- Infers associations heuristically when PK/FK constraints are unavailable
-- Filters CDC/pipeline metadata columns (Openflow, Fivetran, Stitch, Airbyte)
-- Display-label convention choice: Original (preserve Snowflake source names, default) or PascalCase (cosmetic SAP-style labels for `@EndUserText.label` only). Entity and element keys are always UPPERCASE matching Snowflake — required by SAP Datasphere for remote-table resolution. The 200+ word SAP-aware dictionary is used for label generation.
-- `kind: context` namespacing (SAP BDC standard)
-- Interactive refinement with mandatory association and PII reviews
-- No Python or external dependencies — runs entirely through Cortex Code SQL + JSON assembly
+- Generates CSN Interop v1.0 (SDK-compatible) — no options, reviews, or validation loops
+- Core structure only: `definitions`, `kind`, `elements`, primary keys (`key: true`)
+- Type mappings follow the Snowflake → Iceberg → CSN chain (e.g. `INTEGER → cds.Integer`, `BIGINT → cds.Integer64`, `NUMBER(p,s) → cds.Decimal(p,s)`, `FLOAT → cds.Double`, `TIMESTAMP_*(6) → cds.Timestamp`, strings → `cds.String` with no length); `TIME`, nanosecond timestamps, `BINARY`, `VARIANT`, and complex types are unsupported
+- Foreign-key associations only when PK/FK constraints are available (`@ObjectModel.foreignKey.association`); no heuristic inference
+- Auto-adds `@PersonalData.*` annotations when PII columns are detected (no interactive review)
+- `kind: context` namespacing where the context is the schema name; UPPERCASE identifiers matching Snowflake; empty `i18n: {}`
+- Intentionally omits display labels, i18n translations, semantic/analytical annotations, and entity classification
+- Result: ~300–500 bytes per entity (vs 3–5 KB for full CSN)
 
 See `csn-generator/README.md` for full documentation.
 
@@ -234,17 +232,12 @@ manage-zerocopy-sapbdc/            # Connector lifecycle skill
 │   └── INSTRUCTIONS.md                   # Use Case 4: Analyze shared data
 ├── troubleshoot/
 │   └── INSTRUCTIONS.md                   # Use Case 5: Troubleshoot issues
-├── csn-generator/                        # CSN Interop v1.2 generator sub-routine
+├── csn-generator/                        # Minimal CSN Interop v1.0 generator sub-routine
 │   ├── INSTRUCTIONS.md                   # Sub-routine definition (source of truth)
 │   ├── README.md                         # Full documentation
-│   ├── references/
-│   │   ├── csn-construction-rules.md     # Detailed CSN construction rules
-│   │   ├── csn-spec-reference.md         # CSN Interop quick reference
-│   │   ├── snowflake-type-mapping.md     # Snowflake → CDS type mapping
-│   │   ├── pascal-case-dictionary.md     # 200+ word SAP PascalCase dictionary
-│   │   ├── annotation-patterns.md        # Column-name-to-annotation patterns
-│   │   └── supported-features.md         # Feature support matrix (68 features)
-│   └── sample-csn-files/                 # SAP S/4HANA CDS exports (inbound reference; do not pattern-match for outbound)
+│   ├── skill.json                        # Sub-skill manifest
+│   └── references/
+│       └── type-mapping-sdk.md           # Snowflake → CDS type mapping (SDK-compatible)
 ├── README.md                             # This file
 └── LICENSE                               # Snowflake Skills License
 ```
@@ -281,7 +274,7 @@ To publish Snowflake data back to SAP BDC:
 - Tables must use **Snowflake as the Iceberg catalog** (`CATALOG = 'SNOWFLAKE'`)
 - `STORAGE_SERIALIZATION_POLICY` must be set to `'COMPATIBLE'`
 - Each data product maps to a single dedicated database
-- A CSN Interop v1.2 JSON document describing the schema is required
+- A CSN Interop v1.0 JSON document describing the schema is required
 - Standard FDN tables can be converted to Iceberg V3 via CTAS or Dynamic Iceberg Tables (the skill guides this)
 
 ## Privileges

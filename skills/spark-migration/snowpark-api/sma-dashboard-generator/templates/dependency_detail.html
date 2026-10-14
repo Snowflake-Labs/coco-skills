@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{FILE_NAME}} - Dependency Details</title>
+    <link rel="stylesheet" href="../../assets/styles.css">
+    <style>
+        body { 
+            background: white; 
+            padding: 24px;
+            margin: 0;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto;
+            padding: 0;
+        }
+        
+        /* Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            background: #e2e8f0;
+        }
+        .page-title {
+            flex: 1;
+        }
+        .page-title h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .page-title .file-path {
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        /* Status section */
+        .status-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .validation-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+        }
+        .validation-status {
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .validation-status.validated { background: #dcfce7; color: #16a34a; }
+        .validation-status.in-progress { background: #dbeafe; color: #2563eb; }
+        .validation-status.not-validated { background: #f1f5f9; color: #64748b; }
+        
+        /* Recommended actions */
+        .recommended-actions {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .recommended-actions.success {
+            background: #ecfdf5;
+            border-color: #6ee7b7;
+        }
+        .recommended-actions-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #b45309;
+            margin-bottom: 8px;
+        }
+        .recommended-actions.success .recommended-actions-title { color: #047857; }
+        .recommended-actions-content {
+            font-size: 13px;
+            color: #78350f;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .recommended-actions.success .recommended-actions-content { color: #065f46; }
+        
+        /* Summary cards */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .summary-card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--sf-blue);
+            line-height: 1;
+        }
+        .summary-card-value.warning { color: #f59e0b; }
+        .summary-card-value.danger { color: #dc2626; }
+        .summary-card-value.success { color: #16a34a; }
+        .summary-card-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+        
+        /* Accordion */
+        .accordion {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: white;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .accordion-header:hover {
+            background: #f8fafc;
+        }
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .accordion-count {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .accordion-count.has-issues {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .accordion-toggle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+        .accordion.open .accordion-toggle {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            display: none;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background: #fafafa;
+        }
+        .accordion.open .accordion-content {
+            display: block;
+        }
+        
+        /* Dependency items */
+        .dep-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .dep-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+        .dep-item.clickable {
+            cursor: pointer;
+        }
+        .dep-item.clickable:hover {
+            background: #f0f9ff;
+            border-color: var(--sf-blue);
+        }
+        .dep-status-select {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            margin-left: auto;
+            flex-shrink: 0;
+            transition: border-color 0.3s;
+        }
+        .dep-status-select:hover {
+            border-color: var(--sf-blue);
+        }
+        .dep-status-select:focus {
+            outline: none;
+            border-color: var(--sf-blue);
+        }
+        .dep-arrow {
+            color: #94a3b8;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .dep-path {
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--text-primary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .dep-empty {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 16px;
+            text-align: center;
+            background: white;
+            border-radius: 6px;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .status-badge.success { background: #dcfce7; color: #15803d; }
+        .status-badge.failure { background: #fee2e2; color: #dc2626; }
+        .status-badge.pending { background: #fff7ed; color: #c2410c; }
+        .status-badge.in-progress { background: #dbeafe; color: #1e40af; }
+        .status-badge.manual_resolved { background: #dcfce7; color: #15803d; }
+        .status-badge.auto_resolved { background: #cffafe; color: #0e7490; }
+        .status-badge.not_auto_resolved { background: #ffe4e6; color: #be123c; }
+        .status-badge.unknown { background: #f1f5f9; color: #475569; }
+        
+        /* Type badges */
+        .type-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .type-badge.IOSources { background: #fef3c7; color: #b45309; }
+        .type-badge.ThirdPartyLibraries { background: #dcfce7; color: #15803d; }
+        .type-badge.UnknownLibraries { background: #fee2e2; color: #dc2626; }
+        .type-badge.SqlObject { background: #f3e8ff; color: #7c3aed; }
+        
+        /* EWI items */
+        .ewi-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ewi-item:hover {
+            background: #f0f9ff;
+            border-color: var(--sf-blue);
+        }
+        .ewi-item-static {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .ewi-code {
+            font-family: monospace;
+            font-size: 11px;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .ewi-message {
+            font-size: 12px;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .ewi-description {
+            font-size: 12px;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .ewi-source {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+        
+        /* Combined EWI list */
+        .ewi-combined-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .ewi-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .ewi-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 3px solid var(--sf-blue);
+        }
+        .ewi-section-icon {
+            font-size: 14px;
+        }
+        .ewi-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .ewi-section-count {
+            font-size: 12px;
+            font-weight: 600;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
+        .ewi-section:first-child .ewi-section-header {
+            border-left-color: #3b82f6;
+        }
+        .ewi-section:last-child .ewi-section-header {
+            border-left-color: #a855f7;
+        }
+        
+        /* Section dividers */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 0 8px 0;
+            margin-top: 8px;
+        }
+        .section-divider-icon {
+            font-size: 16px;
+        }
+        .section-divider-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Combined dependencies list */
+        .deps-combined-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .deps-section {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .deps-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .deps-section-header:hover {
+            background: #f1f5f9;
+        }
+        .deps-section-icon {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .deps-section-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            flex: 1;
+        }
+        .deps-section-count {
+            font-size: 11px;
+            font-weight: 600;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
+        .deps-section-toggle {
+            font-size: 10px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+        .deps-section.collapsed .deps-section-toggle {
+            transform: rotate(-90deg);
+        }
+        .deps-section-content {
+            padding: 8px;
+            background: white;
+        }
+        .deps-section.collapsed .deps-section-content {
+            display: none;
+        }
+        
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 768px) {
+            .charts-row { grid-template-columns: 1fr; }
+        }
+        .chart-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chart-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chart-bar-label {
+            width: 100px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .chart-bar-track {
+            flex: 1;
+            height: 22px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+        }
+        .chart-bar-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+            min-width: 24px;
+        }
+        .chart-bar-fill.success { background: #22c55e; }
+        .chart-bar-fill.failure { background: #ef4444; }
+        .chart-bar-fill.direct { background: #3b82f6; }
+        .chart-bar-fill.indirect { background: #a855f7; }
+        .chart-bar-value {
+            width: 36px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+        .chart-legend {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .chart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        .chart-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+<a href="#" onclick="history.back(); return false;" class="back-btn">
+<span>←</span>
+<span>Back to List</span>
+            </a>
+            <div class="page-title">
+                <h1>{{FILE_NAME}}</h1>
+                <div class="file-path">{{FILE_PATH}}</div>
+            </div>
+        </div>
+        
+        <div class="status-section">
+            <span>File Status:</span>
+            <select class="validation-select" id="validation-select" onchange="updateValidation(this.value)">
+                <option value="0">Pending</option>
+                <option value="1">In Progress</option>
+                <option value="2">Validated</option>
+            </select>
+            <span class="validation-status" id="validation-status">Pending</span>
+        </div>
+        
+        <div id="recommended-actions-container"></div>
+        
+        <div class="summary-row" id="summary-cards"></div>
+        
+        <div class="charts-row" id="charts-row"></div>
+        
+        <div id="accordions-container"></div>
+    </div>
+
+    <script>
+        const FILE_PATH = '{{FILE_PATH}}';
+        const FILE_INDEX = {{FILE_INDEX}};
+        let fileData = null;
+        let inventoryData = [];
+        let ewiData = {};
+        let ewiDescriptions = {};
+        let summaryData = [];
+        
+        // Normalize path
+        function normalizePath(path) {
+            if (!path) return '';
+            return path.replace(/\\/g, '/').replace(/^\/+/, '');
+        }
+        
+        async function loadData() {
+            try {
+                const [summaryRes, inventoryRes, fileRes, descRes] = await Promise.all([
+                    fetch('/api/dependency/summary'),
+                    fetch('/api/dependency/inventory'),
+                    fetch('/api/file/data'),
+                    fetch('/api/ewi/descriptions')
+                ]);
+                
+                if (summaryRes.ok) {
+                    const summaryJson = await summaryRes.json();
+                    summaryData = summaryJson.data || [];
+                }
+                
+                if (inventoryRes.ok) {
+                    const inventoryJson = await inventoryRes.json();
+                    inventoryData = inventoryJson.data || [];
+                }
+                
+                if (fileRes.ok) {
+                    const fileJson = await fileRes.json();
+                    // Build EWI data by file
+                    (fileJson.files || []).forEach(file => {
+                        const normalizedPath = normalizePath(file.file_path);
+                        // Store the ewis array directly, not the file object
+                        ewiData[normalizedPath] = file.ewis || [];
+                    });
+                }
+                
+                if (descRes.ok) {
+                    ewiDescriptions = await descRes.json();
+                }
+                
+                renderPage();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        function renderPage() {
+            const normalizedFilePath = normalizePath(FILE_PATH);
+            fileData = summaryData.find(f => normalizePath(f.file_id) === normalizedFilePath) || {};
+            const fileDeps = inventoryData.filter(d => normalizePath(d.file_id) === normalizedFilePath);
+            const ewis = ewiData[normalizedFilePath] || [];
+            
+            // Update validation status
+            const validationStatus = fileData.validated || 0;
+            document.getElementById('validation-select').value = validationStatus;
+            updateValidationDisplay(validationStatus);
+            
+            // Recommended actions
+            const recommendedActions = fileData.recommended_actions || '';
+            if (recommendedActions) {
+                const isSuccess = recommendedActions.includes('No immediate issues');
+                document.getElementById('recommended-actions-container').innerHTML = `
+                    <div class="recommended-actions ${isSuccess ? 'success' : ''}">
+                        <div class="recommended-actions-title">
+                            ${isSuccess ? '✅ Status' : '💡 Recommended Actions'}
+                        </div>
+                        <div class="recommended-actions-content">${recommendedActions}</div>
+                    </div>
+                `;
+            }
+            
+            // Parse dependencies
+            const directDeps = fileDeps.filter(d => d.type === 'UserCodeFile');
+            const ioDeps = fileDeps.filter(d => d.type === 'IOSources');
+            const thirdPartyDeps = fileDeps.filter(d => d.type === 'ThirdPartyLibraries');
+            const unknownDeps = fileDeps.filter(d => d.type === 'UnknownLibraries');
+            const sqlDeps = fileDeps.filter(d => d.type === 'SqlObject');
+            
+            // Indirect dependencies
+            let indirectDeps = [];
+            const recordWithIndirect = fileDeps.find(d => d.indirect_dependencies);
+            if (recordWithIndirect && recordWithIndirect.indirect_dependencies) {
+                indirectDeps = recordWithIndirect.indirect_dependencies.split(',').filter(d => d.trim());
+            }
+            
+            // Parents
+            let directParents = [];
+            let indirectParents = [];
+            const recordWithParents = fileDeps.find(d => d.direct_parents !== null || d.indirect_parents !== null);
+            if (recordWithParents) {
+                if (recordWithParents.direct_parents) {
+                    directParents = recordWithParents.direct_parents.split(',').filter(p => p.trim());
+                }
+                if (recordWithParents.indirect_parents) {
+                    indirectParents = recordWithParents.indirect_parents.split(',').filter(p => p.trim());
+                }
+            }
+            
+            // Indirect EWIs
+            const allDepPaths = [...new Set([...directDeps.map(d => d.dependency), ...indirectDeps].map(p => normalizePath(p.trim())))];
+            let indirectEwis = [];
+            allDepPaths.forEach(depPath => {
+                const depEwis = ewiData[depPath] || [];
+                depEwis.forEach(ewi => {
+                    indirectEwis.push({ ...ewi, source_file: depPath });
+                });
+            });
+            
+            // Calculate counts
+            const userCodeCount = directDeps.length;
+            const unknownCount = unknownDeps.length;
+            const thirdPartyCount = thirdPartyDeps.length;
+            const ioCount = ioDeps.length;
+            const sqlCount = sqlDeps.length;
+            const totalDeps = userCodeCount + unknownCount + thirdPartyCount + ioCount + sqlCount;
+            const totalIssues = fileDeps.filter(d => d.success !== 'True').length;
+            
+            // Summary cards
+            document.getElementById('summary-cards').innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-card-value">${totalDeps}</div>
+                    <div class="summary-card-label">Total Dependencies</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-value">${directDeps.length + indirectDeps.length}</div>
+                    <div class="summary-card-label">Code Dependencies</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-value">${directParents.length + indirectParents.length}</div>
+                    <div class="summary-card-label">Parents</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-value ${totalIssues > 0 ? 'danger' : 'success'}">${totalIssues}</div>
+                    <div class="summary-card-label">Dep Issues</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-value ${ewis.length > 0 ? 'warning' : 'success'}">${ewis.length}</div>
+                    <div class="summary-card-label">Direct EWIs</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-card-value ${indirectEwis.length > 0 ? 'warning' : 'success'}">${indirectEwis.length}</div>
+                    <div class="summary-card-label">Indirect EWIs</div>
+                </div>
+            `;
+            
+            // Charts
+            const maxDepCount = Math.max(userCodeCount, unknownCount, thirdPartyCount, ioCount, sqlCount, 1);
+            const userCodeSuccess = directDeps.filter(d => d.success === 'True').length;
+            const userCodeFail = userCodeCount - userCodeSuccess;
+            const thirdPartySuccess = thirdPartyDeps.filter(d => d.success === 'True').length;
+            const thirdPartyFail = thirdPartyCount - thirdPartySuccess;
+            const ioSuccess = ioDeps.filter(d => d.success === 'True').length;
+            const ioFail = ioCount - ioSuccess;
+            const sqlSuccess = sqlDeps.filter(d => d.success === 'True').length;
+            const sqlFail = sqlCount - sqlSuccess;
+            
+            document.getElementById('charts-row').innerHTML = `
+                <div class="chart-card">
+                    <div class="chart-title">Dependencies by Type</div>
+                    <div class="chart-bars">
+                        ${renderChartBar('User Code', userCodeSuccess, userCodeFail, maxDepCount)}
+                        ${renderChartBar('Unknown Libs', 0, unknownCount, maxDepCount)}
+                        ${renderChartBar('Third-Party', thirdPartySuccess, thirdPartyFail, maxDepCount)}
+                        ${renderChartBar('I/O Sources', ioSuccess, ioFail, maxDepCount)}
+                        ${renderChartBar('SQL Objects', sqlSuccess, sqlFail, maxDepCount)}
+                    </div>
+                    <div class="chart-legend">
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#22c55e"></span>OK</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ef4444"></span>Issue</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">EWIs (Errors, Warnings, Issues)</div>
+                    <div class="chart-bars">
+                        ${renderEwiChartBar('Direct EWIs', ewis.length, Math.max(ewis.length, indirectEwis.length))}
+                        ${renderEwiChartBar('Indirect EWIs', indirectEwis.length, Math.max(ewis.length, indirectEwis.length), true)}
+                    </div>
+                    <div class="chart-legend">
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#3b82f6"></span>Direct</div>
+                        <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#a855f7"></span>Indirect</div>
+                    </div>
+                </div>
+            `;
+            
+            // Accordions
+            let accordionsHtml = '';
+            
+            // EWI Details (combined direct + indirect)
+            const totalEwis = ewis.length + indirectEwis.length;
+            accordionsHtml += renderAccordion('ewi-details', 'EWI Details', totalEwis,
+                renderCombinedEwiList(ewis, indirectEwis), totalEwis > 0);
+            
+            // User Code Dependencies (direct, indirect deps + parents)
+            const userCodeDepsCount = directDeps.length + indirectDeps.length + directParents.length + indirectParents.length;
+            accordionsHtml += renderAccordion('user-code-deps', 'User Code Dependencies', userCodeDepsCount,
+                renderUserCodeDependenciesList(directDeps, indirectDeps, directParents, indirectParents), false);
+            
+            // Other Dependencies (I/O, Third-party, Unknown, SQL)
+            const otherDeps = [...ioDeps, ...thirdPartyDeps, ...unknownDeps, ...sqlDeps];
+            accordionsHtml += renderAccordion('other-deps', 'Other Dependencies', otherDeps.length,
+                renderOtherDependenciesList(otherDeps), false);
+            
+            document.getElementById('accordions-container').innerHTML = accordionsHtml;
+        }
+        
+        function renderChartBar(label, success, fail, max) {
+            const total = success + fail;
+            return `
+                <div class="chart-bar-row">
+                    <span class="chart-bar-label">${label}</span>
+                    <div class="chart-bar-track">
+                        ${success > 0 ? `<div class="chart-bar-fill success" style="width:${(success/max)*100}%">${success}</div>` : ''}
+                        ${fail > 0 ? `<div class="chart-bar-fill failure" style="width:${(fail/max)*100}%">${fail}</div>` : ''}
+                    </div>
+                    <span class="chart-bar-value">${total}</span>
+                </div>
+            `;
+        }
+        
+        function renderEwiChartBar(label, count, max, isIndirect = false) {
+            return `
+                <div class="chart-bar-row">
+                    <span class="chart-bar-label">${label}</span>
+                    <div class="chart-bar-track">
+                        ${count > 0 ? `<div class="chart-bar-fill ${isIndirect ? 'indirect' : 'direct'}" style="width:${max > 0 ? (count/max)*100 : 0}%">${count}</div>` : ''}
+                    </div>
+                    <span class="chart-bar-value">${count}</span>
+                </div>
+            `;
+        }
+        
+        function renderAccordion(id, title, count, content, hasIssues = false) {
+            return `
+                <div class="accordion" id="accordion-${id}">
+                    <div class="accordion-header" onclick="toggleAccordion('${id}')">
+                        <div class="accordion-title">
+                            <span>${title}</span>
+                            <span class="accordion-count ${hasIssues ? 'has-issues' : ''}">${count}</span>
+                        </div>
+                        <span class="accordion-toggle">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        ${content}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderDepList(deps, type, arrow, clickable) {
+            if (deps.length === 0) return '<div class="dep-empty">No dependencies found</div>';
+            return `<div class="dep-list">${deps.map(dep => `
+                <div class="dep-item ${clickable ? 'clickable' : ''}" ${clickable ? `onclick="navigateToFile('${escapeJs(dep.dependency)}')"` : ''}>
+                    <span class="dep-arrow">${arrow}</span>
+                    <span class="dep-path">${dep.dependency}</span>
+                    ${getStatusBadge(dep, type)}
+                    ${getDepStatusDropdown(dep)}
+                </div>
+            `).join('')}</div>`;
+        }
+        
+        function renderIndirectDepList(deps, arrow) {
+            if (deps.length === 0) return '<div class="dep-empty">No indirect dependencies</div>';
+            return `<div class="dep-list">${deps.map(depPath => {
+                const trimmed = depPath.trim();
+                return `
+                    <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(trimmed)}')">
+                        <span class="dep-arrow">${arrow}</span>
+                        <span class="dep-path">${trimmed}</span>
+                    </div>
+                `;
+            }).join('')}</div>`;
+        }
+        
+        function renderParentList(parents, arrow) {
+            if (parents.length === 0) return '<div class="dep-empty">No parents found</div>';
+            return `<div class="dep-list">${parents.map(parent => `
+                <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(parent)}')">
+                    <span class="dep-path">${parent}</span>
+                    <span class="dep-arrow">${arrow}</span>
+                </div>
+            `).join('')}</div>`;
+        }
+        
+        function renderEwiList(ewis) {
+            if (ewis.length === 0) return '<div class="dep-empty">No EWIs found</div>';
+            return `<div class="dep-list">${ewis.map(ewi => `
+                <div class="ewi-item" onclick="window.location.href='content/files_${ewi.code || ewi.ewi_code}.html'">
+                    ${getEwiStatusBadge(ewi)}
+                    <code class="ewi-code">${ewi.code || ewi.ewi_code}</code>
+                    <span class="ewi-message">${ewi.message || ewi.ewi_message || ''}</span>
+                </div>
+            `).join('')}</div>`;
+        }
+        
+        function renderIndirectEwiList(ewis) {
+            if (ewis.length === 0) return '<div class="dep-empty">No indirect EWIs</div>';
+            return `<div class="dep-list">${ewis.map(ewi => `
+                <div class="ewi-item" onclick="window.location.href='content/files_${ewi.code || ewi.ewi_code}.html'">
+                    ${getEwiStatusBadge(ewi)}
+                    <code class="ewi-code">${ewi.code || ewi.ewi_code}</code>
+                    <span class="ewi-message">${ewi.message || ewi.ewi_message || ''}</span>
+                    <span class="ewi-source">${ewi.source_file}</span>
+                </div>
+            `).join('')}</div>`;
+        }
+        
+        function renderCombinedEwiList(directEwis, indirectEwis) {
+            const totalCount = directEwis.length + indirectEwis.length;
+            if (totalCount === 0) return '<div class="dep-empty">No EWIs found for this file</div>';
+            
+            let html = '<div class="ewi-combined-list">';
+            
+            // Direct EWIs section
+            html += `<div class="ewi-section">
+                <div class="ewi-section-header">
+                    <span class="ewi-section-icon">📍</span>
+                    <span class="ewi-section-title">Direct EWIs</span>
+                    <span class="ewi-section-count">${directEwis.length}</span>
+                </div>`;
+            
+            if (directEwis.length === 0) {
+                html += '<div class="dep-empty">No direct EWIs</div>';
+            } else {
+                html += `<div class="dep-list">${directEwis.map(ewi => {
+                    const code = ewi.code || ewi.ewi_code;
+                    const description = ewiDescriptions[code] || '';
+                    return `
+                    <div class="ewi-item-static">
+                        ${getEwiStatusBadge(ewi)}
+                        <code class="ewi-code">${code}</code>
+                        <span class="ewi-description">${description}</span>
+                    </div>
+                    `;
+                }).join('')}</div>`;
+            }
+            html += '</div>';
+            
+            // Indirect EWIs section
+            html += `<div class="ewi-section">
+                <div class="ewi-section-header">
+                    <span class="ewi-section-icon">🔗</span>
+                    <span class="ewi-section-title">Indirect EWIs</span>
+                    <span class="ewi-section-count">${indirectEwis.length}</span>
+                </div>`;
+            
+            if (indirectEwis.length === 0) {
+                html += '<div class="dep-empty">No indirect EWIs</div>';
+            } else {
+                html += `<div class="dep-list">${indirectEwis.map(ewi => {
+                    const code = ewi.code || ewi.ewi_code;
+                    const description = ewiDescriptions[code] || '';
+                    return `
+                    <div class="ewi-item-static">
+                        ${getEwiStatusBadge(ewi)}
+                        <code class="ewi-code">${code}</code>
+                        <span class="ewi-description">${description}</span>
+                        <span class="ewi-source">from: ${ewi.source_file}</span>
+                    </div>
+                    `;
+                }).join('')}</div>`;
+            }
+            html += '</div>';
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function renderOtherDepList(deps) {
+            if (deps.length === 0) return '<div class="dep-empty">No other dependencies</div>';
+            const typeLabels = { 'IOSources': 'I/O', 'ThirdPartyLibraries': '3rd Party', 'UnknownLibraries': 'Unknown', 'SqlObject': 'SQL' };
+            return `<div class="dep-list">${deps.map(dep => `
+                <div class="dep-item">
+                    <span class="type-badge ${dep.type}">${typeLabels[dep.type] || dep.type}</span>
+                    <span class="dep-path">${dep.dependency}</span>
+                    ${getStatusBadge(dep, dep.type)}
+                    ${getDepStatusDropdown(dep)}
+                </div>
+            `).join('')}</div>`;
+        }
+        
+        function renderUserCodeDependenciesList(directDeps, indirectDeps, directParents, indirectParents) {
+            const totalCount = directDeps.length + indirectDeps.length + directParents.length + indirectParents.length;
+            if (totalCount === 0) return '<div class="dep-empty">No user code dependencies found</div>';
+            
+            let html = '<div class="deps-combined-list">';
+            
+            // Direct Dependencies section
+            html += `<div class="deps-section">
+                <div class="deps-section-header" onclick="toggleDepSection(this)">
+                    <span class="deps-section-icon">→</span>
+                    <span class="deps-section-title">Direct Dependencies</span>
+                    <span class="deps-section-count">${directDeps.length}</span>
+                    <span class="deps-section-toggle">▼</span>
+                </div>
+                <div class="deps-section-content">`;
+            
+            if (directDeps.length === 0) {
+                html += '<div class="dep-empty">No direct dependencies</div>';
+            } else {
+                html += `<div class="dep-list">${directDeps.map(dep => `
+                    <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(dep.dependency)}')">
+                        <span class="dep-arrow">→</span>
+                        <span class="dep-path">${dep.dependency}</span>
+                        ${getStatusBadge(dep, 'UserCodeFile')}
+                        ${getDepStatusDropdown(dep)}
+                    </div>
+                `).join('')}</div>`;
+            }
+            html += '</div></div>';
+            
+            // Indirect Dependencies section
+            html += `<div class="deps-section">
+                <div class="deps-section-header" onclick="toggleDepSection(this)">
+                    <span class="deps-section-icon">⇢</span>
+                    <span class="deps-section-title">Indirect Dependencies</span>
+                    <span class="deps-section-count">${indirectDeps.length}</span>
+                    <span class="deps-section-toggle">▼</span>
+                </div>
+                <div class="deps-section-content">`;
+            
+            if (indirectDeps.length === 0) {
+                html += '<div class="dep-empty">No indirect dependencies</div>';
+            } else {
+                html += `<div class="dep-list">${indirectDeps.map(depPath => {
+                    const trimmed = depPath.trim();
+                    return `
+                        <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(trimmed)}')">
+                            <span class="dep-arrow">⇢</span>
+                            <span class="dep-path">${trimmed}</span>
+                        </div>
+                    `;
+                }).join('')}</div>`;
+            }
+            html += '</div></div>';
+            
+            // Direct Parents section
+            html += `<div class="deps-section">
+                <div class="deps-section-header" onclick="toggleDepSection(this)">
+                    <span class="deps-section-icon">👆</span>
+                    <span class="deps-section-title">Direct Parents</span>
+                    <span class="deps-section-count">${directParents.length}</span>
+                    <span class="deps-section-toggle">▼</span>
+                </div>
+                <div class="deps-section-content">`;
+            
+            if (directParents.length === 0) {
+                html += '<div class="dep-empty">No direct parents</div>';
+            } else {
+                html += `<div class="dep-list">${directParents.map(parent => `
+                    <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(parent)}')">
+                        <span class="dep-path">${parent}</span>
+                        <span class="dep-arrow">→</span>
+                    </div>
+                `).join('')}</div>`;
+            }
+            html += '</div></div>';
+            
+            // Indirect Parents section
+            html += `<div class="deps-section">
+                <div class="deps-section-header" onclick="toggleDepSection(this)">
+                    <span class="deps-section-icon">👆</span>
+                    <span class="deps-section-title">Indirect Parents</span>
+                    <span class="deps-section-count">${indirectParents.length}</span>
+                    <span class="deps-section-toggle">▼</span>
+                </div>
+                <div class="deps-section-content">`;
+            
+            if (indirectParents.length === 0) {
+                html += '<div class="dep-empty">No indirect parents</div>';
+            } else {
+                html += `<div class="dep-list">${indirectParents.map(parent => `
+                    <div class="dep-item clickable" onclick="navigateToFile('${escapeJs(parent)}')">
+                        <span class="dep-path">${parent}</span>
+                        <span class="dep-arrow">⇢</span>
+                    </div>
+                `).join('')}</div>`;
+            }
+            html += '</div></div>';
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function renderOtherDependenciesList(otherDeps) {
+            if (otherDeps.length === 0) return '<div class="dep-empty">No other dependencies found</div>';
+            
+            const typeLabels = { 'IOSources': 'I/O', 'ThirdPartyLibraries': '3rd Party', 'UnknownLibraries': 'Unknown', 'SqlObject': 'SQL' };
+            
+            // Group by type
+            const byType = {
+                'IOSources': otherDeps.filter(d => d.type === 'IOSources'),
+                'ThirdPartyLibraries': otherDeps.filter(d => d.type === 'ThirdPartyLibraries'),
+                'UnknownLibraries': otherDeps.filter(d => d.type === 'UnknownLibraries'),
+                'SqlObject': otherDeps.filter(d => d.type === 'SqlObject')
+            };
+            
+            let html = '<div class="deps-combined-list">';
+            
+            // I/O Sources section
+            if (byType.IOSources.length > 0) {
+                html += `<div class="deps-section">
+                    <div class="deps-section-header" onclick="toggleDepSection(this)">
+                        <span class="deps-section-icon">📂</span>
+                        <span class="deps-section-title">I/O Sources</span>
+                        <span class="deps-section-count">${byType.IOSources.length}</span>
+                        <span class="deps-section-toggle">▼</span>
+                    </div>
+                    <div class="deps-section-content">
+                        <div class="dep-list">${byType.IOSources.map(dep => `
+                            <div class="dep-item">
+                                <span class="dep-path">${dep.dependency}</span>
+                                ${getStatusBadge(dep, dep.type)}
+                                ${getDepStatusDropdown(dep)}
+                            </div>
+                        `).join('')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // Third Party Libraries section
+            if (byType.ThirdPartyLibraries.length > 0) {
+                html += `<div class="deps-section">
+                    <div class="deps-section-header" onclick="toggleDepSection(this)">
+                        <span class="deps-section-icon">📦</span>
+                        <span class="deps-section-title">Third Party Libraries</span>
+                        <span class="deps-section-count">${byType.ThirdPartyLibraries.length}</span>
+                        <span class="deps-section-toggle">▼</span>
+                    </div>
+                    <div class="deps-section-content">
+                        <div class="dep-list">${byType.ThirdPartyLibraries.map(dep => `
+                            <div class="dep-item">
+                                <span class="dep-path">${dep.dependency}</span>
+                                ${getStatusBadge(dep, dep.type)}
+                                ${getDepStatusDropdown(dep)}
+                            </div>
+                        `).join('')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // Unknown Libraries section
+            if (byType.UnknownLibraries.length > 0) {
+                html += `<div class="deps-section">
+                    <div class="deps-section-header" onclick="toggleDepSection(this)">
+                        <span class="deps-section-icon">❓</span>
+                        <span class="deps-section-title">Unknown Libraries</span>
+                        <span class="deps-section-count">${byType.UnknownLibraries.length}</span>
+                        <span class="deps-section-toggle">▼</span>
+                    </div>
+                    <div class="deps-section-content">
+                        <div class="dep-list">${byType.UnknownLibraries.map(dep => `
+                            <div class="dep-item">
+                                <span class="dep-path">${dep.dependency}</span>
+                                ${getStatusBadge(dep, dep.type)}
+                                ${getDepStatusDropdown(dep)}
+                            </div>
+                        `).join('')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            // SQL Objects section
+            if (byType.SqlObject.length > 0) {
+                html += `<div class="deps-section">
+                    <div class="deps-section-header" onclick="toggleDepSection(this)">
+                        <span class="deps-section-icon">🗄️</span>
+                        <span class="deps-section-title">SQL Objects</span>
+                        <span class="deps-section-count">${byType.SqlObject.length}</span>
+                        <span class="deps-section-toggle">▼</span>
+                    </div>
+                    <div class="deps-section-content">
+                        <div class="dep-list">${byType.SqlObject.map(dep => `
+                            <div class="dep-item">
+                                <span class="dep-path">${dep.dependency}</span>
+                                ${getStatusBadge(dep, dep.type)}
+                                ${getDepStatusDropdown(dep)}
+                            </div>
+                        `).join('')}</div>
+                    </div>
+                </div>`;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function toggleDepSection(header) {
+            const section = header.parentElement;
+            section.classList.toggle('collapsed');
+        }
+        
+        function getStatusBadge(dep, type) {
+            const successLabels = { 'UserCodeFile': 'Parsed', 'ThirdPartyLibraries': 'Supported', 'IOSources': 'Found', 'SqlObject': 'Found' };
+            const failLabels = { 'UserCodeFile': 'Not Parsed', 'ThirdPartyLibraries': 'Not Supported', 'IOSources': 'Not Found', 'SqlObject': 'Not Found', 'UnknownLibraries': 'Not Supported' };
+            if (dep.success === 'True') {
+                return `<span class="status-badge success">${successLabels[type] || 'OK'}</span>`;
+            }
+            return `<span class="status-badge failure">${failLabels[type] || 'Issue'}</span>`;
+        }
+        
+        function getDepStatusDropdown(dep) {
+            const status = dep.status || 'pending';
+            const escapedDep = escapeJs(dep.dependency);
+            return `
+                <select class="dep-status-select" onclick="event.stopPropagation()" onchange="updateDepStatus('${escapedDep}', this.value, this)">
+                    <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                    <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="manual_resolved" ${status === 'manual_resolved' ? 'selected' : ''}>Manual Resolved</option>
+                    <option value="auto_resolved" ${status === 'auto_resolved' ? 'selected' : ''}>Auto Resolved</option>
+                    <option value="not_auto_resolved" ${status === 'not_auto_resolved' ? 'selected' : ''}>Not Auto Resolved</option>
+                    <option value="wont_fix" ${status === 'wont_fix' ? 'selected' : ''}>Won't Fix</option>
+                </select>
+            `;
+        }
+        
+        async function updateDepStatus(dependency, newStatus, selectEl) {
+            try {
+                const response = await fetch('/api/dependency/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: FILE_PATH, dependency: dependency, status: newStatus })
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to update');
+                }
+                const result = await response.json();
+                
+                // Update file validation status if it changed
+                if (result.file_validated !== null && result.file_validated !== undefined) {
+                    document.getElementById('validation-select').value = result.file_validated;
+                    updateValidationDisplay(result.file_validated);
+                }
+                
+                // Visual feedback
+                selectEl.style.borderColor = '#22c55e';
+                setTimeout(() => { selectEl.style.borderColor = ''; }, 1000);
+            } catch (error) {
+                console.error('Error updating dependency status:', error);
+                selectEl.style.borderColor = '#ef4444';
+            }
+        }
+        
+        function getEwiStatusBadge(ewi) {
+            const status = ewi.status || 'pending';
+            const labels = { 'pending': 'Pending', 'in_progress': 'In Progress', 'manual_resolved': 'Manual Resolved', 'auto_resolved': 'Auto Resolved', 'not_auto_resolved': 'Not Auto Resolved', 'wont_fix': "Won't Fix" };
+            const classes = { 'pending': 'pending', 'in_progress': 'in-progress', 'manual_resolved': 'manual_resolved', 'auto_resolved': 'auto_resolved', 'not_auto_resolved': 'not_auto_resolved', 'wont_fix': 'unknown' };
+            return `<span class="status-badge ${classes[status] || 'pending'}">${labels[status] || 'Pending'}</span>`;
+        }
+        
+        function escapeJs(str) {
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+        
+        function toggleAccordion(id) {
+            const accordion = document.getElementById('accordion-' + id);
+            accordion.classList.toggle('open');
+        }
+        
+        function updateValidationDisplay(status) {
+            const el = document.getElementById('validation-status');
+            const labels = { 0: 'Pending', 1: 'In Progress', 2: 'Validated' };
+            const classes = { 0: 'not-validated', 1: 'in-progress', 2: 'validated' };
+            el.textContent = labels[status] || 'Pending';
+            el.className = 'validation-status ' + (classes[status] || 'not-validated');
+        }
+        
+        async function updateValidation(value) {
+            const status = parseInt(value);
+            try {
+                const response = await fetch('/api/file/validation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ file_id: FILE_PATH, validated: status })
+                });
+                if (response.ok) {
+                    updateValidationDisplay(status);
+                }
+            } catch (error) {
+                console.error('Error updating validation:', error);
+            }
+        }
+        
+        function navigateToFile(filePath) {
+            const normalizedPath = normalizePath(filePath);
+            const fileExists = summaryData.some(f => normalizePath(f.file_id) === normalizedPath);
+            if (fileExists) {
+                const fileIndex = summaryData.findIndex(f => normalizePath(f.file_id) === normalizedPath);
+                if (fileIndex >= 0) {
+                    window.location.href = `content/dep_${fileIndex}.html`;
+                }
+            } else {
+                alert(`File "${filePath}" is not in the project files.`);
+            }
+        }
+        
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>

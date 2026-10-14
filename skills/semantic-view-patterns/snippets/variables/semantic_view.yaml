@@ -1,0 +1,73 @@
+# Variables: Semantic View YAML
+#
+# ⚠️  VARIABLES NOT SUPPORTED IN YAML: The YAML specification for Semantic Views
+# does not support the VARIABLES clause. This is a DDL-only feature.
+#
+# This YAML defines the base SV structure without variables. The dynamic
+# dimensions (price_tier, is_recent) and variable-driven performance_score
+# metric are replaced with static equivalents. Use semantic_view.sql for
+# the full parameterized VARIABLES pattern.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+
+name: PRODUCT_PERFORMANCE_SV
+description: >
+  Product performance analytics. NOTE: the full VARIABLES pattern (adjustable
+  scoring weights, price tiers, recency windows) requires DDL authoring
+  (semantic_view.sql). This YAML provides the base structure without runtime variables.
+
+tables:
+  - name: product_sales
+    description: Product sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: PRODUCT_SALES
+    dimensions:
+      - name: product_name
+        synonyms: [product, name]
+        expr: PRODUCT_NAME
+        data_type: VARCHAR
+      - name: category
+        synonyms: [category, product category]
+        expr: CATEGORY
+        data_type: VARCHAR
+      - name: price_tier
+        synonyms: [tier, price tier, price segment]
+        description: >
+          Static price tier bucketing. For dynamic tier boundaries via VARIABLES,
+          use semantic_view.sql instead.
+        expr: >
+          CASE
+            WHEN UNIT_PRICE >= 500 THEN 'premium'
+            WHEN UNIT_PRICE >= 100 THEN 'mid-range'
+            ELSE 'budget'
+          END
+        data_type: VARCHAR
+      - name: is_recent
+        synonyms: [recent, is recent sale]
+        description: >
+          Whether the sale occurred in the last 90 days. For a configurable
+          recency window via VARIABLES, use semantic_view.sql instead.
+        expr: SALE_DATE >= DATEADD('day', -90, CURRENT_DATE())
+        data_type: BOOLEAN
+    metrics:
+      - name: total_sales
+        synonyms: [sales count, number of sales]
+        expr: COUNT(SALE_ID)
+      - name: total_revenue
+        synonyms: [revenue, total revenue]
+        expr: SUM(UNIT_PRICE * QUANTITY)
+      - name: avg_rating
+        synonyms: [rating, average rating]
+        expr: AVG(CUSTOMER_RATING)
+      - name: performance_score
+        synonyms: [score, performance, composite score]
+        description: >
+          Composite score blending normalized price and rating with fixed weights
+          (0.4 price, 0.6 rating). For adjustable weights via VARIABLES, use
+          semantic_view.sql instead.
+        expr: >
+          0.4 * AVG(UNIT_PRICE) / MAX(UNIT_PRICE)
+          + 0.6 * AVG(CUSTOMER_RATING) / 5.0

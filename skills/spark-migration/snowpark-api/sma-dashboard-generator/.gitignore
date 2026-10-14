@@ -1,0 +1,14 @@
+# Generated dashboard output folders
+dvp/
+scripts/dvp/
+
+# SQLite databases
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store

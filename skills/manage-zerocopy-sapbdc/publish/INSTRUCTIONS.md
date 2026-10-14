@@ -71,7 +71,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    **If any privilege is missing**, inform the user with the exact grant statements needed:
    ```
-   ⚠️ Missing privileges detected. The following grants are required for publishing:
+Missing privileges detected. The following grants are required for publishing:
 
    GRANT OPERATE ON ZEROCOPY CONNECTOR <connector_name> TO ROLE <current_role>;
    GRANT MODIFY ON ZEROCOPY CONNECTOR <connector_name> TO ROLE <current_role>;
@@ -116,7 +116,7 @@ Main skill Step 1: User selects "Publish a data product"
    **Decision rules** based on the comparison:
    - **If Query B returns 0 rows** → ALL tables are FDN (regular Snowflake tables). **STOP** the publish flow immediately. Inform the user:
      ```
-     ⚠️ Your tables in <db>.<schema> are standard Snowflake (FDN) tables, not Iceberg V3.
+Your tables in <db>.<schema> are standard Snowflake (FDN) tables, not Iceberg V3.
      SAP BDC zero-copy publishing requires Iceberg V3 tables with copy-on-write.
 
      I will guide you through converting them. You have two options:
@@ -144,7 +144,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    Use `DESC ICEBERG TABLE <db>.<schema>.<table>;` to inspect each. If any of these conditions are not met, inform the user and route to Step 2A (which sets these correctly during conversion).
 
-   > 🚧 **Why this multi-query check matters**: `SHOW ICEBERG TABLES` alone does not distinguish FDN from Iceberg-but-wrong-version. Earlier versions of this skill stopped at `SHOW ICEBERG TABLES` and would proceed to publish FDN tables, hitting cryptic copy-on-write errors deep in the flow. The two-query approach above detects FDN explicitly and routes to Step 2A *before* any share-creation work begins. Source: Kevin Poskitt's testing report (May 8, 2026).
+   > **Why this multi-query check matters**: `SHOW ICEBERG TABLES` alone does not distinguish FDN from Iceberg-but-wrong-version. Stopping at `SHOW ICEBERG TABLES` risks proceeding to publish FDN tables and hitting cryptic copy-on-write errors deep in the flow. The two-query approach above detects FDN explicitly and routes to Step 2A *before* any share-creation work begins.
 
 4. **Verify primary keys** — ALWAYS check this regardless of whether tables are already Iceberg or need conversion. SAP BDC requires a primary key on every shared table:
    ```sql
@@ -160,7 +160,7 @@ Main skill Step 1: User selects "Publish a data product"
 
    Compare results against the tables selected for publishing. **For any table without a primary key:**
    ```
-   ⚠️ Primary key check: The following tables are missing primary key constraints.
+Primary key check: The following tables are missing primary key constraints.
    SAP BDC requires a primary key on every shared table.
 
    Tables without primary keys:
@@ -330,29 +330,19 @@ Main skill Step 1: User selects "Publish a data product"
      SET ENABLE_ICEBERG_MERGE_ON_READ = FALSE;
    ```
 
-### Step 3: Generate or Provide CSN Document
+### Step 3: Generate CSN Document
 
-**Goal:** Obtain the CSN Interop v1.2 JSON document that describes the schema structure of the data product for SAP BDC.
+**Goal:** Generate a minimal CSN Interop v1.0 JSON document (SDK-compatible) for SAP BDC.
 
 **Actions:**
 
-1. **Ask** user:
-   ```
-   A CSN Interop v1.2 JSON document describes the schema structure of your data product for SAP BDC.
-   Do you have a CSN document ready?
-   - If yes, provide the file path to the CSN JSON.
-   - If no, I will generate a full CSN Interop v1.2 document from your table metadata using the SAP CSN Generator skill.
-   ```
-
-**STOP**: Wait for user response.
-
-2. **If user has a CSN file**, read the file at the provided path and store its contents for use in Step 5.
-
-3. **If user needs a CSN document generated**, **Load** `csn-generator/INSTRUCTIONS.md` and run through its full workflow:
+1. **Load** `csn-generator/INSTRUCTIONS.md` and run through its workflow:
    - Use the database, schema, and tables already identified in Step 2 of this skill as inputs
-   - The CSN Generator skill supports three modes: Semantic View, Create Semantic View first, or Raw Tables — present these options to the user
-   - The skill will generate a complete CSN Interop v1.2 JSON with all SAP-compliant annotations (@ObjectModel, @Semantics, @PersonalData, @EndUserText, @Aggregation, etc.), associations, PascalCase naming, and i18n translations
-   - The skill includes mandatory reviews (associations + @PersonalData) and optional enhancements — complete all mandatory steps before proceeding
+   - The CSN Generator will generate **minimal** CSN Interop v1.0 matching SAP BDC Connect SDK output format
+   - NO user choices (no modes, no options) - generates minimal CSN only
+   - NO semantic annotations (except FK associations), NO i18n, NO entity classification
+   - NO mandatory reviews (no association review, no PII review)
+   - Fast generation (<1 sec), small file size (~400 bytes per entity)
    - Once the CSN Generator delivers the output file, read the generated CSN JSON and store its contents for use in Step 5
 
 ### Step 4: Create and Configure the Share
@@ -474,6 +464,11 @@ Main skill Step 1: User selects "Publish a data product"
 
    And `csn_document_json` is the CSN content obtained in Step 3.
 
+   **IMPORTANT — publish back only through this system function:**
+   - Pass the ORD metadata JSON and the CSN JSON **only** as arguments to `SYSTEM$SAP_PUBLISH_DATA_PRODUCT`. This is the only function used to publish back.
+   - Do **not** use any other system function to publish the data product.
+   - Do **not** run any separate "set CSN" (or equivalent) SQL statements to attach the CSN. The CSN is delivered exclusively via the `csn_document_json` argument of this call.
+
 3. **Confirm** success and present result to user.
 
 ### Step 6: Verify Publication
@@ -510,8 +505,7 @@ REVOKE USAGE ON DATABASE <db> FROM SHARE <share_name>;
 ## Stopping Points
 
 - After Step 2, action 1: Wait for user to identify tables
-- After Step 3, action 1: Wait for CSN document path or generation request
-- During Step 3, action 3: CSN Generator skill has its own stopping points (mode selection, review, mandatory association/PII reviews)
+- After Step 3: Wait for CSN document path, or generate a minimal CSN via `csn-generator/INSTRUCTIONS.md` (no modes/reviews)
 - After Step 5, action 1: Wait for metadata confirmation
 
 ## Output

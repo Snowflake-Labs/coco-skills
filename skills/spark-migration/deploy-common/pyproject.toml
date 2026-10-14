@@ -1,0 +1,18 @@
+[project]
+name = "deploy-common"
+version = "0.1.0"
+description = "Shared deterministic scripts for the spark-migration deploy sub-skills (deploy-notebook, deploy-code-bundle): Snowflake executor, migration-gap scan, namespace precheck, and project upload."
+requires-python = ">=3.10"
+dependencies = [
+    "snowflake-connector-python>=3.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "scripts/tests",
+]

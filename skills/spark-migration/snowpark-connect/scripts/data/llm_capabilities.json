@@ -1,0 +1,162 @@
+{
+  "_comment": "Single config for the assessment report: project-type tiers, workload archetypes, and per-pattern capabilities.",
+  "_comment2": "Update this file — not scan_codebase.py — when LLM capability, Snowflake platform, or classification logic changes.",
+  "workload_classification": {
+    "_comment": "2x2 ingestion/compute matrix. Thresholds and archetype definitions live here.",
+    "thresholds": {
+      "ingestion_high_pct": 0.30,
+      "compute_high_per_10_loc": 1.0
+    },
+    "archetypes": {
+      "High,High": {
+        "name": "End-to-End ETL Pipeline",
+        "color": "orange",
+        "migration_profile": "This project requires significant effort in both configuring external data loading (Stages / Connectors) and translating complex PySpark DataFrame logic to Snowpark. Expect work on both the data-movement layer and the transform layer."
+      },
+      "High,Low": {
+        "name": "Data Router / Ingestion Hub",
+        "color": "yellow",
+        "migration_profile": "The primary migration challenge is configuring external data connections. Transformation logic is minimal, but every read and write path needs a Snowflake Stage, External Table, or Connector equivalent. Networking and access-control setup will dominate the effort."
+      },
+      "Low,High": {
+        "name": "In-Warehouse Compute",
+        "color": "yellow",
+        "migration_profile": "Data is already accessible. The bulk of the effort is translating PySpark DataFrame operations and business logic into Snowpark. External data-access setup is minimal, so the team can focus on API parity and SQL-function equivalences."
+      },
+      "Low,Low": {
+        "name": "Lightweight Orchestration",
+        "color": "green",
+        "migration_profile": "Mostly control-flow, orchestration, or simple staging scripts with few heavy transformations and limited external I/O. Effort is primarily updating session initialisation and import statements."
+      }
+    }
+  },
+  "_tiers": {
+    "specialized": {
+      "label": "Specialized Architecture",
+      "color": "orange",
+      "resolution_engine": "Cortex LLM Engine + Platform Mapping",
+      "rank": 3,
+      "scan_advisory": "Deterministic recipes handle all standard DataFrame and API patterns. The Cortex AI engine maps the specialized paradigms to Snowflake-native features (pyspark.ml &rarr; Snowpark ML; readStream &rarr; Dynamic Tables). Budget validation time to confirm the mapped components behave as expected in your Snowflake environment.<br><strong>Expected action:</strong> Proceed to conversion. Validate the Snowflake feature mappings before cutover.",
+      "expected_action": "<strong>Expected action:</strong> Proceed to conversion. Budget validation time to confirm the Snowflake-native feature mappings (Snowpark ML, Dynamic Tables) behave as expected in your environment."
+    },
+    "ai_assisted": {
+      "label": "AI-Assisted Refactoring",
+      "color": "blue",
+      "resolution_engine": "Deterministic Transpiler + Cortex LLM Engine",
+      "rank": 2,
+      "scan_advisory": "Deterministic recipes will convert standard DataFrame operations and API sessions automatically. The Cortex AI engine will restructure the detected complex patterns (see triggers above) into Snowpark equivalents. Some findings may produce <code>SCOS-TODO</code> markers that require targeted review after conversion.<br><strong>Expected action:</strong> Proceed to conversion. Review AI-converted code and resolve any <code>SCOS-TODO</code> markers before validation.",
+      "expected_action": "<strong>Expected action:</strong> Proceed to conversion. Review AI-converted code and resolve any <code>SCOS-TODO</code> markers before promoting to production."
+    },
+    "standard": {
+      "label": "Standard Conversion",
+      "color": "green",
+      "resolution_engine": "Deterministic Transpiler",
+      "rank": 1,
+      "scan_advisory": "No complex Spark paradigms detected. Deterministic recipes will handle all DataFrame operations, API sessions, and import paths automatically.<br><strong>Expected action:</strong> Proceed to conversion. Validate output before promoting to production.",
+      "expected_action": "<strong>Expected action:</strong> Proceed to conversion. Validate output before promoting to production."
+    }
+  },
+  "entries": {
+    "SPRKCNTPY2000": {
+      "tier": "specialized",
+      "name": "Streaming",
+      "impact": "High",
+      "refactor_label": "Orchestration / Streaming Rewrite",
+      "snowflake_feature": "Dynamic Tables / Snowpark Streaming",
+      "advisory": "readStream / writeStream operations will be mapped to Snowflake's continuous data pipelines (Dynamic Tables or Snowpark Streaming). Budget architectural validation time to confirm the pipeline semantics align with your deployment strategy.",
+      "high_risk_label": "Spark Structured Streaming",
+      "recommended_action": "Map readStream / writeStream patterns to Dynamic Tables or Snowpark Streaming before cutover."
+    },
+    "SPRKCNTPY2500": {
+      "tier": "specialized",
+      "name": "Spark ML / MLlib",
+      "impact": "High",
+      "refactor_label": "ML Pipeline Migration",
+      "snowflake_feature": "Snowpark ML",
+      "advisory": "pyspark.ml pipelines will be translated by the Cortex LLM engine into Snowpark ML equivalents. Snowpark ML mirrors the PySpark ML API; budget validation time to confirm model-training and inference behavior.",
+      "high_risk_label": "Spark ML / MLlib",
+      "recommended_action": "Migrate pyspark.ml pipelines to Snowpark ML equivalents; validate model outputs after migration."
+    },
+    "SPRKCNTPY1500": {
+      "tier": "ai_assisted",
+      "name": "RDD Operations",
+      "impact": "High",
+      "refactor_label": "RDD Elimination",
+      "snowflake_feature": null,
+      "advisory": "RDD operations will be converted to DataFrame API equivalents by Phase 0.5 recipes (for common patterns) and the Cortex LLM engine (for complex ones). A small set of Hadoop-specific RDD ops have no equivalent and will be flagged with SCOS-TODO markers.",
+      "high_risk_label": null,
+      "recommended_action": "Convert all RDD operations to DataFrame API equivalents; review SCOS-TODO markers for any operations with no equivalent."
+    },
+    "SPRKCNTPY1001": {
+      "tier": "ai_assisted",
+      "name": "Hive / Catalog",
+      "impact": "Medium",
+      "refactor_label": null,
+      "snowflake_feature": null,
+      "advisory": "Hive context and catalog operations will be converted to their Snowflake equivalents by the Cortex LLM engine.",
+      "high_risk_label": null,
+      "recommended_action": "Remove enableHiveSupport(); replace catalog operations with Snowflake Information Schema equivalents."
+    },
+    "SPRKCNTPY3400": {
+      "tier": "ai_assisted",
+      "name": "Delta Lake",
+      "impact": "High",
+      "refactor_label": "Delta → Iceberg Conversion",
+      "snowflake_feature": null,
+      "advisory": "Delta Lake API references will be converted to Iceberg or Snowflake-managed table equivalents by the Cortex LLM engine.",
+      "high_risk_label": "Delta Lake",
+      "recommended_action": "Plan Delta→Iceberg or Snowflake-managed table conversions before code migration."
+    },
+    "SPRKCNTPY5700": {
+      "tier": "ai_assisted",
+      "name": "Custom UDFs",
+      "impact": "Medium",
+      "refactor_label": null,
+      "snowflake_feature": null,
+      "advisory": "UDF and UDAF definitions will be translated to Snowpark Python UDFs or vectorized UDFs by the Cortex LLM engine. Verify that all dependency packages are available in Snowflake.",
+      "high_risk_label": null,
+      "recommended_action": "Translate custom UDFs to Snowpark Python UDFs; confirm all imported packages are in the Anaconda channel."
+    },
+    "SPRKCNTPY2600": {
+      "tier": "ai_assisted",
+      "name": "Broadcast / Accumulator",
+      "impact": "Medium",
+      "refactor_label": null,
+      "snowflake_feature": null,
+      "advisory": "Broadcast variables will be replaced with direct value usage or F.broadcast() join hints. Accumulators have no server-side equivalent and will be removed or refactored.",
+      "high_risk_label": null,
+      "recommended_action": "Replace broadcast variables with direct usage; remove or redesign accumulator patterns."
+    },
+    "SPRKCNTPY5400": {
+      "tier": "ai_assisted",
+      "name": "MapType / Complex JSON",
+      "impact": "Medium",
+      "refactor_label": "MapType/JSON Refactors",
+      "snowflake_feature": null,
+      "advisory": "MapType columns and complex JSON handling (from_json, to_json, get_json_object) will be converted to Snowflake VARIANT and PARSE_JSON equivalents by the Cortex LLM engine.",
+      "high_risk_label": null,
+      "recommended_action": "Refactor MapType columns and complex JSON handling for Snowflake VARIANT compatibility."
+    },
+    "SPRKCNTPY1000": {
+      "tier": "ai_assisted",
+      "name": "JDBC Reads/Writes",
+      "impact": "Medium",
+      "refactor_label": null,
+      "snowflake_feature": null,
+      "advisory": "JDBC-based reads and writes will be converted to native Snowflake connectors or External Network Access patterns.",
+      "high_risk_label": null,
+      "recommended_action": "Replace JDBC patterns with Snowflake native connectors or External Tables."
+    },
+    "SPRKCNTPY5200": {
+      "tier": "ai_assisted",
+      "name": "XML Parsing",
+      "impact": "High",
+      "refactor_label": null,
+      "detection_includes_imports": true,
+      "snowflake_feature": null,
+      "advisory": "XML parsing libraries (spark-xml) do not have a direct Snowpark equivalent. The Cortex LLM engine will convert these to Snowflake PARSE_XML or XMLGET patterns where possible.",
+      "high_risk_label": "XML Parsing",
+      "recommended_action": "Validate XML parser compatibility with Snowpark; plan PARSE_XML or XMLGET rewrites."
+    }
+  }
+}

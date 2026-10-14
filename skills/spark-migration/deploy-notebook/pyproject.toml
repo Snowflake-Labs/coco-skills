@@ -1,0 +1,18 @@
+[project]
+name = "deploy-notebook"
+version = "0.1.0"
+description = "Deploy a migrated Snowpark/SCOS project to a Snowflake Notebook (upload to stage + CREATE NOTEBOOK)"
+requires-python = ">=3.10"
+dependencies = [
+    "snowflake-connector-python>=3.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "scripts/tests",
+]

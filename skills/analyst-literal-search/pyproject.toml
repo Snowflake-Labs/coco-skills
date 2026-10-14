@@ -1,0 +1,9 @@
+[project]
+name = "analyst-literal-search"
+version = "0.1.0"
+description = "Enriches Cortex Analyst semantic models by analyzing string columns and adding enum flags, sample values, and Cortex Search Services"
+requires-python = ">=3.11"
+dependencies = [
+    "snowflake-connector-python>=3.12.0",
+    "pyyaml>=6.0",
+]

@@ -1,0 +1,193 @@
+# Accumulating Snapshot: Semantic View YAML
+#
+# This file is the canonical YAML for LOAN_PIPELINE_SV, exported via:
+#   SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('SEMANTIC_SKILLS.SNIPPETS.LOAN_PIPELINE_SV');
+# then lightly formatted and annotated.
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# Note: AI_SQL_GENERATION maps to module_custom_instructions: sql_generation: in YAML.
+
+name: LOAN_PIPELINE_SV
+
+tables:
+  - name: APPLICATIONS
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: LOAN_APPLICATIONS
+    primary_key:
+      columns:
+        - APPLICATION_ID
+    dimensions:
+      - name: CHANNEL
+        synonyms:
+          - channel
+          - acquisition channel
+          - marketing channel
+        expr: CHANNEL
+        data_type: VARCHAR(20)
+      - name: LOAN_PRODUCT
+        synonyms:
+          - product
+          - loan type
+          - product type
+        expr: LOAN_PRODUCT
+        data_type: VARCHAR(20)
+      - name: STATE
+        synonyms:
+          - state
+          - us state
+          - geography
+        expr: STATE
+        data_type: VARCHAR(2)
+    facts:
+      - name: FUNDED_AMOUNT
+        expr: FUNDED_AMOUNT
+        data_type: NUMBER(10,2)
+        access_modifier: public_access
+      - name: REQUESTED_AMOUNT
+        expr: REQUESTED_AMOUNT
+        data_type: NUMBER(10,2)
+        access_modifier: public_access
+    metrics:
+      # using_relationships is the YAML equivalent of DDL's USING (relationship_name)
+      - name: APPLICATION_COUNT
+        synonyms:
+          - applications
+          - apps submitted
+          - application volume
+        expr: COUNT(APPLICATION_ID)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_APPLICATION_DATE
+      - name: REVIEW_COUNT
+        synonyms:
+          - reviews
+          - reviews started
+          - underwriting count
+        expr: COUNT(REVIEW_DATE)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_REVIEW_DATE
+      - name: DECISION_COUNT
+        synonyms:
+          - decisions
+          - decisions made
+          - approvals and denials
+        expr: COUNT(DECISION_DATE)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_DECISION_DATE
+      - name: FUNDING_COUNT
+        synonyms:
+          - fundings
+          - funded loans
+          - originations
+        expr: COUNT(FUNDING_DATE)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_FUNDING_DATE
+      - name: TOTAL_REQUESTED
+        synonyms:
+          - requested amount
+          - pipeline value
+        expr: SUM(REQUESTED_AMOUNT)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_APPLICATION_DATE
+      - name: TOTAL_FUNDED
+        synonyms:
+          - funded amount
+          - origination volume
+        expr: SUM(FUNDED_AMOUNT)
+        access_modifier: public_access
+        using_relationships:
+          - APP_TO_FUNDING_DATE
+
+  - name: DATE_DIM
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: DIM_DATE
+    primary_key:
+      columns:
+        - DATE_KEY
+    dimensions:
+      - name: MONTH_NAME
+        synonyms:
+          - month
+          - month name
+        expr: MONTH_NAME
+        data_type: VARCHAR(10)
+      - name: MONTH_NUM
+        synonyms:
+          - month number
+        expr: MONTH_NUM
+        data_type: NUMBER
+      - name: QUARTER
+        synonyms:
+          - quarter
+          - qtr
+        expr: QUARTER
+        data_type: VARCHAR(2)
+      - name: YEAR
+        synonyms:
+          - year
+        expr: YEAR
+        data_type: NUMBER
+
+relationships:
+  - name: APP_TO_APPLICATION_DATE
+    left_table: APPLICATIONS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: APPLICATION_DATE
+        right_column: DATE_KEY
+  - name: APP_TO_REVIEW_DATE
+    left_table: APPLICATIONS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: REVIEW_DATE
+        right_column: DATE_KEY
+  - name: APP_TO_DECISION_DATE
+    left_table: APPLICATIONS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: DECISION_DATE
+        right_column: DATE_KEY
+  - name: APP_TO_FUNDING_DATE
+    left_table: APPLICATIONS
+    right_table: DATE_DIM
+    relationship_columns:
+      - left_column: FUNDING_DATE
+        right_column: DATE_KEY
+
+# Derived metrics combining using_relationships-scoped metrics
+# must be view-level (not nested under a table)
+metrics:
+  - name: REVIEW_RATE
+    synonyms:
+      - review rate
+      - application to review rate
+    expr: "DIV0(applications.review_count, applications.application_count)"
+    access_modifier: public_access
+  - name: DECISION_RATE
+    synonyms:
+      - decision rate
+      - approval rate
+      - application to decision rate
+    expr: "DIV0(applications.decision_count, applications.application_count)"
+    access_modifier: public_access
+  - name: FUNDING_RATE
+    synonyms:
+      - funding rate
+      - close rate
+      - conversion rate
+      - pull-through rate
+    expr: "DIV0(applications.funding_count, applications.application_count)"
+    access_modifier: public_access

@@ -1,0 +1,104 @@
+# Fact as Relationship Key: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features:
+#   - AI_SQL_GENERATION
+#   - Computed FK facts used as relationship keys (e.g. CONCAT(YEAR, '-Q', QUARTER))
+#     are not supported as relationship join keys in YAML. YAML relationships must
+#     reference physical columns. Use semantic_view.sql for the computed-FK pattern.
+#     This YAML uses a placeholder relationship on SALE_DATE for structural completeness.
+
+name: SALES_VS_BUDGET_SV
+description: >
+  Sales vs fiscal-quarter budgets. The computed FK fact pattern (deriving a join
+  key via CONCAT(YEAR + QUARTER)) requires DDL authoring. This YAML defines the
+  base structure; use semantic_view.sql for the full computed-FK relationship.
+
+tables:
+  - name: products
+    description: Product catalog
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: PRODUCTS
+    primary_key:
+      columns: [PRODUCT_ID]
+    dimensions:
+      - name: category
+        synonyms: [product category, category]
+        expr: CATEGORY
+        data_type: VARCHAR
+      - name: product_name
+        synonyms: [product, item]
+        expr: PRODUCT_NAME
+        data_type: VARCHAR
+
+  - name: fiscal_quarters
+    description: Fiscal quarter budget targets
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: FISCAL_QUARTERS
+    primary_key:
+      columns: [FISCAL_QUARTER_KEY]
+    dimensions:
+      - name: quarter_name
+        synonyms: [quarter, fiscal quarter, period]
+        expr: QUARTER_NAME
+        data_type: VARCHAR
+      - name: fiscal_year
+        synonyms: [year, fy]
+        expr: FISCAL_YEAR
+        data_type: NUMBER
+    metrics:
+      - name: total_budget
+        synonyms: [budget, target, quota]
+        expr: SUM(BUDGET_AMOUNT)
+
+  - name: sales
+    description: Sales transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: SALES
+    primary_key:
+      columns: [SALE_ID]
+    dimensions:
+      - name: sale_date
+        synonyms: [date, transaction date]
+        expr: SALE_DATE
+        data_type: DATE
+    facts:
+      # The computed FK (CONCAT(YEAR, '-Q', QUARTER)) that drives the fiscal_quarter
+      # join is a DDL-only feature. Shown here as a regular fact for documentation.
+      - name: fiscal_qtr_key
+        description: >
+          Computed fiscal quarter key. NOTE: as a relationship join key,
+          this requires DDL authoring (semantic_view.sql).
+        expr: CONCAT(TO_VARCHAR(YEAR(SALE_DATE)), '-Q', TO_VARCHAR(QUARTER(SALE_DATE)))
+        data_type: VARCHAR
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, sales, total sales]
+        expr: SUM(AMOUNT)
+
+relationships:
+  - name: sales_to_products
+    left_table: sales
+    right_table: products
+    relationship_columns:
+      - left_column: PRODUCT_ID
+        right_column: PRODUCT_ID
+  # NOTE: Full computed-FK join requires DDL. YAML placeholder uses a direct column match.
+  # In DDL: sales_to_quarters AS sales(sales.fiscal_qtr_key) REFERENCES fiscal_quarters
+  - name: sales_to_quarters
+    left_table: sales
+    right_table: fiscal_quarters
+    relationship_columns:
+      - left_column: FISCAL_QUARTER_KEY
+        right_column: FISCAL_QUARTER_KEY

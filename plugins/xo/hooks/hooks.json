@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/sessionstart.js",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/userpromptsubmit.js",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/posttooluse.js"
+          }
+        ]
+      }
+    ]
+  }
+}

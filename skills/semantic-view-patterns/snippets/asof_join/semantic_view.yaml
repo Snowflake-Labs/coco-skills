@@ -1,0 +1,88 @@
+# ASOF Join: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# ⚠️  ASOF JOIN LIMITATION: The YAML spec does not currently support the
+# ASOF relationship syntax. This YAML defines the table structure and standard
+# relationships as placeholders. Use semantic_view.sql for the full ASOF pattern.
+
+name: ORDERS_BY_ADDRESS
+description: >
+  Orders attributed to the customer address active at time of order via ASOF join.
+  NOTE: full ASOF join requires DDL authoring (semantic_view.sql).
+
+tables:
+  - name: Orders
+    description: Order transactions
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: ORDERS
+    primary_key:
+      columns: [O_ORDID]
+    dimensions:
+      - name: year_month
+        synonyms: [order month, month]
+        description: Month of order
+        expr: DATE_TRUNC('month', O_ORDDATE)
+        data_type: DATE
+    metrics:
+      - name: total_revenue
+        synonyms: [revenue, order revenue, total order value]
+        expr: SUM(O_AMOUNT)
+      - name: order_count
+        synonyms: [number of orders, orders]
+        expr: COUNT(O_ORDID)
+
+  - name: Customer_address
+    description: Customer address history — one row per address period per customer
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CUSTOMER_ADDRESS
+    primary_key:
+      columns: [CA_CUSTID, CA_START_DATE]
+    dimensions:
+      - name: zip
+        synonyms: [zip code, postal code, delivery zip]
+        expr: CA_ZIPCODE
+        data_type: VARCHAR
+      - name: street
+        expr: CA_STREET_ADDR
+        data_type: VARCHAR
+
+  - name: Customer_name
+    description: Customer master — one row per customer
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CUSTOMER_NAME
+    primary_key:
+      columns: [C_CUSTID]
+    dimensions:
+      - name: name
+        description: Full customer name
+        expr: CONCAT(C_FIRST_NAME, ' ', C_LAST_NAME)
+        data_type: VARCHAR
+
+# NOTE: YAML does not support ASOF relationship syntax.
+# Full pattern requires DDL:
+#   orders_to_addr AS Orders(O_CUSTID, O_ORDDATE)
+#       REFERENCES Customer_address(CA_CUSTID, ASOF CA_START_DATE)
+relationships:
+  - name: addr_to_name
+    left_table: Customer_address
+    right_table: Customer_name
+    relationship_columns:
+      - left_column: CA_CUSTID
+        right_column: C_CUSTID
+  - name: orders_to_addr
+    left_table: Orders
+    right_table: Customer_address
+    relationship_columns:
+      - left_column: O_CUSTID
+        right_column: CA_CUSTID

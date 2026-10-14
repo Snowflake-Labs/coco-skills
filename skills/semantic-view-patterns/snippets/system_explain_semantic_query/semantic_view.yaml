@@ -1,0 +1,93 @@
+# System Explain Semantic Query: Semantic View YAML
+#
+# Deploy with:
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$);
+#
+# Verify without deploying (dry-run):
+#   CALL SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('TARGET_DB.TARGET_SCHEMA', $$ <contents> $$, TRUE);
+#
+# DDL-only features:
+#   - AI_SQL_GENERATION → module_custom_instructions: sql_generation: in YAML
+#   - PRIVATE entity-level aggregated facts → YAML: access_modifier: private_access
+
+name: SUPPORT_ANALYTICS_SV
+description: >
+  Support ticket analytics. Includes a PRIVATE aggregated fact (total_contract_value)
+  that drives the value_segment derived dimension — useful for demonstrating
+  SYSTEM$EXPLAIN_SEMANTIC_QUERY.
+
+tables:
+  - name: customers
+    description: Customer accounts
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: CUSTOMERS
+    primary_key:
+      columns: [CUSTOMER_ID]
+    dimensions:
+      - name: tier
+        synonyms: [customer tier, segment]
+        expr: TIER
+        data_type: VARCHAR
+      - name: customer_name
+        synonyms: [customer, account]
+        expr: CUSTOMER_NAME
+        data_type: VARCHAR
+      - name: value_segment
+        synonyms: [value segment, account segment]
+        description: High/mid/low-value segment based on total contract value
+        expr: >
+          CASE
+            WHEN SUM(support_tickets.amount) >= 200000 THEN 'high-value'
+            WHEN SUM(support_tickets.amount) >= 50000  THEN 'mid-value'
+            ELSE 'low-value'
+          END
+        data_type: VARCHAR
+    facts:
+      - name: total_contract_value
+        description: Total contract value per customer — private, drives value_segment
+        expr: SUM(support_tickets.amount)
+        data_type: NUMBER
+        access_modifier: private_access
+    metrics:
+      - name: customer_count
+        synonyms: [customers, accounts]
+        expr: COUNT(CUSTOMER_ID)
+
+  - name: support_tickets
+    description: Support ticket records
+    base_table:
+      database: TARGET_DB
+      schema: TARGET_SCHEMA
+      table: SUPPORT_TICKETS
+    primary_key:
+      columns: [TICKET_ID]
+    dimensions:
+      - name: priority
+        synonyms: [ticket priority, severity]
+        expr: PRIORITY
+        data_type: VARCHAR
+      - name: opened_date
+        synonyms: [date, ticket date]
+        expr: OPENED_DATE
+        data_type: DATE
+    facts:
+      - name: ticket_amount
+        expr: AMOUNT
+        data_type: NUMBER
+    metrics:
+      - name: total_tickets
+        synonyms: [tickets, ticket count, number of tickets]
+        expr: COUNT(TICKET_ID)
+      - name: total_revenue
+        synonyms: [revenue, contract value]
+        expr: SUM(ticket_amount)
+
+relationships:
+  - name: tickets_to_customers
+    left_table: support_tickets
+    right_table: customers
+    relationship_columns:
+      - left_column: CUSTOMER_ID
+        right_column: CUSTOMER_ID

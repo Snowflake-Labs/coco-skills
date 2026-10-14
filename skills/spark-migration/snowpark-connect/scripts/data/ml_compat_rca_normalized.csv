@@ -1,0 +1,62 @@
+"test_name","code","root_cause","additional_notes"
+"SNOW-3319145:ml_logistic_regression","from pyspark.ml.classification import LogisticRegression
+lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8)
+model = lr.fit(training_df)
+predictions = model.transform(test_df)","PySpark ML LogisticRegression fit/transform pattern is not supported in Snowpark Connect (SPRKCNTPY2500). The pyspark.ml module is not available. Replace with Snowflake ML: from snowflake.ml.modeling.linear_model import LogisticRegression; model = LogisticRegression(max_iter=10); model.fit(training_df); predictions = model.predict(test_df). Note param name changes: maxIter→max_iter, regParam→C (inverse), elasticNetParam→l1_ratio. transform()→predict().",""
+"SNOW-3319145:ml_random_forest","from pyspark.ml.classification import RandomForestClassifier
+rf = RandomForestClassifier(numTrees=100, maxDepth=5, labelCol=""label"", featuresCol=""features"")
+model = rf.fit(training_df)","PySpark ML RandomForestClassifier is not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.ensemble import RandomForestClassifier; rf = RandomForestClassifier(n_estimators=100, max_depth=5, input_cols=[...], label_cols=[...]). Param mapping: numTrees→n_estimators, maxDepth→max_depth, featuresCol→input_cols (list), labelCol→label_cols (list).",""
+"SNOW-3319145:ml_gradient_boosted_trees","from pyspark.ml.classification import GBTClassifier
+gbt = GBTClassifier(maxIter=10, maxDepth=5, stepSize=0.1)
+model = gbt.fit(training_df)","PySpark ML GBTClassifier not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.ensemble import GradientBoostingClassifier; or use XGBoost: from snowflake.ml.modeling.xgboost import XGBClassifier. Param mapping: maxIter→n_estimators, maxDepth→max_depth, stepSize→learning_rate.",""
+"SNOW-3319145:ml_decision_tree","from pyspark.ml.classification import DecisionTreeClassifier
+dt = DecisionTreeClassifier(maxDepth=5, labelCol=""label"", featuresCol=""features"")
+model = dt.fit(training_df)","PySpark ML DecisionTreeClassifier not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.tree import DecisionTreeClassifier; dt = DecisionTreeClassifier(max_depth=5, input_cols=[...], label_cols=[...]). Use input_cols/label_cols lists instead of single column names.",""
+"SNOW-3319145:ml_linear_regression","from pyspark.ml.regression import LinearRegression
+lr = LinearRegression(maxIter=10, regParam=0.3, elasticNetParam=0.8, labelCol=""price"")
+model = lr.fit(training_df)
+print(f""RMSE: {model.summary.rootMeanSquaredError}"")","PySpark ML LinearRegression not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.linear_model import LinearRegression. model.summary is not available — use snowflake.ml.modeling.metrics for evaluation: mean_squared_error(y_true, y_pred). Param mapping: regParam→alpha, elasticNetParam→l1_ratio.",""
+"SNOW-3319145:ml_pipeline","from pyspark.ml import Pipeline
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.classification import LogisticRegression
+pipeline = Pipeline(stages=[indexer, assembler, lr])
+model = pipeline.fit(training_df)
+predictions = model.transform(test_df)","PySpark ML Pipeline chains multiple stages (Transformers + Estimators). Not available in Snowpark Connect. Replace with Snowflake ML Pipeline: from snowflake.ml.modeling.pipeline import Pipeline. Note: Snowflake ML Pipeline uses sklearn-compatible API — stages must implement fit/transform. VectorAssembler has no direct equivalent — Snowflake ML handles multi-column input via input_cols parameter.",""
+"SNOW-3319145:ml_cross_validator","from pyspark.ml.tuning import CrossValidator, ParamGridBuilder
+paramGrid = ParamGridBuilder().addGrid(lr.maxIter, [10, 100]).addGrid(lr.regParam, [0.1, 0.01]).build()
+cv = CrossValidator(estimator=pipeline, estimatorParamMaps=paramGrid, evaluator=evaluator, numFolds=3)
+bestModel = cv.fit(training_df)","PySpark ML CrossValidator with ParamGridBuilder is not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.model_selection import GridSearchCV; gs = GridSearchCV(estimator=model, param_grid={'max_iter': [10, 100], 'C': [0.1, 0.01]}, cv=3); gs.fit(training_df). API follows sklearn conventions.",""
+"SNOW-3319145:ml_vector_assembler","from pyspark.ml.feature import VectorAssembler
+assembler = VectorAssembler(inputCols=[""age"", ""salary"", ""experience""], outputCol=""features"")
+assembled_df = assembler.transform(df)
+lr = LogisticRegression(featuresCol=""features"", labelCol=""label"")","VectorAssembler combines multiple columns into a single vector column for ML input. Not needed in Snowpark Connect — Snowflake ML models accept input_cols as a list directly: lr = LogisticRegression(input_cols=[""age"", ""salary"", ""experience""], label_cols=[""label""]). Remove VectorAssembler entirely from the pipeline.",""
+"SNOW-3319145:ml_string_indexer","from pyspark.ml.feature import StringIndexer, OneHotEncoder
+indexer = StringIndexer(inputCol=""category"", outputCol=""category_index"")
+encoder = OneHotEncoder(inputCol=""category_index"", outputCol=""category_vec"")
+indexed_df = indexer.fit(df).transform(df)","PySpark StringIndexer/OneHotEncoder for categorical encoding. Replace with Snowflake ML: from snowflake.ml.modeling.preprocessing import OrdinalEncoder, OneHotEncoder. Snowflake ML encoders work directly on DataFrame columns: encoder = OneHotEncoder(input_cols=[""category""], output_cols=[""category_encoded""]); encoder.fit(df).transform(df).",""
+"SNOW-3319145:ml_standard_scaler","from pyspark.ml.feature import StandardScaler
+scaler = StandardScaler(inputCol=""features"", outputCol=""scaled_features"", withStd=True, withMean=True)
+scaler_model = scaler.fit(assembled_df)
+scaled_df = scaler_model.transform(assembled_df)","PySpark StandardScaler for feature normalization. Replace with Snowflake ML: from snowflake.ml.modeling.preprocessing import StandardScaler; scaler = StandardScaler(input_cols=[""age"", ""salary""], output_cols=[""age_scaled"", ""salary_scaled""]); scaler.fit(df).transform(df). Works on individual columns — no VectorAssembler needed.",""
+"SNOW-3319145:ml_evaluator","from pyspark.ml.evaluation import BinaryClassificationEvaluator, MulticlassClassificationEvaluator
+evaluator = BinaryClassificationEvaluator(labelCol=""label"", rawPredictionCol=""rawPrediction"", metricName=""areaUnderROC"")
+auc = evaluator.evaluate(predictions)","PySpark ML Evaluators not available in Snowpark Connect. Replace with Snowflake ML metrics: from snowflake.ml.modeling.metrics import accuracy_score, precision_score, recall_score, f1_score, log_loss, mean_squared_error. Usage: accuracy = accuracy_score(df=predictions, y_true_col_names=""label"", y_pred_col_names=""prediction"").",""
+"SNOW-3319145:ml_kmeans","from pyspark.ml.clustering import KMeans
+kmeans = KMeans(k=3, seed=42, featuresCol=""features"")
+model = kmeans.fit(assembled_df)
+centers = model.clusterCenters()","PySpark ML KMeans clustering not available in Snowpark Connect. Replace with Snowflake ML: from snowflake.ml.modeling.cluster import KMeans; km = KMeans(n_clusters=3, random_state=42, input_cols=[""col1"", ""col2""]); km.fit(df). Param mapping: k→n_clusters, seed→random_state. clusterCenters()→cluster_centers_ attribute.",""
+"SNOW-3319145:ml_als_recommendation","from pyspark.ml.recommendation import ALS
+als = ALS(maxIter=10, regParam=0.1, userCol=""userId"", itemCol=""movieId"", ratingCol=""rating"")
+model = als.fit(ratings_df)
+recommendations = model.recommendForAllUsers(10)","PySpark ML ALS (collaborative filtering) not available in Snowpark Connect. No direct Snowflake ML equivalent for matrix factorization recommendations. Options: 1) Use Snowflake Cortex ML functions for simpler predictions, 2) Train ALS model externally and register in Snowflake Model Registry, 3) Implement as a Python stored procedure with numpy/scipy.",""
+"SNOW-3319145:ml_pca","from pyspark.ml.feature import PCA
+pca = PCA(k=3, inputCol=""features"", outputCol=""pca_features"")
+pca_model = pca.fit(assembled_df)
+pca_df = pca_model.transform(assembled_df)","PySpark ML PCA for dimensionality reduction. Replace with Snowflake ML: from snowflake.ml.modeling.decomposition import PCA; pca = PCA(n_components=3, input_cols=[""col1"", ""col2"", ""col3""], output_cols=[""pc1"", ""pc2"", ""pc3""]); pca.fit(df).transform(df). Param mapping: k→n_components.",""
+"SNOW-3319145:ml_model_save_load","model.save(""/mnt/models/my_model"")
+loaded_model = LogisticRegressionModel.load(""/mnt/models/my_model"")","PySpark ML model.save()/Model.load() uses HDFS/cloud storage. Replace with Snowflake Model Registry: from snowflake.ml.registry import Registry; reg = Registry(session); reg.log_model(model, model_name=""my_model"", ...); loaded = reg.get_model(""my_model"").default. Model Registry provides versioning, lineage, and deployment.",""
+"SNOW-3319145:ml_mllib_legacy","from pyspark.mllib.classification import LogisticRegressionWithLBFGS
+from pyspark.mllib.regression import LabeledPoint
+from pyspark.mllib.linalg import Vectors
+data = [LabeledPoint(1.0, Vectors.dense([1.0, 2.0]))]
+model = LogisticRegressionWithLBFGS.train(sc.parallelize(data))","pyspark.mllib (RDD-based ML, legacy) is not supported in Snowpark Connect (SPRKCNTPY3000). This is the older ML library that operates on RDDs. Replace with Snowflake ML (snowflake.ml.modeling.*) which provides sklearn-compatible API. LabeledPoint/Vectors have no equivalent — use DataFrames directly.",""

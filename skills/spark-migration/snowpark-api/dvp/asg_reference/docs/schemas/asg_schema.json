@@ -1,0 +1,2786 @@
+{
+  "$defs": {
+    "AnalysisWarning": {
+      "description": "Structured warning for migration analysis.\n\nProvides detailed context about issues discovered during ASG extraction\nthat may affect the migration to Snowflake.\n\nExample:\n    AnalysisWarning(\n        code=\"W001\",\n        severity=WarningSeverity.WARNING,\n        node_id=\"tx_011\",\n        message=\"Missing source logic...\",\n        source_module=\"my_security_lib\",\n        suggested_action=\"Provide source code or create equivalent UDF\"\n    )",
+      "properties": {
+        "code": {
+          "description": "Warning code (e.g., 'W001', 'W_PAR_001')",
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/WarningSeverity",
+          "default": "warning"
+        },
+        "node_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Related ASG node ID (e.g., 'tx_011')",
+          "title": "Node Id"
+        },
+        "message": {
+          "description": "Human-readable warning description",
+          "title": "Message",
+          "type": "string"
+        },
+        "source_module": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Related module name if applicable",
+          "title": "Source Module"
+        },
+        "suggested_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Recommended action to resolve",
+          "title": "Suggested Action"
+        },
+        "source_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source file where issue occurred",
+          "title": "Source File"
+        },
+        "source_line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Line number in source file",
+          "title": "Source Line"
+        },
+        "regex_evidence": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Structured evidence from regex fallback parsing. Contains: match_type, raw_snippet, identified_elements, failure_reason, primary_parser (ast/sqlglot)",
+          "title": "Regex Evidence"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "AnalysisWarning",
+      "type": "object"
+    },
+    "BindingAction": {
+      "description": "Type of action in an execution binding.",
+      "enum": [
+        "RESOLVE_INBOUND",
+        "EXECUTE_FLOW"
+      ],
+      "title": "BindingAction",
+      "type": "string"
+    },
+    "BindingSourceType": {
+      "description": "Type of source for an input binding.",
+      "enum": [
+        "data_in",
+        "transformation",
+        "call_output",
+        "variable",
+        "literal"
+      ],
+      "title": "BindingSourceType",
+      "type": "string"
+    },
+    "CallBindings": {
+      "description": "Input and output bindings for a function call.",
+      "properties": {
+        "inputs": {
+          "items": {
+            "$ref": "#/$defs/InputBinding"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputBinding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "CallBindings",
+      "type": "object"
+    },
+    "CallLocation": {
+      "description": "Location where a function call occurs.",
+      "properties": {
+        "function": {
+          "description": "Caller function name (or '__main__')",
+          "title": "Function",
+          "type": "string"
+        },
+        "line": {
+          "description": "Line number of the call",
+          "title": "Line",
+          "type": "integer"
+        },
+        "file": {
+          "description": "Source file path",
+          "title": "File",
+          "type": "string"
+        }
+      },
+      "required": [
+        "function",
+        "line",
+        "file"
+      ],
+      "title": "CallLocation",
+      "type": "object"
+    },
+    "CalleeRef": {
+      "description": "Reference to the called function.",
+      "properties": {
+        "function": {
+          "description": "Name of the called function",
+          "title": "Function",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source file (None if same file)",
+          "title": "File"
+        }
+      },
+      "required": [
+        "function"
+      ],
+      "title": "CalleeRef",
+      "type": "object"
+    },
+    "Column": {
+      "description": "Schema column definition.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "dtype": {
+          "description": "Data type (STRING, INT, DECIMAL, etc.)",
+          "title": "Dtype",
+          "type": "string"
+        },
+        "nullable": {
+          "default": true,
+          "title": "Nullable",
+          "type": "boolean"
+        },
+        "source_node": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Node"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "name",
+        "dtype"
+      ],
+      "title": "Column",
+      "type": "object"
+    },
+    "ColumnConstraint": {
+      "description": "A constraint on a column extracted from filter/where conditions.\n\nUseful for synthetic data generation to ensure test data satisfies\nthe constraints that would pass through filters.",
+      "properties": {
+        "column_name": {
+          "description": "Name of the constrained column",
+          "title": "Column Name",
+          "type": "string"
+        },
+        "constraint_type": {
+          "$ref": "#/$defs/ConstraintType",
+          "description": "Type of constraint"
+        },
+        "value": {
+          "default": null,
+          "description": "Constraint value (literal or list)",
+          "title": "Value"
+        },
+        "value_type": {
+          "default": "unknown",
+          "description": "Inferred type of the value",
+          "title": "Value Type",
+          "type": "string"
+        },
+        "source_transformation": {
+          "description": "ID of the transformation where constraint was found",
+          "title": "Source Transformation",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Source code location"
+        }
+      },
+      "required": [
+        "column_name",
+        "constraint_type",
+        "source_transformation"
+      ],
+      "title": "ColumnConstraint",
+      "type": "object"
+    },
+    "ColumnRelationship": {
+      "description": "A relationship between columns across data sources.\n\nExtracted from join conditions to understand how tables/files relate.\nUseful for synthetic data generation to ensure referential integrity.",
+      "properties": {
+        "left_column": {
+          "description": "Column name from left side",
+          "title": "Left Column",
+          "type": "string"
+        },
+        "left_source": {
+          "description": "Source ID (in_xxx) of left column",
+          "title": "Left Source",
+          "type": "string"
+        },
+        "right_column": {
+          "description": "Column name from right side",
+          "title": "Right Column",
+          "type": "string"
+        },
+        "right_source": {
+          "description": "Source ID (in_xxx) of right column",
+          "title": "Right Source",
+          "type": "string"
+        },
+        "relationship_type": {
+          "$ref": "#/$defs/RelationshipType",
+          "default": "join_key",
+          "description": "Type of relationship"
+        },
+        "join_type": {
+          "default": "inner",
+          "description": "Join type (inner, left, right, etc.)",
+          "title": "Join Type",
+          "type": "string"
+        },
+        "source_transformation": {
+          "description": "ID of the join transformation",
+          "title": "Source Transformation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "left_column",
+        "left_source",
+        "right_column",
+        "right_source",
+        "source_transformation"
+      ],
+      "title": "ColumnRelationship",
+      "type": "object"
+    },
+    "ConstraintType": {
+      "description": "Type of column constraint extracted from filter conditions.",
+      "enum": [
+        "equals",
+        "not_equals",
+        "gt",
+        "lt",
+        "gte",
+        "lte",
+        "in",
+        "not_null",
+        "is_null",
+        "between",
+        "like",
+        "rlike",
+        "enum"
+      ],
+      "title": "ConstraintType",
+      "type": "string"
+    },
+    "ControlBranch": {
+      "description": "A single branch within a control node.\n\nFor if/else: branches are [true_branch, false_branch]\nFor match/case: branches are [case_1, case_2, ..., default]\nFor try/except: branches are [try_block, except_block, finally_block]",
+      "properties": {
+        "label": {
+          "description": "Branch identifier (true, false, case_X, try_block, etc.)",
+          "title": "Label",
+          "type": "string"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Branch condition (for elif, case patterns)",
+          "title": "Condition"
+        },
+        "steps": {
+          "description": "List of step IDs or transformation IDs in this branch",
+          "items": {
+            "type": "string"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "sub_controls": {
+          "description": "Nested control node IDs for complex structures",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sub Controls",
+          "type": "array"
+        },
+        "produces_dataframe": {
+          "default": true,
+          "description": "Whether this branch produces a DataFrame output",
+          "title": "Produces Dataframe",
+          "type": "boolean"
+        },
+        "target_variable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Variable name assigned in this branch (for MERGE detection)",
+          "title": "Target Variable"
+        },
+        "ssa_output_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "SSA-compliant output ID for this branch. When target_variable is shared across branches (e.g., df_processed), each branch gets a unique ssa_output_id (e.g., tx_015_LATAM, tx_018_STD). This enables unambiguous lineage tracking.",
+          "title": "Ssa Output Id"
+        }
+      },
+      "required": [
+        "label"
+      ],
+      "title": "ControlBranch",
+      "type": "object"
+    },
+    "ControlLogic": {
+      "description": "The condition or iterator expression for a control node.",
+      "properties": {
+        "expression": {
+          "description": "The control expression (condition, iterator, etc.)",
+          "title": "Expression",
+          "type": "string"
+        },
+        "expression_ast": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "AST representation of expression",
+          "title": "Expression Ast"
+        },
+        "engine": {
+          "default": "PYTHON_AST",
+          "description": "Expression language/engine",
+          "title": "Engine",
+          "type": "string"
+        },
+        "resolved_expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fully resolved expression including variable definitions. E.g., if expression is 'is_latam' and is_latam = config.get('region') == 'LATAM', resolved_expression would be the full expression.",
+          "title": "Resolved Expression"
+        }
+      },
+      "required": [
+        "expression"
+      ],
+      "title": "ControlLogic",
+      "type": "object"
+    },
+    "ControlNode": {
+      "description": "Universal control flow node for the ASG-Spark.\n\nThis abstracts any Python control structure into a graph topology pattern,\nenabling Phase 2/3 to understand control flow without parsing Python syntax.\n\nExamples:\n- if/elif/else \u2192 BRANCH with 2+ branches\n- match/case \u2192 BRANCH with N case branches + default\n- for/while \u2192 LOOP with body branch + condition\n- try/except/finally \u2192 PROTECTED with try/except/finally branches\n- with \u2192 SCOPED with body branch + context metadata",
+      "properties": {
+        "node_id": {
+          "description": "Unique control node identifier",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "control_type": {
+          "$ref": "#/$defs/ControlType",
+          "description": "Type of control structure"
+        },
+        "logic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ControlLogic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Control condition/iterator"
+        },
+        "branches": {
+          "description": "Conditional branches",
+          "items": {
+            "$ref": "#/$defs/ControlBranch"
+          },
+          "title": "Branches",
+          "type": "array"
+        },
+        "exit_strategy": {
+          "$ref": "#/$defs/ExitStrategy",
+          "default": "MERGE",
+          "description": "How branches reunify"
+        },
+        "loop_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoopType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Purpose of the loop (for translation decisions)"
+        },
+        "loop_variable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Loop variable name (for i in ...)",
+          "title": "Loop Variable"
+        },
+        "loop_iterable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What is being iterated (range, list, DataFrame)",
+          "title": "Loop Iterable"
+        },
+        "context_manager": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Context manager expression",
+          "title": "Context Manager"
+        },
+        "context_variable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Variable bound by 'as' clause",
+          "title": "Context Variable"
+        },
+        "source_location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Where this control structure appears in source"
+        },
+        "affects_dataframe": {
+          "default": true,
+          "description": "Whether this control affects DataFrame lineage",
+          "title": "Affects Dataframe",
+          "type": "boolean"
+        },
+        "is_opaque": {
+          "default": false,
+          "description": "True if logic cannot be translated to SQL",
+          "title": "Is Opaque",
+          "type": "boolean"
+        },
+        "opaque_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpaqueCode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Structured code for why this block is opaque"
+        },
+        "opaque_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-readable explanation of opacity",
+          "title": "Opaque Reason"
+        },
+        "is_unrollable": {
+          "default": false,
+          "description": "True if loop iterates over static iterable known at compile time",
+          "title": "Is Unrollable",
+          "type": "boolean"
+        },
+        "static_iterable": {
+          "anyOf": [
+            {
+              "items": {},
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The static values to unroll (e.g., ['a', 'b', 'c'] or [0, 1, 2])",
+          "title": "Static Iterable"
+        },
+        "convergence_point": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ID of the first node after this control block that consumes branch outputs. Only set when exit_strategy=MERGE and there is code after the control block.",
+          "title": "Convergence Point"
+        },
+        "branch_outputs": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "IDs of the last transformation node in each branch. These are the potential inputs to the convergence_point.",
+          "title": "Branch Outputs"
+        },
+        "merge_semantic": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How branch outputs should be merged at convergence_point. Values: 'UNION_ALL' (combine all rows), 'CONDITIONAL' (runtime decides), 'EXCLUSIVE' (only one branch executes). Default is 'CONDITIONAL' for if/else.",
+          "title": "Merge Semantic"
+        },
+        "type_reconciliation_required": {
+          "default": false,
+          "description": "True if branches produce columns with potentially different types. Phase 2 must force type reconciliation at convergence_point.",
+          "title": "Type Reconciliation Required",
+          "type": "boolean"
+        },
+        "type_warnings": {
+          "description": "List of type inconsistency warnings between branches, e.g., 'local_tax: LATAM branch has CAST, STD branch uses raw amount'",
+          "items": {
+            "type": "string"
+          },
+          "title": "Type Warnings",
+          "type": "array"
+        },
+        "reconciliation_strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How Phase 2 should handle type reconciliation. Values: 'INJECT_BEFORE_CONVERGENCE' (insert virtual ReconciliationStep before convergence_point), 'INLINE_AT_CONVERGENCE' (modify convergence_point directly). Default recommendation: INJECT_BEFORE_CONVERGENCE to maintain separation of concerns.",
+          "title": "Reconciliation Strategy"
+        }
+      },
+      "required": [
+        "node_id",
+        "control_type"
+      ],
+      "title": "ControlNode",
+      "type": "object"
+    },
+    "ControlType": {
+      "description": "Universal control flow patterns.\n\nThese abstract Python's control structures into graph topology patterns:\n- BRANCH: Conditional paths (if/elif/else, match/case)\n- LOOP: Iterative execution (for, while)\n- PROTECTED: Error handling (try/except/finally)\n- SCOPED: Context management (with statement)",
+      "enum": [
+        "BRANCH",
+        "LOOP",
+        "PROTECTED",
+        "SCOPED"
+      ],
+      "title": "ControlType",
+      "type": "string"
+    },
+    "DataSink": {
+      "description": "A data sink (output) in the pipeline.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "table",
+            "parquet",
+            "csv",
+            "json",
+            "orc",
+            "delta",
+            "iceberg",
+            "jdbc",
+            "snowflake",
+            "redshift",
+            "bigquery",
+            "databricks",
+            "other"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Original format/connector string",
+          "title": "Format"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "mode": {
+          "default": "overwrite",
+          "enum": [
+            "overwrite",
+            "append",
+            "ignore",
+            "error"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Id"
+        },
+        "inferred_columns": {
+          "items": {
+            "$ref": "#/$defs/InferredColumn"
+          },
+          "title": "Inferred Columns",
+          "type": "array"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_test_file": {
+          "default": false,
+          "description": "True if source is from a test file (path contains /tests/ or /test/)",
+          "title": "Is Test File",
+          "type": "boolean"
+        },
+        "is_empty_fallback": {
+          "default": false,
+          "description": "True if source is an empty DataFrame fallback (spark.createDataFrame([]))",
+          "title": "Is Empty Fallback",
+          "type": "boolean"
+        },
+        "is_indirect": {
+          "default": false,
+          "description": "True if this output is written via a utility function (e.g., write_to_s3()) rather than a direct df.write call",
+          "title": "Is Indirect",
+          "type": "boolean"
+        },
+        "via_function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of the utility function that performs the actual write (e.g., 'data_update_into_s3'). Only set when is_indirect=True",
+          "title": "Via Function"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "DataSink",
+      "type": "object"
+    },
+    "DataSource": {
+      "description": "A data source (input) in the pipeline.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "table",
+            "csv",
+            "parquet",
+            "json",
+            "orc",
+            "delta",
+            "iceberg",
+            "jdbc",
+            "sql",
+            "memory",
+            "snowflake",
+            "redshift",
+            "bigquery",
+            "databricks",
+            "config",
+            "other"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Original format/connector string (e.g., 'com.databricks.spark.redshift')",
+          "title": "Format"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Query"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "inferred_columns": {
+          "description": "Columns inferred from code analysis",
+          "items": {
+            "$ref": "#/$defs/InferredColumn"
+          },
+          "title": "Inferred Columns",
+          "type": "array"
+        },
+        "required_columns": {
+          "description": "Columns required by downstream transformations with origin tracking",
+          "items": {
+            "$ref": "#/$defs/InferredColumnRef"
+          },
+          "title": "Required Columns",
+          "type": "array"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_test_file": {
+          "default": false,
+          "description": "True if source is from a test file (path contains /tests/ or /test/)",
+          "title": "Is Test File",
+          "type": "boolean"
+        },
+        "is_empty_fallback": {
+          "default": false,
+          "description": "True if source is an empty DataFrame fallback (spark.createDataFrame([]))",
+          "title": "Is Empty Fallback",
+          "type": "boolean"
+        },
+        "is_indirect": {
+          "default": false,
+          "description": "True if this input is read via a utility function rather than a direct spark.read call",
+          "title": "Is Indirect",
+          "type": "boolean"
+        },
+        "via_function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of the utility function that performs the actual read. Only set when is_indirect=True",
+          "title": "Via Function"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "DataSource",
+      "type": "object"
+    },
+    "ExecutionBinding": {
+      "description": "A single binding action in an execution instance.\n\nEither RESOLVE_INBOUND (captures literal -> data source) or\nEXECUTE_FLOW (function call with parameter mappings).",
+      "properties": {
+        "call_id": {
+          "description": "Reference to execution_call",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/BindingAction"
+        },
+        "details": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ResolveDetails"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "context": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Target function name",
+          "title": "Context"
+        },
+        "input_map": {
+          "items": {
+            "$ref": "#/$defs/InputMapping"
+          },
+          "title": "Input Map",
+          "type": "array"
+        }
+      },
+      "required": [
+        "call_id",
+        "action"
+      ],
+      "title": "ExecutionBinding",
+      "type": "object"
+    },
+    "ExecutionCall": {
+      "description": "A function invocation with resolved bindings.\n\nCaptures the call graph: which function calls which, with what arguments,\nand where the return value is stored. This enables tracing data flow\nthrough function boundaries.\n\nExample:\n    silver_df = process_bronze_to_silver(df_sales, df_products)\n\nBecomes:\n    ExecutionCall(\n        call_id=\"call_001\",\n        caller=CallLocation(function=\"run_pipeline\", line=62, file=\"main.py\"),\n        callee=CalleeRef(function=\"process_bronze_to_silver\"),\n        bindings=CallBindings(\n            inputs=[\n                InputBinding(arg_name=\"df_sales\", source_type=\"data_in\", source_id=\"in_008\"),\n                InputBinding(arg_name=\"df_products\", source_type=\"data_in\", source_id=\"in_009\"),\n            ],\n            output=OutputBinding(variable_name=\"silver_df\", target_node=\"tx_004\")\n        )\n    )",
+      "properties": {
+        "call_id": {
+          "description": "Unique identifier (call_001, call_002, ...)",
+          "title": "Call Id",
+          "type": "string"
+        },
+        "caller": {
+          "$ref": "#/$defs/CallLocation"
+        },
+        "callee": {
+          "$ref": "#/$defs/CalleeRef"
+        },
+        "bindings": {
+          "$ref": "#/$defs/CallBindings"
+        },
+        "literal_arguments": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Resolved string literals for arguments (e.g., table_name -> 'my_table')",
+          "title": "Literal Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "call_id",
+        "caller",
+        "callee"
+      ],
+      "title": "ExecutionCall",
+      "type": "object"
+    },
+    "ExecutionInstance": {
+      "description": "Represents a single execution flow from an entry point.\n\nCaptures how data flows from literals/sources through function calls,\nenabling late binding resolution of inferred_schema_origin.\n\nExample: When __main__ calls _read_table(\"sales_data\") and then\npasses the result to run_pipeline(), this tracks the full lineage.",
+      "properties": {
+        "instance_id": {
+          "description": "Unique identifier (main_run_001)",
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "entry_point": {
+          "description": "Entry function (__main__)",
+          "title": "Entry Point",
+          "type": "string"
+        },
+        "bindings": {
+          "items": {
+            "$ref": "#/$defs/ExecutionBinding"
+          },
+          "title": "Bindings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "instance_id",
+        "entry_point"
+      ],
+      "title": "ExecutionInstance",
+      "type": "object"
+    },
+    "ExitStrategy": {
+      "description": "How control flow branches reunify after the control block.\n\n- MERGE: All branches converge to a single output (common variable assignment)\n- INDEPENDENT_SINK: Each branch writes to different destinations\n- TERMINATE: Flow ends (raise, return, sys.exit)",
+      "enum": [
+        "MERGE",
+        "INDEPENDENT_SINK",
+        "TERMINATE"
+      ],
+      "title": "ExitStrategy",
+      "type": "string"
+    },
+    "ExtractionMetadata": {
+      "description": "Metadata about the ASG extraction process and source context.\n\nGroups project-level information separate from the graph structure.",
+      "properties": {
+        "workload_root": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Absolute path to workload directory (base for relative paths)",
+          "title": "Workload Root"
+        },
+        "source_file": {
+          "default": "",
+          "description": "Path to input file/directory. Deprecated: use workload_root",
+          "title": "Source File",
+          "type": "string"
+        },
+        "app_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Spark application name if detected",
+          "title": "App Name"
+        },
+        "spark_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Spark version if detected",
+          "title": "Spark Version"
+        },
+        "generated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When the extraction was performed (ISO format)",
+          "title": "Generated At"
+        }
+      },
+      "title": "ExtractionMetadata",
+      "type": "object"
+    },
+    "FeasibilityLevel": {
+      "description": "Feasibility levels for migration.",
+      "enum": [
+        "high",
+        "medium",
+        "low",
+        "blocker"
+      ],
+      "title": "FeasibilityLevel",
+      "type": "string"
+    },
+    "FunctionArgument": {
+      "description": "Represents a function argument with schema tracking capabilities.\n\nEnables schema propagation through function calls by linking\narguments to their data sources.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "inferred_type": {
+          "default": "Unknown",
+          "title": "Inferred Type",
+          "type": "string"
+        },
+        "inferred_schema_origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inferred Schema Origin"
+        },
+        "is_optional": {
+          "default": false,
+          "title": "Is Optional",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "FunctionArgument",
+      "type": "object"
+    },
+    "FunctionDefinition": {
+      "description": "Complete function definition with argument and return tracking.\n\nEnables:\n- Schema propagation through function arguments\n- Lineage tracking from data sources to function parameters\n- Return type inference for downstream consumers",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "containing_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Containing Class"
+        },
+        "source_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source File"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_test_file": {
+          "default": false,
+          "description": "True if source is from a test file (path contains /tests/ or /test/)",
+          "title": "Is Test File",
+          "type": "boolean"
+        },
+        "is_empty_fallback": {
+          "default": false,
+          "description": "True if source is an empty DataFrame fallback (spark.createDataFrame([]))",
+          "title": "Is Empty Fallback",
+          "type": "boolean"
+        },
+        "arguments": {
+          "items": {
+            "$ref": "#/$defs/FunctionArgument"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "returns": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FunctionReturn"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_udf": {
+          "default": false,
+          "description": "True if this function is registered or used as a Spark UDF",
+          "title": "Is Udf",
+          "type": "boolean"
+        },
+        "udf_return_schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Spark return type/schema for UDFs (e.g., 'DoubleType()', 'StructType([...])')",
+          "title": "Udf Return Schema"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "FunctionDefinition",
+      "type": "object"
+    },
+    "FunctionReturn": {
+      "description": "Represents the return value of a function.\n\nUses ref_type and ref_id to precisely identify what is returned:\n- transformation: Points to the last tx_xxx node in a Spark chain\n- variable: Points to a named variable (e.g., \"df_final\")\n- multiple: Function has multiple return paths\n- literal: Returns a constant value\n- void: No return statement (action/sink functions)",
+      "properties": {
+        "ref_type": {
+          "$ref": "#/$defs/ReturnRefType",
+          "default": "void"
+        },
+        "ref_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref Id"
+        },
+        "inferred_type": {
+          "default": "Unknown",
+          "title": "Inferred Type",
+          "type": "string"
+        }
+      },
+      "title": "FunctionReturn",
+      "type": "object"
+    },
+    "ImportEntry": {
+      "description": "Structured import entry with alias tracking.\n\nEnables Name Resolution: when the lifter sees `F.col('x')`,\nit can look up that `F` maps to `pyspark.sql.functions`.\n\nThe has_source field indicates whether the source code is available\nin the workload directory. For CUSTOM_LIBRARY imports:\n- has_source=True: We can analyze the implementation\n- has_source=False: External dependency, cannot verify migration equivalence",
+      "properties": {
+        "alias": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alias"
+        },
+        "imported_names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Imported Names",
+          "type": "array"
+        },
+        "type": {
+          "$ref": "#/$defs/ImportType",
+          "default": "external_library"
+        },
+        "has_source": {
+          "default": true,
+          "description": "Whether source code is available in the workload (relevant for custom_library)",
+          "title": "Has Source",
+          "type": "boolean"
+        }
+      },
+      "title": "ImportEntry",
+      "type": "object"
+    },
+    "ImportType": {
+      "description": "Type of import for classification.",
+      "enum": [
+        "external_library",
+        "custom_library",
+        "local_module"
+      ],
+      "title": "ImportType",
+      "type": "string"
+    },
+    "InferenceConfidence": {
+      "description": "Confidence level for inferred schema.",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "InferenceConfidence",
+      "type": "string"
+    },
+    "InferenceSource": {
+      "description": "Source of column inference.",
+      "enum": [
+        "explicit",
+        "filter_condition",
+        "join_key",
+        "group_by",
+        "aggregation",
+        "select",
+        "order_by",
+        "function_arg",
+        "catalog",
+        "udf_semantic",
+        "widget_default",
+        "widget_unused",
+        "xref_output",
+        "xref_input",
+        "xref_function",
+        "usage",
+        "naming_convention",
+        "schema_definition"
+      ],
+      "title": "InferenceSource",
+      "type": "string"
+    },
+    "InferenceSummary": {
+      "description": "Summary of type inference results during transformation detection.",
+      "properties": {
+        "inferred": {
+          "default": 0,
+          "description": "Transformations where type was successfully inferred",
+          "title": "Inferred",
+          "type": "integer"
+        },
+        "name_match": {
+          "default": 0,
+          "description": "Transformations detected by name matching (fallback)",
+          "title": "Name Match",
+          "type": "integer"
+        },
+        "excluded": {
+          "default": 0,
+          "description": "Calls excluded because receiver is not DataFrame",
+          "title": "Excluded",
+          "type": "integer"
+        }
+      },
+      "title": "InferenceSummary",
+      "type": "object"
+    },
+    "InferredColumn": {
+      "description": "A column with inference metadata.\n\nUsed by the Schema Tracker to represent columns discovered\nthrough code analysis rather than external catalog.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "inferred_type": {
+          "default": "UNKNOWN",
+          "description": "Inferred type. Can be single (STRING) or composite (STRING | INT)",
+          "title": "Inferred Type",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/InferenceSource",
+          "default": "select"
+        },
+        "confidence": {
+          "$ref": "#/$defs/InferenceConfidence",
+          "default": "low"
+        },
+        "exact_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exact Type"
+        },
+        "nullable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nullable"
+        },
+        "default_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default value when known (e.g., widget defaults, literal assignments)",
+          "title": "Default Value"
+        },
+        "first_seen_nodes": {
+          "description": "Node IDs where first detected, ordered by earliest first",
+          "items": {
+            "type": "string"
+          },
+          "title": "First Seen Nodes",
+          "type": "array"
+        },
+        "usage_count": {
+          "default": 1,
+          "title": "Usage Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "InferredColumn",
+      "type": "object"
+    },
+    "InferredColumnRef": {
+      "description": "Column reference with origin tracking for data_in nodes.\n\nTracks which columns are required by downstream transformations\nand why (e.g., join, filter, select).",
+      "properties": {
+        "name": {
+          "description": "Column name",
+          "title": "Name",
+          "type": "string"
+        },
+        "source": {
+          "description": "Why this column is needed (join_requirement, filter_condition, select, aggregation)",
+          "title": "Source",
+          "type": "string"
+        },
+        "origin_node": {
+          "description": "The transformation node that requires this column (tx_004)",
+          "title": "Origin Node",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "source",
+        "origin_node"
+      ],
+      "title": "InferredColumnRef",
+      "type": "object"
+    },
+    "InputBinding": {
+      "description": "Maps a function argument to its source at call time.\n\nExample: When calling `process_bronze_to_silver(df_sales, df_products)`,\nthis tracks that `df_sales` comes from `in_008` (a data source).",
+      "properties": {
+        "arg_name": {
+          "description": "Parameter name in callee function",
+          "title": "Arg Name",
+          "type": "string"
+        },
+        "source_type": {
+          "$ref": "#/$defs/BindingSourceType",
+          "description": "Type of source"
+        },
+        "source_id": {
+          "description": "Source identifier (in_008, tx_004, call_001, or variable name)",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "inferred_origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Resolved data origin (e.g., 'data_in.sales_data') propagated through call graph",
+          "title": "Inferred Origin"
+        }
+      },
+      "required": [
+        "arg_name",
+        "source_type",
+        "source_id"
+      ],
+      "title": "InputBinding",
+      "type": "object"
+    },
+    "InputColumn": {
+      "description": "A column in a transformation's inferred_input.\n\nExtends InferredColumn with a required from_inputs field that tracks\nwhich input nodes this column originates from. For joins, the same\ncolumn may come from multiple inputs.",
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "inferred_type": {
+          "default": "UNKNOWN",
+          "description": "Inferred type. Can be single (STRING) or composite (STRING | INT)",
+          "title": "Inferred Type",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/InferenceSource",
+          "default": "select"
+        },
+        "confidence": {
+          "$ref": "#/$defs/InferenceConfidence",
+          "default": "low"
+        },
+        "exact_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exact Type"
+        },
+        "nullable": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nullable"
+        },
+        "default_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default value when known (e.g., widget defaults, literal assignments)",
+          "title": "Default Value"
+        },
+        "first_seen_nodes": {
+          "description": "Node IDs where first detected, ordered by earliest first",
+          "items": {
+            "type": "string"
+          },
+          "title": "First Seen Nodes",
+          "type": "array"
+        },
+        "usage_count": {
+          "default": 1,
+          "title": "Usage Count",
+          "type": "integer"
+        },
+        "from_inputs": {
+          "description": "Input node IDs this column comes from (required, at least one)",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "From Inputs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "from_inputs"
+      ],
+      "title": "InputColumn",
+      "type": "object"
+    },
+    "InputMapping": {
+      "description": "Maps a function parameter to its origin node.",
+      "properties": {
+        "parameter": {
+          "description": "Parameter name in target function",
+          "title": "Parameter",
+          "type": "string"
+        },
+        "origin_node": {
+          "description": "Origin data source ID (in_008)",
+          "title": "Origin Node",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parameter",
+        "origin_node"
+      ],
+      "title": "InputMapping",
+      "type": "object"
+    },
+    "LoopType": {
+      "description": "Distinguishes loop purposes for correct translation.\n\n- CODE_GENERATION: Loop creates code artifacts (e.g., 12 columns for months)\n- DATA_ITERATION: Loop processes data iteratively\n- TABLE_ITERATION: Loop processes multiple tables/files",
+      "enum": [
+        "CODE_GENERATION",
+        "DATA_ITERATION",
+        "TABLE_ITERATION"
+      ],
+      "title": "LoopType",
+      "type": "string"
+    },
+    "NotebookDependency": {
+      "description": "A dependency between Databricks notebooks via %run or dbutils.notebook.run.",
+      "properties": {
+        "target": {
+          "description": "Raw target path as written in %run (e.g., '../config', './utils')",
+          "title": "Target",
+          "type": "string"
+        },
+        "resolved_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Resolved relative path from workload root (e.g., '.databricks/notebooks/rsuccess/config.py')",
+          "title": "Resolved Path"
+        },
+        "params": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Parameters passed via $key=value (e.g., {'brand': 'plk'})",
+          "title": "Params",
+          "type": "object"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Line number in source file where the dependency is declared",
+          "title": "Line"
+        }
+      },
+      "required": [
+        "target"
+      ],
+      "title": "NotebookDependency",
+      "type": "object"
+    },
+    "OpaqueCode": {
+      "description": "Structured codes for why a control block cannot be translated to SQL.\n\nThese codes enable Phase 2/3 to make automatic decisions:\n- UNSUPPORTED_LIB \u2192 Try Python UDF\n- IO_SIDE_EFFECT \u2192 Critical error, manual intervention\n- COMPLEX_RECURSION \u2192 Stored Procedure\n- DYNAMIC_SCHEMA \u2192 Warning + manual review\n- EXTERNAL_API \u2192 Stored Procedure with External Access\n- STATEFUL_ITERATION \u2192 UDF with state accumulator\n- UNKNOWN \u2192 Generic opacity, requires analysis",
+      "enum": [
+        "UNSUPPORTED_LIB",
+        "IO_SIDE_EFFECT",
+        "COMPLEX_RECURSION",
+        "DYNAMIC_SCHEMA",
+        "EXTERNAL_API",
+        "STATEFUL_ITERATION",
+        "UNKNOWN"
+      ],
+      "title": "OpaqueCode",
+      "type": "string"
+    },
+    "OutputBinding": {
+      "description": "Maps function return to variable and traceable node.\n\nExample: `silver_df = process_bronze_to_silver(...)` binds the return\nto variable `silver_df`, which resolves to transformation `tx_004`.",
+      "properties": {
+        "variable_name": {
+          "description": "Variable name at call site",
+          "title": "Variable Name",
+          "type": "string"
+        },
+        "target_node": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Resolved node ID (tx_004) if traceable",
+          "title": "Target Node"
+        },
+        "resolved_origin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Data origin this call produces (e.g., 'data_in.sales_data' for _read_table)",
+          "title": "Resolved Origin"
+        }
+      },
+      "required": [
+        "variable_name"
+      ],
+      "title": "OutputBinding",
+      "type": "object"
+    },
+    "ParsedFileInfo": {
+      "description": "Information about a parsed file with two-phase status.",
+      "properties": {
+        "path": {
+          "description": "Relative path to the file",
+          "title": "Path",
+          "type": "string"
+        },
+        "file_type": {
+          "description": "Type of source file",
+          "enum": [
+            "databricks_notebook",
+            "python_script",
+            "scala_file"
+          ],
+          "title": "File Type",
+          "type": "string"
+        },
+        "syntax_status": {
+          "description": "Python syntax parsing status",
+          "enum": [
+            "ok",
+            "corrected",
+            "error"
+          ],
+          "title": "Syntax Status",
+          "type": "string"
+        },
+        "syntax_correction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Description of automatic syntax correction applied",
+          "title": "Syntax Correction"
+        },
+        "syntax_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Syntax error message if parsing failed",
+          "title": "Syntax Error"
+        },
+        "understanding_status": {
+          "description": "Pipeline understanding status",
+          "enum": [
+            "ok",
+            "error",
+            "skipped"
+          ],
+          "title": "Understanding Status",
+          "type": "string"
+        },
+        "understanding_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Understanding error message if extraction failed",
+          "title": "Understanding Error"
+        }
+      },
+      "required": [
+        "path",
+        "file_type",
+        "syntax_status",
+        "understanding_status"
+      ],
+      "title": "ParsedFileInfo",
+      "type": "object"
+    },
+    "ParsingReport": {
+      "description": "Report of file processing results for a directory.\n\nThree-phase processing:\n1. Syntax Parsing: Validates Python syntax, auto-corrects where possible\n2. Pipeline Understanding: Extracts semantic information about data transformations\n3. Type Inference: Determines receiver types for accurate transformation detection",
+      "properties": {
+        "total_files": {
+          "description": "Total number of Python files found",
+          "title": "Total Files",
+          "type": "integer"
+        },
+        "databricks_notebooks": {
+          "description": "Number of files that are Databricks notebook exports",
+          "title": "Databricks Notebooks",
+          "type": "integer"
+        },
+        "python_scripts": {
+          "description": "Number of pure Python script files",
+          "title": "Python Scripts",
+          "type": "integer"
+        },
+        "scala_files": {
+          "default": 0,
+          "description": "Number of Scala source files",
+          "title": "Scala Files",
+          "type": "integer"
+        },
+        "syntax": {
+          "$ref": "#/$defs/SyntaxSummary",
+          "description": "Syntax parsing results"
+        },
+        "understanding": {
+          "$ref": "#/$defs/UnderstandingSummary",
+          "description": "Pipeline understanding results"
+        },
+        "inference": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InferenceSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Type inference results for transformation detection"
+        },
+        "files": {
+          "description": "Details for files with corrections or errors",
+          "items": {
+            "$ref": "#/$defs/ParsedFileInfo"
+          },
+          "title": "Files",
+          "type": "array"
+        },
+        "inference_warnings": {
+          "description": "Warnings for calls resolved by name matching or excluded",
+          "items": {
+            "$ref": "#/$defs/TypeInferenceWarning"
+          },
+          "title": "Inference Warnings",
+          "type": "array"
+        },
+        "generated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When the report was generated",
+          "title": "Generated At"
+        }
+      },
+      "required": [
+        "total_files",
+        "databricks_notebooks",
+        "python_scripts",
+        "syntax",
+        "understanding"
+      ],
+      "title": "ParsingReport",
+      "type": "object"
+    },
+    "RelationshipType": {
+      "description": "Type of relationship between columns.",
+      "enum": [
+        "join_key",
+        "fk",
+        "same_domain"
+      ],
+      "title": "RelationshipType",
+      "type": "string"
+    },
+    "ResolveDetails": {
+      "description": "Details for RESOLVE_INBOUND action.",
+      "properties": {
+        "source_id": {
+          "description": "Data source ID (in_008)",
+          "title": "Source Id",
+          "type": "string"
+        },
+        "resolved_name": {
+          "description": "Resolved name (sales_data)",
+          "title": "Resolved Name",
+          "type": "string"
+        },
+        "output_variable": {
+          "description": "Variable receiving the data (df_sales)",
+          "title": "Output Variable",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_id",
+        "resolved_name",
+        "output_variable"
+      ],
+      "title": "ResolveDetails",
+      "type": "object"
+    },
+    "ReturnRefType": {
+      "description": "Type of reference for function return values.",
+      "enum": [
+        "transformation",
+        "variable",
+        "expression",
+        "multiple",
+        "literal",
+        "void",
+        "data_source"
+      ],
+      "title": "ReturnRefType",
+      "type": "string"
+    },
+    "SourceFile": {
+      "description": "Represents a single source file with its imports.\n\nEnables tracking of which imports belong to which file when\nprocessing a multi-file workload. Functions are stored at the\nASG level with a source_file field pointing back to their origin.\n\nEntrypoint detection fields enable downstream tools to identify\nexecution starting points without re-parsing source code.",
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "imports": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ImportEntry"
+          },
+          "title": "Imports",
+          "type": "object"
+        },
+        "source_type": {
+          "$ref": "#/$defs/SourceType",
+          "default": "unknown",
+          "description": "Type of source file: NOTEBOOK, MODULE, SCRIPT"
+        },
+        "is_entry_point": {
+          "default": false,
+          "description": "True if this file is an execution entry point",
+          "title": "Is Entry Point",
+          "type": "boolean"
+        },
+        "has_spark_session": {
+          "default": false,
+          "description": "True if this file creates a SparkSession",
+          "title": "Has Spark Session",
+          "type": "boolean"
+        },
+        "notebook_dependencies": {
+          "description": "Other notebooks this file depends on via %run or dbutils.notebook.run",
+          "items": {
+            "$ref": "#/$defs/NotebookDependency"
+          },
+          "title": "Notebook Dependencies",
+          "type": "array"
+        },
+        "widget_parameters": {
+          "description": "Deprecated: widgets are now promoted to data_in config entries",
+          "items": {
+            "$ref": "#/$defs/WidgetParameter"
+          },
+          "title": "Widget Parameters",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Description extracted from the first %md section of the notebook",
+          "title": "Description"
+        },
+        "pip_dependencies": {
+          "description": "Python packages installed via %pip in this notebook",
+          "items": {
+            "type": "string"
+          },
+          "title": "Pip Dependencies",
+          "type": "array"
+        },
+        "display_outputs": {
+          "default": 0,
+          "description": "Number of display()/show() calls for notebook visualization",
+          "title": "Display Outputs",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "SourceFile",
+      "type": "object"
+    },
+    "SourceLocation": {
+      "description": "Location of a code element in the source files.\n\nProvides precise source tracking with:\n- pathfile: Relative path from workload_root\n- scope: Containing class/function hierarchy (e.g., \"MyClass.my_method\")\n- span: Line and column range (e.g., \"27:9-27:60\")",
+      "properties": {
+        "pathfile": {
+          "description": "Relative path from workload_root",
+          "title": "Pathfile",
+          "type": "string"
+        },
+        "scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Containing class.function hierarchy, null if module-level",
+          "title": "Scope"
+        },
+        "span": {
+          "description": "Line:col range as 'start_line:start_col-end_line:end_col'",
+          "title": "Span",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pathfile",
+        "span"
+      ],
+      "title": "SourceLocation",
+      "type": "object"
+    },
+    "SourceType": {
+      "description": "Type of source file (for entrypoint detection).",
+      "enum": [
+        "notebook",
+        "module",
+        "script",
+        "unknown"
+      ],
+      "title": "SourceType",
+      "type": "string"
+    },
+    "SparkCategory": {
+      "description": "Categories of Spark operations for classification.",
+      "enum": [
+        "relational",
+        "builtin_function",
+        "complex_builtin",
+        "python_udf",
+        "rdd_low_level",
+        "system_ops",
+        "unknown"
+      ],
+      "title": "SparkCategory",
+      "type": "string"
+    },
+    "SyntaxSummary": {
+      "description": "Summary of syntax parsing results.",
+      "properties": {
+        "ok": {
+          "description": "Files with valid Python syntax",
+          "title": "Ok",
+          "type": "integer"
+        },
+        "corrected": {
+          "description": "Files with syntax errors that were auto-corrected",
+          "title": "Corrected",
+          "type": "integer"
+        },
+        "errors": {
+          "description": "Files with syntax errors that could not be corrected",
+          "title": "Errors",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ok",
+        "corrected",
+        "errors"
+      ],
+      "title": "SyntaxSummary",
+      "type": "object"
+    },
+    "TransformationNode": {
+      "description": "A transformation node in the ASG.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "inputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "outputs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Outputs",
+          "type": "array"
+        },
+        "logic": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logic"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "input_schema": {
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "title": "Input Schema",
+          "type": "array"
+        },
+        "output_schema": {
+          "items": {
+            "$ref": "#/$defs/Column"
+          },
+          "title": "Output Schema",
+          "type": "array"
+        },
+        "inferred_input": {
+          "items": {
+            "$ref": "#/$defs/InputColumn"
+          },
+          "title": "Inferred Input",
+          "type": "array"
+        },
+        "inferred_output": {
+          "items": {
+            "$ref": "#/$defs/InferredColumn"
+          },
+          "title": "Inferred Output",
+          "type": "array"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_test_file": {
+          "default": false,
+          "description": "True if source is from a test file (path contains /tests/ or /test/)",
+          "title": "Is Test File",
+          "type": "boolean"
+        },
+        "is_empty_fallback": {
+          "default": false,
+          "description": "True if source is an empty DataFrame fallback (spark.createDataFrame([]))",
+          "title": "Is Empty Fallback",
+          "type": "boolean"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SparkCategory"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "feasibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FeasibilityLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "is_deterministic": {
+          "default": true,
+          "description": "False if transformation uses non-deterministic functions like current_timestamp(), rand(), uuid(). Affects Dynamic Table refresh strategy.",
+          "title": "Is Deterministic",
+          "type": "boolean"
+        },
+        "non_deterministic_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Explanation of why this node is non-deterministic, e.g., 'uses current_timestamp()'",
+          "title": "Non Deterministic Reason"
+        },
+        "is_convergence_point": {
+          "default": false,
+          "description": "True if this is the first node after control flow branches merge. Phase 2 uses convergence_inputs to build UNION/CASE logic.",
+          "title": "Is Convergence Point",
+          "type": "boolean"
+        },
+        "convergence_inputs": {
+          "description": "SSA-compliant IDs of branch outputs converging here, e.g., ['tx_015_TRUE', 'tx_018_FALSE'].",
+          "items": {
+            "type": "string"
+          },
+          "title": "Convergence Inputs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "operation"
+      ],
+      "title": "TransformationNode",
+      "type": "object"
+    },
+    "TypeInferenceWarning": {
+      "description": "Warning when type inference falls back to name matching or excludes a call.",
+      "properties": {
+        "path": {
+          "description": "Source file path",
+          "title": "Path",
+          "type": "string"
+        },
+        "line": {
+          "description": "Line number",
+          "title": "Line",
+          "type": "integer"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Column number",
+          "title": "Column"
+        },
+        "method": {
+          "description": "Method name detected (e.g., 'join')",
+          "title": "Method",
+          "type": "string"
+        },
+        "receiver": {
+          "description": "Code of the receiver object",
+          "title": "Receiver",
+          "type": "string"
+        },
+        "receiver_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inferred type if known",
+          "title": "Receiver Type"
+        },
+        "resolution": {
+          "description": "How the call was resolved",
+          "enum": [
+            "inferred",
+            "name_match",
+            "excluded"
+          ],
+          "title": "Resolution",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Why this resolution was applied",
+          "title": "Reason",
+          "type": "string"
+        },
+        "code_snippet": {
+          "description": "The actual code snippet",
+          "title": "Code Snippet",
+          "type": "string"
+        },
+        "context_lines": {
+          "description": "Surrounding lines for context",
+          "items": {
+            "type": "string"
+          },
+          "title": "Context Lines",
+          "type": "array"
+        },
+        "suggestion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Suggested action to improve inference",
+          "title": "Suggestion"
+        }
+      },
+      "required": [
+        "path",
+        "line",
+        "method",
+        "receiver",
+        "resolution",
+        "reason",
+        "code_snippet"
+      ],
+      "title": "TypeInferenceWarning",
+      "type": "object"
+    },
+    "UnderstandingSummary": {
+      "description": "Summary of pipeline understanding results.",
+      "properties": {
+        "ok": {
+          "description": "Files where pipeline was successfully understood",
+          "title": "Ok",
+          "type": "integer"
+        },
+        "errors": {
+          "description": "Files where pipeline understanding failed",
+          "title": "Errors",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ok",
+        "errors"
+      ],
+      "title": "UnderstandingSummary",
+      "type": "object"
+    },
+    "WarningSeverity": {
+      "description": "Severity level for analysis warnings.",
+      "enum": [
+        "info",
+        "warning",
+        "error"
+      ],
+      "title": "WarningSeverity",
+      "type": "string"
+    },
+    "WidgetParameter": {
+      "description": "A Databricks widget parameter (dbutils.widgets.*).",
+      "properties": {
+        "name": {
+          "description": "Widget name/key",
+          "title": "Name",
+          "type": "string"
+        },
+        "widget_type": {
+          "default": "text",
+          "description": "Widget type: text, dropdown, combobox, multiselect",
+          "title": "Widget Type",
+          "type": "string"
+        },
+        "default_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default value (literal or runtime:<expr> if dynamic)",
+          "title": "Default Value"
+        },
+        "valid_values": {
+          "description": "Allowed values for dropdown/multiselect widgets",
+          "items": {
+            "type": "string"
+          },
+          "title": "Valid Values",
+          "type": "array"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Human-readable label for the widget",
+          "title": "Label"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Line number of definition",
+          "title": "Line"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "WidgetParameter",
+      "type": "object"
+    },
+    "WindowSpecDefinition": {
+      "description": "Definition of a PySpark Window specification.\n\nCaptures window specs assigned to variables (e.g., window = Window.partitionBy(...))\nso they can be resolved during SQL generation.",
+      "properties": {
+        "scope": {
+          "description": "Function/scope where the window spec is defined",
+          "title": "Scope",
+          "type": "string"
+        },
+        "variable_name": {
+          "description": "Name of the variable (e.g., 'window_spec')",
+          "title": "Variable Name",
+          "type": "string"
+        },
+        "pyspark_expr": {
+          "description": "Original PySpark expression",
+          "title": "Pyspark Expr",
+          "type": "string"
+        },
+        "sql_expr": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Resolved SQL expression (cached)",
+          "title": "Sql Expr"
+        }
+      },
+      "required": [
+        "scope",
+        "variable_name",
+        "pyspark_expr"
+      ],
+      "title": "WindowSpecDefinition",
+      "type": "object"
+    }
+  },
+  "description": "Abstract Semantic Graph (ASG) \u2014 the output of the parsing phase.\n\nContains the full structure of the analyzed Spark workload (PySpark, Scala, or any future language) with resolved references and propagated schemas.\n\nStructure:\n- workload_root: Absolute path to the workload directory (base for relative paths)\n- source_files: List of SourceFile objects with per-file imports\n- functions: Global list of functions, each with source_file field\n- source_file: Path to the input (file or directory) - deprecated, use workload_root",
+  "properties": {
+    "extraction_metadata": {
+      "$ref": "#/$defs/ExtractionMetadata",
+      "description": "Project-level metadata: paths, versions, timestamps"
+    },
+    "source_files": {
+      "items": {
+        "$ref": "#/$defs/SourceFile"
+      },
+      "title": "Source Files",
+      "type": "array"
+    },
+    "functions": {
+      "items": {
+        "$ref": "#/$defs/FunctionDefinition"
+      },
+      "title": "Functions",
+      "type": "array"
+    },
+    "execution_calls": {
+      "items": {
+        "$ref": "#/$defs/ExecutionCall"
+      },
+      "title": "Execution Calls",
+      "type": "array"
+    },
+    "execution_instances": {
+      "items": {
+        "$ref": "#/$defs/ExecutionInstance"
+      },
+      "title": "Execution Instances",
+      "type": "array"
+    },
+    "data_in": {
+      "items": {
+        "$ref": "#/$defs/DataSource"
+      },
+      "title": "Data In",
+      "type": "array"
+    },
+    "data_out": {
+      "items": {
+        "$ref": "#/$defs/DataSink"
+      },
+      "title": "Data Out",
+      "type": "array"
+    },
+    "transformations": {
+      "items": {
+        "$ref": "#/$defs/TransformationNode"
+      },
+      "title": "Transformations",
+      "type": "array"
+    },
+    "control_nodes": {
+      "description": "Control flow structures extracted from Python AST",
+      "items": {
+        "$ref": "#/$defs/ControlNode"
+      },
+      "title": "Control Nodes",
+      "type": "array"
+    },
+    "warnings": {
+      "items": {
+        "$ref": "#/$defs/AnalysisWarning"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "window_specs": {
+      "description": "Window spec definitions (scope::var -> SQL expression)",
+      "items": {
+        "$ref": "#/$defs/WindowSpecDefinition"
+      },
+      "title": "Window Specs",
+      "type": "array"
+    },
+    "parsing_report": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ParsingReport"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Report of parsing results including file types and errors"
+    },
+    "column_constraints": {
+      "description": "Constraints on columns from filter conditions (for synthetic data)",
+      "items": {
+        "$ref": "#/$defs/ColumnConstraint"
+      },
+      "title": "Column Constraints",
+      "type": "array"
+    },
+    "column_relationships": {
+      "description": "Relationships from join conditions (for synthetic data)",
+      "items": {
+        "$ref": "#/$defs/ColumnRelationship"
+      },
+      "title": "Column Relationships",
+      "type": "array"
+    }
+  },
+  "title": "ASG",
+  "type": "object"
+}
