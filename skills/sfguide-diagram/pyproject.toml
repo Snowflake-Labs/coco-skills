@@ -1,0 +1,6 @@
+[project]
+name = "sfguide-diagram"
+version = "0.1.0"
+description = "Render an sfguide architecture diagram with matplotlib"
+requires-python = ">=3.9"
+dependencies = ["matplotlib>=3.7"]
