@@ -80,6 +80,14 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | [`check-model-availability`](skills/check-model-availability) | Verify whether a Cortex model is callable in base mode (AI SQL) and in agentic mode (the Cortex Code allow-list), with name-variant fallback. |
 
 
+### Demos & content
+
+
+| Skill                           | What it does                                                                                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`lab-video`](skills/lab-video) | Make short videos about Snowflake data and apps: figures from SQL with an as-of date, live-filmed Streamlit apps, AI_TRANSCRIBE captions, verified delivery to a stage or Workspace. |
+
+
 ---
 
 ## Plugins

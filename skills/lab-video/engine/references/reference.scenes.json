@@ -1,0 +1,246 @@
+{
+ "brand": "snowflake",
+ "foot": "Details to follow by email.",
+ "scenes": [
+  {
+   "type": "hook",
+   "logo": true,
+   "lines": [
+    "Skip the *pipeline.*"
+   ],
+   "sub": "Zero-ETL Postgres → Snowflake",
+   "dur": 4000
+  },
+  {
+   "type": "flow",
+   "kicker": "Today",
+   "lines": [
+    "Your data takes the *long_way.*"
+   ],
+   "nodes": [
+    {
+     "t": "Postgres",
+     "s": "OLTP"
+    },
+    {
+     "t": "Kafka",
+     "s": "Debezium"
+    },
+    {
+     "t": "Spark",
+     "s": "extract"
+    },
+    {
+     "t": "Delta Lake",
+     "s": "medallion"
+    },
+    {
+     "t": "Snowflake",
+     "s": "analytics"
+    }
+   ],
+   "sub": "Hand-built. Growing. Yours to maintain.",
+   "dur": 5500
+  },
+  {
+   "type": "stat",
+   "kicker": "The cost",
+   "stat": {
+    "to": 211,
+    "suffix": "K",
+    "label": "credits / year — *just landing data* (illustrative)"
+   },
+   "sub": "≈ 19% of the Snowflake run-rate · before Spark / Kafka infra + the team that runs it",
+   "dur": 4000
+  },
+  {
+   "type": "turn",
+   "kicker": "The egress bill",
+   "lines": [
+    "What if it just… *wasn't_there?*"
+   ],
+   "flow2": [
+    {
+     "t": "Postgres",
+     "s": "OLTP"
+    },
+    {
+     "t": "Snowflake",
+     "s": "~30s fresh · in-region"
+    }
+   ],
+   "sub": "No pipeline shuttling data cross-cloud — and no *egress bill* to pay.",
+   "dur": 3800
+  },
+  {
+   "type": "feature",
+   "kicker": "Introducing",
+   "title": "Postgres *Mirroring*",
+   "chips": [
+    "*~30-sec* fresh",
+    "CDC *+* live state",
+    "open *Iceberg*"
+   ],
+   "sub": "No connector. No batch jobs. A few clicks.",
+   "dur": 4000
+  },
+  {
+   "type": "arch",
+   "kicker": "What we're proposing",
+   "boxes": [
+    {
+     "t": "Snowflake Postgres",
+     "s": "your OLTP tables",
+     "tag": "publication + WAL"
+    },
+    {
+     "t": "pg_lake → Iceberg",
+     "s": "$changes CDC log",
+     "tag": "open format"
+    },
+    {
+     "t": "Serverless apply",
+     "s": "APPLY_MIRROR task",
+     "tag": "delete-then-append"
+    },
+    {
+     "t": "Analytics DB",
+     "s": "target + $live view",
+     "tag": "~30s fresh"
+    }
+   ],
+   "labels": [
+    "logical replication",
+    "auto-refresh ~30s",
+    "one transaction"
+   ],
+   "pills": [
+    "*No* connector to run",
+    "*No* vendor lock-in",
+    "pay only *serverless apply*"
+   ],
+   "dur": 5200
+  },
+  {
+   "type": "snowsight",
+   "kicker": "See it run — in Snowflake",
+   "title": "Worksheet · POSTGRES_MIRROR",
+   "body": [
+    {
+     "code": "<span class=\"cmt\">-- one call. no pipeline, no connector.</span>"
+    },
+    {
+     "code": "<span class=\"kwd\">CALL</span> SNOWFLAKE.POSTGRES.<span class=\"fn\">CREATE_MIRROR</span>("
+    },
+    {
+     "code": "&nbsp;&nbsp;mirror_name =&gt; <span class=\"str\">'orders_mirror'</span>, postgres_tables =&gt; [<span class=\"str\">'public.orders'</span>,<span class=\"str\">'public.subscriptions'</span>],"
+    },
+    {
+     "code": "&nbsp;&nbsp;refresh_interval =&gt; <span class=\"str\">'30 seconds'</span>);&nbsp;&nbsp;<span class=\"ok\">✔ mirror created</span>"
+    },
+    {
+     "code": "<span class=\"kwd\">CALL</span> SNOWFLAKE.POSTGRES.<span class=\"fn\">LIST_MIRRORED_TABLES</span>(<span class=\"str\">'orders_mirror'</span>);"
+    },
+    {
+     "grid": {
+      "cols": [
+       "TABLE",
+       "STATUS",
+       "ROWS"
+      ],
+      "rows": [
+       [
+        "public.orders",
+        "<span class=\"ok\">REPLICATING</span>",
+        "4,182,905"
+       ],
+       [
+        "public.subscriptions",
+        "<span class=\"ok\">REPLICATING</span>",
+        "312,447"
+       ]
+      ]
+     }
+    },
+    {
+     "code": "<span class=\"kwd\">SELECT</span> * <span class=\"kwd\">FROM</span> ORDERS<span class=\"blue\">$live</span>;&nbsp;&nbsp;<span class=\"cmt\">-- current state, no wait</span>"
+    },
+    {
+     "grid": {
+      "cols": [
+       "ORDER_ID",
+       "MEMBER",
+       "TOTAL",
+       "UPDATED_AT"
+      ],
+      "rows": [
+       [
+        "SO-8842190",
+        "m_44821",
+        "$126.40",
+        "14s ago"
+       ],
+       [
+        "SO-8842189",
+        "m_10233",
+        "$58.12",
+        "22s ago"
+       ]
+      ]
+     }
+    }
+   ],
+   "callouts": [
+    {
+     "text": "one call — no ETL",
+     "pos": "tr"
+    },
+    {
+     "text": "CDC + current state",
+     "pos": "mr"
+    },
+    {
+     "text": "~30-second fresh",
+     "pos": "br"
+    }
+   ],
+   "dur": 6000
+  },
+  {
+   "type": "domains",
+   "kicker": "Built for Northwind",
+   "lines": [
+    "The data you move *most.*"
+   ],
+   "domains": [
+    "Orders",
+    "Subscriptions",
+    "Billing"
+   ],
+   "dur": 3000
+  },
+  {
+   "type": "stat",
+   "kicker": "What it's worth",
+   "stat": {
+    "prefix": "$",
+    "to": 150,
+    "suffix": "–300K",
+    "accent": "amber",
+    "label": "per year — *lower total cost of ownership* (illustrative)"
+   },
+   "sub": "on external spend — not the Snowflake bill",
+   "dur": 4000
+  },
+  {
+   "type": "cta",
+   "logo": true,
+   "lines": [
+    "One service. *Real_numbers.*"
+   ],
+   "sub": "Let's prove it.",
+   "dur": 4200
+  }
+ ],
+ "_note": "Reference trailer for the scene-spec engine: a proposal trailer for a fictional company (Northwind Grocery). Same structure, timing and word budgets as the shipped trailer it was measured on; every number is illustrative."
+}
