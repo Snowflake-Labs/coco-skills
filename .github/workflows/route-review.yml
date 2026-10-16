@@ -1,0 +1,171 @@
+name: Route review
+
+# Runs in the privileged lane: it needs write access to apply labels and post a
+# comment. It therefore MUST NOT execute contributor code.
+#
+# workflow_run fires after "Validate skill submission" completes, in the context
+# of the base repository, so the token is not exposed to the PR's head code. The
+# only thing read from the PR is the diff, as text, via git.
+
+on:
+  workflow_run:
+    workflows: ["Validate skill submission"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  route:
+    name: Apply escalation labels
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+
+    steps:
+      # Checks out the BASE repo, not the PR head. Scripts executed here are
+      # the trusted versions from main, never the contributor's.
+      - name: Checkout base repo
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve PR number
+        id: pr
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const runId = context.payload.workflow_run.id;
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+            const prs = run.pull_requests || [];
+            if (prs.length > 0) {
+              core.setOutput('number', prs[0].number);
+              core.setOutput('base_sha', prs[0].base.sha);
+              core.setOutput('head_sha', run.head_sha);
+              return;
+            }
+            // Fork PRs are not listed in run.pull_requests; look them up by head SHA.
+            const { data: found } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: run.head_sha,
+            });
+            if (found.length === 0) {
+              core.info('No PR associated with this run; nothing to label.');
+              core.setOutput('number', '');
+              return;
+            }
+            core.setOutput('number', found[0].number);
+            core.setOutput('base_sha', found[0].base.sha);
+            core.setOutput('head_sha', run.head_sha);
+
+      - name: Fetch PR commits
+        if: steps.pr.outputs.number != ''
+        # Passed via env, not interpolated into the script body. A ${{ }}
+        # expression is substituted before the shell runs, so inlining
+        # untrusted values builds a shell-injection primitive.
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          case "$PR_NUMBER" in
+            ''|*[!0-9]*) echo "Refusing non-numeric PR number"; exit 1 ;;
+          esac
+          git fetch --no-tags origin \
+            "+refs/pull/${PR_NUMBER}/head:refs/remotes/pr/head"
+          git fetch --no-tags origin main:refs/remotes/origin/main || true
+
+      - name: Set up Python
+        if: steps.pr.outputs.number != ''
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Decide labels
+        if: steps.pr.outputs.number != ''
+        id: decide
+        run: |
+          python .github/scripts/route_review.py \
+            --base origin/main --head refs/remotes/pr/head \
+            --format json > labels.json
+          echo "count=$(python -c 'import json;print(len(json.load(open("labels.json"))))')" >> "$GITHUB_OUTPUT"
+          cat labels.json
+
+      - name: Apply labels and explain
+        if: steps.pr.outputs.number != '' && steps.decide.outputs.count != '0'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const labels = JSON.parse(fs.readFileSync('labels.json', 'utf8'));
+            const names = Object.keys(labels);
+            const prNumber = Number(process.env.PR_NUMBER);
+            if (!Number.isInteger(prNumber)) {
+              core.setFailed('PR number is not an integer');
+              return;
+            }
+
+            // Create any label that does not exist yet, so the workflow does
+            // not fail on a fresh repo.
+            for (const name of names) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner, repo: context.repo.repo, name,
+                });
+              } catch (e) {
+                if (e.status !== 404) throw e;
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner, repo: context.repo.repo, name,
+                  color: 'D93F0B',
+                  description: 'Escalation signal applied automatically from the diff',
+                });
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: prNumber, labels: names,
+            });
+
+            const rows = names.map(n => `| \`${n}\` | ${labels[n]} |`).join('\n');
+            const body = [
+              '### Escalation signals',
+              '',
+              'This PR needs an additional approval before merge, based on what',
+              'the diff contains. These labels are a prompt for a human, not a',
+              'verdict -- a maintainer confirms or dismisses them.',
+              '',
+              '| Label | Why |',
+              '| --- | --- |',
+              rows,
+              '',
+              'See [MAINTAINING.md](../blob/main/MAINTAINING.md#escalation) for what each one means.',
+            ].join('\n');
+
+            // Replace our previous comment rather than stacking new ones.
+            const marker = '### Escalation signals';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: prNumber, per_page: 100,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.startsWith(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: prNumber, body,
+              });
+            }

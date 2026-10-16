@@ -1,40 +1,48 @@
-## Skill submission checklist
+## What this skill does
 
-Before submitting, please confirm the following:
-
-### Folder structure
-- [ ] My skill lives at `skills/<my-skill-id>/`
-- [ ] The folder name matches the `id` field in `SKILL.md` (lowercase, hyphens only)
-- [ ] `SKILL.md` is present in the skill folder
-- [ ] `LICENSE` is present in the skill folder
-
-### Frontmatter
-- [ ] `name` field is filled in
-- [ ] `description` field clearly explains what the skill does, when to use it, and what triggers it
-- [ ] `id` field matches the folder name
-- [ ] `authors` field includes the contributor's name
-- [ ] `type` is set to `community` or `snowflake`
-- [ ] `status` is set to `stable`, `beta`, or `draft`
-- [ ] `categories` includes at least one relevant tag
-
-### License
-- [ ] Community contributors: LICENSE is Apache 2.0
-- [ ] Snowflake employees: LICENSE is the Snowflake Skills License
-
-### Testing
-- [ ] I tested this skill in a Cortex Code session against my example prompt
-- [ ] The skill behavior matches what is described in the `description` field
-
-### Optional
-- [ ] Supporting files (templates, examples) are organized into `templates/` or `references/` subdirectories
-- [ ] I checked that my skill name does not conflict with a bundled Cortex Code skill (run `/skill` in a session to verify)
-
----
-
-**Describe your skill:**
-
-<!-- What does it do? What problem does it solve? Who is it for? -->
+<!-- What problem does it solve, and for whom? Two or three sentences. -->
 
 **Example prompt that triggers it:**
 
-<!-- e.g. "good morning" or "run my daily pipeline check" -->
+---
+
+## Attestations
+
+CI already checks structure, frontmatter, licence, name collisions, and internal-reference patterns. If a check fails, the log says what to fix.
+
+These are the things CI can't verify.
+
+**Tested**
+
+- [ ] I ran this in a Cortex Code session against real tasks, not just the example prompt.
+- [ ] It triggers when I expect, and doesn't trigger on adjacent requests.
+
+**Safety**
+
+- [ ] Anything that drops, replaces, grants, or overwrites confirms with the user *before* executing — including `CREATE OR REPLACE` on objects the user named.
+- [ ] I've read every file in `scripts/`, if present, and can explain any external call it makes.
+
+**Content**
+
+- [ ] No credentials, account identifiers, or connection details in any file — including `references/`, `assets/`, and test data.
+- [ ] No customer names, and no scenario specific enough to identify one.
+- [ ] Every link resolves for someone outside Snowflake.
+- [ ] Nothing here describes functionality that isn't generally available. If it does, say so below.
+
+**Scope**
+
+- [ ] This doesn't substantially overlap an existing or bundled skill. If it's adjacent to one, the `description` says when *not* to use it.
+
+---
+
+## Snowflake employees
+
+- [ ] Reviewed for internal content before opening this PR.
+
+**Cleared by:** <!-- a person, not a team -->
+
+---
+
+## Anything a reviewer should know
+
+<!-- Known limitations, why a box is unchecked, a decision you'd like a second opinion on. -->

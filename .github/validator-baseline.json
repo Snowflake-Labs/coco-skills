@@ -1,0 +1,14 @@
+{
+  "_comment": "Pre-existing validation errors, grandfathered so the check can be required without blocking on cleanup. Each entry is '<skill path>|<error text>'. Remove entries as they are fixed; never add by hand. Regenerate with: python3 .github/scripts/validate_skill.py --all --write-baseline",
+  "accepted": [
+    "skills/manage-zerocopy-sapbdc|Name 'manage-zerocopy-sapbdc' collides with a bundled Cortex Code skill. A repo skill silently shadows the bundled one -- rename it.",
+    "skills/openflow-spcs-privatelink|Frontmatter 'name' ('setup-openflow-privatelink') does not match folder name ('openflow-spcs-privatelink')",
+    "skills/rbac|type: community requires Apache 2.0, not the Snowflake Skills License",
+    "skills/snowflake-docs|Missing required frontmatter field: 'summary'",
+    "skills/snowflake-docs|Missing required frontmatter field: 'title'",
+    "skills/spark-migration|Missing required frontmatter field: 'author'",
+    "skills/spark-migration|Missing required frontmatter field: 'summary'",
+    "skills/spark-migration|Missing required frontmatter field: 'title'",
+    "skills/spark-migration|Missing required frontmatter field: 'type'"
+  ]
+}
