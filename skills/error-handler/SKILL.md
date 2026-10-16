@@ -1,5 +1,6 @@
 ---
 name: error-handler
+id: error-handler 
 title: Capture Procedure Errors
 summary: Log Snowflake stored procedure failures to a central BATCH_ERROR_LOG table using a reusable error-capture procedure.
 description: "Set up and use a common error-logging framework for Snowflake Scripting stored procedures (BATCH_ERROR_LOG table + SNOW_ERROR_CAPTURE procedure). Use when: adding error handling to a SQL stored procedure, logging failures from ETL/batch jobs, capturing SQLCODE/SQLERRM/SQLSTATE into a table, converting Oracle-style exception handling to Snowflake, or debugging why a procedure's errors are not being logged. Triggers: error handler, error logging, error log table, BATCH_ERROR_LOG, SNOW_ERROR_CAPTURE, EXCEPTION WHEN OTHER, log procedure errors, capture SQLERRM, batch error log. Do NOT use for: Snowflake Alerts, task failure notifications, event-table logging/tracing, or data-quality checks."
@@ -10,7 +11,7 @@ tools:
   - Edit
 prompt: Add error handling to my stored procedure LOAD_CUSTOMERS so failures are logged to BATCH_ERROR_LOG
 language: en
-status: Published
+status: beta
 author: Himanshu Kandpal
 type: community
 ---
