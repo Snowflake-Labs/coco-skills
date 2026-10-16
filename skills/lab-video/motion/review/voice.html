@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="snowflake-source" content="cortex-agent-authored">
+<title>Voice Studio</title>
+<link rel="stylesheet" href="/voice.css">
+</head>
+<body>
+<header class="top">
+  <h1 class="wordmark">Voice Studio</h1>
+  <span class="project" id="project">Loading…</span>
+  <span class="status" id="status" role="status" aria-live="polite">Loading</span>
+  <span class="privacy">Recorded on this Mac, saved into the project</span>
+  <a class="back" id="back" href="/">Back to review</a>
+</header>
+
+<div class="layout">
+  <nav id="chapters" aria-label="Narration lines"></nav>
+
+  <main class="main">
+    <div class="brief"><strong id="brief-title"></strong><span id="brief-length"></span><span id="brief-lines"></span></div>
+
+    <div class="stage">
+      <div class="picture">
+        <video id="picture" muted playsinline preload="auto" aria-label="The picture, muted"></video>
+        <p class="nopic" id="nopic" hidden>No preview picture yet.</p>
+      </div>
+      <div class="cue">
+        <div class="cue-head">
+          <div><div class="scene-number" id="scene-number"></div><h2 class="scene-title" id="scene-title"></h2></div>
+          <div class="timer"><strong id="remaining">0:00</strong><span id="cue-label">This scene</span></div>
+        </div>
+        <p class="hint" id="read-cue">Rehearse first. Record all lines in one go, or one line at a time.</p>
+      </div>
+    </div>
+
+    <p class="script" id="script"></p>
+    <div class="next"><span class="next-label">Next</span><p id="next-script"></p></div>
+    <p class="error" id="error" role="alert" hidden></p>
+
+    <section class="linebox" aria-labelledby="lh">
+      <h3 id="lh">Recordings of this line</h3>
+      <p class="fit" id="fit"></p>
+      <ul class="takes" id="line-takes"></ul>
+    </section>
+
+    <section class="results" aria-labelledby="rh">
+      <h3 id="rh">Takes this session</h3>
+      <p class="muted small">Every take is saved into the project the moment you stop, and the review page's preview updates with it. The original audio is kept even if a take is refused.</p>
+      <div id="results"></div>
+    </section>
+  </main>
+</div>
+
+<footer class="controls">
+  <div class="progress" id="progress"></div>
+  <button class="record" id="record" type="button" aria-label="Record all lines"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle></svg><span>Record all</span></button>
+  <button class="pickup" id="pickup" type="button" aria-label="Record this line only"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"></circle></svg><span>Record this line</span></button>
+  <button class="icon" id="rehearse" type="button" aria-label="Rehearse without recording" title="Rehearse"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"></path></svg></button>
+  <button class="icon" id="pause" type="button" aria-label="Pause" title="Pause" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"></path></svg></button>
+  <button class="icon" id="stop" type="button" aria-label="Stop and keep the take" title="Stop" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"></path></svg></button>
+  <button class="icon" id="reset" type="button" aria-label="Back to the beginning" title="Beginning"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14m13-14-9 7 9 7z"></path></svg></button>
+  <span class="elapsed" id="elapsed">0:00</span>
+  <span class="spacer"></span>
+  <label class="pace" for="pace">Rehearsal pace <select id="pace"><option value="1">Video timing</option><option value="0.9">Relaxed</option><option value="0.8">Slower</option></select></label>
+  <select class="device" id="device" aria-label="Microphone"><option value="">Default microphone</option></select>
+  <div class="level" aria-label="Microphone level"><span id="level-bar"></span></div>
+</footer>
+<div class="countdown" id="countdown" hidden><strong id="countdown-number">3</strong></div>
+
+<script src="/voice.js"></script>
+</body>
+</html>

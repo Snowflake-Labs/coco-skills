@@ -1,0 +1,56 @@
+{
+  "_note": "The vetted set. `library.py seed` re-fetches every page, re-checks its licence and rebuilds the library. Verified 2026-10-13 from each track's own FMA page. Tags are FMA's genres and measured facts only: nobody has listened through this tool, so audition in the review page before choosing.",
+  "default": "something_elated",
+  "tracks": [
+    {
+      "id": "something_elated",
+      "page": "https://freemusicarchive.org/music/Broke_For_Free/Something_EP/Broke_For_Free_-_Something_EP_-_05_Something_Elated/",
+      "tags": [
+        "house default",
+        "hip-hop beats"
+      ],
+      "why": "The track every narrated cut since Sep 21 used (a walkthrough, a teaser and a 30 s highlight)."
+    },
+    {
+      "id": "night_owl",
+      "page": "https://freemusicarchive.org/music/Broke_For_Free/Directionless_EP/Broke_For_Free_-_Directionless_EP_-_01_Night_Owl/",
+      "tags": [
+        "minimal electronic"
+      ],
+      "why": "Shortlisted with Something Elated in the Sep 21 audition."
+    },
+    {
+      "id": "day_bird",
+      "page": "https://freemusicarchive.org/music/Broke_For_Free/Directionless_EP/Broke_For_Free_-_Directionless_EP_-_03_Day_Bird/",
+      "tags": [
+        "minimal electronic"
+      ],
+      "why": "Same artist and EP as Night Owl; CC BY 3.0 on its own page."
+    },
+    {
+      "id": "my_always_mood",
+      "page": "https://freemusicarchive.org/music/Broke_For_Free/Directionless_EP/Broke_For_Free_-_Directionless_EP_-_02_My_Always_Mood/",
+      "tags": [
+        "minimal electronic",
+        "fades out, no final hit"
+      ],
+      "why": "Same artist and EP; CC BY 3.0 on its own page."
+    },
+    {
+      "id": "enthusiast",
+      "page": "https://freemusicarchive.org/music/Tours/Enthusiast/Tours_-_Enthusiast/",
+      "tags": [
+        "downtempo",
+        "dubstep"
+      ],
+      "why": "A different artist for variety; CC BY 3.0 on its own page."
+    }
+  ],
+  "refusalExamples": [
+    {
+      "id": "something_jah",
+      "page": "https://freemusicarchive.org/music/Broke_For_Free/Something_EP/Broke_For_Free_-_Something_EP_-_01_Something_Jah/",
+      "why": "Same EP as the house default, but CC BY-NC 3.0: proof the gate reads each track, not the album."
+    }
+  ]
+}

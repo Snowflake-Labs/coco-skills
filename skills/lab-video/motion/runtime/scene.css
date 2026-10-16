@@ -1,0 +1,15 @@
+/* Base styles for motion-mode code scenes. Tokens arrive as CSS variables from video.json
+   ("tokens"), plus --accent and --type-scale from the project's global controls. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:var(--bg,#fff);color:var(--ink,#111)}
+body{font-family:var(--sans,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+#stage{position:absolute;inset:0;overflow:hidden}
+.m-w{white-space:nowrap}
+.m-hl{color:var(--accent,#14B85F)}
+/* Type sizes scale with the global "type size" control; scenes use these rather than raw px. */
+.m-kicker{font-size:calc(22px * var(--type-scale,1));font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.m-h1{font-size:calc(112px * var(--type-scale,1));font-weight:700;line-height:1.02;letter-spacing:-.025em}
+.m-h2{font-size:calc(76px * var(--type-scale,1));font-weight:700;line-height:1.06;letter-spacing:-.02em}
+.m-sub{font-size:calc(36px * var(--type-scale,1));font-weight:500;line-height:1.3}
+.m-label{font-size:calc(18px * var(--type-scale,1));font-weight:500;letter-spacing:.01em}

@@ -1,0 +1,19 @@
+# Order Explorer deploy manifest. Replace the four <...> values, then from this folder:
+#   snow streamlit deploy --replace --connection <your connection>
+# compute_pool: SHOW PARAMETERS LIKE 'DEFAULT_STREAMLIT_COMPUTE_POOL' IN ACCOUNT (use value, else default)
+# No pyproject.toml on purpose: the app uses only packages the container runtime ships, so it needs no
+# external access integration.
+definition_version: 2
+entities:
+  ORDER_EXPLORER:
+    type: streamlit
+    identifier:
+      name: ORDER_EXPLORER
+      database: <DATABASE>
+      schema: <SCHEMA>
+    query_warehouse: <WAREHOUSE>
+    runtime_name: SYSTEM$ST_CONTAINER_RUNTIME_PY3_11
+    compute_pool: <COMPUTE_POOL>
+    main_file: streamlit_app.py
+    artifacts:
+      - streamlit_app.py
