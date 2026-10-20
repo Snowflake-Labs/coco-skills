@@ -342,6 +342,38 @@ def test_reconcile_parity_and_missing():
     assert bad["totals"]["relationships"][0] == bad["totals"]["relationships"][1] - 1
 
 
+def test_agent_spec_builder():
+    from bon_agent_cutover import build_spec, replaced_tools
+    before = {
+        "tools": [
+            {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "query_soccer_data"}},
+            {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "query_soccer_ontology"}},
+            {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "kg_tool"}},
+            {"tool_spec": {"type": "cortex_analyst_text_to_sql", "name": "sv_tool"}},
+            {"tool_spec": {"type": "generic", "name": "centrality_tool"}},
+        ],
+        "tool_resources": {
+            # database name contains "ONTOLOGY": must not cause a drop
+            "query_soccer_data": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_semantic_model.yml"},
+            "query_soccer_ontology": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_semantic_model_ontology.yml"},
+            "kg_tool": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_metadata_governance_model.yml"},
+            "sv_tool": {"semantic_view": "ONTOLOGY_DB.SOCCER_KG.SOCCER_BASE"},
+            "centrality_tool": {"type": "function"},
+        },
+        "instructions": {"orchestration": "original"},
+    }
+    drop = replaced_tools(before)
+    assert drop == ["query_soccer_ontology", "kg_tool"]
+    spec = build_spec(before, "Soccer Ontology", drop)
+    names = [t["tool_spec"]["name"] for t in spec["tools"]]
+    assert names == ["business_ontology", "query_soccer_data", "sv_tool", "centrality_tool"]
+    assert spec["tool_resources"]["business_ontology"] == {"corpus": "businessOntology"}
+    assert "query_soccer_ontology" not in spec["tool_resources"]
+    assert spec["experimental"]["EnableSnowscopeBusinessOntologySearch"] is True
+    assert "'Soccer Ontology'" in spec["instructions"]["orchestration"] and spec["instructions"]["orchestration"].endswith("original")
+    assert len(before["tools"]) == 5  # input untouched
+
+
 def test_humanize():
     assert humanize("PurchaseOrder") == "Purchase Order"
     assert humanize("PURCHASE_ORDER") == "Purchase Order"

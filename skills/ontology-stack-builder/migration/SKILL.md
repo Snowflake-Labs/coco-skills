@@ -133,6 +133,8 @@ Skip `{ONT}_KG_MODEL`, `{ONT}_ONTOLOGY_MODEL` and `{ONT}_METADATA_MODEL`: they d
 
 **Gate M4**: show the metrics imported and the `MEASURES` edges, and ask to reconcile.
 
+**No live semantic view?** Stacks built from the reference repo keep their models as staged YAML (`@...SEMANTIC_MODELS/*.yml`). Skip M4 and say so: metrics, filters and verified queries stay with the semantic layer and are out of scope for this migration. Do not parse staged YAML into BON.
+
 ### M5: Reconcile
 
 ```bash
@@ -149,24 +151,30 @@ Parity must be 100% for every in-scope object. For each `MISSING` item, re-run `
 
 ### M6: Agent cutover
 
-Goal: the agent answers from BON context plus the base semantic view instead of the ontology and metadata semantic views.
+Goal: a new agent that answers from BON context plus the data tools instead of the ontology and metadata semantic models. The original agent is never modified.
 
-1. `DESCRIBE AGENT {DATABASE}.{SCHEMA}.{ONT}_AGENT` and save the current spec to `/tmp/bon_migration/agent_spec_before.json` (rollback copy).
-2. Give the agent a native Business Ontology search tool (or load `$cortex-sense` and use its "add cortex sense to <agent>" flow):
+```bash
+uv run --extra migration python scripts/bon_agent_cutover.py create -c {CONNECTION} \
+  --source {AGENT_DB}.{AGENT_SCHEMA}.{ONT}_AGENT --target {DATABASE}.{SCHEMA}.{ONT}_BON_AGENT --domain "{DOMAIN}"
+
+uv run --extra migration python scripts/bon_agent_cutover.py compare -c {CONNECTION} \
+  --before {AGENT_DB}.{AGENT_SCHEMA}.{ONT}_AGENT --after {DATABASE}.{SCHEMA}.{ONT}_BON_AGENT \
+  -q "<business question 1>" -q "<definition question>" -q "<cross-type question>"
+```
+
+`create` saves `agent_spec_before.json` / `agent_spec_after.json`, removes the analyst tools whose semantic model is the ontology or metadata model (override with `--drop TOOL`), keeps data and graph tools, and adds the BON search tool below. `compare` runs each question through both agents via the Cortex Agents REST API and writes `agent_compare.md`; it exits non-zero if the BON tool returned an error. Use at least one definition question ("What does <derived term> mean?") so BON is actually exercised.
+
+What `create` writes, for reference or manual edits:
    ```json
    "experimental": {"EnableSnowscopeBusinessOntologySearch": true},
    "tools": [{"tool_spec": {"type": "snowscope_search", "name": "business_ontology", "description": "..."}}],
    "tool_resources": {"business_ontology": {"corpus": "businessOntology"}}
    ```
-   The `experimental` flag is required while BON is in preview: without it every call fails with *businessOntology corpus is experimental and currently disabled*. The search spans every domain in the account, so instruct the agent to start each query with the domain name (`"{DOMAIN} Career Duration"`); bare queries rank other domains first.
-3. Load `$cortex-agent` (or the `agent-optimization` skill) to edit the spec:
-   - keep `base_query_tool` (base semantic view);
-   - keep graph tools (`*_TOOL` UDFs, SPCS functions) and `kg_query_tool` if the user still wants instance-level graph questions;
-   - remove `ontology_query_tool` and `metadata_query_tool`;
-   - update orchestration instructions: "Use Business Ontology definitions for business meaning; use base_query_tool for numbers."
-4. Re-run the Phase 1 business questions (from `ONT_ONTOLOGY` or ask the user) through both agents with the Cortex Agents REST API (`POST /api/v2/databases/{db}/schemas/{sc}/agents/{name}:run`) and compare tools used and answers. Prefer creating a new agent and comparing over editing the original in place.
+   The `experimental` flag is required while BON is in preview: without it every call fails with *businessOntology corpus is experimental and currently disabled*. The search spans every domain in the account, so the agent is instructed to start each query with the domain name (`"{DOMAIN} Career Duration"`); bare queries rank other domains first.
 
-**Gate M6**: show before/after answers. Options: "Keep the new agent", "Roll back to the saved spec".
+For deeper tuning use `$cortex-agent` or `agent-optimization` on the new agent.
+
+**Gate M6**: show `agent_compare.md`. Options: "Keep the new agent", "Drop the new agent" (the original was never changed, so no rollback is needed).
 
 ### M7: Retire the legacy ontology layer (optional)
 
@@ -218,3 +226,7 @@ While both systems coexist, rerun M1 -> M3 -> M5. The exporter compares each sou
 | COLUMN representation rejected | column not in the catalog (KG path view built with different casing) | check `DESCRIBE VIEW V_{CLASS}`; the column is reported, not retried |
 | Domain name rejected by BON tools | name with characters a tool does not accept | `bon_apply.py` binds names as string literals; keep the name the user chose |
 | Reconcile says representations are missing right after a clean apply | read-side objects report `objectType` (`Column`, `View`) instead of `refType` | handled by `bon_migration_common.asset_key`; if a new object type appears, extend it there |
+| Agent BON tool fails: *businessOntology corpus is experimental and currently disabled* | agent spec lacks the preview flag | `bon_agent_cutover.py create` sets `experimental.EnableSnowscopeBusinessOntologySearch`; add it by hand for manually built agents |
+| Agent says a migrated term "does not exist" in BON | bare query ranked other domains first, or the node name is class-qualified (`Player Career Duration`) | query with the domain prefix (the agent is instructed to); the exporter adds the unqualified name as a synonym |
+| BON search returns nodes from a domain you deleted | the search index lags deletes | wait for re-indexing; do not re-delete |
+| `Failed to login ... IP ... is not allowed` mid-run | account network policy | fix network access, then re-run the same step; every script is safe to re-run |

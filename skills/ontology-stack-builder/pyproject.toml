@@ -13,4 +13,4 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
 # Path M: migrate a deployed stack into Snowflake native Business Ontology
-migration = ["snowflake-connector-python>=3.12"]
+migration = ["snowflake-connector-python>=3.12", "requests>=2.31"]

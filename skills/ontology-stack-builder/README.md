@@ -201,7 +201,7 @@ The workflow ([migration/SKILL.md](migration/SKILL.md)) is gated like the build 
 4. **Apply** (`scripts/bon_apply.py`): draft, then approve only this run's items; re-runs write only what is missing.
 5. **Metrics**: imported from the base semantic view by the `business-ontology` skill.
 6. **Reconcile** (`scripts/bon_reconcile.py`): reads BON back, proves parity, records every source object in `ONT_BON_MIGRATION_MAP`.
-7. **Agent cutover**, then optional **retirement** of the ontology/metadata semantic views and `ONT_*` metadata tables (zero-copy archived first).
+7. **Agent cutover** (`scripts/bon_agent_cutover.py`): a new agent copy with Business Ontology search, compared question by question with the original (which is never modified), then optional **retirement** of the ontology/metadata semantic views and `ONT_*` metadata tables (zero-copy archived first).
 
 While both systems run side by side, re-running extract, apply and reconcile syncs only what changed in the stack.
 
@@ -239,6 +239,7 @@ ontology-stack-builder/
 │   ├── export_to_bon.py            # Path M: read ONT_* tables -> BON candidates, edges, representations
 │   ├── bon_apply.py                # Path M: draft + scoped approve into Business Ontology
 │   ├── bon_reconcile.py            # Path M: read back, parity report, ONT_BON_MIGRATION_MAP
+│   ├── bon_agent_cutover.py        # Path M: BON-grounded agent copy + before/after comparison
 │   └── bon_migration_common.py     # Path M: shared helpers
 ├── references/
 │   ├── physical_layer_template.sql   # KG_NODE/KG_EDGE DDL template
