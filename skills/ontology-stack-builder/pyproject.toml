@@ -1,6 +1,6 @@
 [project]
 name = "ontology-stack-builder"
-version = "1.0.0"
+version = "1.1.0"
 description = "Cortex Code skill: generate full Ontology-on-Snowflake stack from any relational schema"
 requires-python = ">=3.10"
 dependencies = [
@@ -12,3 +12,5 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]
+# Path M: migrate a deployed stack into Snowflake native Business Ontology
+migration = ["snowflake-connector-python>=3.12"]

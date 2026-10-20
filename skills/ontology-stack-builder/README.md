@@ -181,32 +181,74 @@ Not every domain needs every feature. The skill surfaces these as explicit choic
 
 ---
 
+## Migrating to Snowflake Business Ontology (Path M)
+
+If you already built a stack with this skill (or by hand from the `ontology-on-snowflake` reference repo), the skill can move its business meaning into Snowflake native **Business Ontology** (BON). BON is currently Private Preview and must be enabled on the account.
+
+```
+$ontology-stack-builder Migrate my ontology stack in MY_DB.MY_SCHEMA to Business Ontology
+```
+
+| Moves into BON | Stays where it is |
+|---|---|
+| Classes as `ENTITY` nodes, class hierarchy, relations as typed edges, descriptions, class-to-table and property-to-column bindings as representations, derived properties, base semantic view metrics | `KG_NODE`/`KG_EDGE` data, inference procedures and rules, actions, graph UDFs, SPCS service, the base semantic view |
+
+The workflow ([migration/SKILL.md](migration/SKILL.md)) is gated like the build path:
+
+1. **Preflight**: feature gate, stack detection, target domain chosen by you.
+2. **Extract** (`scripts/export_to_bon.py`, read-only): detects the schema variant, applies [migration/MAPPING.md](migration/MAPPING.md), writes a loss report listing everything BON cannot hold.
+3. **Review**: relationship types, weak descriptions, generic root classes.
+4. **Apply** (`scripts/bon_apply.py`): draft, then approve only this run's items; re-runs write only what is missing.
+5. **Metrics**: imported from the base semantic view by the `business-ontology` skill.
+6. **Reconcile** (`scripts/bon_reconcile.py`): reads BON back, proves parity, records every source object in `ONT_BON_MIGRATION_MAP`.
+7. **Agent cutover**, then optional **retirement** of the ontology/metadata semantic views and `ONT_*` metadata tables (zero-copy archived first).
+
+While both systems run side by side, re-running extract, apply and reconcile syncs only what changed in the stack.
+
+Details worth knowing before you start:
+
+- BON has no subclass, cardinality, inverse or transitivity concepts. Subclasses become `HAS_VARIANT` edges, inverse relations are folded into one edge, and the rest is recorded in the map table and the loss report.
+- Self-referential relations (`Company related_to Company`) cannot be stored: BON requires distinct endpoints.
+- Business verbs such as `plays for` have no standard BON type and are migrated as `CUSTOM` edges with the verb as label, after you confirm them.
+
+```bash
+# unit tests for the migration path (no Snowflake connection needed)
+uv run --extra dev pytest tests/
+```
+
+---
+
 ## Project Structure
 
 ```
 ontology-stack-builder/
-├── SKILL.md                        # Skill definition (the 7-phase workflow)
-├── pyproject.toml                  # Python dependencies
+├── SKILL.md                        # Skill definition (the 7-phase workflow + Path M router)
+├── pyproject.toml                  # Python dependencies (extras: migration, dev)
 ├── README.md
 ├── assets/
 │   └── ontology-graph.png          # Header image
+├── migration/
+│   ├── SKILL.md                    # Path M: migrate a stack to Business Ontology
+│   └── MAPPING.md                  # Stack -> Business Ontology mapping contract
 ├── scripts/
 │   ├── introspect_schema.py        # Schema-first ontology discovery
 │   ├── parse_owl.py                # OWL/RDF parser (OWL, RDF, Turtle, N-Triples, N3)
 │   ├── generate_ontology_sql.py    # SQL generator for Layers 1-3
 │   ├── generate_spcs_scaffolding.py # SPCS graph service scaffolding (optional)
-│   └── visualize_ontology.py       # Streamlit visualizer with editor and coverage mapping
+│   ├── visualize_ontology.py       # Streamlit visualizer with editor and coverage mapping
+│   ├── export_to_bon.py            # Path M: read ONT_* tables -> BON candidates, edges, representations
+│   ├── bon_apply.py                # Path M: draft + scoped approve into Business Ontology
+│   ├── bon_reconcile.py            # Path M: read back, parity report, ONT_BON_MIGRATION_MAP
+│   └── bon_migration_common.py     # Path M: shared helpers
 ├── references/
 │   ├── physical_layer_template.sql   # KG_NODE/KG_EDGE DDL template
 │   ├── metadata_tables_template.sql  # ONT_* table DDL template
 │   ├── abstract_views_template.sql   # VW_ONT_* view patterns
 │   ├── semantic_model_template.yaml  # Cortex Analyst YAML pattern
-│   └── agent_config_template.json    # Cortex Agent config pattern
-└── specs/
-    └── features/ontology-stack-builder/
-        ├── requirements.md         # REQ-001 through REQ-015
-        ├── design.md               # Architecture, data flow, script details
-        └── tasks.md                # Implementation task tracking
+│   ├── agent_config_template.json    # Cortex Agent config pattern
+│   └── migration_map_table.sql       # ONT_BON_MIGRATION_MAP DDL (Path M)
+└── tests/
+    └── test_export_to_bon.py       # Path M mapping and reconcile tests
 ```
 
 Semantic views (L4) and the Cortex Agent (L5) are created by native bundled skills (`semantic-view`, `cortex-agent`), not scripts.

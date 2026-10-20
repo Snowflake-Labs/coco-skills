@@ -1,7 +1,7 @@
 ---
 name: ontology-stack-builder
 title: Build Ontology Stack on Snowflake
-summary: Generates the full Ontology-on-Snowflake stack from any relational schema through a 7-phase gated workflow.
+summary: Builds the Ontology-on-Snowflake stack from any schema, and migrates existing stacks into native Business Ontology.
 description: >-
   Use for ALL requests that mention: ontology, knowledge graph, semantic layer from schema,
   ontology-on-snowflake, abstract views, ontology metadata tables, KG_NODE, KG_EDGE,
@@ -9,7 +9,12 @@ description: >-
   map tables to ontology, generate cortex agent config.
   Triggers: build ontology, create ontology stack, schema-to-ontology, OWL import,
   knowledge graph on snowflake, create semantic models from schema.
-  Do NOT use for: simple semantic view creation (use semantic-view skill),
+  Also use to MIGRATE an existing ontology-stack-builder deployment (ONT_* tables)
+  into Snowflake native Business Ontology. Migration triggers: migrate ontology to
+  business ontology, move ontology stack to native ontology, BON migration,
+  convert ONT_CLASS to business ontology, retire ontology metadata tables.
+  Do NOT use for: creating native Business Ontology nodes from scratch (use business-ontology skill),
+  simple semantic view creation (use semantic-view skill),
   standalone Cortex Agent creation (use cortex-agent skill).
 tools:
   - snowflake_sql_execute
@@ -33,6 +38,15 @@ demo-url: https://medium.com/snowflake/ontology-on-snowflake-from-architecture-t
 # Ontology Stack Builder
 
 Generate the complete Ontology-on-Snowflake stack from any relational schema and set of business questions.
+
+## Choose a Path
+
+| Intent | Path |
+|---|---|
+| Build a new ontology stack from tables or an OWL file | **Build path**: Phases 1-7 below |
+| Already have a stack built by this skill (`ONT_*` tables exist) and want to move to Snowflake native Business Ontology | **Migration path (Path M)**: load [migration/SKILL.md](migration/SKILL.md) and follow it. Do not run Phases 1-7. |
+
+If the user's schema already contains `ONT_CLASS` / `ONT_ONTOLOGY` and they mention Business Ontology, BON, "native ontology" or "migrate", route to Path M. If ambiguous, ask once with `ask_user_question`.
 
 ## When to Use
 
@@ -1172,6 +1186,7 @@ If invoked mid-session, use **discovery commands** to detect the current state f
 - If ontology-layer semantic views exist but no agent → resume from Phase 6 (agent via `cortex-agent` skill)
   - Phase 6 will run its own discovery (Step 6-pre) to build TOOL_INVENTORY from Snowflake, so no prior session context is needed
 - If agent exists → resume from Phase 7 (validation)
+- If `ONT_BON_MIGRATION_MAP` exists, or the user asks to migrate to Business Ontology → Path M; [migration/SKILL.md](migration/SKILL.md) §Resume decides the step
 
 To classify semantic views, run `cortex semantic-views describe {FQN}` for each and check the table references:
 - Covers source tables (not VW_ONT_* or V_*) → base semantic view
@@ -1202,4 +1217,6 @@ Deployed directly to Snowflake (via native skills):
 ├── Ontology semantic views     (created by `semantic-view` skill in Phase 5)
 └── Cortex Agent                (created by `cortex-agent` skill in Phase 6)
 ```
+
+Path M (migration) writes to `/tmp/bon_migration/` (`candidates.json`, `relationships.json`, `associations.json`, `migration_loss_report.md`, `reconcile_report.md`) and creates `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP`. See [migration/SKILL.md](migration/SKILL.md).
 
