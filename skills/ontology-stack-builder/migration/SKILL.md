@@ -90,9 +90,13 @@ Re-run M1 with `--rel-type-override REL=TYPE` or edits to the JSON files as need
 Run the BON quality gate first when the `business-ontology` skill is installed (`~/.snowflake/cortex/skills/business-ontology` or the bundled location):
 
 ```bash
-uv run --project <business_ontology_dir> python <business_ontology_dir>/scripts/ontology_rule_check.py \
-  --object-type node --input /tmp/bon_migration/candidates.json
+python3 <business_ontology_dir>/scripts/ontology_rule_check.py -c {CONNECTION} --domain "{DOMAIN}" \
+  --proposals-file /tmp/bon_migration/candidates.json --object-type node --candidate-count <number of candidates>
+python3 <business_ontology_dir>/scripts/ontology_rule_check.py -c {CONNECTION} --domain "{DOMAIN}" \
+  --proposals-file /tmp/bon_migration/relationships.json --object-type relationship
 ```
+
+Read `summary.block` / `summary.gate` in the JSON output.
 
 Show BLOCK findings and stop on them. Show GATE findings and let the user choose per the BON permission ladder (supply value / draft anyway / override).
 
@@ -148,13 +152,19 @@ Parity must be 100% for every in-scope object. For each `MISSING` item, re-run `
 Goal: the agent answers from BON context plus the base semantic view instead of the ontology and metadata semantic views.
 
 1. `DESCRIBE AGENT {DATABASE}.{SCHEMA}.{ONT}_AGENT` and save the current spec to `/tmp/bon_migration/agent_spec_before.json` (rollback copy).
-2. Load `$cortex-sense` and use its "add cortex sense to <agent>" flow to give the agent BON-grounded context for `{DOMAIN}`.
+2. Give the agent a native Business Ontology search tool (or load `$cortex-sense` and use its "add cortex sense to <agent>" flow):
+   ```json
+   "experimental": {"EnableSnowscopeBusinessOntologySearch": true},
+   "tools": [{"tool_spec": {"type": "snowscope_search", "name": "business_ontology", "description": "..."}}],
+   "tool_resources": {"business_ontology": {"corpus": "businessOntology"}}
+   ```
+   The `experimental` flag is required while BON is in preview: without it every call fails with *businessOntology corpus is experimental and currently disabled*. The search spans every domain in the account, so instruct the agent to start each query with the domain name (`"{DOMAIN} Career Duration"`); bare queries rank other domains first.
 3. Load `$cortex-agent` (or the `agent-optimization` skill) to edit the spec:
    - keep `base_query_tool` (base semantic view);
    - keep graph tools (`*_TOOL` UDFs, SPCS functions) and `kg_query_tool` if the user still wants instance-level graph questions;
    - remove `ontology_query_tool` and `metadata_query_tool`;
    - update orchestration instructions: "Use Business Ontology definitions for business meaning; use base_query_tool for numbers."
-4. Re-run the Phase 1 business questions (from `ONT_ONTOLOGY` or ask the user) through the agent and compare with the answers before cutover.
+4. Re-run the Phase 1 business questions (from `ONT_ONTOLOGY` or ask the user) through both agents with the Cortex Agents REST API (`POST /api/v2/databases/{db}/schemas/{sc}/agents/{name}:run`) and compare tools used and answers. Prefer creating a new agent and comparing over editing the original in place.
 
 **Gate M6**: show before/after answers. Options: "Keep the new agent", "Roll back to the saved spec".
 

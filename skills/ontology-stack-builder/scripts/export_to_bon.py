@@ -74,7 +74,8 @@ ALWAYS_SKIP_CLASSES = {"thing", "owlthing"}
 GENERIC_ROOT_NAMES = {"entity", "object", "root", "baseentity", "baseobject", "node", "concept"}
 
 # Plumbing columns of the KG typed views; never real business properties.
-KG_PLUMBING_COLUMNS = {"NODE_ID", "NODE_TYPE", "NAME", "PROPS", "TS_INGESTED"}
+# NAME is deliberately absent: it is the entity's display name and a real property.
+KG_PLUMBING_COLUMNS = {"NODE_ID", "NODE_TYPE", "PROPS", "TS_INGESTED"}
 
 GENERIC_DESCRIPTION_PATTERNS = [
     re.compile(r"^\s*$"),
@@ -599,11 +600,12 @@ def build_export(
             "domainName": domain, "domainSource": "USER_DECLARED", "realisations": 1,
             "realisation_sources": [k.binding["fqn"]] if k.binding else [], "definition": expr,
             "definition_kind": "NONE", "definitions_observed": [], "descriptions_observed": [], "source_path": "FILE",
-            "synonyms": [], "tags": [], "formula": expr if is_metric else None,
+            "synonyms": [prop] if prop != name else [], "tags": [], "formula": expr if is_metric else None,
             "formulaSource": (k.binding["fqn"] if (is_metric and k.binding) else None), "exclusions": [],
         }
         candidates.append(cand)
-        record("DERIVED", dkey, "IN_SCOPE", {"name": name, "itemKind": cand["itemKind"]}, d)
+        record("DERIVED", dkey, "IN_SCOPE", {"name": name, "itemKind": cand["itemKind"]}, d,
+               payload={"row": d, "name": name, "synonyms": cand["synonyms"]})
         if is_metric:
             relationships.append({"source": name, "target": name_of[k.key], "type": "MEASURES", "label": None})
         else:

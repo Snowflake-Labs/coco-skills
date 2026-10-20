@@ -56,7 +56,8 @@ def generator_snapshot() -> dict:
             ]),
             "ONT_PROPERTY": _t(["CLASS_NAME", "PROP_NAME", "SHARED_PROP_NAME"], [
                 {"CLASS_NAME": "Company", "PROP_NAME": "ticker", "SHARED_PROP_NAME": "name"},
-                {"CLASS_NAME": "Company", "PROP_NAME": "name", "SHARED_PROP_NAME": "name"},  # KG plumbing column on V_ view
+                {"CLASS_NAME": "Company", "PROP_NAME": "name", "SHARED_PROP_NAME": "name"},  # display name: a real property
+                {"CLASS_NAME": "Company", "PROP_NAME": "props"},  # KG plumbing column on V_ view
                 {"CLASS_NAME": "Company", "PROP_NAME": "ghost_col"},
                 {"CLASS_NAME": "Exchange", "PROP_NAME": "exchange_name", "SHARED_PROP_NAME": "name"},
             ]),
@@ -232,7 +233,8 @@ def test_generator_bindings_and_columns():
     assert ("Exchange", "TABLE", "RAW.MKT.EXCHANGES", None) in x  # direct path -> source table
     assert ("Company", "COLUMN", f"{DB}.{SC}.V_COMPANY", "TICKER") in x
     assert ("Exchange", "COLUMN", "RAW.MKT.EXCHANGES", "EXCHANGE_NAME") in x
-    assert not any(d in ("NAME", "GHOST_COL") for *_, d in x)  # plumbing + missing columns dropped
+    assert ("Company", "COLUMN", f"{DB}.{SC}.V_COMPANY", "NAME") in x  # display name kept
+    assert not any(d in ("PROPS", "GHOST_COL") for *_, d in x)  # plumbing + missing columns dropped
     assert "ghost_col" in r["loss_report"].lower()
 
 
@@ -243,6 +245,7 @@ def test_derived_properties():
     assert n["Company Listing Count"]["formula"] == "COUNT(DISTINCT exchange_id)"
     assert n["Company Age"]["itemKind"] == "TERM"  # correlated subquery is not a metric
     assert n["Exchange Age"]["itemKind"] == "TERM"  # class-qualified: no collision with Company Age
+    assert n["Company Age"]["synonyms"] == ["Age"]  # unqualified name stays searchable
     e = edges(r)
     assert ("Company Listing Count", "Company", "MEASURES", None) in e
     assert ("Company", "Company Age", "RELATED_TO", None) in e
