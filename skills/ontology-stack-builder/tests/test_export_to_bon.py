@@ -374,6 +374,20 @@ def test_agent_spec_builder():
     assert len(before["tools"]) == 5  # input untouched
 
 
+def test_missing_source_does_not_fall_back_to_broken_view():
+    """Direct path: the class map names a dropped table. V_{CLASS} still exists in the catalog
+    but selects from that table, so binding to it would publish a broken object."""
+    snap = generator_snapshot()
+    snap["tables"]["ONT_CLASS_MAP"]["rows"].append(
+        {"CLASS_NAME": "Dow30Component", "SOURCE_DATABASE": "RAW", "SOURCE_SCHEMA": "MKT", "SOURCE_TABLE": "DROPPED_DOW30", "ID_EXPR": "ID"})
+    r = build_export(snap, "Stock")
+    assert not any(a["termName"] == "Dow30 Component" for a in r["associations"])
+    assert r["manifest"]["review"]["broken_bindings"] == {"Dow30 Component": "RAW.MKT.DROPPED_DOW30"}
+    assert "RAW.MKT.DROPPED_DOW30" in r["loss_report"]
+    # without a declared source the generator view is still used
+    assert ("Dow30 Component", "VIEW", f"{DB}.{SC}.V_DOW30COMPONENT", None) in refs(build_export(generator_snapshot(), "Stock"))
+
+
 def test_humanize():
     assert humanize("PurchaseOrder") == "Purchase Order"
     assert humanize("PURCHASE_ORDER") == "Purchase Order"

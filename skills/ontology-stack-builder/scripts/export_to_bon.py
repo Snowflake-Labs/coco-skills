@@ -250,6 +250,8 @@ def resolve_bindings(snapshot: dict, classes: dict[str, Klass], ontology: str | 
             src_db = str(_first(m, "SOURCE_DATABASE", default=db)).upper()
             src_sc = str(_first(m, "SOURCE_SCHEMA", default=sc)).upper()
             k.binding = _binding(snapshot, f"{src_db}.{src_sc}.{src_table}")
+            if k.binding is None:
+                k.flags.append(f"binding_not_found:{src_db}.{src_sc}.{src_table}")
 
     # 3. ONT_OBJECT_SOURCE reference-variant rows (CLASS_NAME + SOURCE_REF).
     for s in _rows(tables, "ONT_OBJECT_SOURCE", ontology):
@@ -258,9 +260,10 @@ def resolve_bindings(snapshot: dict, classes: dict[str, Klass], ontology: str | 
         if k is not None and k.binding is None and ref:
             k.binding = _binding(snapshot, str(ref))
 
-    # 4. Fallback: the generator's typed view, if it exists.
+    # 4. Fallback: the generator's typed view, if it exists. Not when the declared source is
+    # gone: V_{CLASS} selects from that source, so it exists in the catalog but cannot compile.
     for k in classes.values():
-        if k.binding is None and not k.is_abstract:
+        if k.binding is None and not k.is_abstract and not any(f.startswith("binding_not_found:") for f in k.flags):
             k.binding = own_view(k)
 
 
@@ -527,7 +530,11 @@ def build_export(
     for k in migrated.values():
         b = k.binding
         if not b:
-            if not k.is_abstract:
+            missing = [f.split(":", 1)[1] for f in k.flags if f.startswith("binding_not_found:")]
+            if missing:
+                loss["Class bindings pointing at objects that no longer exist (fix the source, then re-run)"].append(
+                    f"`{k.class_name}` -> `{missing[0]}`")
+            elif not k.is_abstract:
                 loss["Classes with no Snowflake object to bind"].append(f"`{k.class_name}`")
             continue
         obj_name = b["fqn"].split(".")[-1]
@@ -672,6 +679,8 @@ def build_export(
             "generic_root": [o["bon"]["name"] for o in objects if o["source_kind"] == "CLASS" and "generic_root" in o.get("flags", [])],
             "custom_relationships": [{"relation": o["source_key"], **o["bon"]} for o in objects if o["source_kind"] == "RELATION" and o["bon"] and o["bon"]["type"] == "CUSTOM"],
             "one_entity_per_table": _one_entity_per_table(migrated),
+            "broken_bindings": {k.node_name: f.split(":", 1)[1] for k in migrated.values()
+                                for f in k.flags if f.startswith("binding_not_found:")},
             "updates": [{"source_kind": o["source_kind"], "source_key": o["source_key"], "bon": o["bon"]} for o in objects if o["action"] == "update"],
         },
         "objects": objects,

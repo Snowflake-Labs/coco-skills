@@ -135,6 +135,8 @@ Skip `{ONT}_KG_MODEL`, `{ONT}_ONTOLOGY_MODEL` and `{ONT}_METADATA_MODEL`: they d
 
 **No live semantic view?** Stacks built from the reference repo keep their models as staged YAML (`@...SEMANTIC_MODELS/*.yml`). Skip M4 and say so: metrics, filters and verified queries stay with the semantic layer and are out of scope for this migration. Do not parse staged YAML into BON.
 
+**Semantic view with no metrics?** Some base views define only dimensions and facts. Path H then yields no concepts at the standard score floor; that is the correct result, not a failure. Do not lower the floor to force dimensions in as nodes (column-dictionary anti-pattern). Report "0 metrics to import" at Gate M4.
+
 ### M5: Reconcile
 
 ```bash
@@ -159,10 +161,10 @@ uv run --extra migration python scripts/bon_agent_cutover.py create -c {CONNECTI
 
 uv run --extra migration python scripts/bon_agent_cutover.py compare -c {CONNECTION} \
   --before {AGENT_DB}.{AGENT_SCHEMA}.{ONT}_AGENT --after {DATABASE}.{SCHEMA}.{ONT}_BON_AGENT \
-  -q "<business question 1>" -q "<definition question>" -q "<cross-type question>"
+  -q "<business question 1>" -q "<definition question>" -q "<cross-type question>" --domain "{DOMAIN}"
 ```
 
-`create` saves `agent_spec_before.json` / `agent_spec_after.json`, removes the analyst tools whose semantic model is the ontology or metadata model (override with `--drop TOOL`), keeps data and graph tools, and adds the BON search tool below. `compare` runs each question through both agents via the Cortex Agents REST API and writes `agent_compare.md`; it exits non-zero if the BON tool returned an error. Use at least one definition question ("What does <derived term> mean?") so BON is actually exercised.
+`create` saves `agent_spec_before.json` / `agent_spec_after.json`, removes the analyst tools whose semantic model is the ontology or metadata model (override with `--drop TOOL`), keeps data and graph tools, and adds the BON search tool below. `compare` runs each question through both agents via the Cortex Agents REST API and writes `agent_compare.md`; it exits non-zero if the `business_ontology` tool returned an error, or (with `--domain`) if a BON answer drew only on other domains' nodes. That second case is how a stale search index shows up: an answer that sounds right but comes from an older domain is not evidence the migration works. Data-tool errors are listed separately as `other_tool_errors`. Use at least one definition question ("What does <derived term> mean?") so BON is actually exercised.
 
 What `create` writes, for reference or manual edits:
    ```json
@@ -229,4 +231,7 @@ While both systems coexist, rerun M1 -> M3 -> M5. The exporter compares each sou
 | Agent BON tool fails: *businessOntology corpus is experimental and currently disabled* | agent spec lacks the preview flag | `bon_agent_cutover.py create` sets `experimental.EnableSnowscopeBusinessOntologySearch`; add it by hand for manually built agents |
 | Agent says a migrated term "does not exist" in BON | bare query ranked other domains first, or the node name is class-qualified (`Player Career Duration`) | query with the domain prefix (the agent is instructed to); the exporter adds the unqualified name as a synonym |
 | BON search returns nodes from a domain you deleted | the search index lags deletes | wait for re-indexing; do not re-delete |
+| `compare` reports `not_grounded_in_domain` right after M3 | the search index lags new domains (measured: 5+ minutes; reconcile already proves the nodes exist) | wait and re-run `compare`; it passes once the domain is indexed. Answers until then may come from an older domain covering the same subject |
 | `Failed to login ... IP ... is not allowed` mid-run | account network policy | fix network access, then re-run the same step; every script is safe to re-run |
+| Review gate lists `broken_bindings` | `ONT_CLASS_MAP` names a source table that was dropped or renamed; the generator's `V_{CLASS}` view selects from it and no longer compiles | the class still migrates without a table binding (never bound to the broken view). Repair the stack (point the map and view at the new table), then re-run M1 -> M3 -> M5: the delta adds the bindings. The base semantic view usually has the same drift; check it before M4 |
+| `compare` reports `other_tool_errors` | a data tool failed (often the same dropped table) | not a migration failure; it usually hits both agents. Only `bon_tool_errors` fail M6 |

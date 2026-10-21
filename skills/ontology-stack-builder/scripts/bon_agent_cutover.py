@@ -117,7 +117,7 @@ def cmd_create(args) -> int:
     return 0
 
 
-def run_agent(conn, fqn: str, question: str) -> dict:
+def run_agent(conn, fqn: str, question: str, domain: str | None = None) -> dict:
     import requests  # optional dependency, only needed for compare
 
     db, sc, name = split_fqn(fqn)
@@ -130,6 +130,7 @@ def run_agent(conn, fqn: str, question: str) -> dict:
     if r.status_code != 200:
         return {"error": f"HTTP {r.status_code}: {r.text[:300]}"}
     tools, tool_errors, text, event = [], [], [], None
+    bon_hits = {"domain": 0, "other": 0}
     for raw in r.iter_lines(decode_unicode=True):
         if not raw:
             continue
@@ -146,11 +147,20 @@ def run_agent(conn, fqn: str, question: str) -> dict:
             tools.append(data.get("name"))
         elif event == "response.tool_result" and data.get("status") == "error":
             tool_errors.append({"tool": data.get("name"), "result": json.dumps(data.get("content"))[:300]})
+        elif event == "response.tool_result" and data.get("name") == BON_TOOL and domain:
+            # snowscope_search lists hits as "N. <Domain>.<Name> (<KIND>)"
+            for c in data.get("content", []):
+                msg = (c.get("json") or {}).get("message", "")
+                for line in msg.splitlines():
+                    head = line.strip().split(" ", 1)
+                    if len(head) == 2 and head[0].rstrip(".").isdigit():
+                        bon_hits["domain" if head[1].startswith(f"{domain}.") else "other"] += 1
         elif event == "response.text.delta":
             text.append(data.get("text", ""))
         elif event == "error":
             return {"error": json.dumps(data)[:300]}
-    return {"tools": tools, "tool_errors": tool_errors, "seconds": round(time.time() - t0, 1), "answer": "".join(text).strip()}
+    return {"tools": tools, "tool_errors": tool_errors, "bon_hits": bon_hits, "seconds": round(time.time() - t0, 1),
+            "answer": "".join(text).strip()}
 
 
 def cmd_compare(args) -> int:
@@ -161,18 +171,31 @@ def cmd_compare(args) -> int:
         for q in args.question:
             lines += [f"## {q}", ""]
             for label, fqn in (("before", args.before), ("after", args.after)):
-                res = run_agent(conn, fqn, q)
+                res = run_agent(conn, fqn, q, args.domain if label == "after" else None)
                 results.append({"question": q, "agent": label, **res})
+                hits = res.get("bon_hits") or {}
                 lines += [f"**{label}**: tools `{res.get('tools')}`, {res.get('seconds')}s"
+                          + (f", BON hits from '{args.domain}': {hits.get('domain')} (other domains: {hits.get('other')})"
+                             if label == "after" and args.domain and BON_TOOL in (res.get("tools") or []) else "")
                           + (f", tool errors `{res['tool_errors']}`" if res.get("tool_errors") else "")
                           + (f", error `{res['error']}`" if res.get("error") else ""), "",
                           (res.get("answer") or "")[:1500], ""]
     (out / "agent_compare.json").write_text(json.dumps(results, indent=2))
     (out / "agent_compare.md").write_text("\n".join(lines))
-    bon_errors = [r for r in results if r["agent"] == "after" and r.get("tool_errors")]
-    print(json.dumps({"questions": len(args.question), "after_tool_errors": bon_errors,
-                      "report": str(out / "agent_compare.md")}, indent=2))
-    return 1 if bon_errors else 0
+    bon_errors = [r for r in results if r["agent"] == "after"
+                  and any(e["tool"] == BON_TOOL for e in r.get("tool_errors", []))]
+    other_errors = [{"question": r["question"], "agent": r["agent"], "tools": [e["tool"] for e in r["tool_errors"]]}
+                    for r in results if r.get("tool_errors") and r not in bon_errors]
+    # Only BON tool errors fail the comparison. Data-tool errors (e.g. a semantic view over a
+    # dropped table) usually hit both agents and are reported separately.
+    # A BON call that only returned other domains' nodes means the migrated domain was not used
+    # (typically search-index lag right after creation): the answer is not evidence of migration.
+    not_grounded = [r["question"] for r in results if r["agent"] == "after" and args.domain
+                    and BON_TOOL in (r.get("tools") or []) and not (r.get("bon_hits") or {}).get("domain")]
+    print(json.dumps({"questions": len(args.question), "bon_tool_errors": bon_errors,
+                      "not_grounded_in_domain": not_grounded,
+                      "other_tool_errors": other_errors, "report": str(out / "agent_compare.md")}, indent=2))
+    return 1 if (bon_errors or not_grounded) else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -191,6 +214,7 @@ def main(argv: list[str] | None = None) -> int:
     k.add_argument("--before", required=True)
     k.add_argument("--after", required=True)
     k.add_argument("--question", "-q", action="append", required=True)
+    k.add_argument("--domain", help="migrated BON domain; fail when BON answers come only from other domains")
     k.add_argument("--out", default="/tmp/bon_migration")
     k.set_defaults(fn=cmd_compare)
     args = ap.parse_args(argv)
