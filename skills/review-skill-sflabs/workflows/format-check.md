@@ -1,156 +1,242 @@
-# Workflow: Format Check
+# Metadata and license policy reference
 
-> Mechanical YAML and file-structure validation for the target skill. Outputs a list of findings keyed by check id, severity, and disposition (mechanical fix vs. flag). The router applies mechanical fixes per `references/mechanical-fix-rules.md` after this workflow returns.
+Reference documentation only, not an executable agent workflow. Use only the
+trusted launcher described in [SKILL.md](../SKILL.md); do not read candidate files
+into context during admission review.
 
-## Inputs
+## One contract
 
-- `<skill_dir>` — path to the target skill directory containing `SKILL.md`.
+[scripts/policy.py](../scripts/policy.py) owns the required/advisory metadata
+matrix, rules version 1.2, and license normalization/claim rules (unchanged from 1.1). Checks consume
+that matrix; the [CONTRIBUTING table](../../../CONTRIBUTING.md#frontmatter-contract)
+is verified against its renderer in unit tests. Refer there instead of maintaining
+a second field/enum list here. No default metadata or automatic fixes are inserted.
 
-## Outputs
+The strict bounded YAML parser rejects duplicate keys, aliases and unsupported
+field types. Name/directory convention, title/summary limits, wording, disclaimers
+and structural Markdown checks remain advisory. Bare prose paths and code examples
+are not dependencies. Bounded local link, anchor, fence and explicit routing checks
+are documented in [the report contract](../references/report-template.md#bounded-markdown-support).
+They do not fetch URLs, execute routes or prove workflow termination.
 
-A list of findings, each with:
+## Pinned local license evidence
 
-- `check_id` — string id (e.g. `format.required_fields`)
-- `severity` — `blocking` | `advisory`
-- `evidence` — short description of what was found
-- `fix` — `mechanical` (auto-applicable per rules) or `manual` (flag for contributor)
-- `suggested_change` — the proposed value or rewrite, when applicable
+[scripts/resources/licenses.json](../scripts/resources/licenses.json) contains
+complete normalized source texts, not substring markers or remotely fetched terms.
+Its source repository is `https://github.com/Snowflake-Labs/coco-skills.git` and its
+source revision is `89c57c211105bb5a870ce2f6e6e495a20c962fd8`. This identifies the
+local implementation's selected evidence, not a legally approved revision.
 
-## Steps
+| Source path at that revision | Content represented |
+|---|---|
+| `skills/dbt-model-generator/LICENSE` | All locally recorded Apache-labeled sections 1-9 plus its copyright and notice |
+| `skills/review-skill-sflabs/LICENSE` | Full locally recorded Snowflake Skills License |
+| `skills/swap-databases/LICENSE` | Equivalent Snowflake text with ASCII quotes/layout differences |
+| `skills/check-agent-access/LICENSE` | Complete legacy Apache notice only |
+| `skills/persist-memory/LICENSE` | Complete legacy Apache notice only |
+| `skills/snowpro-study/LICENSE` | Complete legacy Apache notice only, including its literal HTML entities |
 
-### Step 1: Parse frontmatter as YAML
+The Apache-labeled local full-terms file is matched as found, not represented as
+verified canonical Apache text. The local file contains wording that needs legal
+review; no external canonical source was fetched or substituted. Notice-only
+sources are preserved as exact legacy matches with `license.notice` warnings,
+not represented as full license terms. Plugin-specific licenses are not included
+in the skill-template set.
 
-Read `<skill_dir>/SKILL.md`. Extract the YAML block between the first `---` and the second `---`. Parse it.
+Normalization `ascii-whitespace-and-quotes-v1` collapses ASCII whitespace runs
+(space, tab, CR, LF, form feed, vertical tab) and trims them at the ends. Curly
+double quotes U+201C/U+201D and apostrophe U+2019 map to their ASCII equivalents,
+as observed in the Snowflake sources. Everything else must match in full:
+case, punctuation, links, clauses, copyright years/holders, and notice text.
+No HTML decoding, case folding, Unicode compatibility normalization, arbitrary
+prefix/suffix, or wildcard attribution fields are accepted. Truncated terms,
+extra clauses and fake text containing the license title fail `format.license`.
+Unmatched templates/substitutions need maintainer review, not automatic rewriting.
 
-If parsing fails, emit:
+Both author spellings are checked together. The historical case-insensitive
+`@snowflake.com` marker rule is preserved, including its conservative substring
+behavior: it is not an email validator or identity check. A marker in either
+alias requires a Snowflake template. Names, missing claims, `type` alone, or
+contradictory contributor metadata do not establish legal applicability; they
+remain human decisions rather than a new employee-type failure. Every review
+emits `license.review`; conflicting aliases also emit `format.author_conflict`.
 
-```
-{check_id: "format.frontmatter_yaml_parses", severity: "blocking", fix: "manual",
- evidence: "<the YAML parser error>"}
-```
+External maintainer/legal approval remains outstanding for template correctness,
+applicability, permitted substitutions, and distribution. Passing content checks
+does not establish employee identity, ownership, valid attribution or rights.
+Do not copy the fixture's author attribution to make a new submission pass.
 
-Stop and return immediately. Every later check depends on the parsed frontmatter.
+## Dependencies and packaging
 
-### Step 2: Required fields
+### Local deliverable: offline snapshots, not installation
 
-Confirm all of the following keys exist with non-empty values:
+`requirements.txt` remains the single runtime dependency source used by Docker.
+`pyproject.toml` now describes a snapshot recipe, not an empty setuptools package.
+There is deliberately no PEP 517 backend or installable project: do not run pip
+install/build here. No tool or dependency is installed by the recipe. The host
+launcher and packager use the standard library; trusted full-suite verification
+also needs an independently provisioned compatible PyYAML and Git.
 
-`name`, `title`, `summary`, `description`, `tools`, `prompt`, `language`, `status`, `author`, `type`
+The separately trusted repository-layout installation runs
+`.github/scripts/package_reviewer.py`. It only collects the fixed allowlist in
+`scripts/packaging.py`: no source imports, build hooks, Git archive extraction,
+candidate bytes, unlisted scripts, model calls, or network. The script requires
+`--trusted-root` to be its own installation root and rejects overlap with the
+candidate, symlink components and hardlinked/special inputs. Collection retains
+the existing file/byte/depth/concurrent-change bounds. Run only from a reviewed
+copy; these checks cannot bootstrap trust in the script performing the checks.
 
-For each missing key, emit:
+```sh
+# Metadata only; no archive, build, installation or publication.
+python3 -I -B /absolute/trusted/coco-skills/.github/scripts/package_reviewer.py \
+  --trusted-root /absolute/trusted/coco-skills \
+  --candidate-root /absolute/candidate --profile local
 
-```
-{check_id: "format.required_fields.<key>", severity: "blocking", fix: "manual",
- evidence: "<key>: missing|empty",
- suggested_change: "<one-line template appropriate for that field>"}
-```
-
-`language` and `status`, when missing, are mechanical (see `references/mechanical-fix-rules.md`):
-
-```
-{check_id: "format.required_fields.language", severity: "blocking", fix: "mechanical",
- suggested_change: "language: en"}
-```
-
-### Step 3: Length limits
-
-Check:
-
-- `title` length ≤ 30 characters
-- `summary` length ≤ 140 characters
-
-For each over-limit field, emit `severity: blocking, fix: manual` with a suggested truncation. The agent does not silently rewrite human-facing copy.
-
-### Step 4: Name format
-
-Confirm `name` matches the folder name (case-sensitive). If it does not match, emit:
-
-```
-{check_id: "format.name_matches_folder", severity: "blocking", fix: "mechanical",
- suggested_change: "name: <folder-name>"}
-```
-
-Confirm `name` is lowercase, hyphens-only, no underscores, no more than 3 hyphens. If it violates these rules, emit `severity: blocking, fix: manual` (renaming the folder has side effects the contributor must drive).
-
-### Step 5: Description shape
-
-Check whether `description` starts with `Use when`. If it starts with any of `Use for`, `Used to`, `For `, `When ` (without `Use`), emit:
-
-```
-{check_id: "format.description_use_when", severity: "advisory", fix: "mechanical",
- suggested_change: "<replace leading verb with 'Use when'>"}
-```
-
-Run regex `\b(I|My|my|We|we|Our|our|Us|us)\b` against `description`. For any match, emit:
-
-```
-{check_id: "format.description_first_person", severity: "advisory", fix: "manual",
- evidence: "<the matched word(s)>",
- suggested_change: "<rewritten description without first-person>"}
-```
-
-Search `description` for `Triggers:` (case-insensitive). If absent, emit:
-
-```
-{check_id: "format.description_has_triggers", severity: "advisory", fix: "manual",
- suggested_change: "<append a Triggers: list with 4-6 trigger phrases>"}
-```
-
-### Step 6: Resolve sibling-file references
-
-Scan the body of `SKILL.md` (everything after the second `---`) for these patterns:
-
-- `references/<path>` — relative reference to a file under `<skill_dir>/references/`
-- `workflows/<path>` — relative reference to a file under `<skill_dir>/workflows/`
-- `scripts/<path>` — relative reference to a file under `<skill_dir>/scripts/`
-
-For each referenced path that does not exist on disk, emit:
-
-```
-{check_id: "format.referenced_file_missing", severity: "blocking", fix: "manual",
- evidence: "<the referenced path>"}
+# Optional local snapshot after the exact digest has been independently reviewed.
+# The output parent must already exist, mode 0700, outside both roots.
+python3 -I -B /absolute/trusted/coco-skills/.github/scripts/package_reviewer.py \
+  --trusted-root /absolute/trusted/coco-skills \
+  --candidate-root /absolute/candidate --profile local \
+  --expected-sha256 REVIEWED_MANIFEST_SHA256 --output /absolute/private/reviewer.tar
 ```
 
-The agent does not fabricate workflow or reference content.
+`local` captures launcher, resources, stdlib packager, runtime sources, license,
+dependency manifest and Docker recipe. `ci` additionally captures the thin Action,
+CI adapters, workflow, required test suite and its policy fixtures. Neither
+profile includes candidate data. The tar contains `MANIFEST.json` and sorted,
+captured files, fixed uid/gid/mtime, mode 0600, and no links. Its canonical manifest
+records each path/length/SHA-256 and the profile. The printed digest identifies
+that manifest, not a release approval, Git revision or image. Identical bytes
+produce identical tar bytes. Resource paths and repository layout are retained.
+No timestamp, working-directory path, environment value or credentials enter it.
+Destinations use exclusive no-follow owner-only writes; no overwrite. The human
+operator must delete any retained archive when no longer needed. No archive of
+this real checkout was created as part of implementation; tests use synthetic data.
 
-### Step 7: Reject `skill_metadata/`
+The future installation recipe is manual and gated: approve rights and exact
+snapshot/launcher bytes; provision a new operator-controlled directory outside
+all candidates, verify manifest and archive hashes through an independent trusted
+channel, inspect safe archive members before extraction, preserve the repository
+layout, make tooling unavailable for candidate writes, then invoke `scripts/run.py`
+with isolated Python and the independently approved image ID. No extraction or
+installation code is provided or authorized here. A candidate cannot approve its
+own digest. Local deterministic use does not depend on CI or a model provider.
 
-If `<skill_dir>/skill_metadata/` exists, emit:
+### Image provisioning: blocked separately
 
-```
-{check_id: "format.no_skill_metadata", severity: "blocking", fix: "manual",
- evidence: "skill_metadata/ directory present",
- suggested_change: "Remove the skill_metadata/ directory before committing."}
-```
+The Dockerfile is a recipe only. A future owner must approve build tooling,
+registry/network access and distribution rights before building in a separate
+trusted environment. Review PyYAML artifact hashes/licenses, Python/base-image
+licenses and digest, apt Git and transitive packages; preserve notices and record
+an SBOM or equivalent bill of materials. Apt versions and dependency artifacts
+are not locked today. No fully reproducible image/supply-chain claim is made.
+Docker preserves `scripts/resources` beside the modules; runtime resources never
+come from candidate or working-directory paths. Pair a reviewed launcher snapshot
+with an independently approved resulting local `sha256:...` image ID. A registry
+manifest digest is not necessarily the same as Docker's local image config ID.
+Preload that exact image and dependencies through an approved provisioning path;
+reviews use `--pull=never`. No automatic build, pull, registry push or installation.
+Run real trusted isolation verification against the pair before release. Missing
+image/dependencies or any skipped required test means NOT VERIFIED.
 
-This directory is internal-only seed data and must not be published.
+### CI deliverable: thin Action and inert integration template
 
-### Step 8: LICENSE present
+`.github/actions/contained-review/action.yml` invokes its own separately checked-out
+adapter using `GITHUB_ACTION_PATH`, not a candidate-controlled executable path.
+Inputs are passed through environment variables and quoted arguments. The adapter
+uses the existing `validate_skill.scan` and `review` core, not a new policy engine.
+It requires three disjoint directories: independently approved tooling, exact
+PR base as data, and exact PR head as data. Base is not automatically trusted
+tooling. The CI profile manifest must match an independently supplied SHA-256
+before tests or scan; it is checked again afterwards. Python must be isolated,
+the host/installation trusted and protected against concurrent untrusted writers.
+Post-run hashing detects changes, but is not a sandbox against same-user attackers.
 
-If `<skill_dir>/LICENSE` does not exist:
+The adapter accepts a runner-supplied `pull_request` event, validates exact 40-hex
+base/head revisions and base repository binding, ignores title/body/branch/fork
+names/labels and purported authority metadata, and verifies checkout blobs through
+the existing core. It does not use the PR merge commit as head. It supports the
+existing explicit trusted rename arguments; candidate mappings are not loaded.
+Fork rehearsal uses synthetic Git trees and event JSON, without secrets, remote
+fetches, workflow-command writes from candidate bytes or candidate execution.
+This is offline rehearsal, not evidence of a successful real fork Actions run.
 
-- If the parsed `type:` value is `community` (or missing), emit:
-  ```
-  {check_id: "format.license_present", severity: "blocking", fix: "mechanical",
-   suggested_change: "Create LICENSE with Apache 2.0 (community contribution)"}
-  ```
-- If `type:` is `snowflake`, emit:
-  ```
-  {check_id: "format.license_present", severity: "blocking", fix: "manual",
-   suggested_change: "Add the appropriate Snowflake employee license file"}
-  ```
+The template uses one owner-configured preloaded image ID in both trusted
+verification/admission scanning and isolated proposed-test execution, in one job.
+There are no builds, pulls, setup-python or pip installs. Proposed tests remain
+untrusted counts only and cannot supply admission evidence. They run only after
+the trusted step succeeds. The single job's status alone does not distinguish
+these lanes; authoritative owners must preserve their different meanings.
+`contents: read`, no persisted checkout credentials, no submodules/LFS, no secret
+inputs, no `pull_request_target`, no uploads, comments or `GITHUB_OUTPUT` writes.
+The default read-only checkout token is used only by checkout; there are no
+custom secrets and no token passed to the review container. Containers have no
+network, mounts or Docker socket.
 
-## Summary status
+The checkout pin `11d5960a326750d5838078e36cf38b85af677262` was verified on
+2026-10-20 via read-only `gh api repos/actions/checkout/git/ref/tags/v4`: the object
+was a direct commit. This is identity evidence, not source/security approval.
+No third-party Action commit IDs are guessed. No live repository was modified.
 
-After running all 8 steps, the workflow's overall status for the report is:
+### Owner checklist: external authoritative required workflow
 
-- 🟢 — zero findings
-- 🟡 — only `advisory` findings, all `mechanical` fixes applied cleanly
-- 🟠 — any `blocking` finding remains after mechanical fixes are applied
+**Deployment and release publication remain blocked; draft source review is separate.** The repository workflow has a
+literal `if: ${{ false }}`; do not remove it as an implicit follow-up. A PR can
+replace this whole file, job name, Action wrapper or digest assertions. Neither a
+PR metadata assertion, a green status name, CODEOWNERS alone nor a reusable-workflow
+call in candidate-controlled YAML establishes authority. Bootstrap requires an
+independently reviewed tooling release and an external, separately controlled
+required workflow before using results as admission evidence. A historical base
+without the new tooling cannot build or verify the new reviewer; proposed tests
+cannot bless the bootstrap.
 
-Pass that status to the router.
+Owners must record concrete evidence for every item before an authorized rollout:
 
-## Notes
+- [ ] Named security/maintainer and provisioning owners, approved distribution and
+  dependency rights, and written release-owner sign-off. Owners must be assigned before rollout.
+- [ ] External authoritative workflow repository ID/name, workflow path, immutable
+  reviewed ref, owning team and update/bypass authority. Values and available GitHub
+  organization/plan features are **unknown**, not supplied by this PR.
+- [ ] Target organization/repository IDs, protected refs (including `main`), ruleset
+  ID, enforcement mode and exact externally required-workflow binding. Obtain live
+  control/export evidence that the rule requires the external workflow, not just a
+  spoofable status-context string. No organization/ruleset IDs are invented here.
+- [ ] Verify bypass actors and admin exemptions are restricted and audited; protect
+  the authority repository, configuration changes, approved tooling revision, CI
+  manifest digest and image ID from candidate authors. Repository variables shown
+  in the template are placeholders, not an authority mechanism. Use an owner-only
+  external configuration/provisioning channel with review and change records.
+- [ ] Independently approve the initial tooling snapshot, runtime image, third-party
+  Action source/pins and test inventory; provision Python 3.11+, PyYAML, Git and a
+  local Docker image on a disposable runner before review. Never execute candidate
+  setup hooks, dependency manifests, workflow actions or build contexts on the host.
+- [ ] Configure the external workflow for all protected-ref PRs, including forks and
+  tooling-only changes, with exact base/head event binding and complete Git objects.
+  Do not copy this template's path filter into the authoritative required workflow:
+  missing/skipped validation must block rather than silently satisfy protection.
+  Verify deleted/modified local workflows and same-name forged checks cannot bypass.
+- [ ] Verify fork permission/approval settings in the actual organization. Keep only
+  read repository access, no custom secrets/write token, credentials removed after
+  checkout, no privileged event or reusable secret inheritance. Resolve unavailable
+  fork SHA objects as blocked, never fall back to a merge ref or candidate tooling.
+- [ ] If a merge queue is used, implement and test an explicit `merge_group` event
+  binding first; the current adapter intentionally rejects it. Event coverage and
+  fail-closed pending/skipped behavior must be demonstrated for all merge paths.
+- [ ] Select an ephemeral isolated runner with no reusable credentials or persistent
+  candidate-writable caches. Confirm the approved preloaded image is local, never
+  remotely configured Docker. Do not put fork execution on a sensitive persistent
+  self-hosted runner. Runner image/label/provisioning details are still unknown.
+- [ ] Verify real trusted runtime/isolation tests with zero missing/failing/skipped
+  cases. Rehearse synthetic fork additions, deletions, renames, bad output, missing
+  baseline, forged local workflow/Action/image and bypass attempts. Archive only
+  approved fixed evidence, never candidate bytes or private locator mappings.
+- [ ] Approve job-summary disclosure/retention and local machine-report retention;
+  summaries still disclose counts and outcome. Machine reports remain in private
+  runner temp storage, no artifact upload. Delete with disposable-runner teardown.
+  Any future artifact publishing needs separate destination/data-handling approval.
+- [ ] Document rollback to a previously approved compatible launcher/image pair,
+  required-check failure handling and revocation. Never fall back to candidate code.
 
-- The router applies mechanical fixes after this workflow returns, per the disposition table in `references/mechanical-fix-rules.md`. This workflow only identifies issues — it does not edit files.
-- The router asks the contributor to confirm before applying any fix.
+Until these controls and bootstrap/provisioning evidence are independently verified,
+this is local implementation plus an inert CI example, not an enforced admission
+gate, installed release, published Action, approved image or shipped initiative.

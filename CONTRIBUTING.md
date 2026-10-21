@@ -30,22 +30,61 @@ You can also create a skill interactively: open a Cortex Code session, run `/ski
 
 Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills) defined by Cortex Code.
 
-### Required frontmatter fields
+### Frontmatter contract
 
-For full details on skill format, see the [Cortex Code extensibility docs](https://docs.snowflake.com/en/user-guide/cortex-code/extensibility#label-extensibility-skills).
+The versioned reviewer policy in [scripts/policy.py](skills/review-skill-sflabs/scripts/policy.py)
+is authoritative for mechanical checks (rules 1.2; metadata/license decisions unchanged from 1.1). The table below is checked
+against that matrix by unit tests. It does not claim to define every Cortex Code
+client's metadata behavior. All listed fields reject unsupported YAML types;
+unknown fields are retained without validation. Duplicate keys and aliases fail.
 
-| Field | Description |
+<!-- reviewer-policy-table:start -->
+| Field | Reviewer contract |
 |---|---|
-| `name` | Unique identifier matching the skill's folder name. Max three words, lowercase, hyphens only. Users can invoke explicitly with `$name`, or Cortex Code will activate the skill automatically when a prompt matches the `description`. |
-| `title` | Human-readable display name, similar to `name` without hyphens. Max 30 characters. (e.g., `cost-intelligence` → "Analyze Snowflake Costs") |
-| `summary` | One sentence explaining what this skill does. Max 140 characters. Displayed in the skill catalog and search results. |
-| `description` | Longer explanation including when to use, trigger keywords, and anti-patterns. Cortex Code matches user prompts against this field to automatically activate your skill. |
-| `tools` | List of tools to enable when the skill is active (one per line, each prefixed with `- `). See the [full tools reference](https://docs.snowflake.com/en/user-guide/cortex-code/tools). Common tools: `snowflake_sql_execute`, `snowflake_object_search`, `Bash`, `Read`, `Write`, `Edit`, `Grep`, `Glob`. |
-| `prompt` | A sample user prompt that demonstrates how to trigger the skill. |
-| `language` | Language code: `en`, `es`, `it`, `fr`, `ja`, `ko`, or `pt_br`. |
-| `status` | `Published` (active), `Archived` (deprecated), or `Hidden` (not yet ready). |
-| `author` | Full name of the author(s). Multiple authors are comma-separated. |
-| `type` | `community` (default), `snowflake` (Snowflake employee), or `partner`. |
+| `name` | Required nonblank string; directory match and 1-4 lowercase alphanumeric words separated by hyphens are advisory. |
+| `description` | Required nonblank string; Use when prefix, Triggers: guidance and third-person wording are advisory. |
+| `id` | Optional; recommended. If present, must match the directory and [a-z0-9-]+ (error otherwise). |
+| `author` | Optional string, comma-separated names supported. Either author or authors satisfies the authorship recommendation; differing aliases require human review. |
+| `authors` | Optional string or list of strings. Same authorship and license-claim rules as author; neither spelling proves identity. |
+| `type` | Optional; recommended. Nonempty values: community or snowflake only (case-sensitive). Partner and all other values are unsupported errors pending maintainer approval; empty string warns, no default is inserted. |
+| `status` | Optional; recommended values: stable, beta, draft (case-sensitive). Legacy Published, Archived, Hidden and any other nonempty string warn, never fail on value alone; empty string warns. |
+| `categories` | Optional string or list of strings; missing or empty is advisory. No tag enum is enforced. |
+| `title` | Optional string; more than 30 characters is advisory, not a required catalog field. |
+| `summary` | Optional string; more than 140 characters is advisory, not a required catalog field. |
+| `tools` | Optional string or list of strings; no tool-name enum is enforced. This field grants no execution authority. |
+| `prompt` | Optional sample prompt string. |
+| `language` | Optional string; no language enum is enforced. en, es, it, fr, ja, ko and pt_br are examples, not an allowlist. |
+<!-- reviewer-policy-table:end -->
+
+`partner` is not accepted: earlier guidance contradicted the existing validator.
+Do not migrate legacy status strings merely to satisfy an advisory check.
+An `author` list remains an unsupported type; use the established `authors` list
+form instead. Blank/absent author claims produce a recommendation, not a failure.
+When both aliases are present, comma-separated, trimmed, case-insensitive sets
+are compared; conflicting claims warn and neither alias overrides the other.
+
+### License content and human approval
+
+A root `LICENSE` must match an entire pinned repository source template, not
+just contain a license name. See the [policy reference](skills/review-skill-sflabs/workflows/format-check.md)
+for exact source paths, normalization and limitations. The public repository
+LICENSE files also supply the full test fixtures; tests do not substitute headings.
+
+Community guidance remains Apache 2.0; employee guidance remains the Snowflake
+Skills License. The existing mechanical employee-email rule applies equally to
+`author` and `authors`: a case-insensitive `@snowflake.com` marker in either
+requires Snowflake license content, even if the aliases conflict. It is a claim,
+not authenticated employment. A name alone or `type: snowflake` does not add a
+new licensing failure; ambiguous or contradictory affiliation is for human review.
+Every result includes a license-applicability advisory. A complete legacy Apache
+notice match also warns that it is not the full terms.
+
+Matching verifies content against local evidence, not legal correctness, identity,
+attribution, the applicable agreement, or permission to distribute. External
+maintainer/legal approval of templates and permitted substitutions is outstanding.
+Do not copy a source author's copyright/name to make a new skill pass. Changed
+attributions, new templates, and other unmatched content need maintainer review;
+this implementation does not authorize automatic licensing edits.
 
 
 ### Starting point
@@ -70,16 +109,19 @@ Pick any existing skill in `skills/` whose shape matches what you're building, c
 
 ## Review your skill before submitting
 
-Before opening a pull request, run `$review-skill-sflabs` against your skill directory. The skill is itself published in this repo and provides a pre-PR readiness check: format validation, public-web duplicate search, data-policy reasoning, and catalog-fit check (overlap with bundled skills, scope flexibility). It applies safe mechanical fixes in place (with your confirmation) and flags content rewrites for you to address manually.
+Before opening a pull request, run `$review-skill-sflabs` against your skill directory using a separately installed, reviewed copy of the reviewer. It runs deterministic checks in a restricted Docker container without executing candidate scripts or loading their instructions into the host agent. Docker must be running; there is no host-native fallback. The reviewer requires a trusted local image ID and does not automatically build an image from the candidate. See the reviewer's prerequisites for provisioning.
 
-Install and run it in a Cortex Code session:
+Installation and distribution of the contained reviewer are not approved yet.
+Use only an already independently approved copy; do not install candidate tooling
+or treat a repository URL as a release channel. The offline local snapshot recipe,
+image-provisioning gates, and CI owner checklist are in the
+[packaging reference](skills/review-skill-sflabs/workflows/format-check.md#dependencies-and-packaging).
 
-```
-/skill add https://github.com/Snowflake-Labs/cortex-code-skills.git/skills/review-skill-sflabs
-$review-skill-sflabs <path-to-your-skill>
-```
+The output separates mechanical validation (`passed`, `failed`, `incomplete`, `blocked`, or `unavailable`) from human editorial judgment. File IDs and line numbers avoid copying candidate text or secrets into agent context. Binary/unsupported files are reported as incomplete, not silently skipped. No automatic fixes, public-web searches, or live model calls are performed. Catalog matching uses a partial pinned 26-name public Labs snapshot and returns at most three hashed related-entry IDs with fixed human questions; it does not establish originality or usefulness. Bounded Markdown link/anchor/fence/routing checks are advisory and exclude code examples; they do not establish workflow termination. CI compares complete base/head bundles with the same trusted image. Missing, unsafe or incomplete baselines are not comparable, never proof of resolution; head failures remain failures.
 
-The output is a verdict (🟢 promote / 🟡 adapt / 🟠 skip) plus a concrete checklist of issues. Address any 🟠 *Needs Attention* findings before opening the PR.
+Required mechanical checks follow the [frontmatter contract](#frontmatter-contract) and [license content rules](#license-content-and-human-approval). Catalog display and wording guidance is advisory. Secret detection is best effort, not a security certification. Acceptance still requires human review.
+
+The CI integration is an inert template, not an enforced admission gate. Its thin Action uses independently approved tooling and a preloaded immutable image, separate from both PR base and head data. There are no automatic builds, pulls, installs or uploads. Bootstrap needs an independently reviewed launcher/image pair plus an external, separately managed authoritative required workflow; a historical base without the validator and a candidate's proposed tests cannot establish that trust. A PR can replace this workflow, its Action or claimed digest, so PR metadata and same-name status checks do not prove authority. Organization/ruleset IDs, enforcement bindings, owners, runner provisioning and distribution rights remain unknown or unapproved; the linked owner checklist records required evidence. This change does not configure or enable those controls.
 
 Running it does not gate PR acceptance — it is advisory. Final review is human-in-the-loop and reviewers may decline or request changes regardless of what the skill reports.
 
@@ -97,7 +139,7 @@ Skills created interactively are saved to `~/.snowflake/cortex/skills/<skill-nam
 
 1. [Fork this repo](https://github.com/Snowflake-Labs/cortex-code-skills/fork) and clone your fork locally
 2. Copy an existing skill folder from `skills/` (see "Starting point" above) into a new folder named your skill's `name` (lowercase, hyphens)
-3. Open `SKILL.md` and fill in all required frontmatter fields, then add a `LICENSE` file (Apache 2.0 for community contributors)
+3. Open `SKILL.md` and fill in `name` and `description`, then review the recommended fields and add a `LICENSE` under the content and human-approval rules above
 4. Confirm your skill name is not already used by a bundled skill: run `/skill` in a Cortex Code session to see all skills grouped by location, or inspect `~/.local/share/cortex/<version>/bundled_skills/` directly
 5. Test your skill against your example prompt and confirm the behavior matches what you described
 6. Submit your pull request. You can do this entirely from inside a Cortex Code session:
