@@ -1,0 +1,9 @@
+*
+!Dockerfile
+!requirements.txt
+!scripts/
+!scripts/*.py
+!scripts/resources/
+!scripts/resources/*.json
+!references/
+!references/catalog-snapshot.json
