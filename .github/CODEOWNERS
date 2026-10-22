@@ -23,7 +23,6 @@
 # Automation runs with repository credentials.
 /.github/               @sfc-gh-chorgan @sfc-gh-lhartzell
 
-# migrate-snowsql. Last match wins, so the maintainers stay on this line.
 /skills/migrate-snowsql/ @sfc-gh-jbilek @sfc-gh-mrogowski @sfc-gh-chorgan @sfc-gh-lhartzell
 
 # Executable code shipped inside a skill.
