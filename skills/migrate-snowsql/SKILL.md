@@ -1,8 +1,8 @@
 ---
 name: migrate-snowsql
 title: Migrate SnowSQL
-summary: Guided SnowSQL to Snowflake CLI migration. The first run states findings in chat, then optional auto-implement for 1:1 parity.
-description: "Analyzes a SnowSQL project and writes a migration plan and report without asking. On that first run, states the findings in chat before any edit: the count of compatible replacements, a summary of automatic rewrites, and each manual-review item with why it is held and how behavior is affected. Then offers implement or report-only. Implement copies every compatible and rewrite file automatically, including output rewrites for SnowSQL parity. After copies, reports what was done and asks whether to run snow helpers import-snowsql-connections. Use when migrating SnowSQL scripts, connection files, or SNOWSQL_* variables to Snowflake CLI, or when the user mentions snow helpers import-snowsql-connections, check-snowsql-env-vars, convert snowsql scripts, or $migrate-snowsql. Snowflake CLI is a separate client, not a drop-in replacement. Not for unattended migration."
+summary: Guides a SnowSQL project onto Snowflake CLI, states findings first, then optionally auto-implements for parity.
+description: "Analyzes a SnowSQL project and writes a migration plan and report without asking. On that first run, states the findings in chat before any edit: the count of compatible replacements, a summary of automatic rewrites, and each manual-review item with why it is held and how behavior is affected. Then offers implement or report-only. Implement copies every compatible and rewrite file automatically, including output rewrites for SnowSQL parity. After copies, reports what was done and asks whether to run snow helpers import-snowsql-connections. Use when migrating SnowSQL scripts, connection files, or SNOWSQL_* variables to Snowflake CLI. Triggers: migrate SnowSQL, convert snowsql scripts, import-snowsql-connections, check-snowsql-env-vars, $migrate-snowsql. Snowflake CLI is a separate client, not a drop-in replacement. Not for unattended migration."
 tools:
   - Bash
   - Read
@@ -105,7 +105,7 @@ compatible: <n>, rewrite required: <n>, manual review: <n>, blocked: <n>
 
 | Location | Difference | Consumer | Suggested fix |
 | --- | --- | --- | --- |
-| scripts/10-output-json.sh | CLI pretty-prints JSON; `1` is a number, SnowSQL writes `"1"` | parser | rewrite (`jq` numbers-as-strings) for parity |
+| 10-output-json.sh | CLI pretty-prints JSON; `1` is a number, SnowSQL writes `"1"` | parser | rewrite (`jq` numbers-as-strings) for parity |
 
 ## Redactions
 
@@ -183,9 +183,9 @@ If they say yes and Preflight passed: load configuration.md, back up the Snowfla
 - Before creating a stage or file format the project does not already have.
 - Before each live SQL session, with a named non-production connection.
 
-## Example
+## Examples
 
-SnowSQL file `scripts/30-continue-on-error.sh`:
+SnowSQL file `30-continue-on-error.sh`:
 
 ```bash
 snowsql -c example -o exit_on_error=false -f sql/exit-on-error.sql
@@ -195,10 +195,10 @@ snowsql -c example -o exit_on_error=false -f sql/exit-on-error.sql
 
 | Location | Found | Rule | Disposition | Action |
 | --- | --- | --- | --- | --- |
-| scripts/30-continue-on-error.sh:4 | `snowsql` | invocation | compatible | `snow sql` |
-| scripts/30-continue-on-error.sh:4 | `-c example` | connection | compatible | Same flag. |
-| scripts/30-continue-on-error.sh:4 | `-o exit_on_error=false` | exit-on-error-false | rewrite required | One `snow sql` per statement. Ignore a failing command. |
-| scripts/30-continue-on-error.sh:4 | `-f sql/exit-on-error.sql` | file | compatible | Same flag. |
+| 30-continue-on-error.sh:4 | `snowsql` | invocation | compatible | `snow sql` |
+| 30-continue-on-error.sh:4 | `-c example` | connection | compatible | Same flag. |
+| 30-continue-on-error.sh:4 | `-o exit_on_error=false` | exit-on-error-false | rewrite required | One `snow sql` per statement. Ignore a failing command. |
+| 30-continue-on-error.sh:4 | `-f sql/exit-on-error.sql` | file | compatible | Same flag. |
 
 Implemented copy:
 
@@ -222,7 +222,7 @@ Blocked 0:
 Reply: implement / report-only
 ```
 
-A review line, when the project has one: `scripts/20-probe.sh:4 --probe-connection: CLI text differs; a caller would parse a different result.`
+A review line, when the project has one: `20-probe.sh:4 --probe-connection: CLI text differs; a caller would parse a different result.`
 
 ## Common mistakes (workflow)
 

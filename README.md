@@ -48,7 +48,7 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | Skill                                         | What it does                                                                                                     |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | [`snowflake-docs`](skills/snowflake-docs)     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
-| [`migrate-snowsql`](skills/migrate-snowsql) | Guided SnowSQL to Snowflake CLI migration. The first run states findings in chat, then optional auto-implement for 1:1 parity. |
+| [`migrate-snowsql`](skills/migrate-snowsql) | Guides a SnowSQL project onto Snowflake CLI, states findings first, then optionally auto-implements for parity. |
 | [`quickstart-guide`](skills/quickstart-guide) | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
 
 
