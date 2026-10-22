@@ -156,6 +156,6 @@ Every other connection key is copied under the same name.
 1. Leave the SnowSQL binary and the SnowSQL config files untouched.
 2. If you added a shell alias `snowsql='snow sql'`, remove that alias. The alias does not make `cat file | snowsql` run the file.
 3. Restore the CLI backup taken before the import (`config.toml` and `connections.toml`).
-4. Keep using the original scripts with the `snowsql` binary until the report says each file is accepted.
+4. Keep using the original scripts with the `snowsql` binary until you accept the rewritten files.
 
 `snow --info` shows `default_config_file_path` for this install. `$SNOWFLAKE_HOME` is used when it is set and the directory exists. When it is unset, the directory is `~/.snowflake` if that directory exists, otherwise `~/.config/snowflake` on Linux, `~/Library/Application Support/snowflake` on macOS, or `%USERPROFILE%\AppData\Local\snowflake` on Windows. A `SNOWFLAKE_HOME` value that points at a missing directory is ignored, and the CLI does not then use `~/.snowflake`. `--config-file` selects a `config.toml`. It does not move `connections.toml`.

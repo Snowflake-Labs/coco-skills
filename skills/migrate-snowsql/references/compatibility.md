@@ -30,7 +30,7 @@ Three dispositions only:
 - A `manual review` file is listed only in that plan section. Do not repeat its constructs under Findings.
 - When two replacements disagree, the more specific rule wins: `variable-undefined` (no `--enhanced-exit-codes`) over `exit-on-error-true`; a `SELECT` or `GENERATOR` extract stays `snow sql --format` and a redirect, never `COPY INTO`.
 - A construct that no rule names is `manual review` under the rule `unlisted`. Say there is no documented equivalent. Do not invent a translation.
-- Never write a secret value into the plan, the report, or a rewritten file. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
+- Never write a secret value into the plan or a rewritten file. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
 
 Files to read: shell and batch scripts (`.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`, `.cmd`), `.sql`, `.py`, SnowSQL config files (`config`, `.cnf`, `.ini`), and any CI, cron, Makefile, or Dockerfile that calls `snowsql`. Also read every SQL file a script passes with `-f`. Skip `.git`, virtual environments, `node_modules`, and earlier migration output.
 
@@ -163,7 +163,7 @@ The same run on a row with a comma, a quote, a newline, a backslash, a tab, a CR
 
 `SELECT 'No Comma', 'With, comma'` keeps the SQL quotes in the header. The second name contains a comma, so the CLI header is `'NO COMMA',"'WITH, COMMA'"`. That second field has both the quotes from the SQL and the CSV quotes.
 
-For every `output-csv` row, the plan and the report contain this line:
+For every `output-csv` row, the plan contains this line:
 
 ```text
 QUOTING: CHANGED

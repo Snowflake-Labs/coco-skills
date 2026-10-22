@@ -1,10 +1,10 @@
-# Validation and the report
+# Validation
 
 Static checks do not open a connection. The plan covers only the files you read. It does not certify scripts that were not in the project.
 
 ## Static checks
 
-Before the first-run briefing, check the plan against the project:
+Before you submit the host plan, or write the fallback file, check the plan against the project:
 
 - The plan has two sections, Findings and Manual review. It has no file inventory, proposed-edits list, counts section, separate output-gaps section, or blocked section.
 - Every `snowsql` invocation, `SNOWSQL_` name, `!` directive, and `&name` is a Findings row, or a Manual review row when that file stays unchanged.
@@ -12,8 +12,8 @@ Before the first-run briefing, check the plan against the project:
 - A file whose worst disposition is `manual review` appears only in Manual review.
 - Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, dropped `-o` option, or large-extract finding has a Manual review row: what a caller sees, and the Suggested fix. The fix names the installed tool, `accept CLI bytes`, or `no installed tool`. Implement applies that fix. CSV adds `QUOTING: CHANGED` and `ACCEPTED`, `REWRITE`, or `FILE_FORMAT` for the fix applied. A pipe left for review has no second `QUOTING:` line.
 - Every `-o output_file=<path>` and `!spool <path>` keeps that exact path in the Findings action and in the rewritten script. A format change does not change the path or the extension. `out/result.tsv` stays `out/result.tsv` when the bytes are CSV.
-- No secret value appears in the plan or the first-run briefing. Search both for each secret you redacted. If one is there, replace it with `<redacted>` before you send the briefing.
-- The briefing's compatible count matches the Findings rows with disposition `compatible`. The briefing groups rewrites in plain sentences, at most 6, with no rule ids. Every Manual review row is one sentence naming the file and what a caller would see. A redaction is not a decision line. Compatible locations are not listed. A zero decision count is the word `None`.
+- No secret value appears in the plan, or in the fallback briefing. Search both for each secret you redacted. If one is there, replace it with `<redacted>` before you submit the plan or send the briefing.
+- The plan summary's compatible count matches the Findings rows with disposition `compatible`. Rewrites are grouped in plain sentences, at most 6, with no rule ids. Every Manual review row is one sentence under `Left as written`, naming the file and what a caller would see. A redaction is not one of those lines. Compatible locations are not listed. When nothing is left as written, that body is the word `None`. The host plan has no `Reply:` line. The fallback briefing does, and it offers only implement or report-only.
 
 Preflight must have passed before the plan and before an import. Below 1.4, stop and say to upgrade first. `snow helpers check-snowsql-env-vars` is the read-only environment check.
 
@@ -40,26 +40,4 @@ A `SELECT` or `GENERATOR` extract stays `snow sql --format CSV > file`, plus the
 
 If any of `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, or `SNOWFLAKE_SCHEMA` is missing, skip live SQL and say which names are missing. Do not print values.
 
-## Report
-
-Write `snowsql-migration-report.md`. Keep it short. Do not paste it into chat. The first-run chat is the briefing in SKILL.md.
-
-```markdown
-# SnowSQL migration report
-
-STATUS: PLAN_ONLY | REWRITTEN
-
-<exact snow --version one line>
-
-Rewrote: <n> files in place, or none yet
-Output parity: <location, difference, fix applied, or planned fix>
-Manual review: <file and reason, or none>
-Residual gaps: <what still cannot match SnowSQL bytes, or none>
-
-The plan does not certify untested scripts.
-SnowSQL remains installed. CLI config backup: <path or none>.
-```
-
-Write the report in Analyze with `STATUS: PLAN_ONLY` (Rewrote: none yet; Output parity lists planned fixes). After Implement, set `STATUS: REWRITTEN` and record what was applied. Keep `STATUS: STOPPED_BEFORE_MUTATION` in `migration-plan.md` until they choose implement.
-
-A CSV row still adds `QUOTING: CHANGED` and the second `QUOTING:` line for what Implement applied. A `Leave unchanged` file stays listed after the other files are rewritten.
+Do not write `snowsql-migration-report.md`. The plan is the record of what will change. After the rewrite, say what changed in chat. The plan keeps `STATUS: STOPPED_BEFORE_MUTATION` until they approve the host plan or choose implement.

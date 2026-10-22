@@ -1,6 +1,6 @@
 # Common mistakes
 
-Load when classifying a tricky construct, writing a rewrite, or reviewing the report. The short list in SKILL.md covers workflow only.
+Load when classifying a tricky construct or writing a rewrite. The short list in SKILL.md covers workflow only.
 
 ## Clients and versions
 
@@ -35,7 +35,7 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 ## Safety
 
 - Printing passwords, keys, tokens, or connection values.
-- Editing a project file before they choose implement, or editing the SnowSQL config.
-- Writing the plan or the report anywhere other than the working directory.
+- Editing a project file before the host plan is approved, or before they choose implement on the fallback. Editing the SnowSQL config.
+- Writing `migration-plan.md` when a host plan was submitted, writing that file outside the working directory, or writing `snowsql-migration-report.md`.
 - Writing a second project tree instead of rewriting the files in place.
 - Guessing a translation for a construct no rule names. It is `manual review`.
