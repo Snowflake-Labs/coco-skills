@@ -6,15 +6,18 @@ Static checks do not open a connection. The plan covers only the files you read.
 
 Before the first-run briefing, check the plan against the project:
 
-- Every file that mentions `snowsql`, `SNOWSQL_`, a `!` directive, or `&name` is under "Files inspected".
-- Every finding row names a compatibility rule, or `unlisted`.
-- Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, dropped `-o` option, or large-extract finding has an Output gaps row: byte difference, consumer, and a Suggested fix. The fix names the installed tool, `accept CLI bytes`, or `manual review: no installed tool`. Implement applies that fix. CSV adds `QUOTING: CHANGED` and `ACCEPTED`, `REWRITE`, or `FILE_FORMAT` for the fix applied. A pipe left for review has no second `QUOTING:` line.
+- The plan has two sections, Findings and Manual review. It has no file inventory, proposed-edits list, counts section, separate output-gaps section, or blocked section.
+- Every `snowsql` invocation, `SNOWSQL_` name, `!` directive, and `&name` is a Findings row, or a Manual review row when that file stays unchanged.
+- Findings dispositions are only `compatible` and `rewrite required`. Each Findings row names a compatibility rule.
+- A file whose worst disposition is `manual review` appears only in Manual review.
+- Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, dropped `-o` option, or large-extract finding has a Manual review row: what a caller sees, and the Suggested fix. The fix names the installed tool, `accept CLI bytes`, or `no installed tool`. Implement applies that fix. CSV adds `QUOTING: CHANGED` and `ACCEPTED`, `REWRITE`, or `FILE_FORMAT` for the fix applied. A pipe left for review has no second `QUOTING:` line.
+- Every `-o output_file=<path>` and `!spool <path>` keeps that exact path in the Findings action and in the rewritten script. A format change does not change the path or the extension. `out/result.tsv` stays `out/result.tsv` when the bytes are CSV.
 - No secret value appears in the plan or the first-run briefing. Search both for each secret you redacted. If one is there, replace it with `<redacted>` before you send the briefing.
-- The compatible number matches the plan count. The briefing groups rewrites in plain sentences, at most 6, with no rule ids. Every `manual review` row is one sentence naming the file and the behavior hit. A redaction is not a decision line. Compatible locations are not listed. A zero decision or blocked count is the word `None`.
+- The briefing's compatible count matches the Findings rows with disposition `compatible`. The briefing groups rewrites in plain sentences, at most 6, with no rule ids. Every Manual review row is one sentence naming the file and what a caller would see. A redaction is not a decision line. Compatible locations are not listed. A zero decision count is the word `None`.
 
 Preflight must have passed before the plan and before an import. Below 1.4, stop and say to upgrade first. `snow helpers check-snowsql-env-vars` is the read-only environment check.
 
-After the in-place rewrite, `rewrite.diff` is the only record of the old bytes. Manual-review and blocked files must be unchanged. A blocked file is not deleted.
+After the in-place rewrite, `rewrite.diff` is the only record of the old bytes. A Manual review file marked `Leave unchanged` must be unchanged. It is not deleted. Compare each original `-o output_file` and `!spool` path with the rewritten script. The path string must match. Search the rewritten scripts for `snow sql` and `-o` on the same command. There must be no match. The CLI rejects `-o` and exits 2.
 
 ## Optional live SQL
 
@@ -50,7 +53,7 @@ STATUS: PLAN_ONLY | REWRITTEN
 
 Rewrote: <n> files in place, or none yet
 Output parity: <location, difference, fix applied, or planned fix>
-Manual review / blocked: <file and reason, or none>
+Manual review: <file and reason, or none>
 Residual gaps: <what still cannot match SnowSQL bytes, or none>
 
 The plan does not certify untested scripts.
@@ -59,4 +62,4 @@ SnowSQL remains installed. CLI config backup: <path or none>.
 
 Write the report in Analyze with `STATUS: PLAN_ONLY` (Rewrote: none yet; Output parity lists planned fixes). After Implement, set `STATUS: REWRITTEN` and record what was applied. Keep `STATUS: STOPPED_BEFORE_MUTATION` in `migration-plan.md` until they choose implement.
 
-A CSV row still adds `QUOTING: CHANGED` and the second `QUOTING:` line for what Implement applied. Blocked files stay listed even after the other files are rewritten.
+A CSV row still adds `QUOTING: CHANGED` and the second `QUOTING:` line for what Implement applied. A `Leave unchanged` file stays listed after the other files are rewritten.

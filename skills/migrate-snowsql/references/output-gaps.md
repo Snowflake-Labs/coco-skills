@@ -6,6 +6,8 @@ Load this page when a finding is JSON, CSV, TSV, HTML, grid, plain, spool, async
 
 On Implement, apply the Suggested fix. Do not ask. `snow sql` still replaces `snowsql` when the parity pipe cannot be written.
 
+Keep every original output path. `-o output_file=<path>` becomes `> <path>` with the same path and extension. `!spool <path>` keeps that path. Do not invent a new file name because the format changed.
+
 Choose the fix from the consumer and from tools already on the machine:
 
 1. The consumer reads parsed fields and does not need SnowSQL bytes. Keep CLI output and say so. For CSV that is `QUOTING: ACCEPTED`.
@@ -98,9 +100,15 @@ Suggested fix: `snow sql --format CSV` and record the byte gap. Matching code on
 
 ### TSV
 
-The CLI has no TSV format.
+The CLI has no TSV format. Keep the original `-o output_file` path, including a `.tsv` extension.
 
-Suggested fix: an installed tool that writes TSV. Use `COPY INTO` with `FIELD_DELIMITER='\t'` only when the project already unloads to a stage. Escapes still differ until the consumer needs matching code. With no TSV tool, write CSV and mark the pipe for review.
+Suggested fix: an installed tool that writes TSV to that same path. Use `COPY INTO` with `FIELD_DELIMITER='\t'` only when the project already unloads to a stage. With no TSV tool, redirect CSV to the original path and mark the pipe for review:
+
+```bash
+snow sql -c example --format CSV -f sql/csv-contract.sql > out/result.tsv
+```
+
+The file name stays. The bytes are CSV until a TSV tool exists.
 
 ### Dropped options
 

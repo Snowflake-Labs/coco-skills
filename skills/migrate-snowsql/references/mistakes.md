@@ -13,6 +13,7 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 - Using `--enhanced-exit-codes` to continue after a SQL error. It changes exit 1 to exit 5 and still stops.
 - Adding `--enhanced-exit-codes` on an undefined `&name`, including when the same command also has `-o exit_on_error=true`. A template error exits 1. `variable-undefined` wins.
 - Dropping `-o exit_on_error=true` and expecting exit code 5. The CLI exits 1 unless the copy adds `--enhanced-exit-codes`.
+- Leaving any `-o` on `snow sql`. The CLI rejects the flag and exits 2. A rename of `snowsql` to `snow sql` still has to delete the option.
 
 ## Directives and variables
 
@@ -27,6 +28,7 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 - Recording `QUOTING: ACCEPTED` when the consumer still needs every field quoted.
 - Using `python3`, `awk`, or `sed` for a JSON, CSV, or TSV rewrite, or installing a tool to close the gap.
 - Inventing a `COPY INTO` for a `SELECT` or `GENERATOR` because the file name says large.
+- Renaming an output file when the format changes. `out/result.tsv` stays `out/result.tsv` when the bytes are CSV.
 - Putting `HEADER` inside `FILE_FORMAT`. It is a `COPY INTO` option.
 - Using a quote-all pipe to repair an embedded newline, tab, CR, or NULL. That is matching code.
 

@@ -23,7 +23,7 @@ type: snowflake
 
 Migrate SnowSQL 1.4 or 1.5 scripts to Snowflake CLI. Write the plan and the report first, without questions. On that first run, say in chat what you found, using the briefing in step 3. Writing the files is not the briefing. Then offer implement or report-only. Implement rewrites the project files in place: every `compatible` replacement and every `rewrite required` change, for SnowSQL output parity. Do not write a second tree. After the rewrite, update the report and ask about connection import. Pause only for live SQL, new stages/file formats, and constructs with no rule. Below 1.4, stop and say to upgrade first.
 
-Rule list: [references/compatibility.md](references/compatibility.md). Load a reference only when that step needs it. Dispositions: `compatible`, `rewrite required`, `manual review`, `blocked`. Unlisted constructs are `manual review`.
+Rule list: [references/compatibility.md](references/compatibility.md). Load a reference only when that step needs it. Dispositions: `compatible`, `rewrite required`, `manual review`. A construct with no equivalent is `manual review`. There is no `blocked` disposition.
 
 Out of scope: continuous SnowSQL sync, runtime SnowSQL compatibility, config-v2, unattended migration.
 
@@ -69,49 +69,34 @@ Load [references/preflight.md](references/preflight.md) and follow it. Record OS
 
 Load references from the table above as needed. Run `snow helpers check-snowsql-env-vars` first (read-only).
 
-Read the project. List its files, search for `snowsql`, `SNOWSQL_`, `-o`, lines that start with `!`, and `&`, and read every file that matches, plus every SQL file a script passes with `-f`. Match each construct to a rule in compatibility.md. Do not edit anything.
+Read the project. Search for `snowsql`, `SNOWSQL_`, `-o`, lines that start with `!`, and `&`, and read every file that matches, plus every SQL file a script passes with `-f`. Match each construct to a rule in compatibility.md. Do not edit anything.
 
-Write `migration-plan.md`:
+Write `migration-plan.md` with two sections. Do not add a file inventory, a proposed-edits list, a counts section, an output-gaps section, or a blocked section.
 
 ```markdown
 # SnowSQL migration plan
 
 STATUS: STOPPED_BEFORE_MUTATION
 
-## Files inspected
-
-<every file you read, relative to the SnowSQL project>
-
 ## Findings
 
 | Location | Found | Rule | Disposition | Action |
 | --- | --- | --- | --- | --- |
-| run.sh:2 | `-o exit_on_error=false` | exit-on-error-false | rewrite required | One `snow sql` per statement. Ignore a failing command. |
+| run.sh:4 | `snowsql` | invocation | compatible | `snow sql` |
+| run.sh:4 | `-o exit_on_error=false` | exit-on-error-false | rewrite required | One `snow sql` per statement. Ignore a failing command. |
 
-## Counts
+## Manual review
 
-compatible: <n>, rewrite required: <n>, manual review: <n>, blocked: <n>
-
-## Proposed edits
-
-<each file that implement would rewrite in place>
-
-## Blocked
-
-<each blocked file and the reason>
-
-## Output gaps
-
-| Location | Difference | Consumer | Suggested fix |
-| --- | --- | --- | --- |
-| 10-output-json.sh | CLI pretty-prints JSON; `1` is a number, SnowSQL writes `"1"` | parser | rewrite (`jq` numbers-as-strings) for parity |
-
-## Redactions
-
-<each secret you replaced with <redacted>, by key or flag name only>
+| Location | What a caller sees | Implement |
+| --- | --- | --- |
+| 20-probe.sh:4 | `--probe-connection` prints different text | Leave unchanged. |
+| 10-output-json.sh:5 | CLI pretty-prints JSON; `1` is a number, SnowSQL writes `"1"` | Accept CLI bytes. `jq` is not installed. |
+| 34-tsv.sh:5 | `out/result.tsv` contains CSV | Write CSV to `out/result.tsv`. Do not rename it. |
 ```
 
-One row per construct. `Found` is the construct as written, with secret values replaced by `<redacted>`. `Disposition` is exactly one of the four words. Add the `QUOTING:` lines for every CSV row. For each output gap, write the byte difference, the consumer, and the Suggested fix from output-gaps.md. That fix is what Implement applies. Do not write "ask the user".
+Findings lists only what Implement changes: `compatible` and `rewrite required`. One row per construct. `Found` is the construct as written, with secret values replaced by `<redacted>`. A file whose worst disposition is `manual review` does not appear here. Its other constructs are not repeated.
+
+Manual review is the other section. It holds a construct with no equivalent, a redacted secret, and every output gap. One row per item. An output gap names the byte difference and the Suggested fix from output-gaps.md. Implement applies that fix. `Leave unchanged.` means the file is not edited. Put the `QUOTING:` words on every CSV row in Manual review. Do not write "ask the user". An output gap stays in this section and also stays a Findings row: the file is still rewritten, and the original output path stays the same.
 
 Validate the plan against validation.md (static checks). Fix any failure, then re-check. Only then write `snowsql-migration-report.md` with `STATUS: PLAN_ONLY` (template in validation.md). Do not paste the plan or the report into chat. Do not edit project files, import connections, or run SQL yet.
 
@@ -128,28 +113,25 @@ Nothing has changed yet. If you reply implement, I edit your files in place.
 - <plain group>: <one sentence saying what changes for the person reading the script, and whether the result stays the same>
 Full list: migration-plan.md
 
-<n> lines need your decision. I will leave them as they are:
-- <file>:<line> <what is there>: <what breaks, or what a caller would see, if this is rewritten without you>
-
-<n> files stay on SnowSQL:
-- <file>: <why a Snowflake CLI version of this file does not exist>
+<n> items need your decision:
+- <file>:<line> <what is there>: <what a caller would see>
 
 Reply: implement / report-only
 ```
 
-The first count is the plan's compatible count. Do not list those lines. Group every rewrite by what it does to the script, not by rule name. At most 6 group lines. No rule ids, no flag soup, no arrows. A group with no rows is omitted. Say where output bytes will still differ, in that group's sentence.
+The first count is the number of Findings rows with disposition `compatible`. Do not list those lines. Group every rewrite by what it does to the script, not by rule name. At most 6 group lines. No rule ids, no flag soup, no arrows. A group with no rows is omitted. Say where output bytes will still differ, in that group's sentence.
 
-Every manual-review row is one sentence: the file, what is there, and the behavior hit. A redaction is not a decision. When a heading has no rows, its body is the single word `None`. Do not print `None` under a heading that has rows. One blocked file per line.
+Every Manual review row is one sentence: the file, what is there, and what a caller would see. A redaction is not a decision. When that count is zero, the body is the single word `None`.
 
-Implement edits every compatible and rewrite file in place. Manual review and blocked files stay as they are. If they already approved implement, print this, then `Rewriting your files in place.`, and go to Implement. Report-only stops. Do not ask about output gaps or import yet.
+Implement edits every Findings file in place. Manual review files marked `Leave unchanged` stay as they are. If they already approved implement, print this, then `Rewriting your files in place.`, and go to Implement. Report-only stops. Do not ask about output gaps or import yet.
 
 ### 4. Implement
 
-Edit the project files in place. Do not write a second tree. Apply every compatible and rewrite row without asking again. Leave manual-review and blocked files unchanged. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Before the first edit, snapshot only the files you will change, write `rewrite.diff` (`diff -u` against that snapshot), then delete the snapshot.
+Edit the project files in place. Do not write a second tree. Apply every Findings row without asking again. Leave a Manual review file marked `Leave unchanged` as written. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Before the first edit, snapshot only the files you will change, write `rewrite.diff` (`diff -u` against that snapshot), then delete the snapshot.
 
-Replacement detail stays in compatibility.md. Apply each Suggested fix in the Output gaps table. output-gaps.md chooses it from the consumer and from tools already installed. The command stays `snow sql --format … > file`. Record `QUOTING: REWRITE` only when a quote-all pipe was applied.
+Replacement detail stays in compatibility.md. Apply each Suggested fix in Manual review when that row is an output gap on a Findings file. output-gaps.md chooses it from the consumer and from tools already installed. The command stays `snow sql --format … > <original path>`. Keep every `-o output_file` path and extension. A TSV file with no TSV tool still uses its original path, and the bytes are CSV. Record `QUOTING: REWRITE` only when a quote-all pipe was applied.
 
-**Manual review and blocked.** Do not invent a translation. Leave those files unchanged. List them in the report. Walk through a manual or blocked row only if they ask after the report; one file at a time.
+**Manual review.** Do not invent a translation for a `Leave unchanged` row. List those files in the report. Walk through one only if they ask after the report.
 
 Do not import connections in this step.
 
@@ -219,10 +201,7 @@ Nothing has changed yet. If you reply implement, I edit your files in place.
 - Errors: this script keeps going after a failed statement, same as SnowSQL with exit on error turned off.
 Full list: migration-plan.md
 
-0 lines need your decision.
-None.
-
-0 files stay on SnowSQL.
+0 items need your decision.
 None.
 
 Reply: implement / report-only

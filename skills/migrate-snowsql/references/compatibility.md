@@ -17,17 +17,17 @@ This page is the rule list for SnowSQL 1.4 and 1.5. Those lines use the same rul
 
 ## How to apply the rules
 
-Four dispositions only:
+Three dispositions only:
 
 | Disposition | Meaning | When implemented in place |
 | --- | --- | --- |
 | `compatible` | Snowflake CLI already does this. | Keep it. Change `snowsql` to `snow sql`. |
 | `rewrite required` | A documented equivalent exists. | Apply the replacement in the rule. |
-| `manual review` | A person decides. | Leave the line as written and list it in the report. |
-| `blocked` | No equivalent. Keep SnowSQL for this file. | Leave the file unchanged. |
+| `manual review` | A person decides, or there is no equivalent. | Leave the file unchanged and list it under Manual review. |
 
 - One line can match several rules. Record each one.
-- A file takes the worst disposition of its rows: `blocked`, then `manual review`, then `rewrite required`, then `compatible`.
+- A file takes the worst disposition of its rows: `manual review`, then `rewrite required`, then `compatible`.
+- A `manual review` file is listed only in that plan section. Do not repeat its constructs under Findings.
 - When two replacements disagree, the more specific rule wins: `variable-undefined` (no `--enhanced-exit-codes`) over `exit-on-error-true`; a `SELECT` or `GENERATOR` extract stays `snow sql --format` and a redirect, never `COPY INTO`.
 - A construct that no rule names is `manual review` under the rule `unlisted`. Say there is no documented equivalent. Do not invent a translation.
 - Never write a secret value into the plan, the report, or a rewritten file. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
@@ -90,7 +90,7 @@ A name is defined when the project sets it with `-D name=value`, `--variable nam
 | `variable-builtin` | A SnowSQL built-in variable (`&__rowcount`, `&__sfqid`, any name starting with `_`) | rewrite required | `count(*)` for the last DML table, and `last_query_id()` for the query id. The id value will differ. |
 | `variable-undefined` | `&name` with no definition in the project | rewrite required | `<% name %>`. Both clients error, return no result rows, and exit 1. A template error is this rule, not `exit-on-error-true`. Drop `-o exit_on_error=true` on the same command. Do not add `--enhanced-exit-codes`. |
 | `substitution-on` | `-o variable_substitution=true` | rewrite required | Drop the option. The CLI substitutes by default. |
-| `substitution-off` | `-o variable_substitution=false` | rewrite required | Drop the option. Keep a literal `&` inside a string. If the CLI would read `&name` there, write `chr(38)` or split the string. Rewrite bitwise `&` to `bitand()`. |
+| `substitution-off` | `-o variable_substitution=false` | rewrite required | Drop the option. Do not leave `-o` on `snow sql`; the CLI rejects it and exits 2. Keep a literal `&` inside a string. If the CLI would read `&name` there, write `chr(38)` or split the string. Rewrite bitwise `&` to `bitand()`. |
 | `environment-variables` | `-o environment_variables=NAME` | rewrite required | `<% ctx.env.NAME %>`. Drop `-o environment_variables=NAME` and any `-D NAME=...` that only exists to feed that option. The value stays in the shell environment. |
 
 `ctx.env` applies only to project definition `env` values, not to `-D` variables.
@@ -132,14 +132,14 @@ A large extract is a `SELECT` (including `GENERATOR`) written to a file. A name 
 | Rule | Recognize | Disposition | Replacement or action |
 | --- | --- | --- | --- |
 | `output-json` | `-o output_format=json`, not an existing stage unload | rewrite required | `snow sql --format JSON > file`, then the JSON fix in output-gaps.md. |
-| `output-file` | `-o output_file=<path>`, not an existing stage unload | rewrite required | Redirect stdout: `> <path>`. |
+| `output-file` | `-o output_file=<path>`, not an existing stage unload | rewrite required | Redirect stdout to that same path: `> <path>`. Do not rename the file or change its extension. |
 | `output-plain` | `-o output_format=plain` | rewrite required | `snow sql --format PLAIN`. Layout fix is in output-gaps.md. |
 | `output-csv` | `-o output_format=csv`, including a small file | rewrite required | `snow sql --format CSV > file`. Record `QUOTING: CHANGED`. Apply the CSV quoting fix in output-gaps.md. |
 | `output-csv-specials` | CSV with an embedded newline, tab, CR, backslash, or NULL | rewrite required | `snow sql --format CSV`. Apply the CSV specials fix in output-gaps.md. |
 | `output-tsv` | `-o output_format=tsv` | rewrite required | Apply the TSV fix in output-gaps.md. |
 | `output-format` | Any other `-o output_format` value | rewrite required | `--format TABLE`, `JSON`, `JSON_EXT`, `CSV`, or `PLAIN`. Grid and HTML become TABLE. |
 | `large-extract` | A `SELECT` or `GENERATOR` streamed to a file | rewrite required | `snow sql --format CSV > file` and the CSV quoting fix. `COPY INTO @stage` only when the project already unloads to a stage, or a person said the result is too big to stream. |
-| `option` | Any other `-o` setting (`timing`, `friendly`, `quiet`, `echo`, `log_level`, `header`, `rowset_size`, `sfqid`, and the rest) | rewrite required | Drop the option. `header=false` uses the header fix in output-gaps.md. Other dropped options stay as residuals there. |
+| `option` | Any other `-o` setting (`timing`, `friendly`, `quiet`, `echo`, `log_level`, `header`, `rowset_size`, `sfqid`, and the rest) | rewrite required | Drop the option. Do not leave `-o` on `snow sql`; the CLI rejects it and exits 2. `header=false` uses the header fix in output-gaps.md. Other dropped options stay as residuals there. |
 
 CSV quoting may differ. The check compares parsed fields. Newline, backslash, tab, and CRLF inside a field still differ and fail that comparison. Snowflake CLI CSV is UTF-8 only, uses a newline of `\n`, and has no delimiter or quoting flags. A clean Linux run is not evidence that truncation is fixed. Report the exact bytes. Fixes are in the output-gaps reference.
 
