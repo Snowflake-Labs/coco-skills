@@ -37,6 +37,8 @@ Version. Run `snow --version` and take the first `X.Y.Z` or `X.Y.Z.devN`. A `.de
 
 Snowflake CLI v3.30 corrects `snow helpers import-snowsql-connections`. Development builds identified as `3.30.0.devN` are supported before the final release.
 
+`!spool` is in Snowflake CLI 3.31.0, including `3.31.0.dev0` from `main`. A `3.30` build does not have it. Follow the spool rule in the compatibility reference.
+
 Help. Run `snow helpers import-snowsql-connections --help`. Ignore box-drawing characters and line breaks. The text must contain both `does not replace the default file list` and `not copied onto it`.
 
 If either check fails, or the command is missing, say this install does not have the v3.30 importer and stop the import.

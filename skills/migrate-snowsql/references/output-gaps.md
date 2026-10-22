@@ -18,29 +18,13 @@ Load this page when a finding is JSON, CSV, TSV, HTML, grid, plain, spool, async
 
 CLI result rows can match SnowSQL while the bytes differ. Write that difference in the plan. Suggested fix must name the parity path you will apply on Implement (rewrite one-liner or matching code). Do not leave the fix as "ask the user".
 
-Default on Implement: restore SnowSQL parity. Prefer **Rewrite** (one-liner below). Use **Matching code** when the one-liner cannot restore SnowSQL bytes (embedded newline, tab, CR, NULL as `""`, doubled backslash). **Accept** only when no rewrite or matching-code path exists, or the plan already records that the project tolerates CLI bytes — never as the default.
+Default on Implement: restore SnowSQL parity. The command stays `snow sql --format … > file`. Use `jq` when `command -v jq` succeeds and `jq` can do that transform. If `jq` is missing or cannot do it, look at what is already installed and use a tool that does this exact transform. If you are not sure, do not add a pipe and do not use `python3`. Mark that gap for review. The `snow sql` command still replaces `snowsql`. Use **Matching code** when the chosen tool cannot restore SnowSQL bytes (embedded newline, tab, CR, NULL as `""`, doubled backslash). Do not invent a `COPY INTO` for JSON or CSV.
 
-Do not skip a rewrite because a tool is missing; say so in the report. Do not invent a SnowSQL emulator unless matching code needs those bytes.
+Do not invent a SnowSQL emulator unless matching code needs those bytes.
 
 ## Rewrite one-liners
 
-Quote every CSV field:
-
-```bash
-snow sql --format CSV -f sql/quote-contract.sql \
-  | python3 -c "import csv,sys; csv.writer(sys.stdout, quoting=csv.QUOTE_ALL, lineterminator='\n').writerows(csv.reader(sys.stdin))" \
-  > out/quote.csv
-```
-
-CSV to TSV:
-
-```bash
-snow sql --format CSV -f sql/csv-contract.sql \
-  | python3 -c "import csv,sys; csv.writer(sys.stdout, dialect='excel-tab', lineterminator='\n').writerows(csv.reader(sys.stdin))" \
-  > out/result.tsv
-```
-
-JSON numbers as strings, one line:
+JSON numbers as strings, when `jq` is installed:
 
 ```bash
 snow sql --format JSON -f sql/json.sql \
@@ -48,13 +32,15 @@ snow sql --format JSON -f sql/json.sql \
   > out/result.json
 ```
 
+`jq` does not quote every CSV field and does not write TSV. For those, use a tool already on the machine that does that exact transform. If you are not sure which tool, skip the pipe and mark the gap for review. Do not use `python3`.
+
 Drop a CSV header (`header=false`):
 
 ```bash
 snow sql --format CSV -q "select 1 as id, 'batch' as note" | tail -n +2 > out/batch.csv
 ```
 
-The quote and TSV lines do not restore SnowSQL `\n` `\t` `\r` escapes, a doubled backslash, or NULL as `""`. That is matching code, `COPY INTO` with a `FILE_FORMAT`, or keep SnowSQL.
+A quote-all or TSV pipe does not restore SnowSQL `\n` `\t` `\r` escapes, a doubled backslash, or NULL as `""`. That is matching code, `COPY INTO` with a `FILE_FORMAT`, or keep SnowSQL. If you are not sure, mark it for review.
 
 ## Plan rows
 
@@ -65,7 +51,7 @@ For each gap:
 | scripts/10-output-json.sh | CLI pretty-prints JSON; `1` is a number, SnowSQL writes `"1"` | parser | rewrite (`jq` numbers-as-strings) for parity |
 ```
 
-CSV rows still add `QUOTING: CHANGED`. The second `QUOTING:` line is what Implement applied: `REWRITE`, `FILE_FORMAT`, or `ACCEPTED` only when parity was not available.
+CSV rows still add `QUOTING: CHANGED`. The second `QUOTING:` line is `REWRITE` or `FILE_FORMAT` only when that is what Implement applied. An unsure parity pipe has no second line. It is marked for review.
 
 ## JSON types
 
@@ -73,7 +59,7 @@ SnowSQL writes one line and quotes every value: `[{"ID": "1", "NAME": "a", "AMOU
 
 CLI pretty-prints and leaves a small integer as a number: `"ID": 1`. Parsed values match.
 
-Rewrite is the `jq` line above. If they want matching code and no `jq`, write the same walk in Python.
+Rewrite is the `jq` line above when `command -v jq` succeeds. If `jq` is missing, use another installed tool that writes one JSON line with numbers as strings. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3`.
 
 ## TABLE, PLAIN, and spool layout
 
@@ -111,7 +97,7 @@ SnowSQL: `"1","3,456.00","8.88"` (every field quoted).
 
 CLI: `1,"3,456.00",8.88` (quote only comma, quote, or newline).
 
-`QUOTING: REWRITE` when Implement applies quote-every-field on clean columns (no embedded newline): use the `python3` line above. `QUOTING: ACCEPTED` only when parity was not applied.
+`QUOTING: REWRITE` when Implement quotes every field with a tool already on the machine. `jq` does not quote CSV. If no sure tool is installed, skip the pipe, do not record `QUOTING: REWRITE` or `QUOTING: ACCEPTED`, and mark the gap for review. Do not use `python3`.
 
 `QUOTING: FILE_FORMAT` keeps `COPY INTO` with an explicit file format. That enclosure is optional and does not quote every field. Apply the same quote-all line to the downloaded file when they still want those quotes.
 
@@ -122,8 +108,8 @@ A field with a newline, tab, CR, backslash, or NULL:
 - SnowSQL writes `\n`, `\t`, `\r` as two characters, doubles a backslash, and writes NULL as `""`.
 - CLI writes a raw newline and tab, leaves one backslash, drops the CR from a CR LF, and writes NULL as an empty field.
 
-Parsed fields match after undoing SnowSQL escapes and dropping CR. The quote-all line does not repair those bytes.
+Parsed fields match after undoing SnowSQL escapes and dropping CR. A quote-all pipe does not repair those bytes.
 
 ## TSV
 
-The CLI has no TSV format. The default copy writes CSV. Rewrite is the TSV one-liner, or `COPY INTO` with `FIELD_DELIMITER='\t'`. Escapes still will not match SnowSQL TSV unless they asked for matching code.
+The CLI has no TSV format. The default copy writes CSV. Use an installed tool that writes TSV, or `COPY INTO` with `FIELD_DELIMITER='\t'` when a stage unload is already the project's path. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3`. Escapes still will not match SnowSQL TSV unless they asked for matching code.

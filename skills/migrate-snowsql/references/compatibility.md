@@ -28,6 +28,7 @@ Four dispositions only:
 
 - One line can match several rules. Record each one.
 - A file takes the worst disposition of its rows: `blocked`, then `manual review`, then `rewrite required`, then `compatible`.
+- When two replacements disagree, the more specific rule wins: `variable-undefined` (no `--enhanced-exit-codes`) over `exit-on-error-true`; a `SELECT` or `GENERATOR` extract stays `snow sql --format` and a redirect, never `COPY INTO`.
 - A construct that no rule names is `manual review` under the rule `unlisted`. Say there is no documented equivalent. Do not invent a translation.
 - Never write a secret value into the plan, the report, or a rewritten file. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
 
@@ -87,7 +88,7 @@ A name is defined when the project sets it with `-D name=value`, `--variable nam
 | `variable-ctx-env` | `&{ctx.env.name}` | rewrite required | `<% ctx.env.name %>`. |
 | `variable-config` | `[variables]` in a SnowSQL config | rewrite required | Pass each key with `-D name=value`. Rewrite `&name` to `<% name %>`. |
 | `variable-builtin` | A SnowSQL built-in variable (`&__rowcount`, `&__sfqid`, any name starting with `_`) | rewrite required | `count(*)` for the last DML table, and `last_query_id()` for the query id. The id value will differ. |
-| `variable-undefined` | `&name` with no definition in the project | rewrite required | `<% name %>`. Both clients error, return no result rows, and exit 1. Do not add `--enhanced-exit-codes`. |
+| `variable-undefined` | `&name` with no definition in the project | rewrite required | `<% name %>`. Both clients error, return no result rows, and exit 1. A template error is this rule, not `exit-on-error-true`. Drop `-o exit_on_error=true` on the same command. Do not add `--enhanced-exit-codes`. |
 | `substitution-on` | `-o variable_substitution=true` | rewrite required | Drop the option. The CLI substitutes by default. |
 | `substitution-off` | `-o variable_substitution=false` | rewrite required | Drop the option. Keep a literal `&` inside a string. If the CLI would read `&name` there, write `chr(38)` or split the string. Rewrite bitwise `&` to `bitand()`. |
 | `environment-variables` | `-o environment_variables=NAME` | rewrite required | `<% ctx.env.NAME %>`. Drop `-o environment_variables=NAME` and any `-D NAME=...` that only exists to feed that option. The value stays in the shell environment. |
@@ -105,18 +106,18 @@ A name is defined when the project sets it with `-D name=value`, `--variable nam
 | `repl-directive` | `!queries`, `!result`, `!abort` | compatible | Same directive. |
 | `exit-quit` | `!exit` or `!quit` | rewrite required | Copy only the statements above the directive. Do not run the statements below it. |
 | `edit` | `!edit` | rewrite required | Drop `!edit`. Keep the SQL statements after it. |
-| `spool` | `!spool <file>` and `!spool off` | compatible | Same directive. Results go to the file and still print. Needs a CLI that implements `!spool`. |
+| `spool` | `!spool <file>` and `!spool off` | compatible | Same directive on Snowflake CLI 3.31.0, including `3.31.0.dev0` from `main`. Results go to the file and still print. On 3.30, split at `!spool off` and `tee`. |
 | `set-plain` | `!set output_format=plain` | compatible | Same directive, or `snow sql --format PLAIN`. Spacing may differ. |
 | `print-variables` | `!print` or `!variables` | manual review | Drop the directive. Keep the SQL statements. `!variables` prints a table the CLI does not. |
 | `set` | Any other `!set` | rewrite required | Drop the directive. Apply a matching `--format` on that command when one exists. Grid and HTML become the default TABLE. |
 | `directive` | Any other `!` directive | manual review | No documented equivalent. |
 
-`!spool`: Keep `!spool <file>` and `!spool off` when the CLI implements them. Results append to the file and still print. Format follows `--format` / `!set output_format`.
+`!spool` is in Snowflake CLI 3.31.0, including `3.31.0.dev0` from `main`. Keep `!spool <file>` and `!spool off`. Results append to the file and still print. Format follows `--format` / `!set output_format`. A `3.30` build does not have it.
 
 <details>
-<summary>Old patterns</summary>
+<summary>Below 3.31.0</summary>
 
-On a CLI without `!spool`, split at `!spool off` and `tee` the spooled query.
+Split at `!spool off` and `tee` the spooled query.
 
 </details>
 
@@ -126,18 +127,18 @@ On a CLI without `!spool`, split at `!spool off` and `tee` the spooled query.
 
 Published `--format` values are `TABLE`, `JSON`, `JSON_EXT`, and `CSV`. The v3.30 dev build also accepts `PLAIN`. There is no `-o output_file`. Use shell redirection.
 
-A large extract is a script that writes a big result to a file. Signs: a name or comment says large result, large export, or unload, or the user says the result is large. When you cannot tell, ask in the plan.
+A large extract is a `SELECT` (including `GENERATOR`) written to a file. A name or comment that says large is not enough. Use `COPY INTO` only when the project already unloads to a stage, or a person said the result is too big to stream.
 
 | Rule | Recognize | Disposition | Replacement or action |
 | --- | --- | --- | --- |
-| `output-json` | `-o output_format=json`, not a large extract | rewrite required | `snow sql --format JSON`. SnowSQL writes one line and quotes every value, so `1` is `"1"`. The CLI pretty-prints and leaves a small integer as a number. Parsed values match. The bytes do not. Report the gap. Remediation is in the output-gaps reference. |
-| `output-file` | `-o output_file=<path>`, not a large extract | rewrite required | Redirect stdout: `> <path>`. |
+| `output-json` | `-o output_format=json`, not an existing stage unload | rewrite required | `snow sql --format JSON > file`. When `jq` is installed, pipe through the numbers-as-strings line in the output-gaps reference. If `jq` is missing, use another installed tool that writes one JSON line with numbers as strings. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3` or `COPY INTO`. |
+| `output-file` | `-o output_file=<path>`, not an existing stage unload | rewrite required | Redirect stdout: `> <path>`. |
 | `output-plain` | `-o output_format=plain` | rewrite required | `snow sql --format PLAIN`. |
-| `output-csv` | `-o output_format=csv`, including a small file | rewrite required | `snow sql --format CSV`. Fields may match when quoting differs. Record the quoting lines below. |
-| `output-csv-specials` | CSV with an embedded newline, tab, CR, backslash, or NULL | rewrite required | `snow sql --format CSV`. Parsed fields match after undoing SnowSQL escapes and dropping CR. The bytes do not. Report the gap. On Implement prefer matching code for parity; the quote-all one-liner alone is not enough. |
-| `output-tsv` | `-o output_format=tsv` | rewrite required | `snow sql --format CSV` to the same path. The CLI has no TSV format. Parsed fields match. |
+| `output-csv` | `-o output_format=csv`, including a small file | rewrite required | `snow sql --format CSV > file`. Record `QUOTING: CHANGED`. Add a quote-all pipe only when an installed tool does that exact transform. `jq` does not quote CSV. If you are not sure, skip the pipe, do not record `QUOTING: REWRITE` or `QUOTING: ACCEPTED`, and mark the gap for review. Do not use `python3` or `COPY INTO`. |
+| `output-csv-specials` | CSV with an embedded newline, tab, CR, backslash, or NULL | rewrite required | `snow sql --format CSV`. The quote-all one-liner does not restore `\n` `\t` `\r` or `""`. Parsed fields match after undoing SnowSQL escapes and dropping CR. The bytes do not. Report the gap. Matching code or `COPY INTO` with a `FILE_FORMAT` only when they asked for those bytes. |
+| `output-tsv` | `-o output_format=tsv` | rewrite required | `snow sql --format CSV > file`. The CLI has no TSV format. Add a TSV pipe only when an installed tool writes TSV. `jq` does not. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3`. |
 | `output-format` | Any other `-o output_format` value | rewrite required | Use `--format TABLE`, `JSON`, `JSON_EXT`, `CSV`, or `PLAIN`. Grid and HTML become TABLE. |
-| `large-extract` | A large extract in any format | rewrite required | `snow sql --format CSV > file` for a synthetic or modest result. A production-scale extract stays `COPY INTO @stage` followed by `snow stage copy`. See below. |
+| `large-extract` | A `SELECT` or `GENERATOR` streamed to a file | rewrite required | `snow sql --format CSV` piped through the quote-all one-liner, then `> file`. Use `COPY INTO @stage` and `snow stage copy` only when the project already unloads to a stage, or a person said the result is too big to stream. `HEADER` is a `COPY INTO` option, never inside `FILE_FORMAT`. |
 | `option` | Any other `-o` setting (`timing`, `friendly`, `quiet`, `log_level`, `header`, `rowset_size`, and the rest) | rewrite required | Drop the option. For `header=false` CSV, drop the first line of `snow sql --format CSV`. |
 
 CSV quoting may differ. The check compares parsed fields. Newline, backslash, tab, and CRLF inside a field still differ and fail that comparison. Snowflake CLI CSV is UTF-8 only, uses a newline of `\n`, and has no delimiter or quoting flags. A clean Linux run is not evidence that truncation is fixed. Report the exact bytes. Fixes are in the output-gaps reference.
@@ -176,11 +177,13 @@ Then one of these lines:
 | `QUOTING: REWRITE` | You write the CSV with a double quote around every field. A double quote inside a field is written twice. Separate fields with a comma and end each row with a newline. Do not rename a header, fill in a dropped row, or repair a newline inside a field. |
 | `QUOTING: FILE_FORMAT` | Keep the extract as `COPY INTO` with an explicit `FILE_FORMAT`. The enclosure is optional. It is not quote-every-field. Apply the same quoting to the downloaded file when those quotes are still required. |
 
-`ID,AMOUNT,OTHER` and `1,"3,456.00",8.88` become `"ID","AMOUNT","OTHER"` and `"1","3,456.00","8.88"`. The second `QUOTING:` line is what Implement applied for parity (`REWRITE` or `FILE_FORMAT`). For `REWRITE`, pipe `snow sql --format CSV` through the quote-all one-liner in the output-gaps reference.
+`ID,AMOUNT,OTHER` and `1,"3,456.00",8.88` become `"ID","AMOUNT","OTHER"` and `"1","3,456.00","8.88"`. The second `QUOTING:` line is what Implement applied for parity (`REWRITE` or `FILE_FORMAT`). For `REWRITE`, pipe `snow sql --format CSV` through an installed tool that quotes every field. If you are not sure which tool, mark the gap for review. Do not use `python3`.
 
 ### Large extracts
 
-Do not stream a large result through `snow sql` CSV or TABLE output and call it an export. Keep:
+A `SELECT` or `GENERATOR` streamed to a file stays `snow sql --format CSV > file`. Add a quote-all pipe only when an installed tool does that. If you are not sure, mark the gap for review. Do not invent a `COPY INTO` because the file name or comment says large. Do not use `python3`.
+
+Use a stage unload only when the project already has one, or a person said the result is too big to stream:
 
 ```sql
 COPY INTO @my_stage/extract/
@@ -193,7 +196,7 @@ HEADER = TRUE;
 snow stage copy @my_stage/extract/ ./extract/ --recursive
 ```
 
-Use a stage and a file format the user already has, or ask before creating them. `FIELD_OPTIONALLY_ENCLOSED_BY` quotes a field when the value needs it. It does not quote every field. Do not run the `COPY INTO` until the user confirms a named non-production connection. When the file must quote every field, apply the quoting rule above to the downloaded CSV and record `QUOTING: FILE_FORMAT`.
+`HEADER` is a `COPY INTO` option. It is not a `FILE_FORMAT` parameter. Use a stage and a file format the user already has, or ask before creating them. `FIELD_OPTIONALLY_ENCLOSED_BY` quotes a field when the value needs it. It does not quote every field. Do not run the `COPY INTO` until the user confirms a named non-production connection. When the file must quote every field, apply the quoting rule above to the downloaded CSV and record `QUOTING: FILE_FORMAT`.
 
 A merged table-streaming change improves large TABLE rendering speed and memory only. It does not retry result chunks, validate row counts, or fix silent CSV truncation. Do not cite a faster TABLE render as proof that a CSV extract is safe.
 
@@ -203,7 +206,7 @@ Noninteractive `snow sql` stops at the first failing SQL statement and returns a
 
 | Rule | Recognize | Disposition | Replacement or action |
 | --- | --- | --- | --- |
-| `exit-on-error-true` | `-o exit_on_error=true` | rewrite required | Add `--enhanced-exit-codes`. The CLI already stops. SnowSQL exits 5. Without the flag the CLI exits 1. The flag restores 5. It does not continue. |
+| `exit-on-error-true` | `-o exit_on_error=true` on a command whose SQL fails after it renders | rewrite required | Add `--enhanced-exit-codes`. The CLI already stops. SnowSQL exits 5. Without the flag the CLI exits 1. The flag restores 5. It does not continue. Skip this rule when the only error is an undefined `<% name %>` (`variable-undefined`). |
 | `exit-on-error-false` | `-o exit_on_error=false` | rewrite required | Split into one `snow sql` per statement. Ignore a failing command so the next still runs. |
 | `set-exit-on-error` | Mid-script `!set exit_on_error=...` | rewrite required | Split at each `!set`. After `false`, ignore failures. After `true`, add `--enhanced-exit-codes` and stop. |
 | `stop-on-error` | `-o stop_on_error=true` | rewrite required | Run statements until the first failure. Ignore that command's exit so the script exits 0. Do not run the rest. |
