@@ -16,7 +16,7 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 
 ## Directives and variables
 
-- Rewriting `!source http://...` to a guessed `https://` URL. The CLI fails the fetch. Use a local file the project already has, or a no-op (`true`).
+- Rewriting `!source http://...` to a guessed `https://` URL, or replacing the script with `true`. The CLI never fetches `http://`. Leave the file for the person.
 - Passing `-D NAME="${NAME}"` for `-o environment_variables=NAME`. The copy is `<% ctx.env.NAME %>`.
 - Replacing `!spool` with a shell redirect when the CLI already implements `!spool`. One redirect captures results SnowSQL wrote only to the screen after `!spool off`.
 

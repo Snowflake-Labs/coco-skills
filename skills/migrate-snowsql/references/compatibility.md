@@ -100,7 +100,7 @@ A name is defined when the project sets it with `-D name=value`, `--variable nam
 | --- | --- | --- | --- |
 | `source-local` | `!source` or `!load` of a local file | compatible | Same directive. |
 | `source-https` | `!source` or `!load` of an `https://` URL | manual review | Same directive. SnowSQL and the CLI do not fail the same way on a bad URL. Rejected when `--local-only`, `SNOWFLAKE_CLI_SQL_LOCAL_ONLY`, or `cli.sql_local_only` is set. A redirect from `https://` to `http://` is rejected. |
-| `source-http` | `!source` or `!load` of an `http://` URL | rewrite required | Do not fetch it. Do not rewrite to a guessed `https://` URL. If the project has no local file or working `https://` URL, the copy is a no-op (`true`). |
+| `source-http` | `!source` or `!load` of an `http://` URL | manual review | The CLI never fetches `http://`. Do not fetch it, do not rewrite to a guessed `https://` URL, and do not replace the script with a no-op. A person picks a local file, a known `https://` URL, or deletes the include. |
 | `define` | `!define name=value` | rewrite required | `-D name=value`. Redact secret values. |
 | `repl-directive` | `!queries`, `!result`, `!abort` | compatible | Same directive. |
 | `exit-quit` | `!exit` or `!quit` | rewrite required | Copy only the statements above the directive. Do not run the statements below it. |
