@@ -30,6 +30,7 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 ## Safety
 
 - Printing passwords, keys, tokens, or connection values.
-- Editing the original script or the SnowSQL config.
-- Writing the plan, copies, or report anywhere other than the working directory.
+- Editing a project file before they choose implement, or editing the SnowSQL config.
+- Writing the plan or the report anywhere other than the working directory.
+- Writing a second project tree instead of rewriting the files in place.
 - Guessing a translation for a construct no rule names. It is `manual review`.

@@ -1,8 +1,8 @@
 ---
 name: migrate-snowsql
 title: Migrate SnowSQL
-summary: Guides a SnowSQL project onto Snowflake CLI, states findings first, then optionally auto-implements for parity.
-description: "Analyzes a SnowSQL project and writes a migration plan and report without asking. On that first run, states the findings in chat before any edit: the count of compatible replacements, a summary of automatic rewrites, and each manual-review item with why it is held and how behavior is affected. Then offers implement or report-only. Implement copies every compatible and rewrite file automatically, including output rewrites for SnowSQL parity. After copies, reports what was done and asks whether to run snow helpers import-snowsql-connections. Use when migrating SnowSQL scripts, connection files, or SNOWSQL_* variables to Snowflake CLI. Triggers: migrate SnowSQL, convert snowsql scripts, import-snowsql-connections, check-snowsql-env-vars, $migrate-snowsql. Snowflake CLI is a separate client, not a drop-in replacement. Not for unattended migration."
+summary: States findings first, then rewrites the SnowSQL project in place only if you agree.
+description: "Analyzes a SnowSQL project and writes a migration plan and report without asking. On that first run, states the findings in chat before any edit: the count of compatible replacements, a summary of automatic rewrites, and each manual-review item with why it is held and how behavior is affected. Then offers implement or report-only. Implement rewrites the project files in place, including output rewrites for SnowSQL parity. It does not write a second copy. After the rewrite, reports what was done and asks whether to run snow helpers import-snowsql-connections. Use when migrating SnowSQL scripts, connection files, or SNOWSQL_* variables to Snowflake CLI. Triggers: migrate SnowSQL, convert snowsql scripts, import-snowsql-connections, check-snowsql-env-vars, $migrate-snowsql. Snowflake CLI is a separate client, not a drop-in replacement. Not for unattended migration."
 tools:
   - Bash
   - Read
@@ -21,7 +21,7 @@ type: snowflake
 
 ## Overview
 
-Migrate SnowSQL 1.4 or 1.5 scripts to Snowflake CLI. Write the plan and the report first, without questions. On that first run, say in chat what you found, using the briefing in step 3. Writing the files is not the briefing. Then offer implement or report-only. Implement auto-applies every `compatible` replacement and every `rewrite required` copy for SnowSQL output parity. After copies, update the report and ask about connection import. Pause only for live SQL, new stages/file formats, and constructs with no rule. Below 1.4, stop and say to upgrade first.
+Migrate SnowSQL 1.4 or 1.5 scripts to Snowflake CLI. Write the plan and the report first, without questions. On that first run, say in chat what you found, using the briefing in step 3. Writing the files is not the briefing. Then offer implement or report-only. Implement rewrites the project files in place: every `compatible` replacement and every `rewrite required` change, for SnowSQL output parity. Do not write a second tree. After the rewrite, update the report and ask about connection import. Pause only for live SQL, new stages/file formats, and constructs with no rule. Below 1.4, stop and say to upgrade first.
 
 Rule list: [references/compatibility.md](references/compatibility.md). Load a reference only when that step needs it. Dispositions: `compatible`, `rewrite required`, `manual review`, `blocked`. Unlisted constructs are `manual review`.
 
@@ -29,26 +29,25 @@ Out of scope: continuous SnowSQL sync, runtime SnowSQL compatibility, config-v2,
 
 ## Working directory
 
-Write the plan, the script copies, and the report in the current working directory. Do not pick another path.
+Write the plan and the report in the current working directory. Do not pick another path.
 
 - `migration-plan.md`
-- `snowsql-migrated/` (same relative paths as the SnowSQL project)
-- `copies.diff`
+- `rewrite.diff`
 - `snowsql-migration-report.md`
 
-Never edit, move, or overwrite a file that is already in the SnowSQL project.
+Do not edit a project file until they choose implement. Then rewrite those files in place. Do not create `snowsql-migrated/` or any other copy of the project.
 
 ## Workflow
 
-Copy this checklist and check off as you go:
+Track this yourself. Do not show it to the user.
 
 ```text
 Migration progress:
 - [ ] 1. Preflight
-- [ ] 2. Analyze (plan + PLAN_ONLY report)
-- [ ] 3. First-run briefing, then implement / report-only
-- [ ] 4. Implement (if chosen)
-- [ ] 5. Update report; offer import
+- [ ] 2. Analyze and write the plan and report
+- [ ] 3. Tell them what you found, then wait
+- [ ] 4. Rewrite files in place, if they agree
+- [ ] 5. Update the report and offer connection import
 ```
 
 ### References (load on demand)
@@ -93,9 +92,9 @@ STATUS: STOPPED_BEFORE_MUTATION
 
 compatible: <n>, rewrite required: <n>, manual review: <n>, blocked: <n>
 
-## Proposed copies
+## Proposed edits
 
-<each file without a blocked row, and the rewrites its copy would get>
+<each file that implement would rewrite in place>
 
 ## Blocked
 
@@ -114,72 +113,75 @@ compatible: <n>, rewrite required: <n>, manual review: <n>, blocked: <n>
 
 One row per construct. `Found` is the construct as written, with secret values replaced by `<redacted>`. `Disposition` is exactly one of the four words. Add the `QUOTING:` lines for every CSV row. For each output gap, write the exact byte difference, the consumer when known, and the Suggested fix that preserves SnowSQL parity (rewrite or matching-code from output-gaps.md). Do not leave "ask the user" as the Suggested fix.
 
-Validate the plan against validation.md (static checks). Fix any failure, then re-check. Only then write `snowsql-migration-report.md` with `STATUS: PLAN_ONLY` (template in validation.md). Do not paste the plan or the report into chat. Do not copy files, import connections, or run SQL yet.
+Validate the plan against validation.md (static checks). Fix any failure, then re-check. Only then write `snowsql-migration-report.md` with `STATUS: PLAN_ONLY` (template in validation.md). Do not paste the plan or the report into chat. Do not edit project files, import connections, or run SQL yet.
 
 ### 3. First-run briefing
 
-Send this once the files exist, before any copy. Do not paste the plan or the report. No secrets. The standing lines stay this short. Lists add one line each.
+Send this once the files exist, before any edit. Do not paste the plan or the report. No secrets. Write for someone who has not seen the rule names.
 
 ```text
-Nothing changed. Files: migration-plan.md, snowsql-migration-report.md
+Nothing has changed yet. If you reply implement, I edit your files in place.
 
-Replace <n> compatible (not listed).
-Rewrite <n>:
-- <rule> (<n>): <what the copy will do>; <what stays the same, or what still differs>
-Review <n>:
-- <location> <found>: <why it is not automatic>; <what changes or breaks>
-Blocked <n>:
-- <file>: <why>. Stays on SnowSQL.
+<n> lines only need snowsql renamed to snow sql.
+
+<n> lines need a different command. The main kinds:
+- <plain group>: <one sentence saying what changes for the person reading the script, and whether the result stays the same>
+Full list: migration-plan.md
+
+<n> lines need your decision. I will leave them as they are:
+- <file>:<line> <what is there>: <what breaks, or what a caller would see, if this is rewritten without you>
+
+<n> files stay on SnowSQL:
+- <file>: <why a Snowflake CLI version of this file does not exist>
 
 Reply: implement / report-only
 ```
 
-Counts match the plan. One rewrite line per rule; those counts sum to the rewrite count. Do not list compatible locations. A compatible output gap is one extra clause on the Replace line. One review line per plan row: why it is held, then the behavior hit. One blocked line per file. A zero count has no bullets.
+The first count is the plan's compatible count. Do not list those lines. Group every rewrite by what it does to the script, not by rule name. At most 6 group lines. No rule ids, no flag soup, no arrows. A group with no rows is omitted. Say where output bytes will still differ, in that group's sentence.
 
-Implement applies every Replace and Rewrite line. Review and Blocked stay untranslated. If they already approved implement, print this, then `Writing copies.`, and go to Implement. Report-only stops. Do not ask about output gaps or import yet.
+Every manual-review row is one sentence: the file, what is there, and the behavior hit. A redaction is not a decision. When a heading has no rows, its body is the single word `None`. Do not print `None` under a heading that has rows. One blocked file per line.
+
+Implement edits every compatible and rewrite file in place. Manual review and blocked files stay as they are. If they already approved implement, print this, then `Rewriting your files in place.`, and go to Implement. Report-only stops. Do not ask about output gaps or import yet.
 
 ### 4. Implement
 
-Copy the project tree into `snowsql-migrated/` with `cp -a` (scripts, sql, data). Then edit those copies. Never edit the original. Apply every compatible and rewrite row without asking again. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Write `copies.diff` (`diff -u` of the originals and the copies). Do not finish until `ls snowsql-migrated/scripts` lists every original script that is not blocked.
+Edit the project files in place. Do not write a second tree. Apply every compatible and rewrite row without asking again. Leave manual-review and blocked files unchanged. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Before the first edit, snapshot only the files you will change, write `rewrite.diff` (`diff -u` against that snapshot), then delete the snapshot.
 
 Replacement detail stays in compatibility.md. A CSV row becomes `snow sql --format CSV` and records the `QUOTING:` lines from that page. A synthetic or modest extract can be `snow sql --format CSV > file`. A production-scale extract stays `COPY INTO @stage` followed by `snow stage copy`.
 
 **Output parity.** For every Output gaps row, apply the Suggested fix from the plan so CLI output matches SnowSQL as closely as the references allow. Prefer the rewrite one-liner in output-gaps.md. When the one-liner cannot restore SnowSQL bytes (embedded newline, tab, CR, NULL as `""`, doubled backslash), write matching code or keep the gap listed as residual. Do not default to accept. Record `QUOTING: REWRITE` or `QUOTING: FILE_FORMAT` when that is what you applied. Python or `jq` is fine. Do not skip a rewrite because a tool is missing; say so in the report if you cannot run it.
 
-**Manual review and blocked.** Do not invent a translation. Leave those files untranslated or copy the original unchanged only when the plan says so. List them in the report. Walk through a manual or blocked row only if they ask after the report; one file at a time.
+**Manual review and blocked.** Do not invent a translation. Leave those files unchanged. List them in the report. Walk through a manual or blocked row only if they ask after the report; one file at a time.
 
 Do not import connections in this step.
 
 ### 5. Short report and import offer
 
-After Implement, update `snowsql-migration-report.md` to `STATUS: COPIES_WRITTEN` using the template in validation.md, and re-check static rules that apply to copies. Do not paste the report. A plan covers only the files you read. Live SQL needs another yes and a named non-production connection.
+After Implement, update `snowsql-migration-report.md` to `STATUS: REWRITTEN` using the template in validation.md. Do not paste the report. A plan covers only the files you read. Live SQL needs another yes and a named non-production connection.
 
-After copies are written, send this once. Name the command. Do not run it until they say yes. Preflight must still pass.
+After the files are rewritten, send this once. Name the command. Do not run it until they say yes. Preflight must still pass.
 
 ```text
-Copied to snowsql-migrated/. Originals untouched.
+I edited your files in place.
 
-Replace <n> compatible (not listed).
-Rewrite <n>:
-- <rule> (<n>): <what the copy does>; <what stayed the same, or what still differs>
-Review <n>:
-- <location> <found>: <why>; <what was left>
-Blocked <n>:
-- <file>: <why>. Stays on SnowSQL.
+<n> lines: snowsql is now snow sql.
+<n> lines needed a different command. Same groups as the briefing.
+Left as they were:
+- <file>:<line> <what is still there, and why>
 
 Import connections? snow helpers import-snowsql-connections
 Backs up the CLI config first. May prompt on overwrite. Not a sync.
 Reply: yes / no
 ```
 
-Same counting rules as the briefing.
+Same wording rules as the briefing. `Left as they were` is `None` when nothing was held back.
 
 If they say yes and Preflight passed: load configuration.md, back up the Snowflake CLI config file, run `snow helpers import-snowsql-connections` once, show a redacted before/after of connection names and key names. Import does not approve script edits or SQL.
 
 ## Stopping points
 
 - After the first-run briefing, for implement vs report-only.
-- After copies, for connection import (with the command named).
+- After the in-place rewrite, for connection import (with the command named).
 - Before creating a stage or file format the project does not already have.
 - Before each live SQL session, with a named non-production connection.
 
@@ -200,7 +202,7 @@ snowsql -c example -o exit_on_error=false -f sql/exit-on-error.sql
 | 30-continue-on-error.sh:4 | `-o exit_on_error=false` | exit-on-error-false | rewrite required | One `snow sql` per statement. Ignore a failing command. |
 | 30-continue-on-error.sh:4 | `-f sql/exit-on-error.sql` | file | compatible | Same flag. |
 
-Implemented copy:
+Rewritten in place:
 
 ```bash
 snow sql -c example -q "select 1 as first_ok;" || true
@@ -211,27 +213,33 @@ snow sql -c example -q "select 'STILL_RAN' as after_error;"
 First-run briefing when that file is the whole project:
 
 ```text
-Nothing changed. Files: migration-plan.md, snowsql-migration-report.md
+Nothing has changed yet. If you reply implement, I edit your files in place.
 
-Replace 3 compatible (not listed).
-Rewrite 1:
-- exit-on-error-false (1): one snow sql per statement; later statements still run
-Review 0:
-Blocked 0:
+3 lines only need snowsql renamed to snow sql.
+
+1 line needs a different command. The main kinds:
+- Errors: this script keeps going after a failed statement, same as SnowSQL with exit on error turned off.
+Full list: migration-plan.md
+
+0 lines need your decision.
+None.
+
+0 files stay on SnowSQL.
+None.
 
 Reply: implement / report-only
 ```
 
-A review line, when the project has one: `20-probe.sh:4 --probe-connection: CLI text differs; a caller would parse a different result.`
+A decision line, when the project has one: `20-probe.sh:4 --probe-connection: Snowflake CLI prints different text, so anything that reads this output gets a different result.`
 
 ## Common mistakes (workflow)
 
 Technical traps live in [references/mistakes.md](references/mistakes.md).
 
 - Ending the first run after writing the files, or pasting the plan or the report instead of the briefing.
-- Listing every compatible change, or a review line with no reason and no behavior hit.
+- Showing rule ids, or one briefing line per rule. Group rewrites by what they do to the script, in plain sentences.
 - Asking before the plan and report exist, or asking per output gap instead of applying the parity Suggested fix.
-- Copying into `snowsql-migrated/` before they choose implement (unless they already said to implement).
+- Editing a project file before they choose implement, or writing a `snowsql-migrated/` tree instead of editing in place.
 - Importing connections during Analyze or Implement, or running import without naming `snow helpers import-snowsql-connections`.
-- Printing secrets, editing originals, or writing outputs outside the working directory.
+- Printing secrets, editing the SnowSQL config, or writing the plan or the report outside the working directory.
 - Guessing a translation for a construct no rule names (`manual review`).

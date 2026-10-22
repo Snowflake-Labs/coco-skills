@@ -10,11 +10,11 @@ Before the first-run briefing, check the plan against the project:
 - Every finding row names a compatibility rule, or `unlisted`.
 - Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, or large-extract finding has an Output gaps row with the byte difference, the consumer, and a Suggested fix that names the parity rewrite or matching-code path. After Implement, the second `QUOTING:` line is what was applied (`REWRITE`, `FILE_FORMAT`, or `ACCEPTED` only when parity was unavailable).
 - No secret value appears in the plan or the first-run briefing. Search both for each secret you redacted. If one is there, replace it with `<redacted>` before you send the briefing.
-- The compatible number matches the plan count. Rewrite lines sum to the rewrite count. Every `manual review` row is one line with why it is held and the behavior hit. Compatible locations are not listed. A zero count has no bullets.
+- The compatible number matches the plan count. The briefing groups rewrites in plain sentences, at most 6, with no rule ids. Every `manual review` row is one sentence naming the file and the behavior hit. A redaction is not a decision line. Compatible locations are not listed. A zero decision or blocked count is the word `None`.
 
 Preflight must have passed before the plan and before an import. Below 1.4, stop and say to upgrade first. `snow helpers check-snowsql-env-vars` is the read-only environment check.
 
-After implemented copies exist, run `diff -u` between each original and the copy under `snowsql-migrated/`. Originals must stay byte-for-byte identical. Files with a blocked row must not have a translated copy.
+After the in-place rewrite, `rewrite.diff` is the only record of the old bytes. Manual-review and blocked files must be unchanged. A blocked file is not deleted.
 
 ## Optional live SQL
 
@@ -44,11 +44,11 @@ Write `snowsql-migration-report.md`. Keep it short. Do not paste it into chat. T
 ```markdown
 # SnowSQL migration report
 
-STATUS: PLAN_ONLY | COPIES_WRITTEN
+STATUS: PLAN_ONLY | REWRITTEN
 
 <exact snow --version one line>
 
-Copied: <n> files under snowsql-migrated/, or none yet
+Rewrote: <n> files in place, or none yet
 Output parity: <location, difference, fix applied, or planned fix>
 Manual review / blocked: <file and reason, or none>
 Residual gaps: <what still cannot match SnowSQL bytes, or none>
@@ -57,6 +57,6 @@ The plan does not certify untested scripts.
 SnowSQL remains installed. CLI config backup: <path or none>.
 ```
 
-Write the report in Analyze with `STATUS: PLAN_ONLY` (Copied: none yet; Output parity lists planned fixes). After Implement, set `STATUS: COPIES_WRITTEN` and record what was applied. Keep `STATUS: STOPPED_BEFORE_MUTATION` in `migration-plan.md` until they choose implement.
+Write the report in Analyze with `STATUS: PLAN_ONLY` (Rewrote: none yet; Output parity lists planned fixes). After Implement, set `STATUS: REWRITTEN` and record what was applied. Keep `STATUS: STOPPED_BEFORE_MUTATION` in `migration-plan.md` until they choose implement.
 
-A CSV row still adds `QUOTING: CHANGED` and the second `QUOTING:` line for what Implement applied. Blocked files stay listed even if every compatible copy was written.
+A CSV row still adds `QUOTING: CHANGED` and the second `QUOTING:` line for what Implement applied. Blocked files stay listed even after the other files are rewritten.

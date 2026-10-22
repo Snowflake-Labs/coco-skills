@@ -19,17 +19,17 @@ This page is the rule list for SnowSQL 1.4 and 1.5. Those lines use the same rul
 
 Four dispositions only:
 
-| Disposition | Meaning | In an implemented copy |
+| Disposition | Meaning | When implemented in place |
 | --- | --- | --- |
 | `compatible` | Snowflake CLI already does this. | Keep it. Change `snowsql` to `snow sql`. |
 | `rewrite required` | A documented equivalent exists. | Apply the replacement in the rule. |
 | `manual review` | A person decides. | Leave the line as written and list it in the report. |
-| `blocked` | No equivalent. Keep SnowSQL for this file. | Do not copy the file. |
+| `blocked` | No equivalent. Keep SnowSQL for this file. | Leave the file unchanged. |
 
 - One line can match several rules. Record each one.
 - A file takes the worst disposition of its rows: `blocked`, then `manual review`, then `rewrite required`, then `compatible`.
 - A construct that no rule names is `manual review` under the rule `unlisted`. Say there is no documented equivalent. Do not invent a translation.
-- Never write a secret value into the plan, the report, or a copy. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
+- Never write a secret value into the plan, the report, or a rewritten file. Keep the key or flag name and write `<redacted>` for the value. Secrets are passwords, passphrases, tokens, API and access keys, `private_key_file_pwd`, `SNOWSQL_PWD`, `SNOWSQL_PRIVATE_KEY_PASSPHRASE`, and `SNOWSQL_PROXY_PWD`.
 
 Files to read: shell and batch scripts (`.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`, `.cmd`), `.sql`, `.py`, SnowSQL config files (`config`, `.cnf`, `.ini`), and any CI, cron, Makefile, or Dockerfile that calls `snowsql`. Also read every SQL file a script passes with `-f`. Skip `.git`, virtual environments, `node_modules`, and earlier migration output.
 
