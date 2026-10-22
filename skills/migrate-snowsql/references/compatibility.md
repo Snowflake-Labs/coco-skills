@@ -131,15 +131,15 @@ A large extract is a `SELECT` (including `GENERATOR`) written to a file. A name 
 
 | Rule | Recognize | Disposition | Replacement or action |
 | --- | --- | --- | --- |
-| `output-json` | `-o output_format=json`, not an existing stage unload | rewrite required | `snow sql --format JSON > file`. When `jq` is installed, pipe through the numbers-as-strings line in the output-gaps reference. If `jq` is missing, use another installed tool that writes one JSON line with numbers as strings. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3` or `COPY INTO`. |
+| `output-json` | `-o output_format=json`, not an existing stage unload | rewrite required | `snow sql --format JSON > file`, then the JSON fix in output-gaps.md. |
 | `output-file` | `-o output_file=<path>`, not an existing stage unload | rewrite required | Redirect stdout: `> <path>`. |
-| `output-plain` | `-o output_format=plain` | rewrite required | `snow sql --format PLAIN`. |
-| `output-csv` | `-o output_format=csv`, including a small file | rewrite required | `snow sql --format CSV > file`. Record `QUOTING: CHANGED`. Add a quote-all pipe only when an installed tool does that exact transform. `jq` does not quote CSV. If you are not sure, skip the pipe, do not record `QUOTING: REWRITE` or `QUOTING: ACCEPTED`, and mark the gap for review. Do not use `python3` or `COPY INTO`. |
-| `output-csv-specials` | CSV with an embedded newline, tab, CR, backslash, or NULL | rewrite required | `snow sql --format CSV`. The quote-all one-liner does not restore `\n` `\t` `\r` or `""`. Parsed fields match after undoing SnowSQL escapes and dropping CR. The bytes do not. Report the gap. Matching code or `COPY INTO` with a `FILE_FORMAT` only when they asked for those bytes. |
-| `output-tsv` | `-o output_format=tsv` | rewrite required | `snow sql --format CSV > file`. The CLI has no TSV format. Add a TSV pipe only when an installed tool writes TSV. `jq` does not. If you are not sure, skip the pipe and mark the gap for review. Do not use `python3`. |
-| `output-format` | Any other `-o output_format` value | rewrite required | Use `--format TABLE`, `JSON`, `JSON_EXT`, `CSV`, or `PLAIN`. Grid and HTML become TABLE. |
-| `large-extract` | A `SELECT` or `GENERATOR` streamed to a file | rewrite required | `snow sql --format CSV` piped through the quote-all one-liner, then `> file`. Use `COPY INTO @stage` and `snow stage copy` only when the project already unloads to a stage, or a person said the result is too big to stream. `HEADER` is a `COPY INTO` option, never inside `FILE_FORMAT`. |
-| `option` | Any other `-o` setting (`timing`, `friendly`, `quiet`, `log_level`, `header`, `rowset_size`, and the rest) | rewrite required | Drop the option. For `header=false` CSV, drop the first line of `snow sql --format CSV`. |
+| `output-plain` | `-o output_format=plain` | rewrite required | `snow sql --format PLAIN`. Layout fix is in output-gaps.md. |
+| `output-csv` | `-o output_format=csv`, including a small file | rewrite required | `snow sql --format CSV > file`. Record `QUOTING: CHANGED`. Apply the CSV quoting fix in output-gaps.md. |
+| `output-csv-specials` | CSV with an embedded newline, tab, CR, backslash, or NULL | rewrite required | `snow sql --format CSV`. Apply the CSV specials fix in output-gaps.md. |
+| `output-tsv` | `-o output_format=tsv` | rewrite required | Apply the TSV fix in output-gaps.md. |
+| `output-format` | Any other `-o output_format` value | rewrite required | `--format TABLE`, `JSON`, `JSON_EXT`, `CSV`, or `PLAIN`. Grid and HTML become TABLE. |
+| `large-extract` | A `SELECT` or `GENERATOR` streamed to a file | rewrite required | `snow sql --format CSV > file` and the CSV quoting fix. `COPY INTO @stage` only when the project already unloads to a stage, or a person said the result is too big to stream. |
+| `option` | Any other `-o` setting (`timing`, `friendly`, `quiet`, `echo`, `log_level`, `header`, `rowset_size`, `sfqid`, and the rest) | rewrite required | Drop the option. `header=false` uses the header fix in output-gaps.md. Other dropped options stay as residuals there. |
 
 CSV quoting may differ. The check compares parsed fields. Newline, backslash, tab, and CRLF inside a field still differ and fail that comparison. Snowflake CLI CSV is UTF-8 only, uses a newline of `\n`, and has no delimiter or quoting flags. A clean Linux run is not evidence that truncation is fixed. Report the exact bytes. Fixes are in the output-gaps reference.
 
@@ -177,28 +177,11 @@ Then one of these lines:
 | `QUOTING: REWRITE` | You write the CSV with a double quote around every field. A double quote inside a field is written twice. Separate fields with a comma and end each row with a newline. Do not rename a header, fill in a dropped row, or repair a newline inside a field. |
 | `QUOTING: FILE_FORMAT` | Keep the extract as `COPY INTO` with an explicit `FILE_FORMAT`. The enclosure is optional. It is not quote-every-field. Apply the same quoting to the downloaded file when those quotes are still required. |
 
-`ID,AMOUNT,OTHER` and `1,"3,456.00",8.88` become `"ID","AMOUNT","OTHER"` and `"1","3,456.00","8.88"`. The second `QUOTING:` line is what Implement applied for parity (`REWRITE` or `FILE_FORMAT`). For `REWRITE`, pipe `snow sql --format CSV` through an installed tool that quotes every field. If you are not sure which tool, mark the gap for review. Do not use `python3`.
+`ID,AMOUNT,OTHER` and `1,"3,456.00",8.88` become `"ID","AMOUNT","OTHER"` and `"1","3,456.00","8.88"`. Which second line to write, and which tool to pipe through, is the CSV quoting fix in output-gaps.md.
 
 ### Large extracts
 
-A `SELECT` or `GENERATOR` streamed to a file stays `snow sql --format CSV > file`. Add a quote-all pipe only when an installed tool does that. If you are not sure, mark the gap for review. Do not invent a `COPY INTO` because the file name or comment says large. Do not use `python3`.
-
-Use a stage unload only when the project already has one, or a person said the result is too big to stream:
-
-```sql
-COPY INTO @my_stage/extract/
-FROM (select ... )
-FILE_FORMAT = (TYPE = CSV)
-HEADER = TRUE;
-```
-
-```bash
-snow stage copy @my_stage/extract/ ./extract/ --recursive
-```
-
-`HEADER` is a `COPY INTO` option. It is not a `FILE_FORMAT` parameter. Use a stage and a file format the user already has, or ask before creating them. `FIELD_OPTIONALLY_ENCLOSED_BY` quotes a field when the value needs it. It does not quote every field. Do not run the `COPY INTO` until the user confirms a named non-production connection. When the file must quote every field, apply the quoting rule above to the downloaded CSV and record `QUOTING: FILE_FORMAT`.
-
-A merged table-streaming change improves large TABLE rendering speed and memory only. It does not retry result chunks, validate row counts, or fix silent CSV truncation. Do not cite a faster TABLE render as proof that a CSV extract is safe.
+A `SELECT` or `GENERATOR` streamed to a file stays `snow sql --format CSV > file`, plus that same quoting fix. A file name or comment that says large does not make it a stage unload. The stage-unload steps are in output-gaps.md.
 
 ## Stop on error
 

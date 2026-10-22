@@ -8,7 +8,7 @@ Before the first-run briefing, check the plan against the project:
 
 - Every file that mentions `snowsql`, `SNOWSQL_`, a `!` directive, or `&name` is under "Files inspected".
 - Every finding row names a compatibility rule, or `unlisted`.
-- Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, or large-extract finding has an Output gaps row with the byte difference, the consumer, and a Suggested fix that names the parity rewrite, the installed tool, or manual review when no sure tool was found. After Implement, the second `QUOTING:` line is `REWRITE` or `FILE_FORMAT` only when that was applied. An unsure pipe is manual review and has no second `QUOTING:` line.
+- Every JSON, CSV, TSV, HTML, grid, plain, spool, async, single-transaction, query-tag, `header=false`, dropped `-o` option, or large-extract finding has an Output gaps row: byte difference, consumer, and a Suggested fix. The fix names the installed tool, `accept CLI bytes`, or `manual review: no installed tool`. Implement applies that fix. CSV adds `QUOTING: CHANGED` and `ACCEPTED`, `REWRITE`, or `FILE_FORMAT` for the fix applied. A pipe left for review has no second `QUOTING:` line.
 - No secret value appears in the plan or the first-run briefing. Search both for each secret you redacted. If one is there, replace it with `<redacted>` before you send the briefing.
 - The compatible number matches the plan count. The briefing groups rewrites in plain sentences, at most 6, with no rule ids. Every `manual review` row is one sentence naming the file and the behavior hit. A redaction is not a decision line. Compatible locations are not listed. A zero decision or blocked count is the word `None`.
 
@@ -33,7 +33,7 @@ Use synthetic SQL only. Record hashes, row counts, the exact `snow --version` an
 | Ordered narrow results | Compare counts and hashes for an ordered 10k result and an ordered 1M narrow result when the user approves the cost. |
 | Wide CSV | One wide multi-minute CSV is a timing sample. It does not prove truncation is fixed. |
 
-A `SELECT` or `GENERATOR` extract stays `snow sql --format CSV > file`. A quote-all pipe is added only when an installed tool does that. If not, the gap is manual review. `COPY INTO @stage` is only for a project that already unloads to a stage, or when a person said the result is too big to stream. A faster TABLE render is not a substitute.
+A `SELECT` or `GENERATOR` extract stays `snow sql --format CSV > file`, plus the CSV quoting fix from output-gaps.md. `COPY INTO @stage` is for a project that already unloads to a stage, or when a person said the result is too big to stream. A faster TABLE render does not show that the CSV kept every row.
 
 If any of `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, or `SNOWFLAKE_SCHEMA` is missing, skip live SQL and say which names are missing. Do not print values.
 

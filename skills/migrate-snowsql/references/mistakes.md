@@ -22,12 +22,13 @@ Load when classifying a tricky construct, writing a rewrite, or reviewing the re
 
 ## Output parity
 
-- Rewriting a CSV extract to `snow sql --format CSV` and calling the bytes equivalent without recording `QUOTING: CHANGED`.
-- Recording `QUOTING: ACCEPTED` because no parity tool was obvious. That gap is manual review.
-- Using `python3` for a JSON, CSV, or TSV rewrite. Use `jq` when it can do the transform. Otherwise use a tool already installed. If you are not sure, mark the gap for review.
-- Inventing a `COPY INTO` for a `SELECT` or `GENERATOR` because the file name says large. That stays `snow sql --format CSV` and the quote-all line.
+- Skipping a Suggested fix the consumer needs and an installed tool can write.
+- Calling CLI CSV bytes equivalent to SnowSQL without `QUOTING: CHANGED`.
+- Recording `QUOTING: ACCEPTED` when the consumer still needs every field quoted.
+- Using `python3`, `awk`, or `sed` for a JSON, CSV, or TSV rewrite, or installing a tool to close the gap.
+- Inventing a `COPY INTO` for a `SELECT` or `GENERATOR` because the file name says large.
 - Putting `HEADER` inside `FILE_FORMAT`. It is a `COPY INTO` option.
-- Using the quote-all one-liner to repair embedded newline, tab, CR, or NULL bytes. That is matching code.
+- Using a quote-all pipe to repair an embedded newline, tab, CR, or NULL. That is matching code.
 
 ## Safety
 

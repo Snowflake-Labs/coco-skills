@@ -111,7 +111,7 @@ compatible: <n>, rewrite required: <n>, manual review: <n>, blocked: <n>
 <each secret you replaced with <redacted>, by key or flag name only>
 ```
 
-One row per construct. `Found` is the construct as written, with secret values replaced by `<redacted>`. `Disposition` is exactly one of the four words. Add the `QUOTING:` lines for every CSV row. For each output gap, write the exact byte difference, the consumer when known, and the Suggested fix that preserves SnowSQL parity (rewrite or matching-code from output-gaps.md). Do not leave "ask the user" as the Suggested fix.
+One row per construct. `Found` is the construct as written, with secret values replaced by `<redacted>`. `Disposition` is exactly one of the four words. Add the `QUOTING:` lines for every CSV row. For each output gap, write the byte difference, the consumer, and the Suggested fix from output-gaps.md. That fix is what Implement applies. Do not write "ask the user".
 
 Validate the plan against validation.md (static checks). Fix any failure, then re-check. Only then write `snowsql-migration-report.md` with `STATUS: PLAN_ONLY` (template in validation.md). Do not paste the plan or the report into chat. Do not edit project files, import connections, or run SQL yet.
 
@@ -147,9 +147,7 @@ Implement edits every compatible and rewrite file in place. Manual review and bl
 
 Edit the project files in place. Do not write a second tree. Apply every compatible and rewrite row without asking again. Leave manual-review and blocked files unchanged. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Before the first edit, snapshot only the files you will change, write `rewrite.diff` (`diff -u` against that snapshot), then delete the snapshot.
 
-Replacement detail stays in compatibility.md. A CSV row becomes `snow sql --format CSV > file` and records the `QUOTING:` lines from that page. Pipe through the quote-all line only for parity. A `SELECT` or `GENERATOR` extract is that same `snow sql` command. Use `COPY INTO @stage` only when the project already unloads to a stage, or a person said the result is too big to stream.
-
-**Output parity.** For every Output gaps row, keep `snow sql --format … > file`. Use the `jq` numbers-as-strings line in output-gaps.md when `jq` is installed. If `jq` is missing, or it cannot quote CSV or write TSV, use a tool already on the machine that does that exact transform. If you are not sure, do not add a pipe and do not use `python3`. Mark that gap for review. The `snow sql` command still replaces `snowsql`. When the tool cannot restore SnowSQL bytes (embedded newline, tab, CR, NULL as `""`, doubled backslash), write matching code or mark the gap for review. Do not invent a `COPY INTO` for JSON or CSV. Record `QUOTING: REWRITE` only when you applied a quote-all pipe.
+Replacement detail stays in compatibility.md. Apply each Suggested fix in the Output gaps table. output-gaps.md chooses it from the consumer and from tools already installed. The command stays `snow sql --format … > file`. Record `QUOTING: REWRITE` only when a quote-all pipe was applied.
 
 **Manual review and blocked.** Do not invent a translation. Leave those files unchanged. List them in the report. Walk through a manual or blocked row only if they ask after the report; one file at a time.
 
