@@ -388,6 +388,78 @@ def test_missing_source_does_not_fall_back_to_broken_view():
     assert ("Dow30 Component", "VIEW", f"{DB}.{SC}.V_DOW30COMPONENT", None) in refs(build_export(generator_snapshot(), "Stock"))
 
 
+def test_metric_import_mapping_and_trivial_filter():
+    from bon_import_metrics import build_metrics, is_data_view, is_trivial
+    snap = generator_snapshot()
+    ex = build_export(snap, "Stock")
+    man, assocs = ex["manifest"], ex["associations"]
+    kg = f"{DB}.{SC}"
+    sv = {"fqn": f"{kg}.STOCK_KG_MODEL",
+          "tables": {"V_COMPANY": f"{kg}.V_COMPANY", "V_LISTED_ON": f"{kg}.V_LISTED_ON", "V_RELATED_TO": f"{kg}.V_RELATED_TO"},
+          "metrics": [
+              {"name": "COMPANY_COUNT", "entity": "V_COMPANY", "base_table": f"{kg}.V_COMPANY",
+               "expression": "COUNT(DISTINCT NODE_ID)", "comment": "Count of distinct companies", "synonyms": []},
+              {"name": "ACTIVE_LISTING_SHARE", "entity": "V_LISTED_ON", "base_table": f"{kg}.V_LISTED_ON",
+               "expression": "COUNT_IF(IS_ACTIVE) / COUNT(*)",
+               "comment": "Share of listings still active; exclude delisted tickers when comparing exchanges", "synonyms": ["active share"]},
+              {"name": "RELATIONSHIP_REVENUE", "entity": "V_RELATED_TO", "base_table": f"{kg}.V_RELATED_TO",
+               "expression": "SUM(DEAL_VALUE) / NULLIF(COUNT(*), 0)", "comment": "Average deal value per corporate relationship (USD)", "synonyms": []},
+              {"name": "ORPHAN_METRIC", "entity": "X", "base_table": "OTHER.DB.TABLE",
+               "expression": "SUM(AMT) * 2", "comment": "Doubled amount for reconciliation reports", "synonyms": []},
+          ]}
+    assert is_trivial(sv["metrics"][0]) and not is_trivial(sv["metrics"][1])
+    plumbing = {"fqn": f"{kg}.META", "tables": {"ONT_CLASS": f"{kg}.ONT_CLASS", "V_COMPANY": f"{kg}.V_COMPANY"}, "metrics": []}
+    bound = {a["assetRef"]["fqn"] for a in assocs if a["assetRef"]["refType"] != "COLUMN"}
+    assert is_data_view(sv, bound) and not is_data_view(plumbing, bound)
+
+    r = build_metrics([sv], man, assocs, "Stock", {c["name"] for c in ex["candidates"]})
+    names = {c["name"]: c for c in r["candidates"]}
+    assert set(names) == {"Active Listing Share", "Relationship Revenue"}  # trivial count + orphan excluded
+    assert names["Active Listing Share"]["formula"] == "COUNT_IF(IS_ACTIVE) / COUNT(*)"
+    targets = {e["source"]: e["target"] for e in r["relationships"]}
+    assert targets["Active Listing Share"] == "Company"  # relation view -> relation's source class
+    assert targets["Relationship Revenue"] == "Company"  # self-referential relation (not an edge) still resolves
+    assert all(a["assetRef"]["refType"] == "SEMANTIC_VIEW" and a["role"] == "RELATED_SEMANTIC_VIEW" for a in r["associations"])
+    assert any("B-09" in s for s in r["skipped"]) and any("ORPHAN_METRIC" in s for s in r["skipped"])
+    assert len(build_metrics([sv], man, assocs, "Stock", set(), include_trivial=True)["candidates"]) == 3
+
+
+def test_multi_ontology_requires_choice_and_does_not_leak():
+    snap = generator_snapshot()
+    t = snap["tables"]
+    t["ONT_ONTOLOGY"]["rows"].append({"ONTOLOGY_NAME": "FX", "DESCRIPTION": "Foreign exchange"})
+    t["ONT_CLASS"]["rows"].append({"CLASS_NAME": "Currency", "IS_ABSTRACT": False,
+                                   "DESCRIPTION": "An ISO 4217 currency", "ONTOLOGY_NAME": "FX"})
+    with pytest.raises(ValueError, match="2 ontologies"):
+        build_export(snap, "Stock")
+    with pytest.raises(ValueError, match="not in ONT_ONTOLOGY"):
+        build_export(snap, "Stock", "NOPE")
+    stock = build_export(snap, "Stock", "STOCK")
+    assert "Currency" not in {c["name"] for c in stock["candidates"]}
+    fx = build_export(snap, "FX", "FX")
+    assert [c["name"] for c in fx["candidates"]] == ["Currency"]
+    # STOCK's properties and derived properties are another ontology's objects, not FX losses
+    assert not [o for o in fx["manifest"]["objects"] if o["source_kind"] in ("PROPERTY", "DERIVED")]
+
+
+def test_retire_candidate_rules():
+    from bon_retire import arg_types, is_candidate, mentions, ref
+    tbl, view, fn, proc, sv = ({"kind": k} for k in ("TABLE", "VIEW", "FUNCTION", "PROCEDURE", "SEMANTIC VIEW"))
+    assert is_candidate("ONT_CLASS", tbl) and is_candidate("REL_EDGE_INFERRED", tbl)
+    assert not is_candidate("ONT_BON_MIGRATION_MAP", tbl)  # the audit trail is never dropped
+    assert not is_candidate("KG_NODE", tbl) and not is_candidate("BENCHMARK_EVAL_DATASET", tbl)
+    assert is_candidate("VW_ONT_COMPANY", view) and is_candidate("REL_RESOLVED", view)
+    assert not is_candidate("V_COMPANY", view)  # BON representations point at V_* views
+    assert is_candidate("GET_ANCESTORS_TOOL", fn) and is_candidate("SP_INFER_TRANSITIVE", proc)
+    assert not is_candidate("SP_GENERATE_ONTOLOGY_VIEWS", proc)
+    assert is_candidate("STOCK_ONTOLOGY_MODEL", sv) and is_candidate("STOCK_METADATA_MODEL", sv)
+    assert not is_candidate("STOCK_KG_MODEL", sv) and not is_candidate("STOCK_BASE", sv)
+    assert arg_types("(START_ENTITY VARCHAR, MAX_DEPTH NUMBER)") == "VARCHAR, NUMBER" and arg_types("()") == ""
+    assert ref("D", "S", "F", {"kind": "FUNCTION", "sig": "(A VARCHAR)"}) == "D.S.F(VARCHAR)"
+    assert mentions("select * from db.sc.kg_node where x", "KG_NODE")
+    assert not mentions("select * from db.sc.kg_node_archive", "KG_NODE")  # whole identifiers only
+
+
 def test_humanize():
     assert humanize("PurchaseOrder") == "Purchase Order"
     assert humanize("PURCHASE_ORDER") == "Purchase Order"

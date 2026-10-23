@@ -153,6 +153,10 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
                 patch = {"description": c.get("description") or ""}
                 if c.get("synonyms"):
                     patch["synonyms"] = c["synonyms"][:5]
+                if c.get("itemKind") == "METRIC":
+                    for f in ("formula", "formulaSource"):
+                        if c.get(f):
+                            patch[f] = c[f]
                 out = ap.call("SYSTEM$UPDATE_GLOSSARY_TERM", ex["termId"], dumps(patch))
                 if out.get("error"):
                     summary["nodes"]["failed"].append({"name": c["name"], "op": "update", "error": out.get("errorMessage")})

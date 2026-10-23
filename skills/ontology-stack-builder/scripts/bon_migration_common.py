@@ -82,6 +82,10 @@ def parse_json_result(raw: Any) -> dict:
 
 def connect(connection_name: str):
     """Open a Snowflake connection from ~/.snowflake/connections.toml."""
+    import warnings
+
+    # The connector emits a FutureWarning about its config options on every connect; it is noise in script output.
+    warnings.filterwarnings("ignore", category=FutureWarning, module=r"snowflake\.connector")
     import snowflake.connector  # imported lazily: tests do not need it
 
     return snowflake.connector.connect(connection_name=connection_name)

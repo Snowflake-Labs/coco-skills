@@ -1218,5 +1218,5 @@ Deployed directly to Snowflake (via native skills):
 └── Cortex Agent                (created by `cortex-agent` skill in Phase 6)
 ```
 
-Path M (migration) writes to `/tmp/bon_migration/` (`candidates.json`, `relationships.json`, `associations.json`, `migration_loss_report.md`, `reconcile_report.md`) and creates `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP`. See [migration/SKILL.md](migration/SKILL.md).
+Path M (migration) writes to a working directory you choose, `/tmp/bon_migration/` by default (`candidates.json`, `relationships.json`, `associations.json`, `migration_loss_report.md`, `reconcile_report.md`, `agent_compare.md`, `retire_plan.json`), and creates `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP`. See [migration/SKILL.md](migration/SKILL.md).
 

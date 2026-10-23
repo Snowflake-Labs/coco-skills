@@ -9,7 +9,9 @@ Usage:
   python scripts/bon_agent_cutover.py create -c CONN --source DB.SC.AGENT --target DB.SC.NEW_AGENT \
       --domain "Soccer Ontology" [--drop TOOL ...] [--out /tmp/bon_migration]
   python scripts/bon_agent_cutover.py compare -c CONN --before DB.SC.AGENT --after DB.SC.NEW_AGENT \
-      -q "question 1" -q "question 2" [--out /tmp/bon_migration]
+      -q "question 1" -q "question 2" [--domain "Soccer Ontology"] [--out /tmp/bon_migration]
+
+compare makes 2 agent calls per question (often 30-90 s each) and prints progress to stderr.
 """
 
 from __future__ import annotations
@@ -117,12 +119,22 @@ def cmd_create(args) -> int:
     return 0
 
 
+def session_token(conn) -> str:
+    """REST session token for the Agents API. The connector has no public accessor yet and warns on
+    conn.rest.token; keep the access in one place so a connector change is a one-line fix."""
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return conn.rest.token
+
+
 def run_agent(conn, fqn: str, question: str, domain: str | None = None) -> dict:
     import requests  # optional dependency, only needed for compare
 
     db, sc, name = split_fqn(fqn)
     url = f"https://{conn.host}/api/v2/databases/{db}/schemas/{sc}/agents/{name}:run"
-    headers = {"Authorization": f'Snowflake Token="{conn.rest.token}"',
+    headers = {"Authorization": f'Snowflake Token="{session_token(conn)}"',
                "Content-Type": "application/json", "Accept": "text/event-stream"}
     body = {"messages": [{"role": "user", "content": [{"type": "text", "text": question}]}]}
     t0 = time.time()
@@ -168,10 +180,13 @@ def cmd_compare(args) -> int:
     out.mkdir(parents=True, exist_ok=True)
     results, lines = [], ["# Agent comparison", "", f"Before: `{args.before}`  After: `{args.after}`", ""]
     with connect(args.connection) as conn:
-        for q in args.question:
+        for i, q in enumerate(args.question, 1):
             lines += [f"## {q}", ""]
             for label, fqn in (("before", args.before), ("after", args.after)):
+                print(f"[{i}/{len(args.question)}] {label}: {q}", file=sys.stderr, flush=True)
                 res = run_agent(conn, fqn, q, args.domain if label == "after" else None)
+                print(f"    done in {res.get('seconds')}s" + (f" (error: {res['error'][:80]})" if res.get("error") else ""),
+                      file=sys.stderr, flush=True)
                 results.append({"question": q, "agent": label, **res})
                 hits = res.get("bon_hits") or {}
                 lines += [f"**{label}**: tools `{res.get('tools')}`, {res.get('seconds')}s"

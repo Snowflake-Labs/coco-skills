@@ -199,11 +199,12 @@ The workflow ([migration/SKILL.md](migration/SKILL.md)) is gated like the build 
 2. **Extract** (`scripts/export_to_bon.py`, read-only): detects the schema variant, applies [migration/MAPPING.md](migration/MAPPING.md), writes a loss report listing everything BON cannot hold.
 3. **Review**: relationship types, weak descriptions, generic root classes.
 4. **Apply** (`scripts/bon_apply.py`): draft, then approve only this run's items; re-runs write only what is missing.
-5. **Metrics**: imported from the base semantic view by the `business-ontology` skill.
+5. **Metrics** (`scripts/bon_import_metrics.py`): metrics from the stack's data semantic view (the base view, or `{ONT}_KG_MODEL` on the KG path) become `METRIC` nodes that `MEASURES` the class they count, linked to the semantic view. Plain counts that only restate their name stay in the semantic view.
 6. **Reconcile** (`scripts/bon_reconcile.py`): reads BON back, proves parity, records every source object in `ONT_BON_MIGRATION_MAP`.
-7. **Agent cutover** (`scripts/bon_agent_cutover.py`): a new agent copy with Business Ontology search, compared question by question with the original (which is never modified), then optional **retirement** of the ontology/metadata semantic views and `ONT_*` metadata tables (zero-copy archived first).
+7. **Agent cutover** (`scripts/bon_agent_cutover.py`): a new agent copy with Business Ontology search, compared question by question with the original (which is never modified).
+8. **Retire** (`scripts/bon_retire.py`, optional): plans first; drops the ontology/metadata semantic views, `ONT_*` metadata tables, `VW_ONT_*` views, graph UDFs and inference procedures only when nothing that stays depends on them, after a zero-copy archive of the schema. Refuses while an agent still calls a dropped object.
 
-While both systems run side by side, re-running extract, apply and reconcile syncs only what changed in the stack.
+While both systems run side by side, re-running extract, metrics, apply and reconcile syncs only what changed in the stack.
 
 Details worth knowing before you start:
 
@@ -238,8 +239,10 @@ ontology-stack-builder/
 │   ├── visualize_ontology.py       # Streamlit visualizer with editor and coverage mapping
 │   ├── export_to_bon.py            # Path M: read ONT_* tables -> BON candidates, edges, representations
 │   ├── bon_apply.py                # Path M: draft + scoped approve into Business Ontology
+│   ├── bon_import_metrics.py       # Path M: data semantic view metrics -> METRIC nodes + MEASURES edges
 │   ├── bon_reconcile.py            # Path M: read back, parity report, ONT_BON_MIGRATION_MAP
 │   ├── bon_agent_cutover.py        # Path M: BON-grounded agent copy + before/after comparison
+│   ├── bon_retire.py               # Path M: dependency-checked retirement of the legacy layer
 │   └── bon_migration_common.py     # Path M: shared helpers
 ├── references/
 │   ├── physical_layer_template.sql   # KG_NODE/KG_EDGE DDL template

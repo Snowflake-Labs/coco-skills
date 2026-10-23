@@ -365,6 +365,12 @@ def build_export(
     ont_rows = _rows(tables, "ONT_ONTOLOGY", None)
     if ontology is None and len(ont_rows) == 1:
         ontology = ont_rows[0].get("ONTOLOGY_NAME")
+    names = sorted(str(r.get("ONTOLOGY_NAME")) for r in ont_rows)
+    if ontology is None and len(ont_rows) > 1:
+        raise ValueError(f"ONT_ONTOLOGY holds {len(names)} ontologies ({', '.join(names)}); pass --ontology NAME "
+                         "and migrate each into its own domain")
+    if ontology is not None and ont_rows and str(ontology).upper() not in {n.upper() for n in names}:
+        raise ValueError(f"--ontology {ontology!r} not in ONT_ONTOLOGY ({', '.join(names)})")
     ontology_label = ontology or snapshot["schema"]
     ont_row = next((r for r in ont_rows if not ontology or str(r.get("ONTOLOGY_NAME", "")).upper() == str(ontology).upper()), {})
 
@@ -554,6 +560,8 @@ def build_export(
             ckey = next((kk for kk, kv in classes.items() if norm_key(kv.class_name) == norm_key(ckey)), ckey)
         props_by_class[ckey].append(p)
     for ckey, props in props_by_class.items():
+        if ckey not in classes:
+            continue  # class belongs to another ontology in the same stack; not this migration's loss
         k = migrated.get(ckey)
         for p in props:
             pname = str(_first(p, "PROP_NAME", "PROPERTY_NAME", default=""))
@@ -583,6 +591,8 @@ def build_export(
         expr = str(_first(d, "SQL_EXPR", default="") or "").strip()
         ckey = str(_first(d, "CLASS_NAME", default=""))
         k = next((kv for kv in migrated.values() if norm_key(kv.class_name) == norm_key(ckey)), None)
+        if k is None and not any(norm_key(kv.class_name) == norm_key(ckey) for kv in classes.values()):
+            continue  # another ontology's class
         pname = str(_first(d, "PROP_NAME", default=""))
         dkey = f"{ckey}.{pname}"
         if not expr or k is None:
@@ -841,7 +851,11 @@ def main(argv: list[str] | None = None) -> int:
         k, v = o.split("=", 1)
         overrides[k.strip()] = v.strip()
 
-    result = build_export(snapshot, args.domain, args.ontology, args.include_shared_properties, overrides)
+    try:
+        result = build_export(snapshot, args.domain, args.ontology, args.include_shared_properties, overrides)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
     write_outputs(result, Path(args.out))
     m = result["manifest"]
     print(json.dumps({"variant": m["variant"], "ontology": m["ontology"], "domain": m["domain"],

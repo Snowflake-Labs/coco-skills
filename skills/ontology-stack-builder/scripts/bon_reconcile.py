@@ -22,9 +22,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bon_migration_common import asset_key, call_system, check_identifier, connect, dumps, norm_key  # noqa: E402
 
 DDL_FILE = Path(__file__).resolve().parent.parent / "references" / "migration_map_table.sql"
-NODE_KINDS = {"CLASS", "DERIVED", "SHARED"}
-EDGE_KINDS = {"SUBCLASS", "RELATION"}
-REF_KINDS = {"BINDING", "PROPERTY"}
+NODE_KINDS = {"CLASS", "DERIVED", "SHARED", "METRIC"}
+EDGE_KINDS = {"SUBCLASS", "RELATION", "METRIC_EDGE"}
+REF_KINDS = {"BINDING", "PROPERTY", "METRIC_SV"}
 
 
 # --------------------------------------------------------------------------- read BON
