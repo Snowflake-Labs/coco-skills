@@ -44,7 +44,7 @@ Generate the complete Ontology-on-Snowflake stack from any relational schema and
 | Intent | Path |
 |---|---|
 | Build a new ontology stack from tables or an OWL file | **Build path**: Phases 1-7 below |
-| Already have a stack built by this skill (`ONT_*` tables exist) and want to move to Snowflake native Business Ontology | **Migration path (Path M)**: load [migration/SKILL.md](migration/SKILL.md) and follow it. Do not run Phases 1-7. |
+| Already have a stack built by this skill (`ONT_*` tables exist) and want to move to Snowflake native Business Ontology | **Migration path (Path M)**: load [migrate-to-business-ontology/SKILL.md](migrate-to-business-ontology/SKILL.md) and follow it. Do not run Phases 1-7. |
 
 If the user's schema already contains `ONT_CLASS` / `ONT_ONTOLOGY` and they mention Business Ontology, BON, "native ontology" or "migrate", route to Path M. If ambiguous, ask once with `ask_user_question`.
 
@@ -1186,7 +1186,7 @@ If invoked mid-session, use **discovery commands** to detect the current state f
 - If ontology-layer semantic views exist but no agent → resume from Phase 6 (agent via `cortex-agent` skill)
   - Phase 6 will run its own discovery (Step 6-pre) to build TOOL_INVENTORY from Snowflake, so no prior session context is needed
 - If agent exists → resume from Phase 7 (validation)
-- If `ONT_BON_MIGRATION_MAP` exists, or the user asks to migrate to Business Ontology → Path M; [migration/SKILL.md](migration/SKILL.md) §Resume decides the step
+- If `ONT_BON_MIGRATION_MAP` exists, or the user asks to migrate to Business Ontology → Path M; [migrate-to-business-ontology/SKILL.md](migrate-to-business-ontology/SKILL.md) §Resume decides the step
 
 To classify semantic views, run `cortex semantic-views describe {FQN}` for each and check the table references:
 - Covers source tables (not VW_ONT_* or V_*) → base semantic view
@@ -1218,5 +1218,5 @@ Deployed directly to Snowflake (via native skills):
 └── Cortex Agent                (created by `cortex-agent` skill in Phase 6)
 ```
 
-Path M (migration) writes to a working directory you choose, `/tmp/bon_migration/` by default (`candidates.json`, `relationships.json`, `associations.json`, `migration_loss_report.md`, `reconcile_report.md`, `agent_compare.md`, `retire_plan.json`), and creates `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP`. See [migration/SKILL.md](migration/SKILL.md).
+Path M (migration) writes to a working directory you choose, `/tmp/bon_migration/` by default (`candidates.json`, `relationships.json`, `associations.json`, `migration_loss_report.md`, `reconcile_report.md`, `agent_compare.md`, `retire_plan.json`), and creates `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP`. See [migrate-to-business-ontology/SKILL.md](migrate-to-business-ontology/SKILL.md).
 

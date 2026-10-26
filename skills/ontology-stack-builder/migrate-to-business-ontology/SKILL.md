@@ -1,13 +1,13 @@
 ---
-name: ontology-stack-builder-migration
-description: "Path M of ontology-stack-builder: migrate an existing ontology stack (ONT_* metadata tables built by this skill or by the ontology-on-snowflake reference repo) into Snowflake native Business Ontology. Load from the parent SKILL.md router; do not run Phases 1-7."
+name: ontology-stack-builder-migrate-to-business-ontology
+description: "Path M of ontology-stack-builder: migrate an existing ontology stack (ONT_* metadata tables built by this skill or by the ontology-on-snowflake reference repo) into Snowflake native Business Ontology. Load from the parent SKILL.md router; do not run Phases 1-7. Human guide: README.md in this folder."
 ---
 
 # Path M: Migrate an ontology stack to Business Ontology
 
 Moves the *meaning* of a deployed stack (classes, hierarchy, relations, descriptions, table and column bindings, derived metrics) into Snowflake native Business Ontology (BON), re-points the Cortex Agent, then optionally retires the legacy ontology layer.
 
-Read [MAPPING.md](MAPPING.md) before starting. It is the contract for what maps to what and what is lost.
+Read [MAPPING.md](MAPPING.md) before starting. It is the contract for what maps to what and what is lost. Paths below (`scripts/`, `references/`) are relative to the skill root, one level up from this file.
 
 ## Rules for this path
 

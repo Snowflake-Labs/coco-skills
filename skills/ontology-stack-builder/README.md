@@ -185,6 +185,8 @@ Not every domain needs every feature. The skill surfaces these as explicit choic
 
 If you already built a stack with this skill (or by hand from the `ontology-on-snowflake` reference repo), the skill can move its business meaning into Snowflake native **Business Ontology** (BON). BON is currently Private Preview and must be enabled on the account.
 
+**Step-by-step guide: [migrate-to-business-ontology/README.md](migrate-to-business-ontology/README.md)** (prerequisites, every step and question, worked example, rollback, testing checklist).
+
 ```
 $ontology-stack-builder Migrate my ontology stack in MY_DB.MY_SCHEMA to Business Ontology
 ```
@@ -193,10 +195,10 @@ $ontology-stack-builder Migrate my ontology stack in MY_DB.MY_SCHEMA to Business
 |---|---|
 | Classes as `ENTITY` nodes, class hierarchy, relations as typed edges, descriptions, class-to-table and property-to-column bindings as representations, derived properties, base semantic view metrics | `KG_NODE`/`KG_EDGE` data, inference procedures and rules, actions, graph UDFs, SPCS service, the base semantic view |
 
-The workflow ([migration/SKILL.md](migration/SKILL.md)) is gated like the build path:
+The workflow ([migrate-to-business-ontology/SKILL.md](migrate-to-business-ontology/SKILL.md)) is gated like the build path:
 
 1. **Preflight**: feature gate, stack detection, target domain chosen by you.
-2. **Extract** (`scripts/export_to_bon.py`, read-only): detects the schema variant, applies [migration/MAPPING.md](migration/MAPPING.md), writes a loss report listing everything BON cannot hold.
+2. **Extract** (`scripts/export_to_bon.py`, read-only): detects the schema variant, applies [migrate-to-business-ontology/MAPPING.md](migrate-to-business-ontology/MAPPING.md), writes a loss report listing everything BON cannot hold.
 3. **Review**: relationship types, weak descriptions, generic root classes.
 4. **Apply** (`scripts/bon_apply.py`): draft, then approve only this run's items; re-runs write only what is missing.
 5. **Metrics** (`scripts/bon_import_metrics.py`): metrics from the stack's data semantic view (the base view, or `{ONT}_KG_MODEL` on the KG path) become `METRIC` nodes that `MEASURES` the class they count, linked to the semantic view. Plain counts that only restate their name stay in the semantic view.
@@ -228,8 +230,9 @@ ontology-stack-builder/
 ├── README.md
 ├── assets/
 │   └── ontology-graph.png          # Header image
-├── migration/
-│   ├── SKILL.md                    # Path M: migrate a stack to Business Ontology
+├── migrate-to-business-ontology/
+│   ├── README.md                   # Path M: step-by-step guide for customers migrating to Business Ontology
+│   ├── SKILL.md                    # Path M: agent instructions (gates M0-M7)
 │   └── MAPPING.md                  # Stack -> Business Ontology mapping contract
 ├── scripts/
 │   ├── introspect_schema.py        # Schema-first ontology discovery
