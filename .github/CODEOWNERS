@@ -23,6 +23,8 @@
 # Automation runs with repository credentials.
 /.github/               @sfc-gh-chorgan @sfc-gh-lhartzell
 
+/skills/migrate-snowsql/ @sfc-gh-jbilek @sfc-gh-mrogowski @sfc-gh-chorgan @sfc-gh-lhartzell
+
 # Executable code shipped inside a skill.
 #
 # CODEOWNERS has no reliable recursive glob, so this matches one level only.
