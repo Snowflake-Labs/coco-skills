@@ -13,6 +13,7 @@ VALIDATOR = 'contained-reviewer/2.1'
 MESSAGES = {
     'input.timeout': 'Collection deadline exceeded; no review was performed.',
     'input.unsafe': 'Input rejected: unsafe path, file type, change, or size limit.',
+    'input.symlink': 'Input rejected: a symbolic link was found in the candidate or reviewer path.',
     'runtime.unavailable': 'Restricted validator unavailable; no host fallback was used.',
     'runtime.invalid_output': 'Validator returned invalid or oversized output.',
     'format.skill_missing': 'Required entry document is missing or not readable as text.',
@@ -30,6 +31,7 @@ MESSAGES = {
     'format.author_conflict': 'Author aliases differ; reconcile both claims with a human reviewer.',
     'license.notice': 'Complete legacy notice matched, not full Apache terms; maintainer review is required.',
     'license.review': 'Confirm license applicability, attribution and rights with maintainers; content matching proves neither identity nor legal approval.',
+    'license.inherited': 'Plugin skill: the plugin root LICENSE was checked; skills inherit it.',
     'format.reference': 'A local support-file reference is missing or escapes the bundle.',
     'format.internal_directory': 'An internal-only metadata directory was detected.',
     'coverage.unsupported': 'Unsupported file format or encoding; review coverage is incomplete.',
@@ -46,7 +48,7 @@ MESSAGES = {
 }
 STATUSES = {'passed', 'failed', 'incomplete', 'blocked', 'unavailable'}
 GROUPS = ('required', 'advisory', 'coverage')
-FAILURES = {'input.timeout': 'blocked', 'input.unsafe': 'blocked',
+FAILURES = {'input.timeout': 'blocked', 'input.unsafe': 'blocked', 'input.symlink': 'blocked',
             'runtime.unavailable': 'unavailable', 'runtime.invalid_output': 'unavailable'}
 ERROR_CODES = set(FAILURES) | {'format.skill_missing', 'format.yaml', 'format.required',
     'format.field_type', 'format.id', 'format.type', 'format.license',
@@ -62,6 +64,7 @@ FIELDS = {
 ACTIONS = {
     'input.timeout': 'Retry after reducing the bundle or resolving collection stalls.',
     'input.unsafe': 'Use a stable bounded directory containing only regular unlinked files.',
+    'input.symlink': 'Replace every symlinked path component with its real path (on macOS use /private/tmp, not /tmp) and remove symlinks from the bundle.',
     'runtime.unavailable': 'Ask the operator to provision a compatible approved local validator.',
     'runtime.invalid_output': 'Use a compatible reviewed launcher and validator image; do not trust this output.',
     'format.skill_missing': 'Add a readable UTF-8 entry document.',
@@ -79,6 +82,7 @@ ACTIONS = {
     'format.author_conflict': 'Which author and authors claims should be reconciled?',
     'license.notice': 'Should full license terms replace this legacy notice?',
     'license.review': 'Have maintainers confirmed applicability, attribution and distribution rights?',
+    'license.inherited': 'Does the plugin root LICENSE cover every file in this skill?',
     'format.reference': 'Does the referenced support document exist inside this bundle?',
     'format.internal_directory': 'Remove internal-only metadata from the submission.',
     'coverage.unsupported': 'Provide supported UTF-8 text or arrange separate human review.',

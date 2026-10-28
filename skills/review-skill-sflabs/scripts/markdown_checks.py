@@ -111,10 +111,14 @@ def parse(text):
 
     def heading(value):
         # Explicit IDs, HTML, Unicode, links and inline formatting vary by renderer.
-        if not re.fullmatch(r'[A-Za-z0-9 _-]+', value):
+        # Plain ASCII punctuation follows GitHub's slug rule: lowercase, drop
+        # anything other than letters, digits, spaces, '_' and '-', then map
+        # spaces to '-'. Formatting/markup characters still mark anchors partial.
+        if (not re.fullmatch(r'[\x20-\x7e]+', value) or re.search(r'[`*\[\]<>!\\~&{}]', value)
+                or not re.search(r'[A-Za-z0-9]', value)):
             document.anchors_complete = False
             return
-        slug = value.lower().replace(' ', '-')
+        slug = re.sub(r'[^a-z0-9 _-]', '', value.lower()).replace(' ', '-')
         candidate = slug
         number = 0
         while candidate in document.anchors:

@@ -5,7 +5,10 @@ import sys
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).parent))
-from ingest import collect, encode
+from ingest import PLUGIN_LICENSE, SymlinkInput, collect, encode, plugin_license
+
+# Exit statuses the host launcher maps to fixed diagnostics.
+FAILED, SYMLINK = 2, 3
 
 REPOSITORY_INPUTS = (
     'skills/review-skill-sflabs',
@@ -33,14 +36,24 @@ def main():
         if len(sys.argv) == 3 and sys.argv[2] == '--repository-tests':
             wire = encode(collect(path, selected=REPOSITORY_INPUTS), 'proposed-reviewer')
         elif len(sys.argv) == 2:
-            wire = encode(collect(path), os.path.basename(path.rstrip('/')))
+            entries = collect(path)
+            # The reserved name is trusted-collector output; a candidate file
+            # with that name could otherwise impersonate the plugin LICENSE.
+            if any(entry.path == PLUGIN_LICENSE for entry in entries):
+                return FAILED
+            inherited = plugin_license(path)
+            if inherited is not None:
+                entries = tuple(sorted(entries + (inherited,), key=lambda entry: entry.path))
+            wire = encode(entries, os.path.basename(path.rstrip('/')))
         else:
-            return 2
+            return FAILED
         sys.stdout.buffer.write(wire)
         return 0
+    except SymlinkInput:
+        return SYMLINK
     except Exception:
         # No paths, parser messages, or partial snapshots on failure.
-        return 2
+        return FAILED
 
 
 if __name__ == '__main__':

@@ -201,7 +201,8 @@ class GitSelectionTests(unittest.TestCase):
                                       '--head', head, '--image', IMAGE]), patch('launch.local_docker'), \
                 contextlib.redirect_stdout(io.StringIO()) as output:
             self.assertEqual(ci.main(), 1)
-        self.assertEqual(output.getvalue().count('input.unsafe'), 3)
+        self.assertEqual(output.getvalue().count('input.symlink'), 2)
+        self.assertEqual(output.getvalue().count('input.unsafe'), 1)
         self.assertNotIn('removed', output.getvalue())
 
     def test_rename_and_complete_deletion(self):

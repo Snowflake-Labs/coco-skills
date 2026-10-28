@@ -36,6 +36,13 @@ changes to this reviewer itself, use the previously approved reviewer installati
 - A reviewed local validator image and its immutable `sha256:...` image ID.
 - An absolute candidate directory path with no symlink components. On macOS,
   `/tmp` and `/var` are often symlinks; use the actual `/private/...` location.
+  Any symlink in the candidate path, inside the bundle, or in the reviewer's own
+  installation path is reported as the blocking `input.symlink` error.
+- For a plugin skill (`plugins/<plugin>/skills/<skill>`, or any
+  `<plugin>/skills/<skill>` whose plugin has `.cortex-plugin/`), the plugin root
+  `LICENSE` is required and is the only license checked; skills inherit it and a
+  skill-level `LICENSE` never substitutes. Top-level `skills/<skill>` bundles
+  still need their own `LICENSE`, because the repository has no root license.
 
 Installation, image provisioning and distribution are **blocked pending owner
 and rights approval**; no automatic installation, build or pull is provided.

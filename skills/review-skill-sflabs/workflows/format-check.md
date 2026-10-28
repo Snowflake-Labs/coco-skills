@@ -43,6 +43,13 @@ sources are preserved as exact legacy matches with `license.notice` warnings,
 not represented as full license terms. Plugin-specific licenses are not included
 in the skill-template set.
 
+Plugin skills inherit their plugin's root `LICENSE`. The trusted host collector
+captures that one file with the same no-follow, single-link and size rules and
+passes it under the reserved snapshot name `PLUGIN_LICENSE`, which is included in
+the snapshot digest. A candidate file using that name is rejected. A missing
+plugin `LICENSE` fails `format.license` even if the skill has its own file, and
+every plugin skill also gets the advisory `license.inherited`.
+
 Normalization `ascii-whitespace-and-quotes-v1` collapses ASCII whitespace runs
 (space, tab, CR, LF, form feed, vertical tab) and trims them at the ends. Curly
 double quotes U+201C/U+201D and apostrophe U+2019 map to their ASCII equivalents,

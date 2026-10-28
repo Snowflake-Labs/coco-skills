@@ -15,7 +15,10 @@ incomplete, 3 unavailable. Warnings do not fail mechanical validation.
 Rules version 1.2 preserves the 1.1 [metadata/license policy](../workflows/format-check.md)
 and adds only advisory Markdown/catalog behavior.
 `format.license` is a content/claim error, not a legal judgment;
-`format.author_conflict`, `license.notice` and `license.review` are human advisories.
+`format.author_conflict`, `license.notice`, `license.inherited` and `license.review` are human advisories.
+`input.symlink` is a blocking collection error with fixed text; it never names the
+link. Headings made of plain ASCII punctuation use GitHub-style anchors; inline
+markup, HTML and non-ASCII headings still mark anchors as `markdown.limited`.
 Deploy a compatible reviewed launcher/image pair: 1.0 and 2.0 runtime output is rejected.
 Schema 2.1 adds exactly `related`: at most three unique 64-hex `catalog_id` values
 and an exact fixed differentiation `question`. The host checks IDs against its
