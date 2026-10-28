@@ -21,6 +21,24 @@ class UnsafeInput(ValueError):
     """Intentionally carries no candidate-controlled error text."""
 
 
+class SymlinkInput(UnsafeInput, OSError):
+    """A path component or bundle entry is a symbolic link; reported distinctly.
+
+    Also an OSError so existing open_root callers that fail closed on OSError
+    (for example git_context checkouts) keep rejecting links unchanged.
+    """
+
+
+def _raise_if_link(name, directory):
+    """Re-raise a failed no-follow open as SymlinkInput when name is a link."""
+    try:
+        info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+    except OSError:
+        return
+    if stat.S_ISLNK(info.st_mode):
+        raise SymlinkInput() from None
+
+
 @dataclass(frozen=True)
 class Entry:
     path: str
@@ -43,7 +61,12 @@ def open_root(path: str) -> int:
     descriptor = os.open('/', flags)
     try:
         for part in filter(None, parts):
-            child = os.open(part, flags, dir_fd=descriptor)
+            try:
+                child = os.open(part, flags, dir_fd=descriptor)
+            except OSError:
+                # macOS /tmp -> /private/tmp is the common accidental case.
+                _raise_if_link(part, descriptor)
+                raise
             os.close(descriptor)
             descriptor = child
         return descriptor
@@ -154,6 +177,8 @@ def collect(path: str, selected: tuple[str, ...] | None = None) -> tuple[Entry, 
                     entries.append(Entry(relative, b''.join(chunks)))
                 finally:
                     os.close(descriptor)
+            elif stat.S_ISLNK(info.st_mode):
+                raise SymlinkInput()
             else:
                 raise UnsafeInput()
         if stamp(before) != stamp(os.fstat(directory)):
@@ -175,11 +200,77 @@ def collect(path: str, selected: tuple[str, ...] | None = None) -> tuple[Entry, 
                 for target in selected):
             raise UnsafeInput()
         return tuple(sorted(entries, key=lambda entry: entry.path))
+    except SymlinkInput:
+        raise
     except (OSError, UnicodeError, ValueError, RecursionError):
         raise UnsafeInput() from None
     finally:
         if root is not None:
             os.close(root)
+
+
+PLUGIN_LICENSE = 'PLUGIN_LICENSE'
+
+
+def plugin_root(path: str) -> str | None:
+    """Return <plugin> for a .../<plugin>/skills/<skill> candidate, else None.
+
+    A plugin is either under a plugins/ folder or has a .cortex-plugin/ folder.
+    Only the plugin directory itself is probed; nothing above it is read.
+    """
+    parts = [part for part in path.split('/') if part]
+    if len(parts) < 3 or parts[-2] != 'skills':
+        return None
+    root = '/' + '/'.join(parts[:-2])
+    if len(parts) >= 4 and parts[-4] == 'plugins':
+        return root
+    return None if absent(root + '/.cortex-plugin') else root
+
+
+def plugin_license(path: str) -> Entry | None:
+    """Capture a plugin skill's inherited root LICENSE as a reserved entry.
+
+    Every plugin must have a root LICENSE and its skills inherit it. A missing
+    file yields empty bytes so the license check fails rather than falling back
+    to any skill-level file. Links and special files are rejected; the read uses
+    the same no-follow, single-link, size and concurrent-change rules as collect.
+    """
+    root = plugin_root(path)
+    if root is None:
+        return None
+    directory = None
+    try:
+        directory = open_root(root)
+        try:
+            info = os.stat('LICENSE', dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            return Entry(PLUGIN_LICENSE, b'')
+        if stat.S_ISLNK(info.st_mode):
+            raise SymlinkInput()
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > MAX_FILE_BYTES:
+            raise UnsafeInput()
+        descriptor = os.open('LICENSE', os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                             dir_fd=directory)
+        try:
+            chunks, size = [], 0
+            while chunk := os.read(descriptor, min(65536, MAX_FILE_BYTES + 1 - size)):
+                chunks.append(chunk)
+                size += len(chunk)
+                if size > MAX_FILE_BYTES:
+                    raise UnsafeInput()
+            data = b''.join(chunks)
+            if len(data) != info.st_size or stamp(info) != stamp(os.fstat(descriptor)):
+                raise UnsafeInput()
+        finally:
+            os.close(descriptor)
+        return Entry(PLUGIN_LICENSE, data)
+    except SymlinkInput:
+        raise
+    except (OSError, ValueError):
+        raise UnsafeInput() from None
+    finally:
+        if directory is not None:
+            os.close(directory)
 
 
 def encode(entries: tuple[Entry, ...], name: str) -> bytes:

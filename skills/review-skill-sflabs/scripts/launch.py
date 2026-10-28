@@ -9,7 +9,7 @@ import sys
 import tempfile
 import uuid
 
-from ingest import MAX_WIRE_BYTES, UnsafeInput, decode, lf_line_count
+from ingest import MAX_WIRE_BYTES, SymlinkInput, UnsafeInput, decode, lf_line_count
 from private_output import Destination, OutputError, locator_payload, write_outputs
 from protocol import (catalog_identity, error_report, exit_code, is_hex, render,
                       snapshot_identity, strict_json, validate_report)
@@ -56,6 +56,8 @@ def collect(path, timeout=15, repository_tests=False):
                                  timeout=timeout)
         output.seek(0)
         wire = output.read(MAX_WIRE_BYTES + 1)
+    if process.returncode == 3:
+        raise SymlinkInput()
     if process.returncode != 0 or len(wire) > MAX_WIRE_BYTES:
         raise UnsafeInput()
     return wire
@@ -119,6 +121,8 @@ def _review(path, image, *, expected_files=None):
             verify_entries(entries, expected_files)
     except subprocess.TimeoutExpired:
         return error_report('input.timeout', 'blocked'), None
+    except SymlinkInput:
+        return error_report('input.symlink', 'blocked'), None
     except (UnsafeInput, OSError, ValueError):
         return error_report('input.unsafe', 'blocked'), None
     return _run_review(wire, image)
@@ -211,6 +215,8 @@ def preview(path, image, cache_directory):
         name, entries = decode(wire)
     except subprocess.TimeoutExpired:
         return error_report('input.timeout', 'blocked'), state
+    except SymlinkInput:
+        return error_report('input.symlink', 'blocked'), state
     except (OSError, ValueError):
         return error_report('input.unsafe', 'blocked'), state
     validate = lambda report: validate_snapshot_report(report, name, entries, image)
@@ -262,6 +268,11 @@ def main():
     try:
         from packaging import ROOT, trusted_root
         trusted_root(str(ROOT), args.candidate)
+    except SymlinkInput:
+        # Fixed text only: never echo the offending path component.
+        report = error_report('input.symlink', 'blocked')
+        print(render(report, args.format))
+        return exit_code(report)
     except (OSError, ValueError):
         print('Separate trusted installation required; no review performed.')
         return 3

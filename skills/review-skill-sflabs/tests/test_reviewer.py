@@ -276,7 +276,8 @@ class CollectionDeadlineTests(unittest.TestCase):
             link.symlink_to(root / 'missing')
             child = subprocess.run([sys.executable, '-I', str(Path(launch.__file__).with_name('collect_snapshot.py')),
                                     str(link)], capture_output=True, timeout=5)
-            self.assertEqual(child.returncode, 2)
+            # Symlinks get their own fixed status; output stays empty either way.
+            self.assertEqual(child.returncode, 3)
             self.assertEqual((child.stdout, child.stderr), (b'', b''))
             with self.assertRaises(UnsafeInput) as error:
                 launch.collect(str(link))

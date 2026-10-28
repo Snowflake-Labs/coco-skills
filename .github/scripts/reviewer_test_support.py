@@ -116,6 +116,14 @@ REQUIRED_TESTS = (
     'test_advisory_cache.AdvisoryCacheTests.test_cache_stall_in_worker_is_supervised',
     'test_advisory_cache.AdvisoryCacheTests.test_report_cache_schema_and_admission_remain_separate',
     'test_advisory_cache.AdvisoryCacheTests.test_required_cache_inventory_is_discoverable',
+    'test_plugin_inheritance.PluginLicenseTests.test_plugin_root_license_is_captured_and_passes',
+    'test_plugin_inheritance.PluginLicenseTests.test_missing_plugin_license_fails_even_with_skill_license',
+    'test_plugin_inheritance.PluginLicenseTests.test_candidate_cannot_supply_reserved_name',
+    'test_plugin_inheritance.PluginLicenseTests.test_plugin_license_symlink_and_hardlink_rejected',
+    'test_plugin_inheritance.SymlinkReportingTests.test_link_component_in_candidate_path',
+    'test_plugin_inheritance.SymlinkReportingTests.test_link_inside_bundle',
+    'test_plugin_inheritance.SymlinkReportingTests.test_symlink_is_still_an_oserror_for_existing_callers',
+    'test_plugin_inheritance.HeadingAnchorTests.test_markup_unicode_and_empty_slugs_remain_partial',
 )
 
 

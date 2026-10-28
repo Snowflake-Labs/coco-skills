@@ -6,7 +6,7 @@ from types import MappingProxyType
 
 import yaml
 
-from ingest import Entry, canonical, lf_line_count, lf_lines
+from ingest import PLUGIN_LICENSE, Entry, canonical, lf_line_count, lf_lines
 from markdown_checks import check_documents
 from catalog import related
 from protocol import base_report, bind_report, finding
@@ -15,7 +15,7 @@ from policy import LICENSE_POLICY, METADATA, author_claims, match_license, valid
 TEXT_SUFFIXES = {'.md', '.txt', '.py', '.sh', '.bash', '.json', '.yaml', '.yml',
                  '.toml', '.sql', '.csv', '.js', '.ts', '.html', '.css', '.rst',
                  '.xml', '.ini', '.cfg', '.r', '.ps1', '.dockerignore'}
-TEXT_NAMES = {'SKILL.md', 'LICENSE', 'Dockerfile', '.dockerignore', '.gitignore'}
+TEXT_NAMES = {'SKILL.md', 'LICENSE', 'Dockerfile', '.dockerignore', '.gitignore', PLUGIN_LICENSE}
 SECRET_PATTERNS = [
     re.compile(r'-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----'),
     re.compile(r'\bAKIA[A-Z0-9]{16}\b'),
@@ -195,7 +195,10 @@ def _review(name, entries, catalog):
         elif not any(item['code'] == 'format.yaml' for item in findings):
             for field in ('name', 'description'):
                 add('format.required', 'error', file_id, field=field)
-    license_match = match_license(texts.get('LICENSE', ('', ''))[1])
+    # Plugin skills inherit the plugin root LICENSE, captured by the trusted host
+    # collector under a reserved name; a skill-level LICENSE never substitutes.
+    inherited = any(entry.path == PLUGIN_LICENSE for entry in entries)
+    license_match = match_license(texts.get(PLUGIN_LICENSE if inherited else 'LICENSE', ('', ''))[1])
     claims, _ = author_claims(meta)
     employee_claim = any(LICENSE_POLICY['employee_marker'] in claim for claim in claims)
     if license_match is None:
@@ -205,6 +208,8 @@ def _review(name, entries, catalog):
         add(LICENSE_POLICY['error_code'], 'error')
     if license_match and license_match[1] == 'notice_only':
         add('license.notice')
+    if inherited:
+        add('license.inherited')
     # Names, contributor type and email strings cannot establish identity, rights,
     # or the applicable agreement. Even an exact content match needs human review.
     add(LICENSE_POLICY['advisory_code'])
