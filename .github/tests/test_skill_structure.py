@@ -489,6 +489,80 @@ class GitTests(unittest.TestCase):
         self.assertEqual(status, 0, output)
         self.assertNotIn("untouched", output)
 
+    def plugin(self, name="example-plugin", manifest=None, license=b"Unreviewed license text\n"):
+        """Write a synthetic plugin manifest and root LICENSE; return None.
+
+        manifest defaults to a valid object naming the folder; pass bytes to
+        substitute malformed JSON. license=None omits the root LICENSE.
+        """
+        if manifest is None:
+            manifest = json.dumps({"name": name, "version": "0.1.0",
+                                   "description": "Synthetic plugin"}).encode()
+        self.put(f"plugins/{name}/.cortex-plugin/plugin.json", manifest)
+        if license is not None:
+            self.put(f"plugins/{name}/LICENSE", license)
+
+    def test_plugin_skills_are_inspected_and_inherit_plugin_license(self):
+        """Check plugin skills fully, allowing the plugin root LICENSE to cover them."""
+        self.plugin()
+        self.put("plugins/example-plugin/skills/good/SKILL.md", VALID)
+        self.put("plugins/example-plugin/hooks/run.sh", b"exit 1\n")
+        status, output = self.run_check()
+        self.assertEqual(status, 0, output)
+        self.assertIn("plugins/example-plugin/skills/good", output)
+        self.put("plugins/example-plugin/skills/bad/SKILL.md", b"no frontmatter\n")
+        status, output = self.run_check()
+        self.assertEqual(status, 1, output)
+        self.assertIn("plugins/example-plugin/skills/bad/SKILL.md", output)
+        (self.repo / "plugins/example-plugin/skills/bad/SKILL.md").unlink()
+        self.put("plugins/example-plugin/skills/bad/notes.md", b"x\n")
+        self.assertEqual(self.run_check()[0], 1)
+
+    def test_plugin_manifest_and_license_requirements(self):
+        """Fail missing/malformed manifests, mismatched names, and missing root LICENSE."""
+        for manifest, license in ((b"{not json", b"text\n"), (b"[]", b"text\n"),
+                                  (json.dumps({"name": "other", "version": "1",
+                                               "description": "d"}).encode(), b"text\n"),
+                                  (json.dumps({"name": "example-plugin"}).encode(), b"text\n"),
+                                  (None, None), (None, b"")):
+            with self.subTest(manifest=manifest, license=license):
+                shutil.rmtree(self.repo / "plugins", ignore_errors=True)
+                self.plugin(manifest=manifest, license=license)
+                self.put("plugins/example-plugin/skills/good/SKILL.md", VALID)
+                status, output = self.run_check()
+                self.assertEqual(status, 1, output)
+        shutil.rmtree(self.repo / "plugins")
+        self.put("plugins/example-plugin/README.md", b"no manifest\n")
+        status, output = self.run_check()
+        self.assertEqual(status, 1, output)
+        self.assertIn(".cortex-plugin/plugin.json", output)
+
+    def test_plugin_license_change_rechecks_inheriting_skills(self):
+        """Recheck every inheriting skill when the plugin root LICENSE changes."""
+        self.plugin()
+        self.put("plugins/example-plugin/skills/bad/SKILL.md", b"invalid\n")
+        base = self.commit()
+        self.put("plugins/example-plugin/LICENSE", b"Changed license text\n")
+        status, output = self.run_check(base=base)
+        self.assertEqual(status, 1, output)
+        self.assertIn("plugins/example-plugin/skills/bad", output)
+
+    def test_unchanged_plugins_readme_and_deletion(self):
+        """Ignore unchanged plugins and plugins/README.md; report plugin deletion."""
+        self.plugin("kept")
+        self.put("plugins/kept/skills/bad/SKILL.md", b"invalid\n")
+        self.plugin("removed")
+        base = self.commit()
+        self.put("plugins/README.md", b"docs\n")
+        status, output = self.run_check(base=base)
+        self.assertEqual(status, 0, output)
+        self.assertIn("no relevant", output)
+        shutil.rmtree(self.repo / "plugins/removed")
+        status, output = self.run_check(base=base)
+        self.assertEqual(status, 0, output)
+        self.assertIn("plugin deleted", output)
+        self.assertNotIn("kept", output)
+
     def test_summary_env_ignored_and_write_failure_is_incomplete(self):
         """Require an explicit summary path and fail incomplete if writing it fails."""
         summary = self.root / "untrusted-summary"

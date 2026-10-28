@@ -52,6 +52,9 @@ except ImportError:
 MAX_SKILLS, MAX_ENTRIES, MAX_DEPTH = 20, 500, 12
 # Required text files have separate caps; ordinary support blobs need no decoding.
 MAX_SKILL, MAX_LICENSE = 64 * 1024, 256 * 1024
+# Plugin manifests are small JSON documents; plugins are bounded separately
+# from skills because one plugin can contribute several skills.
+MAX_MANIFEST, MAX_PLUGINS = 64 * 1024, 20
 # Git stdout AND stderr consume per-command and per-Git-instance byte budgets.
 # MAX_OUTPUT also caps the event document; diagnostic count caps report growth.
 MAX_OUTPUT, MAX_TOTAL, MAX_DIAGNOSTICS = 1024 * 1024, 16 * 1024 * 1024, 100
@@ -420,13 +423,16 @@ class Git:
         return text
 
 
-def inspect_skill(git, root, entry, report):
+def inspect_skill(git, root, entry, report, inherited=False):
     """Inspect one retained skill tree and add findings; return None.
 
     git reads objects, root is a validated byte path, and entry is its tree-entry
     tuple. Walk every descendant mode/name, but read only root SKILL.md/LICENSE.
-    Record structural/content violations in report; propagate Incomplete on
-    traversal, object, or report budgets so partial inspection cannot pass.
+    inherited means a plugin skill whose LICENSE requirement is satisfied by the
+    plugin root (checked by inspect_plugin); a skill-level LICENSE is then
+    optional but still validated when present. Record structural/content
+    violations in report; propagate Incomplete on traversal, object, or report
+    budgets so partial inspection cannot pass.
     """
     if entry[:2] != (b"040000", b"tree"):
         report.add("fail", "skill root must be a directory, not a link or blob", root)
@@ -465,26 +471,156 @@ def inspect_skill(git, root, entry, report):
     for name, limit in ((b"SKILL.md", MAX_SKILL), (b"LICENSE", MAX_LICENSE)):
         path = root + b"/" + name
         if name not in required:
-            report.add("fail", "missing required regular file", path)
+            if not (inherited and name == b"LICENSE"):
+                report.add("fail", "missing required regular file", path)
             continue
         try:
             text = git.text(required[name], limit)
             if name == b"SKILL.md":
-                metadata(frontmatter(text), root.split(b"/")[1].decode("utf-8"), report, path)
+                metadata(frontmatter(text), root.rsplit(b"/", 1)[1].decode("utf-8"), report, path)
         except Invalid as error:
             report.add("fail", str(error), path)
 
 
-def inspect(git, base, head, report):
-    """Compare exact commits and report changed skills; return None.
+def inspect_plugin(git, root, entry, report):
+    """Check one retained plugin's required files; return None.
 
-    Affected roots include additions, deletions, mode changes, and both sides of
-    a rename. Inspect retained roots completely; unchanged skills are outside
-    scope and full deletions are informational. Incomplete propagates for bad
-    revisions, malformed Git output/paths, or exhausted budgets.
+    Follows plugins/README.md: .cortex-plugin/plugin.json is a JSON object with
+    nonblank string name/version/description, and name matches the slug folder.
+    A root LICENSE is required because plugin skills inherit it. Only these two
+    blobs are decoded; hooks, agents, MCP configs, and assets remain unread data.
+    """
+    name = root.split(b"/")[1]
+    if not SLUG.fullmatch(name.decode("utf-8")):
+        report.add("fail", "plugin directory must be a lowercase hyphenated slug", root)
+    if entry[:2] != (b"040000", b"tree"):
+        report.add("fail", "plugin root must be a directory, not a link or blob", root)
+        return
+    children = git.tree(entry[2])
+    path = root + b"/LICENSE"
+    license = children.get(b"LICENSE")
+    if not license or license[:2] not in ((b"100644", b"blob"), (b"100755", b"blob")):
+        report.add("fail", "missing required regular file", path)
+    else:
+        try:
+            git.text(license[2], MAX_LICENSE)
+        except Invalid as error:
+            report.add("fail", str(error), path)
+    path = root + b"/.cortex-plugin/plugin.json"
+    folder = children.get(b".cortex-plugin")
+    manifest = git.tree(folder[2]).get(b"plugin.json") if folder and folder[:2] == (b"040000", b"tree") else None
+    if not manifest or manifest[:2] not in ((b"100644", b"blob"), (b"100755", b"blob")):
+        report.add("fail", "missing required regular file", path)
+        return
+    try:
+        data = json.loads(git.text(manifest[2], MAX_MANIFEST))
+    except Invalid as error:
+        report.add("fail", str(error), path)
+        return
+    except (ValueError, RecursionError):
+        report.add("fail", "plugin manifest must be valid JSON", path)
+        return
+    if not isinstance(data, dict):
+        report.add("fail", "plugin manifest must be a JSON object", path)
+        return
+    for field in ("name", "version", "description"):
+        if not isinstance(data.get(field), str) or not data[field].strip():
+            report.add("fail", f"{field} must be a nonblank string", path)
+    if isinstance(data.get("name"), str) and data["name"] != name.decode("utf-8"):
+        report.add("fail", "plugin name must match the directory", path)
+
+
+def subtree(git, entry, name):
+    """Return a directory child's entry tuple, or None when absent or not a tree."""
+    if not entry or entry[:2] != (b"040000", b"tree"):
+        return None
+    return git.tree(entry[2]).get(name)
+
+
+def changed_children(git, before, after):
+    """Return direct-child names whose entry tuples differ between two trees.
+
+    Git diff omits empty trees, so comparing entries keeps even a synthetic
+    empty skill tree visible. Non-tree sides contribute no children.
+    """
+    old, new = entries(git, before), entries(git, after)
+    return {name for name in old.keys() | new.keys() if old.get(name) != new.get(name)}, new
+
+
+def entries(git, entry):
+    """Return a directory entry's children, or {} when absent or not a tree."""
+    return git.tree(entry[2]) if entry and entry[:2] == (b"040000", b"tree") else {}
+
+
+def inspect(git, base, head, report):
+    """Compare exact commits and report changed skills and plugins; return None.
+
+    Skill roots are skills/<name> and plugins/<plugin>/skills/<name>. Affected
+    roots include additions, deletions, mode changes, and both sides of a
+    rename. Inspect retained roots completely; unchanged skills are outside
+    scope and full deletions are informational. Any change inside a retained
+    plugin rechecks its manifest/LICENSE, and a plugin LICENSE change rechecks
+    every skill that inherits it. Incomplete propagates for bad revisions,
+    malformed Git output/paths, or exhausted budgets.
     """
     git.commit(base)
     git.commit(head)
+    inspect_skills(git, base, head, report)
+    inspect_plugins(git, base, head, report)
+    if not report.lines:
+        report.add("info", "no relevant skill changes")
+
+
+def inspect_plugins(git, base, head, report):
+    """Select changed plugins and their changed or license-dependent skills."""
+    before = git.tree(base).get(b"plugins")
+    parent = git.tree(head).get(b"plugins")
+    if before == parent:
+        return
+    if parent and parent[:2] != (b"040000", b"tree"):
+        report.add("fail", "plugins must be a directory", b"plugins")
+        return
+    names, children = changed_children(git, before, parent)
+    old_children = entries(git, before)
+    # plugins/README.md is the folder's documentation, not a plugin root.
+    names.discard(b"README.md")
+    if len(names) > MAX_PLUGINS:
+        raise Incomplete("affected plugin budget exceeded")
+    roots = 0
+    for name in sorted(names):
+        root = b"plugins/" + name
+        check_path(root)
+        entry = children.get(name)
+        if entry is None:
+            report.add("info", "plugin deleted", root)
+            continue
+        report.add("info", "inspecting plugin manifest and license", root)
+        inspect_plugin(git, root, entry, report)
+        old = old_children.get(name)
+        container = subtree(git, entry, b"skills")
+        if container and container[:2] != (b"040000", b"tree"):
+            report.add("fail", "skills must be a directory", root + b"/skills")
+            continue
+        selected, skills = changed_children(git, subtree(git, old, b"skills"), container)
+        old_skills = entries(git, subtree(git, old, b"skills"))
+        if subtree(git, old, b"LICENSE") != subtree(git, entry, b"LICENSE"):
+            selected |= skills.keys()
+        roots += len(selected)
+        if roots > MAX_SKILLS:
+            raise Incomplete("affected skill budget exceeded")
+        for skill in sorted(selected):
+            path = root + b"/skills/" + skill
+            check_path(path)
+            if skill not in skills:
+                if skill in old_skills:
+                    report.add("info", "skill deleted", path)
+                continue
+            report.add("info", "inspecting entire retained skill", path)
+            inspect_skill(git, path, skills[skill], report, inherited=True)
+
+
+def inspect_skills(git, base, head, report):
+    """Select and inspect changed top-level skills/<name> roots."""
     # Compare the two supplied commits directly (not a merge base). Disable
     # external diff/text conversions and rename pairing; -z preserves raw names.
     raw = git.run("diff", "--no-ext-diff", "--no-textconv", "--no-renames",
@@ -502,7 +638,6 @@ def inspect(git, base, head, report):
     before = git.tree(base).get(b"skills")
     parent = git.tree(head).get(b"skills")
     if before == parent and not touched:
-        report.add("info", "no relevant skill changes")
         return
     if parent and parent[:2] != (b"040000", b"tree"):
         report.add("fail", "skills must be a directory", b"skills")
