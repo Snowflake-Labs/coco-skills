@@ -6,8 +6,10 @@ validated PR event. Offline mode reads an existing trusted Git database; public
 fetch mode creates a temporary bare database and fetches from a constructed
 GitHub URL. Neither mode checks out the candidate tree. A NUL-delimited diff
 and direct-child tree comparison select changed skill roots, then the checker
-walks each retained root in full. Only SKILL.md and LICENSE blobs are decoded;
-support-file contents, including executable blobs, are not read or run.
+walks each retained root in full. Only SKILL.md and LICENSE blobs, plugin
+manifests and MCP configuration, the root README.md, and pinned license-template
+blobs are decoded; other support-file contents, including executable blobs, are
+not read or run. Link checks resolve target paths through tree listings only.
 
 The checker, interpreter, PyYAML installation, and local Git configuration are
 trusted inputs. In particular, --repository is not a sandbox for a hostile Git
@@ -38,7 +40,7 @@ import sys
 import tempfile
 import time
 import unicodedata
-from urllib.parse import quote_from_bytes
+from urllib.parse import quote_from_bytes, unquote
 
 try:
     import yaml
@@ -55,6 +57,29 @@ MAX_SKILL, MAX_LICENSE = 64 * 1024, 256 * 1024
 # Plugin manifests are small JSON documents; plugins are bounded separately
 # from skills because one plugin can contribute several skills.
 MAX_MANIFEST, MAX_PLUGINS = 64 * 1024, 20
+# Local link targets are resolved one tree lookup per path component, so the
+# link count and README size bound that extra work separately.
+MAX_LINKS, MAX_README = 200, 256 * 1024
+# Value-free secret indicators, aligned with the contained reviewer. Matches are
+# reported by fixed message and path only; matched text is never printed.
+SECRET_PATTERNS = tuple(re.compile(pattern) for pattern in (
+    r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----",
+    r"\bAKIA[A-Z0-9]{16}\b",
+    r"\bgh[pousr]_[A-Za-z0-9]{30,}\b",
+    r"\bgithub_pat_[A-Za-z0-9_]{40,}\b",
+    r"(?i)\b(?:password|api[_-]?key|secret[_-]?key|access[_-]?token)\s*[:=]\s*[\"']?[A-Za-z0-9/+_=.-]{12,}",
+))
+# Pinned repository LICENSE blobs (Git object IDs at 89c57c2), matching the
+# contained reviewer's license resource. Object IDs are content hashes, so a
+# candidate cannot alter them; they are read from the inspected Git database.
+LICENSE_TEMPLATES = (
+    ("apache", "full", "ed285bce8ed326efcb18a9cbf5344f6a7e29b67a"),       # dbt-model-generator
+    ("snowflake", "full", "3b8f57ee21e1eb2e7be2d7fe392fe5865417be63"),    # review-skill-sflabs
+    ("snowflake", "full", "aa7dd52e0fb24e64192ae62b120dd84342cfe205"),    # swap-databases
+    ("apache", "notice", "bf902d6efb6181924ef3f7c46236ee7ae89919af"),     # check-agent-access
+    ("apache", "notice", "6deb1b559796df764ce24b6a8530851998e494fb"),     # persist-memory
+    ("apache", "notice", "4cbcf78b8ea305ad1709c8680161e7a921583cef"),     # snowpro-study
+)
 # Git stdout AND stderr consume per-command and per-Git-instance byte budgets.
 # MAX_OUTPUT also caps the event document; diagnostic count caps report growth.
 MAX_OUTPUT, MAX_TOTAL, MAX_DIAGNOSTICS = 1024 * 1024, 16 * 1024 * 1024, 100
@@ -238,7 +263,156 @@ def metadata(data, directory, report, path):
             report.add("advisory", f"{field} exceeds the recommended length", path)
 
 
+def recommendations(data, report, path):
+    """Record advisory catalog-metadata gaps from a parsed mapping; return None.
+
+    Mirrors the contained reviewer: id/type/status/categories and an author or
+    authors claim are recommended; descriptions should start with "Use when",
+    include "Triggers:" guidance, and avoid first-person wording. Advisory only.
+    """
+    for field in ("id", "type", "status", "categories"):
+        if not data.get(field):
+            report.add("advisory", f"recommended metadata {field} is missing", path)
+    if not data.get("author") and not data.get("authors"):
+        report.add("advisory", "recommended metadata authors is missing", path)
+    description = data.get("description")
+    if isinstance(description, str) and description.strip():
+        if (not description.lstrip().startswith("Use when") or "triggers:" not in description.lower()
+                or re.search(r"\b(I|My|my|We|we|Our|our|Us|us)\b", description)):
+            report.add("advisory", "description should start with 'Use when', list 'Triggers:', "
+                       "and use third-person wording", path)
+
+
+def scan_secrets(text, report, path):
+    """Fail when text contains a value-free secret indicator; never echo it."""
+    if any(pattern.search(text) for pattern in SECRET_PATTERNS):
+        report.add("fail", "potential secret detected; value withheld", path)
+
+
+def normalize_license(text):
+    """Collapse ASCII whitespace and curly quotes, as the contained reviewer does."""
+    text = text.translate(str.maketrans({"\u201c": '"', "\u201d": '"', "\u2019": "'"}))
+    return re.sub(r"[ \t\r\n\f\v]+", " ", text).strip(" ")
+
+
+def license_match(context, text, report, path):
+    """Record an advisory when a LICENSE matches no pinned repository template.
+
+    Matching is evidence of identical text only, never legal approval, so all
+    outcomes are advisory. Templates come from pinned blob IDs in the inspected
+    Git database; if any are unavailable the comparison is skipped and noted.
+    """
+    if context.templates is None:
+        loaded = []
+        for _, kind, oid in LICENSE_TEMPLATES:
+            try:
+                loaded.append((kind, normalize_license(context.git.text(oid, MAX_LICENSE))))
+            except (Incomplete, Invalid):
+                continue
+        context.templates = tuple(loaded)
+    if not context.templates:
+        report.add("advisory", "pinned license templates unavailable; license text not compared", path)
+        return
+    normalized = normalize_license(text)
+    kinds = {kind for kind, template in context.templates if template == normalized}
+    if not kinds:
+        report.add("advisory", "LICENSE does not match a pinned repository license template"
+                   + ("" if len(context.templates) == len(LICENSE_TEMPLATES)
+                      else " (some pinned templates were unavailable)"), path)
+    elif "full" not in kinds:
+        report.add("advisory", "LICENSE matches a legacy notice only, not full license terms", path)
+
+
+def heading_slugs(lines):
+    """Return GitHub-style anchors for ATX headings outside fenced code blocks."""
+    slugs, seen, fence = set(), {}, None
+    for line in lines:
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            fence = None if fence and marker[1][0] == fence else (fence or marker[1][0])
+            continue
+        title = None if fence else re.match(r"^ {0,3}#{1,6}\s+(.+?)\s*#*\s*$", line)
+        if title:
+            slug = re.sub(r"[^\w\- ]", "", title[1].strip().lower()).replace(" ", "-")
+            count = seen.get(slug, 0)
+            seen[slug] = count + 1
+            slugs.add(slug if not count else f"{slug}-{count}")
+    return slugs
+
+
+def resolve(context, tree, parts):
+    """Return True when relative path parts name an entry under tree."""
+    entry = tree
+    for part in parts:
+        entry = subtree(context.git, entry, part)
+        if entry is None:
+            return False
+    return True
+
+
+def check_links(context, root, entry, text, report, path):
+    """Advise on local SKILL.md links that are missing or escape the bundle.
+
+    Inline links and reference definitions outside fenced code are checked.
+    External URLs are skipped. A same-file #fragment must match a heading. Other
+    targets must exist; a top-level skill must stay within its own folder, while
+    a plugin skill may reference anything inside its plugin. Target file
+    contents are never read. At most MAX_LINKS targets are resolved.
+    """
+    lines = text.splitlines()
+    anchors = heading_slugs(lines)
+    parts = root.split(b"/")
+    # plugins/<p>/skills/<s> may reach plugins/<p>; skills/<s> stays in itself.
+    bundle_depth = 2 if parts[0] == b"plugins" else 0
+    bundle = context.head_entry(parts[:2]) if bundle_depth else entry
+    targets, fence = [], None
+    for number, line in enumerate(lines, 1):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            fence = None if fence and marker[1][0] == fence else (fence or marker[1][0])
+            continue
+        if fence:
+            continue
+        line = re.sub(r"`[^`]*`", "", line)
+        found = re.findall(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)", line)
+        found += re.findall(r"^ {0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)", line)
+        targets.extend((target, number) for target in found)
+    if len(targets) > MAX_LINKS:
+        report.add("advisory", "too many local links; only the first links were checked", path)
+    for target, number in targets[:MAX_LINKS]:
+        if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) or target.startswith("//"):
+            continue
+        location, _, fragment = target.partition("#")
+        location = unquote(location.split("?", 1)[0])
+        fragment = unquote(fragment)
+        if not location:
+            if fragment and fragment.lower() not in anchors:
+                report.add("advisory", f"line {number}: heading anchor not found in this file", path)
+            continue
+        if location.startswith("/"):
+            report.add("advisory", f"line {number}: absolute local link escapes the bundle", path)
+            continue
+        # Express the target relative to the bundle root, then resolve it there.
+        combined = list(parts[bundle_depth:] if bundle_depth else [])
+        escaped = False
+        for part in location.encode("utf-8", "surrogatepass").split(b"/"):
+            if part in (b"", b"."):
+                continue
+            if part == b"..":
+                if not combined:
+                    escaped = True
+                    break
+                combined.pop()
+            else:
+                combined.append(part)
+        if escaped:
+            report.add("advisory", f"line {number}: local link escapes the bundle", path)
+        elif not resolve(context, bundle, combined):
+            report.add("advisory", f"line {number}: local link target not found", path)
+
+
 def check_sha(value):
+
     """Return an exact lowercase 40-hex revision string, or raise Incomplete.
 
     This checks syntax only; Git.commit must separately verify object existence,
@@ -423,7 +597,7 @@ class Git:
         return text
 
 
-def inspect_skill(git, root, entry, report, inherited=False):
+def inspect_skill(git, root, entry, report, inherited=False, context=None):
     """Inspect one retained skill tree and add findings; return None.
 
     git reads objects, root is a validated byte path, and entry is its tree-entry
@@ -476,13 +650,21 @@ def inspect_skill(git, root, entry, report, inherited=False):
             continue
         try:
             text = git.text(required[name], limit)
+            scan_secrets(text, report, path)
             if name == b"SKILL.md":
-                metadata(frontmatter(text), root.rsplit(b"/", 1)[1].decode("utf-8"), report, path)
+                data = frontmatter(text)
+                metadata(data, root.rsplit(b"/", 1)[1].decode("utf-8"), report, path)
+                if context is not None:
+                    recommendations(data, report, path)
+                    collisions(context, root, data, report, path)
+                    check_links(context, root, entry, text, report, path)
+            elif context is not None:
+                license_match(context, text, report, path)
         except Invalid as error:
             report.add("fail", str(error), path)
 
 
-def inspect_plugin(git, root, entry, report):
+def inspect_plugin(git, root, entry, report, context=None):
     """Check one retained plugin's required files; return None.
 
     Follows plugins/README.md: .cortex-plugin/plugin.json is a JSON object with
@@ -503,7 +685,10 @@ def inspect_plugin(git, root, entry, report):
         report.add("fail", "missing required regular file", path)
     else:
         try:
-            git.text(license[2], MAX_LICENSE)
+            text = git.text(license[2], MAX_LICENSE)
+            scan_secrets(text, report, path)
+            if context is not None:
+                license_match(context, text, report, path)
         except Invalid as error:
             report.add("fail", str(error), path)
     path = root + b"/.cortex-plugin/plugin.json"
@@ -528,6 +713,87 @@ def inspect_plugin(git, root, entry, report):
             report.add("fail", f"{field} must be a nonblank string", path)
     if isinstance(data.get("name"), str) and data["name"] != name.decode("utf-8"):
         report.add("fail", "plugin name must match the directory", path)
+    if context is not None:
+        check_mcp(git, root, children, data, report)
+        check_readme(context, root, report)
+
+
+def check_mcp(git, root, children, manifest, report):
+    """Validate a plugin's MCP server configuration shape; return None.
+
+    The manifest may inline mcpServers as an object or name a plugin-relative
+    JSON file; otherwise a root .mcp.json is used when present. The file must be
+    a JSON object with an mcpServers object whose entries each have a string url
+    or command. Local commands and non-HTTPS URLs are advisory review prompts.
+    Configuration values are never printed; secret indicators fail by path.
+    """
+    source = manifest.get("mcpServers")
+    if isinstance(source, dict):
+        data, path = {"mcpServers": source}, root + b"/.cortex-plugin/plugin.json"
+    else:
+        if isinstance(source, str):
+            parts = [part for part in source.encode("utf-8", "surrogatepass").split(b"/")
+                     if part not in (b"", b".")]
+            if not parts or b".." in parts:
+                report.add("fail", "plugin manifest mcpServers must name a file inside the plugin",
+                           root + b"/.cortex-plugin/plugin.json")
+                return
+        elif source is None:
+            parts = [b".mcp.json"]
+            if b".mcp.json" not in children:
+                return
+        else:
+            report.add("fail", "plugin manifest mcpServers must be an object or file path",
+                       root + b"/.cortex-plugin/plugin.json")
+            return
+        path = root + b"/" + b"/".join(parts)
+        check_path(path)
+        entry, tree = None, children
+        for part in parts:
+            entry = tree.get(part)
+            tree = git.tree(entry[2]) if entry and entry[:2] == (b"040000", b"tree") else {}
+        if not entry or entry[:2] not in ((b"100644", b"blob"), (b"100755", b"blob")):
+            report.add("fail", "MCP configuration file is missing or not a regular file", path)
+            return
+        try:
+            text = git.text(entry[2], MAX_MANIFEST)
+            scan_secrets(text, report, path)
+            data = json.loads(text)
+        except Invalid as error:
+            report.add("fail", str(error), path)
+            return
+        except (ValueError, RecursionError):
+            report.add("fail", "MCP configuration must be valid JSON", path)
+            return
+    servers = data.get("mcpServers") if isinstance(data, dict) else None
+    if not isinstance(servers, dict):
+        report.add("fail", "MCP configuration must contain an mcpServers object", path)
+        return
+    if len(servers) > MAX_PLUGINS:
+        report.add("advisory", "too many MCP servers; only the first servers were checked", path)
+    for server in list(servers.values())[:MAX_PLUGINS]:
+        url = server.get("url") if isinstance(server, dict) else None
+        command = server.get("command") if isinstance(server, dict) else None
+        if not isinstance(url, str) and not isinstance(command, str):
+            report.add("fail", "each MCP server must be an object with a string url or command", path)
+        elif isinstance(command, str):
+            report.add("advisory", "MCP server runs a local command; review it before installing", path)
+        elif not url.startswith("https://"):
+            report.add("advisory", "MCP server URL does not use HTTPS", path)
+
+
+def check_readme(context, root, report):
+    """Advise when a plugin has no link from the root README Plugins table."""
+    entry = context.head_entry([b"README.md"])
+    if not entry or entry[:2] not in ((b"100644", b"blob"), (b"100755", b"blob")):
+        return
+    try:
+        text = context.git.text(entry[2], MAX_README)
+    except Invalid:
+        return
+    name = re.escape(root.split(b"/")[1].decode("utf-8"))
+    if not re.search(r"\]\(\s*(?:\./)?plugins/" + name + r"/?\s*\)", text):
+        report.add("advisory", "plugin is not listed in the root README Plugins table", root)
 
 
 def subtree(git, entry, name):
@@ -552,6 +818,55 @@ def entries(git, entry):
     return git.tree(entry[2]) if entry and entry[:2] == (b"040000", b"tree") else {}
 
 
+class Context:
+    """Per-run lookups over the head commit shared by skill and plugin checks.
+
+    Holds the Git reader, the head root tree, lazily loaded license templates,
+    and a lazily built map of skill directory names to their roots. Only tree
+    listings are used for names; other skills' files are never decoded.
+    """
+
+    def __init__(self, git, head):
+        self.git = git
+        # A commit ID lists its root tree, so it can stand in for a tree entry.
+        self.root = (b"040000", b"tree", head)
+        self.templates = None
+        self._names = None
+
+    def head_entry(self, parts):
+        """Return the head tree entry for byte path parts, or None."""
+        entry = self.root
+        for part in parts:
+            entry = subtree(self.git, entry, part)
+            if entry is None:
+                return None
+        return entry
+
+    def names(self):
+        """Return {skill directory name: [roots]} for skills/* and plugins/*/skills/*."""
+        if self._names is None:
+            found = {}
+            for name in entries(self.git, self.head_entry([b"skills"])):
+                found.setdefault(name, []).append(b"skills/" + name)
+            for plugin in entries(self.git, self.head_entry([b"plugins"])):
+                for name in entries(self.git, self.head_entry([b"plugins", plugin, b"skills"])):
+                    found.setdefault(name, []).append(b"plugins/" + plugin + b"/skills/" + name)
+            self._names = found
+        return self._names
+
+
+def collisions(context, root, data, report, path):
+    """Advise when a skill's folder or frontmatter name is used by another skill."""
+    names = context.names()
+    folder = root.rsplit(b"/", 1)[1]
+    if any(other != root for other in names.get(folder, ())):
+        report.add("advisory", "skill folder name is also used by another skill in this repository", path)
+    name = data.get("name")
+    if isinstance(name, str) and name.encode("utf-8", "surrogatepass") != folder:
+        if names.get(name.encode("utf-8", "surrogatepass")):
+            report.add("advisory", "skill name matches another skill folder in this repository", path)
+
+
 def inspect(git, base, head, report):
     """Compare exact commits and report changed skills and plugins; return None.
 
@@ -565,13 +880,14 @@ def inspect(git, base, head, report):
     """
     git.commit(base)
     git.commit(head)
-    inspect_skills(git, base, head, report)
-    inspect_plugins(git, base, head, report)
+    context = Context(git, head)
+    inspect_skills(git, base, head, report, context)
+    inspect_plugins(git, base, head, report, context)
     if not report.lines:
         report.add("info", "no relevant skill changes")
 
 
-def inspect_plugins(git, base, head, report):
+def inspect_plugins(git, base, head, report, context=None):
     """Select changed plugins and their changed or license-dependent skills."""
     before = git.tree(base).get(b"plugins")
     parent = git.tree(head).get(b"plugins")
@@ -595,7 +911,7 @@ def inspect_plugins(git, base, head, report):
             report.add("info", "plugin deleted", root)
             continue
         report.add("info", "inspecting plugin manifest and license", root)
-        inspect_plugin(git, root, entry, report)
+        inspect_plugin(git, root, entry, report, context)
         old = old_children.get(name)
         container = subtree(git, entry, b"skills")
         if container and container[:2] != (b"040000", b"tree"):
@@ -616,10 +932,10 @@ def inspect_plugins(git, base, head, report):
                     report.add("info", "skill deleted", path)
                 continue
             report.add("info", "inspecting entire retained skill", path)
-            inspect_skill(git, path, skills[skill], report, inherited=True)
+            inspect_skill(git, path, skills[skill], report, inherited=True, context=context)
 
 
-def inspect_skills(git, base, head, report):
+def inspect_skills(git, base, head, report, context=None):
     """Select and inspect changed top-level skills/<name> roots."""
     # Compare the two supplied commits directly (not a merge base). Disable
     # external diff/text conversions and rename pairing; -z preserves raw names.
@@ -660,7 +976,7 @@ def inspect_skills(git, base, head, report):
             report.add("info", "skill deleted", root)
         else:
             report.add("info", "inspecting entire retained skill", root)
-            inspect_skill(git, root, entry, report)
+            inspect_skill(git, root, entry, report, context=context)
 
 
 def event_revisions(path, expected):

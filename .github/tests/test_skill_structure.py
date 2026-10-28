@@ -251,7 +251,10 @@ class GitTests(unittest.TestCase):
         self.assertFalse(marker.exists())
         # Exactly two reads and size probes belong to SKILL.md and LICENSE,
         # not the executable or large binary support blob. Marker absence alone
-        # would not prove those support contents were never read.
+        # would not prove those support contents were never read. Pinned
+        # license-template probes use fixed trusted IDs and are excluded.
+        templates = {oid for _, _, oid in checker.LICENSE_TEMPLATES}
+        calls = [args for args in calls if not (len(args) > 2 and args[2] in templates)]
         self.assertEqual(sum(args[:2] == ("cat-file", "blob") for args in calls), 2)
         self.assertEqual(sum(args[:2] == ("cat-file", "-s") for args in calls), 2)
         self.assertIn("--no-renames", next(args for args in calls if args[0] == "diff"))
@@ -562,6 +565,121 @@ class GitTests(unittest.TestCase):
         self.assertEqual(status, 0, output)
         self.assertIn("plugin deleted", output)
         self.assertNotIn("kept", output)
+
+    def test_recommended_metadata_and_description_are_advisory(self):
+        """Advise on missing catalog metadata and description guidance without failing."""
+        self.skill()
+        status, output = self.run_check()
+        self.assertEqual(status, 0, output)
+        for field in ("id", "type", "status", "categories", "authors"):
+            self.assertIn(f"recommended metadata {field} is missing", output)
+        self.assertIn("description should start with 'Use when'", output)
+        self.skill(content=b"---\nname: example\nid: example\ntype: community\nstatus: beta\n"
+                           b"categories: [data]\nauthors: [Someone]\n"
+                           b"description: \"Use when checking. Triggers: check\"\n---\n")
+        status, output = self.run_check()
+        self.assertEqual(status, 0, output)
+        self.assertNotIn("recommended metadata", output)
+        self.assertNotIn("description should", output)
+
+    def test_secret_indicator_fails_without_echoing_value(self):
+        """Fail on a value-free secret pattern and never print the matched text."""
+        token = "ghp_" + "A1b2C3d4" * 5
+        self.skill(content=VALID + f"Use token {token}\n".encode())
+        status, output = self.run_check()
+        self.assertEqual(status, 1, output)
+        self.assertIn("potential secret detected; value withheld", output)
+        self.assertNotIn(token, output)
+
+    def test_name_collisions_across_skills_and_plugins(self):
+        """Advise when folder or frontmatter names are reused elsewhere in the repo."""
+        self.skill("shared")
+        base = self.commit()
+        self.plugin()
+        self.put("plugins/example-plugin/skills/shared/SKILL.md", VALID)
+        self.put("plugins/example-plugin/skills/other/SKILL.md", VALID.replace(b"Example", b"shared"))
+        status, output = self.run_check(base=base)
+        self.assertEqual(status, 0, output)
+        self.assertIn("skill folder name is also used by another skill", output)
+        self.assertIn("skill name matches another skill folder", output)
+
+    def test_license_template_match_is_advisory(self):
+        """Compare LICENSE text with pinned repository templates, advisory only."""
+        source = Path(__file__).resolve().parents[2] / "skills/dbt-model-generator/LICENSE"
+        if not source.exists():
+            self.skipTest("pinned license source unavailable in this checkout")
+        # The fixture must hold the pinned blob for templates to be available.
+        self.put("templates/LICENSE", source.read_bytes())
+        base = self.commit()
+        self.skill(license=b"Some other license\n")
+        status, output = self.run_check(base=base)
+        self.assertEqual(status, 0, output)
+        self.assertIn("LICENSE does not match a pinned repository license template", output)
+        self.skill(license=source.read_bytes())
+        status, output = self.run_check(base=base)
+        self.assertNotIn("does not match a pinned", output)
+        self.assertNotIn("templates unavailable", output)
+
+    def test_local_links_anchors_and_bundle_boundaries(self):
+        """Check local link targets and anchors without reading target contents."""
+        body = (b"## Optional: next step\n\n[ok](notes.md) [miss](nope.md) [up](../other/SKILL.md)\n"
+                b"[a](#optional-next-step) [b](#absent) [web](https://example.invalid/x)\n"
+                b"```\n[ignored](zzz.md)\n```\n[ref]: missing-ref.md\n")
+        self.skill(content=VALID + body)
+        self.skill("other")
+        self.put("skills/example/notes.md", b"notes\n")
+        status, output = self.run_check()
+        self.assertEqual(status, 0, output)
+        # VALID is six lines, so the body's link lines are file lines 9, 10 and 14.
+        self.assertIn("line 9: local link target not found", output)
+        self.assertIn("line 9: local link escapes the bundle", output)
+        self.assertIn("line 10: heading anchor not found", output)
+        self.assertIn("line 14: local link target not found", output)
+        self.assertNotIn("line 10: local link", output)
+        self.assertNotIn("zzz", output)
+        self.assertEqual(output.count("local link target not found"), 2)
+        self.plugin()
+        self.put("plugins/example-plugin/SETUP.md", b"setup\n")
+        self.put("plugins/example-plugin/skills/good/SKILL.md", VALID + b"[s](../../SETUP.md) [x](../../../escape.md)\n")
+        status, output = self.run_check()
+        self.assertIn("plugins/example-plugin/skills/good/SKILL.md", output)
+        self.assertEqual(output.count("escapes the bundle"), 2, output)
+
+    def test_mcp_configuration_shape(self):
+        """Validate .mcp.json shape and flag local commands and non-HTTPS URLs."""
+        cases = ((b'{"mcpServers": {"a": {"type": "http", "url": "https://example.invalid/mcp"}}}', 0, None),
+                 (b'{"mcpServers": {"a": {"command": "npx"}}}', 0, "runs a local command"),
+                 (b'{"mcpServers": {"a": {"url": "http://example.invalid"}}}', 0, "does not use HTTPS"),
+                 (b'{"servers": {}}', 1, "must contain an mcpServers object"),
+                 (b'{"mcpServers": {"a": {"type": "http"}}}', 1, "string url or command"),
+                 (b"{not json", 1, "must be valid JSON"))
+        for config, expected, message in cases:
+            with self.subTest(config=config):
+                shutil.rmtree(self.repo / "plugins", ignore_errors=True)
+                self.plugin()
+                self.put("plugins/example-plugin/.mcp.json", config)
+                status, output = self.run_check()
+                self.assertEqual(status, expected, output)
+                if message:
+                    self.assertIn(message, output)
+        shutil.rmtree(self.repo / "plugins")
+        manifest = json.dumps({"name": "example-plugin", "version": "1", "description": "d",
+                               "mcpServers": "./missing.json"}).encode()
+        self.plugin(manifest=manifest)
+        status, output = self.run_check()
+        self.assertEqual(status, 1, output)
+        self.assertIn("MCP configuration file is missing", output)
+
+    def test_readme_plugin_row(self):
+        """Advise when a plugin has no link from the root README."""
+        self.put("README.md", b"# Repo\n")
+        self.plugin()
+        status, output = self.run_check()
+        self.assertEqual(status, 0, output)
+        self.assertIn("plugin is not listed in the root README", output)
+        self.put("README.md", b"| [`example-plugin`](plugins/example-plugin) | Does things |\n")
+        status, output = self.run_check()
+        self.assertNotIn("not listed in the root README", output)
 
     def test_summary_env_ignored_and_write_failure_is_incomplete(self):
         """Require an explicit summary path and fail incomplete if writing it fails."""
