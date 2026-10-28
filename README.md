@@ -90,6 +90,7 @@ Plugins in this repo:
 
 | Plugin | What it does |
 | --- | --- |
+| [`supaflow`](plugins/supaflow) | Build and manage ETL pipelines and dbt Core workflows through hosted OAuth MCP; optionally set up the Supaflow Native App to run pipelines inside Snowflake. |
 | [`xo`](plugins/xo) | General purpose Data Engineering Harness — automatic cross-session memory and recall, composable workflow stages, and specialised subagents, amongst many other best-practice token-efficient strategies. |
 
 ---
