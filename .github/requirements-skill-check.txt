@@ -1,0 +1,27 @@
+# This is the trusted checker's installation input, not candidate skill metadata.
+# Exactly one artifact is allowed for the workflow's CPython 3.12 Linux x64
+# environment. cp312-cp312 means that interpreter/ABI; x86_64 and the manylinux
+# platform tags select a compatible Linux wheel, not macOS/ARM or arbitrary Python.
+# No source distributions or transitive dependencies are listed. The workflow's
+# --require-hashes and --only-binary=:all: enforce artifact matching and prohibit
+# source builds; the lock alone does not force an installer to use those options.
+# A different platform/version should fail rather than fall back to building code.
+#
+# Recorded provenance (not re-queried by the local contract tests):
+# Verified 2026-10-21: https://pypi.org/pypi/PyYAML/6.0.3/json
+# Artifact: pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+# Official release metadata: requires_dist=null, yanked=false.
+# The hash pins these bytes, not their safety or the authority of this workflow.
+#
+# To update: review the proposed release and official version-specific JSON;
+# select the wheel matching the workflow interpreter/ABI/platform, check its
+# filename, SHA-256, yanked status, and requires_dist, and verify downloaded bytes
+# against that digest. Review any new dependencies and hash-lock their wheels too
+# rather than relaxing binary-only/hash checks. Update this provenance, requirement,
+# and fixed test expectations together; coordinate any Python/runner change.
+# Run the trusted local suite and validate installation on the target Linux x64
+# interpreter. Contract tests compare recorded literals, not live PyPI responses.
+# The workflow reads this file from the reviewed base, so changing a PR's lock
+# does not test that candidate lock in CI until it becomes part of the base.
+PyYAML==6.0.3 \
+    --hash=sha256:ba1cc08a7ccde2d2ec775841541641e4548226580ab850948cbfda66a1befcdc
