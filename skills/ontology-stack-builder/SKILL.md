@@ -1,9 +1,10 @@
 ---
 name: ontology-stack-builder
-title: Build Ontology Stack on Snowflake
+id: ontology-stack-builder
+title: Build Snowflake Ontology Stack
 summary: Builds the Ontology-on-Snowflake stack from any schema, and migrates existing stacks into native Business Ontology.
 description: >-
-  Use for ALL requests that mention: ontology, knowledge graph, semantic layer from schema,
+  Use when a request mentions: ontology, knowledge graph, semantic layer from schema,
   ontology-on-snowflake, abstract views, ontology metadata tables, KG_NODE, KG_EDGE,
   build ontology stack, generate ontology from tables, ontology layer generation,
   map tables to ontology, generate cortex agent config.
@@ -31,7 +32,9 @@ prompt: "$ontology-stack-builder Build an ontology stack on MY_DB.MY_SCHEMA usin
 language: en
 status: Published
 author: Tianxia Jia
+authors: Tianxia Jia
 type: snowflake
+categories: ontology, knowledge-graph, business-ontology, migration
 demo-url: https://medium.com/snowflake/ontology-on-snowflake-from-architecture-to-deployment-with-a-cortex-code-skill-197866ce9c9f
 ---
 

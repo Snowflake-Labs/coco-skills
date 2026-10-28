@@ -15,7 +15,7 @@ Read [MAPPING.md](MAPPING.md) before starting. It is the contract for what maps 
 - **The user names the domain.** Never derive it from the schema or ontology name without asking.
 - **Read back before reporting.** BON can return `error: false` for writes that never persist. Counts come from `bon_reconcile.py`, never from the write log.
 - **Nothing destructive without a separate confirmation.** M7b (archive and drop) has its own gate and clones before it drops.
-- **BON is Private Preview.** If any `SYSTEM$*GLOSSARY*` call returns a feature-gate error, stop and tell the user: *Business Ontology is not enabled in this account; ask your account admin to enable it.*
+- **BON may not be enabled.** At the time of writing BON is in Private Preview. If any `SYSTEM$*GLOSSARY*` call returns a feature-gate error, stop and tell the user: *Business Ontology is not enabled in this account; ask your account admin to enable it.*
 
 All scripts run with `uv` from the skill directory:
 
@@ -25,7 +25,7 @@ cd <skill_dir> && uv run --extra migration python scripts/<script>.py ...
 
 `{OUT}` below is the working directory for one migration (default `/tmp/bon_migration`). Use one directory per stack and pass the same value to every script (`--out` for `export_to_bon.py` and `bon_agent_cutover.py`, `--input-dir` for the others) so all artifacts land together.
 
-Stacks do not always follow the generator's names. Find the real objects in M0 and use those names everywhere: the data semantic view is not always `{ONT}_BASE`, and the agent is not always `{ONT}_AGENT` (for example `STOCK_AGENT_ONT_KG`).
+Stacks do not always follow the generator's names. Find the real objects in M0 and use those names everywhere: the data semantic view is not always `{ONT}_BASE`, and the agent is not always `{ONT}_AGENT` (for example `MY_ONT_AGENT`).
 
 ## Workflow
 
@@ -94,7 +94,7 @@ Re-run M1 with `--rel-type-override REL=TYPE` or edits to the JSON files as need
 
 ### M3: Apply nodes, relationships and representations
 
-Run the BON quality gate first when the `business-ontology` skill is installed (`~/.snowflake/cortex/skills/business-ontology` or the bundled location):
+Run the BON quality gate first when the `business-ontology` skill is installed. It ships `scripts/ontology_rule_check.py`; this skill does not. `<business_ontology_dir>` is that skill's folder: `~/.snowflake/cortex/skills/business-ontology` for a user install, otherwise the base directory shown when `$business-ontology` loads. If it is not installed, say so at Gate M3 and continue; BON's own API checks still apply.
 
 ```bash
 N=$(python3 -c "import json;print(len(json.load(open('{OUT}/candidates.json'))))")

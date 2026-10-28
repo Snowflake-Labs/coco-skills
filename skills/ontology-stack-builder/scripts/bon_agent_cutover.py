@@ -49,7 +49,7 @@ def replaced_tools(spec: dict) -> list[str]:
     """Analyst tools pointing at the stack's ontology/metadata semantic models.
 
     Only the tool name and the model's own name (file or semantic view, last path
-    segment) are matched: database names such as ONTOLOGY_DB must not count.
+    segment) are matched: database names such as MY_ONTOLOGY_DB must not count.
     """
     out = []
     for t in spec.get("tools", []):

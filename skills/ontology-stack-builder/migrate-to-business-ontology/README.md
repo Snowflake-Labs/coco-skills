@@ -29,13 +29,13 @@ If you are starting fresh and have no stack yet, you do not need this: use the `
 
 | Requirement | How to check |
 |---|---|
-| **Business Ontology enabled on the account.** BON is in Private Preview; your account team enables it. | `SELECT SYSTEM$GET_GLOSSARY_SUMMARY();` returns JSON with `"error":false`. A feature-gate error means it is not enabled. |
+| **Business Ontology enabled on the account.** At the time of writing BON is in Private Preview; your account team enables it. | `SELECT SYSTEM$GET_GLOSSARY_SUMMARY();` returns JSON with `"error":false`. A feature-gate error means it is not enabled. |
 | **An ontology stack** in one schema | `SHOW TABLES LIKE 'ONT_CLASS' IN SCHEMA MY_DB.MY_SCHEMA;` returns a row |
 | **A role** that can read the stack schema, create tables and agents in it, and create and approve BON domains, nodes, relationships and representations | All tests so far used `ACCOUNTADMIN`. A least-privilege role has not been verified yet. |
 | **Cortex Code** with this skill installed | `$ontology-stack-builder` is available in Cortex Code |
 | **`uv`** and **Python 3.10+** on the machine running Cortex Code | `uv --version` |
 | **A Snowflake connection** in `~/.snowflake/connections.toml` | `snow connection list`, or the connection picker in Cortex Code |
-| **Recommended: the `business-ontology` skill** installed, for the BON quality gate | `~/.snowflake/cortex/skills/business-ontology` exists |
+| **Recommended: the `business-ontology` skill** installed. It provides `scripts/ontology_rule_check.py`, the BON quality gate used in M3 and M4; without it the gate is skipped and only the API's own checks apply. | `~/.snowflake/cortex/skills/business-ontology` exists, or `$business-ontology` loads in Cortex Code |
 
 ---
 
@@ -53,7 +53,7 @@ The skill detects your stack and walks you through the steps below. It stops and
 
 ## 3. The steps, one by one
 
-Each step lists what happens, what you are asked, and what success looks like. The example numbers come from a real run on a stock market stack (`DB_STOCK.ONTOLOGY_KG`, 8 classes, KG path).
+Each step lists what happens, what you are asked, and what success looks like. The example numbers come from a real run on a stock market stack (KG path, 8 classes).
 
 ### M0. Preflight (read-only)
 
@@ -63,7 +63,7 @@ Each step lists what happens, what you are asked, and what success looks like. T
 
 If the schema holds more than one ontology, you are also asked which one. Migrate each ontology into its own domain, one run each.
 
-**Success:** a summary such as "1 ontology STOCK, 14 ONT_* tables, 3 semantic views, agent STOCK_AGENT_ONT_KG".
+**Success:** a summary such as "1 ontology STOCK, 14 ONT_* tables, 3 semantic views, agent MY_ONT_AGENT".
 
 ### M1. Extract (read-only)
 
@@ -112,7 +112,7 @@ If you chose "save as drafts", it stops after the node drafts. You review them i
 
 ### M6. Agent cutover (creates a new agent)
 
-**What happens:** the skill copies your agent to a new one (for example `STOCK_KG_BON_AGENT`). In the copy it removes the ontology and metadata query tools, keeps your data and graph tools, and adds native BON search. **Your original agent is not modified.**
+**What happens:** the skill copies your agent to a new one (for example `MY_BON_AGENT`). In the copy it removes the ontology and metadata query tools, keeps your data and graph tools, and adds native BON search. **Your original agent is not modified.**
 
 It then asks both agents the same questions (at least one *"What does X mean?"*) and writes a side-by-side comparison, `agent_compare.md`.
 
@@ -264,9 +264,9 @@ Tested so far:
 
 | Stack | Layout | Result |
 |---|---|---|
-| Soccer, `ONTOLOGY_DB.SOCCER_KG` | reference repo | 13 nodes / 18 relationships / 20 representations, parity 100% |
-| Stock, `DB_STOCK.ONTOLOGY_TEST` | direct path | 9 / 12 / 17, parity 100% |
-| Stock, `DB_STOCK.ONTOLOGY_KG` | KG path | 8 / 10 / 28, parity 100%; run end to end by a fresh agent from these docs alone |
+| Soccer stack | reference repo | 13 nodes / 18 relationships / 20 representations, parity 100% |
+| Stock stack | direct path | 9 / 12 / 17, parity 100% |
+| Stock stack | KG path | 8 / 10 / 28, parity 100%; run end to end by a fresh agent from these docs alone |
 
 These were also exercised: drafts, migrating into an existing domain, multi-ontology schemas, live metrics, and M7 on a clone.
 
@@ -274,7 +274,7 @@ These were also exercised: drafts, migrating into an existing domain, multi-onto
 
 ## 9. Known limits
 
-- **BON is Private Preview.** API behavior can change. The new agent needs the preview flag `EnableSnowscopeBusinessOntologySearch`, which the skill sets.
+- **Preview status.** At the time of writing BON is in Private Preview, so API behavior can change. The new agent needs the preview flag `EnableSnowscopeBusinessOntologySearch`, which the skill sets.
 - **Search index lag.** New domains take 5+ minutes to appear in BON search; deletes take longer.
 - **BON search spans all domains.** The new agent is instructed to put your domain name in every BON query, so results from other domains do not crowd yours out.
 - **Staged semantic model YAML** (`@...SEMANTIC_MODELS/*.yml`, used by reference-repo stacks) is out of scope. Metrics, filters and verified queries stay with the semantic layer.

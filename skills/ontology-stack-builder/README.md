@@ -183,7 +183,7 @@ Not every domain needs every feature. The skill surfaces these as explicit choic
 
 ## Migrating to Snowflake Business Ontology (Path M)
 
-If you already built a stack with this skill (or by hand from the `ontology-on-snowflake` reference repo), the skill can move its business meaning into Snowflake native **Business Ontology** (BON). BON is currently Private Preview and must be enabled on the account.
+If you already built a stack with this skill (or by hand from the `ontology-on-snowflake` reference repo), the skill can move its business meaning into Snowflake native **Business Ontology** (BON). At the time of writing, BON is in Private Preview and must be enabled on the account.
 
 **Step-by-step guide: [migrate-to-business-ontology/README.md](migrate-to-business-ontology/README.md)** (prerequisites, every step and question, worked example, rollback, testing checklist).
 

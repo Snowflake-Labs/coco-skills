@@ -354,10 +354,10 @@ def test_agent_spec_builder():
         ],
         "tool_resources": {
             # database name contains "ONTOLOGY": must not cause a drop
-            "query_soccer_data": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_semantic_model.yml"},
-            "query_soccer_ontology": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_semantic_model_ontology.yml"},
-            "kg_tool": {"semantic_model_file": "@ONTOLOGY_DB.SOCCER_KG.SEMANTIC_MODELS/soccer_metadata_governance_model.yml"},
-            "sv_tool": {"semantic_view": "ONTOLOGY_DB.SOCCER_KG.SOCCER_BASE"},
+            "query_soccer_data": {"semantic_model_file": "@MY_ONTOLOGY_DB.MY_SCHEMA.SEMANTIC_MODELS/soccer_semantic_model.yml"},
+            "query_soccer_ontology": {"semantic_model_file": "@MY_ONTOLOGY_DB.MY_SCHEMA.SEMANTIC_MODELS/soccer_semantic_model_ontology.yml"},
+            "kg_tool": {"semantic_model_file": "@MY_ONTOLOGY_DB.MY_SCHEMA.SEMANTIC_MODELS/soccer_metadata_governance_model.yml"},
+            "sv_tool": {"semantic_view": "MY_ONTOLOGY_DB.MY_SCHEMA.SOCCER_BASE"},
             "centrality_tool": {"type": "function"},
         },
         "instructions": {"orchestration": "original"},
