@@ -1,6 +1,17 @@
 ---
-name: using-supaflow
-description: Build, run, monitor, and troubleshoot Supaflow data pipelines through the hosted Supaflow integration.
+name: "using-supaflow"
+id: "using-supaflow"
+title: "Operate Supaflow Pipelines"
+summary: "Prepare, run, monitor, and troubleshoot ETL pipelines and dbt Core workflows through hosted Supaflow MCP tools."
+description: "Use when preparing, running, monitoring, scheduling, or troubleshooting Supaflow ETL pipelines and dbt Core workflows. Uses the connected hosted Supaflow MCP server and the selected workspace. Does not administer local agents or install Native Apps. Triggers: Supaflow pipeline, Salesforce to Snowflake, dbt Core workflow, monitor ETL job, schedule pipeline, troubleshoot sync."
+tools: []
+prompt: "Plan a Salesforce-to-Snowflake pipeline for Accounts, then ask me before creating it."
+language: "en"
+status: "Published"
+author: "Supaflow LLC"
+authors: ["Supaflow LLC"]
+type: "community"
+categories: ["Data Engineering", "ETL"]
 ---
 
 # Operate Supaflow pipelines

@@ -1,6 +1,17 @@
 ---
-name: setup
-description: Help users get started with the hosted Supaflow plugin, connect or reconnect their account, choose a workspace, and check available connections. Use for onboarding and setup readiness, not ongoing pipeline operations or local CLI setup.
+name: "setup"
+id: "setup"
+title: "Connect Supaflow"
+summary: "Connect a Supaflow account, select a workspace, and inspect existing connections without changing resources."
+description: "Use when connecting or reconnecting the hosted Supaflow plugin, selecting a workspace, or checking onboarding readiness. Verifies identity and lists existing connections read-only. Does not create pipelines, install Native Apps, or manage local agents. Triggers: connect Supaflow, reconnect Supaflow, choose workspace, Supaflow onboarding, check connections."
+tools: []
+prompt: "Connect to Supaflow, show my workspaces, and let me choose one. Keep setup read-only."
+language: "en"
+status: "Published"
+author: "Supaflow LLC"
+authors: ["Supaflow LLC"]
+type: "community"
+categories: ["Data Engineering", "ETL"]
 ---
 
 # Get started with Supaflow
@@ -25,6 +36,6 @@ Call `datasources_list` for the chosen workspace and show the returned names, co
 
 If connections are absent or not ready, explain what is missing and direct the user to configure source and destination credentials securely in the [Supaflow dashboard](https://app.supa-flow.io/dashboard). An empty workspace does not mean authentication failed. Do not solicit plaintext credentials or claim that listing a datasource validates connectivity.
 
-Summarize the verified account, selected workspace, available connections, and remaining setup. Offer a read-only next step such as listing pipelines or inspecting an existing pipeline. Use the neighboring [Supaflow workflow skill](../using-supaflow/SKILL.md) for the user's chosen operational task; request authorization separately for changes or execution.
+Summarize the verified account, selected workspace, available connections, and remaining setup. Offer a read-only next step such as listing pipelines or inspecting an existing pipeline. Use the neighboring `using-supaflow` skill bundled with this plugin for the user's chosen operational task; request authorization separately for changes or execution.
 
 Provide the [Supaflow documentation](https://www.supa-flow.io/docs) when useful. The hosted plugin does not require a CLI, Docker, or a private agent for its core workflow. For explicitly requested local agent operations, explain the separate Supaflow CLI workflow rather than attempting them through hosted tools.

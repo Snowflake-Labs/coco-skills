@@ -1,7 +1,14 @@
 # Connect Supaflow to Cortex Code
 
-Use a release with its registered public OAuth client ID configured. A draft
-package containing `REPLACE_WITH_PUBLIC_CORTEX_CLIENT_ID` cannot authenticate.
+The published plugin already includes Supaflow's registered **public OAuth client
+ID** in `.mcp.json`. Keep that value unchanged: users do not need to register an
+OAuth client or replace it with a placeholder. A public client ID identifies the
+application; it is not a client secret and grants no account access by itself.
+Browser consent, PKCE, and the account's Cortex Code permission are still required.
+
+Only the multi-provider source repository's offline draft template uses
+`REPLACE_WITH_PUBLIC_CORTEX_CLIENT_ID`. That template cannot authenticate and is
+not the installable release. The release builder replaces it before publication.
 
 1. Sign in to [Supaflow](https://app.supa-flow.io/sign-in), or
    [create an account](https://app.supa-flow.io/sign-up).

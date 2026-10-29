@@ -3,9 +3,10 @@ Copyright 2026 Supaflow, LLC
 
 This CoCo contribution is distributed under the Apache License, Version 2.0.
 It incorporates the shared Supaflow setup and using-supaflow skills and logo
-from Supaflow AI Plugins. Their original MIT license and copyright notice are
-retained below. This contribution does not change the licensing of the shared
-ChatGPT/Claude packages or the Supaflow hosted service.
+from Supaflow AI Plugins. Their MIT license and copyright notice are retained
+below, with the copyright holder corrected to its legal name, Supaflow LLC.
+This contribution does not change the licensing of the shared ChatGPT/Claude
+packages or the Supaflow hosted service.
 
 Shared files:
 - skills/setup/SKILL.md
@@ -14,7 +15,7 @@ Shared files:
 
 MIT License
 
-Copyright (c) 2026 Supaflow Labs
+Copyright (c) 2026 Supaflow LLC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

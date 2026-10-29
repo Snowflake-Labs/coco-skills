@@ -59,6 +59,10 @@ or short-name install is claimed by this candidate.
 - "Help me prepare a Salesforce-to-Snowflake pipeline in my workspace configured for the Supaflow Native App. Show the selected objects before creating it."
 - "Help me set up the Supaflow Native App in Snowflake. Check for an existing installation first and show me the plan before making changes."
 
+The hosted skills use tools discovered from the connected MCP server; their
+`tools` metadata is empty because they require no additional built-in tools.
+Skill metadata does not preapprove tool calls or account changes.
+
 The `setup` skill handles read-only onboarding; `using-supaflow` handles the
 shared hosted workflows. Resolve tools exposed by the plugin's `supaflow` MCP
 server and pass the selected `workspace_id` on every workspace-scoped call.

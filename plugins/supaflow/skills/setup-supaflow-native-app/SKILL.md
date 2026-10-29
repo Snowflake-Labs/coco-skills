@@ -1,6 +1,17 @@
 ---
-name: setup-supaflow-native-app
-description: Install, connect, or resume setup of the Supaflow Snowflake Native App so ETL pipelines can run inside the user's Snowflake account. Use for Native App installation, Snowflake-hosted agent onboarding, incomplete Native App sign-in, optional controller permissions, custom connector network access, or setup readiness checks. Uses Cortex Code's Snowflake SQL connection and browser consent; ordinary Supaflow OAuth onboarding uses the setup skill instead.
+name: "setup-supaflow-native-app"
+id: "setup-supaflow-native-app"
+title: "Set Up Supaflow Native App"
+summary: "Install or resume the Supaflow Snowflake Native App, verify readiness, and review optional controller and network permissions."
+description: "Use when installing, connecting, or resuming the Supaflow Snowflake Native App so ETL pipelines can run inside a Snowflake account. Uses Cortex Code SQL and browser consent for setup and readiness checks. Ordinary hosted OAuth onboarding uses the setup skill instead. Triggers: install Supaflow Native App, Snowflake agent onboarding, resume Native App sign-in, controller permissions, custom connector network access, uninstall Supaflow Native App."
+tools: ["sql_execute"]
+prompt: "Help me set up the Supaflow Native App in Snowflake. Check for an existing installation first and show the plan before making changes."
+language: "en"
+status: "Published"
+author: "Supaflow LLC"
+authors: ["Supaflow LLC"]
+type: "community"
+categories: ["Data Engineering", "Native Apps"]
 ---
 
 # Set up the Supaflow Native App
