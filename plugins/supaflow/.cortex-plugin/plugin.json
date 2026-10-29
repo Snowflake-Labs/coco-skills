@@ -1,0 +1,11 @@
+{
+  "name": "supaflow",
+  "version": "0.1.0",
+  "description": "ETL data pipelines & dbt core",
+  "author": {
+    "name": "Supaflow, LLC",
+    "url": "https://www.supa-flow.io"
+  },
+  "skills": ["./skills"],
+  "mcpServers": "./.mcp.json"
+}
