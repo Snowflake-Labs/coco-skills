@@ -1,0 +1,139 @@
+# =====================================================================
+# Semantic View Template — Revenue Forecast (for good_morning_cfo)
+# =====================================================================
+#
+# This is the canonical Cortex Analyst semantic view that backs the
+# `finance.revenue.forecast_daily` binding for the good_morning_cfo
+# skill.
+#
+# WHY THIS EXISTS
+# ---------------
+# The skill targets an INDEXED semantic view (discoverable via Cortex
+# Sense / Entity Search) rather than ad-hoc convenience views. This
+# template gives you a working SV you can deploy quickly by editing
+# only the `base_table:` FQN and the column names.
+#
+# HOW TO USE
+# ----------
+# 1. Copy this file to your account: e.g. @YOURDB.YOURSCHEMA.STAGE/
+# 2. Edit the `base_table:` and column `expr:` fields to match your schema.
+# 3. CREATE SEMANTIC VIEW with this YAML.
+# 4. Reference the resulting SV FQN in your plugin's hydration_hints.yaml.
+# 5. Re-run the hydrator's verification step; it should report HIGH confidence.
+#
+# =====================================================================
+
+name: revenue_forecast_daily
+description: |
+  Daily revenue forecast vs actual at the (date, segment, account) grain,
+  with currency awareness. Used by daily executive briefings, variance
+  analysis, and account-level mover detection.
+
+tables:
+  - name: revenue_forecast_actual
+    description: One row per (date, segment, account) with forecast and actual.
+    base_table:
+      database: <YOUR_DB>             # e.g. FINANCE
+      schema: <YOUR_SCHEMA>           # e.g. AI
+      table: <YOUR_BASE_TABLE>        # e.g. ACCOUNT_GAAP_REVENUE_FORECAST_AND_ACTUAL_DAILY
+
+    dimensions:
+      - name: activity_date
+        synonyms: [date, day, posting_date]
+        description: Calendar date of the forecast/actual row.
+        expr: <YOUR_DATE_COLUMN>      # e.g. ACTIVITY_DATE
+        data_type: DATE
+        unique: false
+
+      - name: account_id
+        synonyms: [customer_id, customer_account, account_number]
+        description: Unique customer/account identifier.
+        expr: <YOUR_ACCOUNT_ID_COLUMN>  # e.g. CUSTOMER_ID
+        data_type: VARCHAR
+
+      - name: account_name
+        synonyms: [customer_name, customer]
+        description: Display name for the account.
+        expr: <YOUR_ACCOUNT_NAME_COLUMN>  # e.g. CUSTOMER_NAME
+        data_type: VARCHAR
+
+      - name: segment_id
+        synonyms: [segment, region, gvp]
+        description: Revenue segment / region / GVP grouping.
+        expr: <YOUR_SEGMENT_COLUMN>     # e.g. SEGMENT
+        data_type: VARCHAR
+
+      - name: currency_code
+        synonyms: [currency, currency_iso]
+        description: ISO currency code for amounts in this row.
+        expr: <YOUR_CURRENCY_COLUMN>    # e.g. CURRENCY_CODE
+        data_type: VARCHAR
+
+    time_dimensions:
+      - name: fiscal_period
+        synonyms: [period, fiscal_month, fiscal_quarter]
+        description: Fiscal period derived from activity_date using configured fiscal_calendar.
+        expr: <YOUR_FISCAL_PERIOD_COLUMN>  # e.g. FISCAL_QUARTER
+        data_type: VARCHAR
+
+    facts:
+      - name: actual_amount
+        synonyms: [actual, actual_revenue, revenue_actual]
+        description: Booked revenue for this row in `currency_code`.
+        expr: <YOUR_ACTUAL_COLUMN>     # e.g. ACTUAL_REVENUE
+        data_type: NUMBER
+
+      - name: forecast_amount
+        synonyms: [forecast, forecasted_revenue, plan]
+        description: Forecasted revenue for this row in `currency_code`.
+        expr: <YOUR_FORECAST_COLUMN>   # e.g. FORECAST_REVENUE
+        data_type: NUMBER
+
+    metrics:
+      - name: variance_amount
+        synonyms: [variance, variance_dollar, dollar_variance]
+        description: Actual minus forecast, in row currency.
+        expr: SUM(actual_amount) - SUM(forecast_amount)
+        data_type: NUMBER
+
+      - name: variance_pct
+        synonyms: [variance_percentage, percent_variance, variance_rate]
+        description: Variance as a percent of forecast. NULL-safe.
+        expr: |
+          DIV0(
+            SUM(actual_amount) - SUM(forecast_amount),
+            NULLIF(SUM(forecast_amount), 0)
+          )
+        data_type: NUMBER
+
+      - name: forecast_attainment
+        synonyms: [attainment, actual_vs_forecast_ratio]
+        description: Actual / Forecast. > 1.0 = beat, < 1.0 = miss.
+        expr: DIV0(SUM(actual_amount), NULLIF(SUM(forecast_amount), 0))
+        data_type: NUMBER
+
+verified_queries:
+  - name: yesterday_total_actual_vs_forecast
+    question: How did yesterday's actual revenue compare to forecast?
+    sql: |
+      SELECT
+        SUM(actual_amount)   AS actual,
+        SUM(forecast_amount) AS forecast,
+        SUM(actual_amount) - SUM(forecast_amount) AS variance,
+        DIV0(SUM(actual_amount) - SUM(forecast_amount),
+             NULLIF(SUM(forecast_amount), 0))    AS variance_pct
+      FROM revenue_forecast_actual
+      WHERE activity_date = DATEADD(day, -1, CURRENT_DATE());
+
+  - name: mtd_pacing
+    question: How is the month pacing vs forecast?
+    sql: |
+      SELECT
+        DATE_TRUNC('month', activity_date) AS month_start,
+        SUM(actual_amount)                 AS mtd_actual,
+        SUM(forecast_amount)               AS mtd_forecast,
+        DIV0(SUM(actual_amount), NULLIF(SUM(forecast_amount), 0)) AS attainment
+      FROM revenue_forecast_actual
+      WHERE activity_date >= DATE_TRUNC('month', CURRENT_DATE())
+        AND activity_date <  CURRENT_DATE()
+      GROUP BY 1;

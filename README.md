@@ -91,6 +91,8 @@ Plugins in this repo:
 | Plugin | What it does |
 | --- | --- |
 | [`xo`](plugins/xo) | General purpose Data Engineering Harness — automatic cross-session memory and recall, composable workflow stages, and specialised subagents, amongst many other best-practice token-efficient strategies. |
+| [`people-hydrator`](plugins/people-hydrator) | Sets up the bundled People skills (headcount, attrition, recruiting, CHRO briefings, offers, org health) on your own HR data: finds HR tables, checks each skill's data connection, tests against golden cases, and hydrates them. |
+| [`finance-hydrator`](plugins/finance-hydrator) | Assesses your finance data, recommends Accounting, FinOps, and Strategic Finance skills, and generates a customer-specific Finance plugin. |
 
 ---
 

@@ -1,0 +1,514 @@
+{
+  "domain": "accounting",
+  "source_plugin": "accounting",
+  "description": "Controller and accounting skills for close, AP, AR, reconciliation, and invoice controls.",
+  "skills": [
+    {
+      "name": "flux_analysis",
+      "source_dir": "skills/flux_analysis",
+      "eval_dir": "evals/flux_analysis",
+      "persona": [
+        "Controller",
+        "Accounting Manager"
+      ],
+      "business_value": "Variance analysis for close cycles.",
+      "triggers": [
+        "run flux",
+        "variance analysis",
+        "month over month variance"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.gl.journal_entries",
+          "required": true,
+          "concepts": [
+            "general ledger",
+            "journal entries",
+            "account balance"
+          ],
+          "grain": [
+            "period",
+            "account"
+          ],
+          "columns": {
+            "period": "required",
+            "account": "required",
+            "amount": "required"
+          }
+        },
+        {
+          "key": "accounting.calendar.fiscal_periods",
+          "required": true,
+          "concepts": [
+            "fiscal calendar",
+            "accounting period",
+            "close period"
+          ],
+          "grain": [
+            "period"
+          ],
+          "columns": {
+            "period": "required",
+            "period_start": "optional",
+            "period_end": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "controller"
+      ],
+      "jobs_to_be_done": [
+        "explain period-over-period GL variance",
+        "run close-cycle flux analysis",
+        "identify material account balance changes"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "NetSuite",
+        "SAP",
+        "Oracle"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.gl.journal_entries": "official production data for general ledger, journal entries, account balance; grain: period, account; required fields: period, account, amount",
+        "accounting.calendar.fiscal_periods": "official production data for fiscal calendar, accounting period, close period; grain: period; required fields: period; optional fields: period_start, period_end"
+      }
+    },
+    {
+      "name": "accounts_payable_pulse",
+      "source_dir": "skills/accounts_payable_pulse",
+      "eval_dir": "evals/accounts_payable_pulse",
+      "persona": [
+        "AP Manager",
+        "Controller"
+      ],
+      "business_value": "AP health dashboard and invoice lookup.",
+      "triggers": [
+        "AP pulse",
+        "AP health",
+        "invoice status"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.ap.invoice_header",
+          "required": true,
+          "concepts": [
+            "invoice header",
+            "payables ledger",
+            "AP transaction"
+          ],
+          "grain": [
+            "invoice_id"
+          ],
+          "columns": {
+            "invoice_id": "required",
+            "supplier": "required",
+            "invoice_amount": "required",
+            "invoice_status": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "ap_ar",
+        "controller"
+      ],
+      "jobs_to_be_done": [
+        "monitor AP health",
+        "lookup supplier invoice status",
+        "prioritize overdue invoices"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "NetSuite",
+        "SAP",
+        "Oracle",
+        "Coupa"
+      ],
+      "workflow_cadence": [
+        "daily",
+        "weekly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.ap.invoice_header": "official production data for invoice header, payables ledger, AP transaction; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_status"
+      }
+    },
+    {
+      "name": "ar_tracker",
+      "source_dir": "skills/ar_tracker",
+      "eval_dir": "evals/ar_tracker",
+      "persona": [
+        "AR Manager",
+        "Controller",
+        "Collections Lead"
+      ],
+      "business_value": "AR health, DSO, aging, and overdue account prioritization.",
+      "triggers": [
+        "AR health",
+        "DSO",
+        "overdue accounts",
+        "AR tracker"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.ar.aging",
+          "required": true,
+          "concepts": [
+            "AR aging",
+            "receivables",
+            "overdue invoice"
+          ],
+          "grain": [
+            "customer_id",
+            "invoice_id"
+          ],
+          "columns": {
+            "customer_id": "required",
+            "invoice_id": "required",
+            "due_date": "required",
+            "balance": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "ap_ar",
+        "controller"
+      ],
+      "jobs_to_be_done": [
+        "monitor AR aging",
+        "prioritize overdue customer invoices",
+        "track DSO and collections risk"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "NetSuite",
+        "SAP",
+        "Oracle",
+        "Billing"
+      ],
+      "workflow_cadence": [
+        "daily",
+        "weekly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.ar.aging": "official production data for AR aging, receivables, overdue invoice; grain: customer_id, invoice_id; required fields: customer_id, invoice_id, due_date, balance"
+      }
+    },
+    {
+      "name": "duplicate_invoice_check",
+      "source_dir": "skills/duplicate_invoice_check",
+      "eval_dir": "evals/duplicate_invoice_check",
+      "persona": [
+        "AP Manager",
+        "Controller"
+      ],
+      "business_value": "Duplicate supplier invoice detection.",
+      "triggers": [
+        "duplicate invoice",
+        "overpayment risk",
+        "invoice fraud"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.ap.invoice_header",
+          "required": true,
+          "concepts": [
+            "invoice header",
+            "supplier invoice",
+            "invoice amount"
+          ],
+          "grain": [
+            "invoice_id"
+          ],
+          "columns": {
+            "invoice_id": "required",
+            "supplier": "required",
+            "invoice_amount": "required",
+            "invoice_date": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "ap_ar",
+        "controller"
+      ],
+      "jobs_to_be_done": [
+        "detect duplicate invoices",
+        "reduce overpayment risk",
+        "review invoice fraud signals"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "NetSuite",
+        "SAP",
+        "Oracle",
+        "Coupa"
+      ],
+      "workflow_cadence": [
+        "daily",
+        "weekly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.ap.invoice_header": "official production data for invoice header, supplier invoice, invoice amount; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_date"
+      }
+    },
+    {
+      "name": "good_morning_collector",
+      "source_dir": "skills/good_morning_collector",
+      "eval_dir": "evals/good_morning_collector",
+      "persona": [
+        "AR Collector",
+        "Collections Lead"
+      ],
+      "business_value": "Daily collector portfolio prioritization.",
+      "triggers": [
+        "good morning collector",
+        "my portfolio",
+        "collection priorities"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.ar.collector_portfolio",
+          "required": true,
+          "unsafe_scoping_columns": [
+            "collector_id"
+          ],
+          "concepts": [
+            "AR aging",
+            "collector assignment",
+            "customer balance"
+          ],
+          "grain": [
+            "collector_id",
+            "customer_id"
+          ],
+          "columns": {
+            "collector_id": "required",
+            "customer_id": "required",
+            "balance": "required",
+            "aging_bucket": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "ap_ar"
+      ],
+      "jobs_to_be_done": [
+        "prioritize collector portfolio",
+        "find highest-risk overdue accounts",
+        "start daily collections work"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "Billing",
+        "NetSuite",
+        "SAP",
+        "Oracle"
+      ],
+      "workflow_cadence": [
+        "daily"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.ar.collector_portfolio": "official production data for AR aging, collector assignment, customer balance; grain: collector_id, customer_id; required fields: collector_id, customer_id, balance; optional fields: aging_bucket"
+      }
+    },
+    {
+      "name": "recon_analysis",
+      "source_dir": "skills/recon_analysis",
+      "eval_dir": "evals/recon_analysis",
+      "persona": [
+        "Controller",
+        "Accounting Manager",
+        "AR Manager",
+        "Operations Analyst"
+      ],
+      "business_value": "Compare two datasets, classify breaks with root-cause commentary, and validate reconciliation output.",
+      "triggers": [
+        "recon",
+        "reconciliation",
+        "compare data",
+        "find discrepancies",
+        "data matching",
+        "run recon",
+        "build recon profile",
+        "create reconciliation",
+        "discrepancy report",
+        "break analysis"
+      ],
+      "data_needs": [
+        {
+          "key": "accounting.recon.profile_store",
+          "required": true,
+          "concepts": [
+            "reconciliation profile",
+            "recon configuration",
+            "reconciliation setup",
+            "profile persistence",
+            "recon profile store"
+          ],
+          "grain": [
+            "profile_name"
+          ],
+          "fields": {
+            "profile_name": {
+              "required": true,
+              "aliases": ["profile_name", "name", "recon_name", "config_name", "reconciliation_name", "profile"]
+            },
+            "owner": {
+              "required": true,
+              "aliases": ["owner", "created_by", "user_id", "profile_owner", "created_user", "username"]
+            },
+            "settings": {
+              "required": true,
+              "aliases": ["settings", "config", "configuration", "payload", "profile_config", "settings_json", "configuration_json", "recon_config"]
+            },
+            "visibility": {
+              "required": false,
+              "aliases": ["visibility", "is_public", "access_level", "share_type", "access"]
+            },
+            "updated_at": {
+              "required": false,
+              "aliases": ["updated_at", "last_updated", "modified_at", "updated_timestamp", "last_modified", "update_time"]
+            }
+          }
+        },
+        {
+          "key": "accounting.recon.category_rules",
+          "required": false,
+          "concepts": [
+            "recon category rules",
+            "break classification",
+            "discrepancy categories",
+            "recon taxonomy",
+            "break category config"
+          ],
+          "grain": [
+            "rule_priority"
+          ],
+          "fields": {
+            "rule_priority": {
+              "required": true,
+              "aliases": ["rule_priority", "priority", "rule_order", "sort_order", "rule_sequence"]
+            },
+            "category": {
+              "required": true,
+              "aliases": ["category", "category_label", "break_type", "discrepancy_type", "break_category"]
+            },
+            "condition": {
+              "required": true,
+              "aliases": ["condition", "matching_condition", "rule_condition", "pattern", "match_pattern"]
+            },
+            "comment_template": {
+              "required": false,
+              "aliases": ["comment_template", "reason_template", "comment", "template", "reason_text"]
+            }
+          }
+        },
+        {
+          "key": "accounting.calendar.fiscal_periods",
+          "required": false,
+          "concepts": [
+            "fiscal calendar",
+            "accounting period",
+            "close period"
+          ],
+          "grain": [
+            "period"
+          ],
+          "fields": {
+            "period": {
+              "required": true,
+              "aliases": ["period", "fiscal_month", "fiscal_period", "period_name", "accounting_period", "FISCAL_MONTH"]
+            },
+            "period_start": {
+              "required": false,
+              "aliases": ["period_start", "start_date", "period_start_date", "fiscal_month_start", "FISCAL_MONTH_START"]
+            },
+            "period_end": {
+              "required": false,
+              "aliases": ["period_end", "end_date", "period_end_date", "fiscal_month_end", "FISCAL_MONTH_END"]
+            }
+          }
+        },
+        {
+          "key": "accounting.recon.result_store",
+          "required": false,
+          "concepts": [
+            "recon results",
+            "reconciliation history",
+            "prior recon runs",
+            "recon run log"
+          ],
+          "grain": [
+            "profile_name",
+            "run_date"
+          ],
+          "fields": {
+            "profile_name": {
+              "required": true,
+              "aliases": ["profile_name", "name", "recon_name"]
+            },
+            "run_date": {
+              "required": true,
+              "aliases": ["run_date", "run_timestamp", "executed_at", "recon_date", "run_time"]
+            },
+            "match_rate": {
+              "required": false,
+              "aliases": ["match_rate", "match_pct", "pct_matched", "reconciliation_rate", "match_percentage"]
+            }
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "controller",
+        "ap_ar"
+      ],
+      "jobs_to_be_done": [
+        "compare two datasets and find discrepancies",
+        "build and save a reconciliation profile",
+        "classify breaks with root-cause commentary",
+        "validate reconciliation output integrity"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "NetSuite",
+        "SAP",
+        "Oracle",
+        "Workday",
+        "Coupa",
+        "Salesforce"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "daily",
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "accounting.recon.profile_store": "stored procedure or table for reconciliation profile persistence; grain: profile_name (latest version per profile); required fields: profile_name, owner, settings (JSON payload); optional fields: visibility, updated_at. May be a stored procedure (CALL) or a table (SELECT).",
+        "accounting.recon.category_rules": "optional table of break classification rules mapping discrepancy patterns to typed categories with comment templates; grain: rule_priority; required fields: rule_priority, category, condition; optional fields: comment_template",
+        "accounting.calendar.fiscal_periods": "optional fiscal calendar reference for date-scoped reconciliations; grain: period; required fields: period; optional fields: period_start, period_end",
+        "accounting.recon.result_store": "optional table of historical reconciliation run results for reasonableness checks; grain: profile_name + run_date; required fields: profile_name, run_date; optional fields: match_rate"
+      }
+    }
+  ]
+}

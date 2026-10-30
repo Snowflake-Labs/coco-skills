@@ -1,0 +1,104 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "good_morning_cfo",
+  "data_needs": {
+    "finance.revenue.forecast_daily": {
+      "required": true,
+      "read_from": "semantic_view",
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DAILY_FORECAST_VIEW_OR_TABLE>",
+          "grain": [
+            "date",
+            "segment_id"
+          ],
+          "columns": {
+            "date": "<YOUR_DATE_COLUMN>",
+            "segment_id": "<YOUR_SEGMENT_COLUMN>",
+            "actual_amount": "<YOUR_ACTUAL_REVENUE_COLUMN>",
+            "forecast_amount": "<YOUR_FORECAST_REVENUE_COLUMN>",
+            "currency": "<YOUR_CURRENCY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "daily revenue forecast",
+        "actuals vs forecast",
+        "daily revenue"
+      ]
+    },
+    "finance.revenue.account_forecast": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ACCOUNT_FORECAST_TABLE>",
+          "grain": [
+            "week_ending_date",
+            "account_id"
+          ],
+          "columns": {
+            "week_ending_date": "<YOUR_WEEK_COLUMN>",
+            "account_id": "<YOUR_ACCOUNT_ID_COLUMN>",
+            "account_name": "<YOUR_ACCOUNT_NAME_COLUMN>",
+            "forecast_amount": "<YOUR_FORECAST_REVENUE_COLUMN>",
+            "currency": "<YOUR_CURRENCY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "account-level revenue forecast",
+        "customer forecast",
+        "weekly account forecast"
+      ],
+      "extra_settings": {
+        "derive_week_from_daily": false
+      }
+    },
+    "finance.budget.expense": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_EXPENSE_BUDGET_TABLE>",
+          "grain": [
+            "period",
+            "line_item_id"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
+            "budget_amount": "<YOUR_BUDGET_AMOUNT_COLUMN>",
+            "actual_amount": "<YOUR_ACTUAL_AMOUNT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "expense budget vs actual",
+        "opex variance",
+        "expense anomalies"
+      ]
+    },
+    "finance.consumption.daily_usage": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DAILY_USAGE_TABLE>",
+          "grain": [
+            "usage_date",
+            "account_id"
+          ],
+          "columns": {
+            "usage_date": "<YOUR_USAGE_DATE_COLUMN>",
+            "account_id": "<YOUR_ACCOUNT_ID_COLUMN>",
+            "credits": "<YOUR_CREDITS_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "daily usage by account",
+        "consumption",
+        "billable credits per day"
+      ]
+    }
+  }
+}

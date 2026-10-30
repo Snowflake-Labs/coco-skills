@@ -1,0 +1,711 @@
+{
+  "domain": "strategic_finance",
+  "source_plugin": "strategic-finance",
+  "description": "CFO and FP&A skills for revenue, forecast, cloud COGS, budget, and earnings analysis.",
+  "skills": [
+    {
+      "name": "good_morning_cfo",
+      "source_dir": "skills/good_morning_cfo",
+      "eval_dir": "evals/good_morning_cfo",
+      "persona": [
+        "CFO",
+        "FP&A Lead"
+      ],
+      "business_value": "Daily CFO briefing across revenue, movers, expenses, and consumption.",
+      "triggers": [
+        "good morning CFO",
+        "daily finance briefing",
+        "start my day"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.revenue.forecast_daily",
+          "required": true,
+          "concepts": [
+            "daily revenue forecast",
+            "revenue actuals",
+            "actuals vs forecast"
+          ],
+          "grain": [
+            "date",
+            "segment"
+          ],
+          "fields": {
+            "date": {"required": true, "semantic_type": "date_or_period", "aliases": ["date", "reporting_date", "most_recent_date"]},
+            "segment": {"required": true, "semantic_type": "category", "aliases": ["segment", "region", "theater", "industry"]},
+            "actual_amount": {"required": true, "semantic_type": "money", "aliases": ["actual_amount", "actual"]},
+            "forecast_amount": {"required": true, "semantic_type": "money", "aliases": ["forecast_amount", "forecast"]}
+          }
+        },
+        {
+          "key": "finance.revenue.account_forecast",
+          "required": true,
+          "concepts": [
+            "account forecast",
+            "customer forecast",
+            "weekly account forecast"
+          ],
+          "grain": [
+            "week",
+            "account"
+          ],
+          "fields": {
+            "week": {"required": true, "semantic_type": "date_or_period", "aliases": ["week", "reporting_date", "forecast_created_date"]},
+            "account_id": {"required": true, "semantic_type": "identifier", "aliases": ["account_id", "customer_id"]},
+            "forecast_amount": {"required": true, "semantic_type": "money", "aliases": ["forecast_amount", "forecast"]}
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "cfo",
+        "fpa"
+      ],
+      "jobs_to_be_done": [
+        "start daily finance briefing",
+        "review revenue forecast movement",
+        "summarize CFO priorities"
+      ],
+      "source_system_hints": [
+        "Forecasting",
+        "CRM",
+        "ERP",
+        "Snowflake"
+      ],
+      "workflow_cadence": [
+        "daily"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.revenue.forecast_daily": "official production data for daily revenue forecast, revenue actuals, actuals vs forecast; grain: date, segment; required fields: date, segment, actual_amount, forecast_amount",
+        "finance.revenue.account_forecast": "official production data for account forecast, customer forecast, weekly account forecast; grain: week, account; required fields: week, account_id, forecast_amount"
+      }
+    },
+    {
+      "name": "forecast_vs_forecast",
+      "source_dir": "skills/forecast_vs_forecast",
+      "eval_dir": "evals/forecast_vs_forecast",
+      "persona": [
+        "FP&A Lead",
+        "Finance Analyst"
+      ],
+      "business_value": "Compare forecast snapshots and explain what moved.",
+      "triggers": [
+        "forecast vs forecast",
+        "what moved between forecasts",
+        "forecast drift"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.forecast.snapshot",
+          "required": true,
+          "concepts": [
+            "forecast snapshot",
+            "forecast version",
+            "forecast amount"
+          ],
+          "grain": [
+            "version_id",
+            "item_id",
+            "period_date"
+          ],
+          "columns": {
+            "version_id": "required",
+            "item_id": "required",
+            "period_date": "required",
+            "forecast_amount": "required"
+          }
+        },
+        {
+          "key": "finance.forecast.version_metadata",
+          "required": true,
+          "concepts": [
+            "forecast version metadata",
+            "forecast label"
+          ],
+          "grain": [
+            "version_id"
+          ],
+          "columns": {
+            "version_id": "required",
+            "version_label": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "fpa",
+        "revenue_finance"
+      ],
+      "jobs_to_be_done": [
+        "compare forecast versions",
+        "explain forecast drift",
+        "identify forecast movement drivers"
+      ],
+      "source_system_hints": [
+        "Forecasting",
+        "CRM",
+        "ERP"
+      ],
+      "workflow_cadence": [
+        "weekly",
+        "monthly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.forecast.snapshot": "official production data for forecast snapshot, forecast version, forecast amount; grain: version_id, item_id, period_date; required fields: version_id, item_id, period_date, forecast_amount",
+        "finance.forecast.version_metadata": "official production data for forecast version metadata, forecast label; grain: version_id; required fields: version_id; optional fields: version_label"
+      }
+    },
+    {
+      "name": "budget_vs_actuals",
+      "source_dir": "skills/budget_vs_actuals",
+      "eval_dir": "evals/budget_vs_actuals",
+      "persona": [
+        "FP&A Lead",
+        "Controller"
+      ],
+      "business_value": "Compare actuals to plan or budget baseline.",
+      "triggers": [
+        "budget vs actuals",
+        "BVA",
+        "plan vs actuals"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.budget.plan",
+          "required": true,
+          "concepts": [
+            "budget",
+            "annual operating plan",
+            "locked plan version"
+          ],
+          "grain": [
+            "line_item",
+            "period"
+          ],
+          "columns": {
+            "line_item": "required",
+            "period": "required",
+            "budget_amount": "required"
+          }
+        },
+        {
+          "key": "finance.budget.actuals",
+          "required": true,
+          "concepts": [
+            "actuals",
+            "realized expense",
+            "actual spend"
+          ],
+          "grain": [
+            "line_item",
+            "period"
+          ],
+          "columns": {
+            "line_item": "required",
+            "period": "required",
+            "actual_amount": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "fpa",
+        "controller"
+      ],
+      "jobs_to_be_done": [
+        "compare budget to actuals",
+        "explain expense variance",
+        "monitor plan performance"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "Planning",
+        "NetSuite",
+        "SAP",
+        "Oracle"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.budget.plan": "official production data for budget, annual operating plan, locked plan version; grain: line_item, period; required fields: line_item, period, budget_amount",
+        "finance.budget.actuals": "official production data for actuals, realized expense, actual spend; grain: line_item, period; required fields: line_item, period, actual_amount"
+      }
+    },
+    {
+      "name": "cloud_cogs_analysis",
+      "source_dir": "skills/cloud_cogs_analysis",
+      "eval_dir": "evals/cloud_cogs_analysis",
+      "persona": [
+        "CFO",
+        "FP&A Lead",
+        "COGS Analyst"
+      ],
+      "business_value": "Cloud COGS and gross margin breakdown, unit economics, commitment and discount impact, and actual vs forecast.",
+      "triggers": [
+        "COGS",
+        "gross margin",
+        "cost per unit",
+        "margin trend"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.cogs.summary",
+          "required": true,
+          "concepts": [
+            "COGS",
+            "cost of goods sold",
+            "product cost"
+          ],
+          "grain": [
+            "period",
+            "cost_category"
+          ],
+          "fields": {
+            "period": {"required": true, "semantic_type": "date_or_period", "aliases": ["period", "fiscal_quarter_start", "fiscal_quarter"]},
+            "cost_category": {"required": true, "semantic_type": "category", "aliases": ["cost_category", "cogs_type"]},
+            "cost_amount": {"required": true, "semantic_type": "money", "aliases": ["cost_amount", "cogs"]}
+          }
+        },
+        {
+          "key": "finance.cogs.revenue",
+          "required": false,
+          "concepts": [
+            "total revenue",
+            "revenue for margin"
+          ],
+          "grain": [
+            "period"
+          ],
+          "fields": {
+            "period": {"required": true, "semantic_type": "date_or_period", "aliases": ["period", "fiscal_quarter_start", "fiscal_quarter"]},
+            "total_revenue": {"required": true, "semantic_type": "money", "aliases": ["total_revenue", "revenue"]}
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "cfo",
+        "fpa",
+        "cogs"
+      ],
+      "jobs_to_be_done": [
+        "analyze COGS and gross margin",
+        "explain cost per unit movement",
+        "monitor product cost trends"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "Product Usage",
+        "Snowflake"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.cogs.summary": "official production data for COGS, cost of goods sold, product cost; grain: period, cost_category; required fields: period, cost_category, cost_amount",
+        "finance.cogs.revenue": "official production data for total revenue, revenue for margin; grain: period; required fields: period, total_revenue"
+      }
+    },
+    {
+      "name": "earnings_prep",
+      "source_dir": "skills/earnings_prep",
+      "eval_dir": "evals/earnings_prep",
+      "persona": [
+        "CFO",
+        "IR Lead",
+        "FP&A Lead"
+      ],
+      "business_value": "Earnings-call prep: quarterly financial package, CFO script, and analyst Q&A.",
+      "triggers": [
+        "earnings prep",
+        "earnings call",
+        "Q&A prep"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.earnings.financial_summary",
+          "required": true,
+          "concepts": [
+            "quarterly financials",
+            "revenue and margins",
+            "operating income"
+          ],
+          "grain": [
+            "fiscal_quarter"
+          ],
+          "columns": {
+            "fiscal_quarter": "required",
+            "revenue": "required",
+            "gross_margin_pct": "optional",
+            "operating_margin_pct": "optional",
+            "operating_income": "optional"
+          }
+        },
+        {
+          "key": "finance.earnings.comparison_basis",
+          "required": true,
+          "concepts": [
+            "QoQ comparison",
+            "YoY comparison",
+            "prior year actuals"
+          ],
+          "grain": [
+            "fiscal_quarter"
+          ],
+          "columns": {
+            "fiscal_quarter": "required",
+            "qoq_value": "optional",
+            "yoy_value": "optional"
+          }
+        },
+        {
+          "key": "finance.earnings.guidance",
+          "required": false,
+          "concepts": [
+            "issued guidance",
+            "guidance range",
+            "IR guidance"
+          ],
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "required",
+            "metric_name": "required",
+            "guidance_low": "optional",
+            "guidance_high": "optional",
+            "guidance_midpoint": "optional",
+            "issued_date": "optional"
+          }
+        },
+        {
+          "key": "finance.earnings.consensus",
+          "required": false,
+          "concepts": [
+            "analyst consensus",
+            "sell-side estimates",
+            "street estimates"
+          ],
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "required",
+            "metric_name": "required",
+            "consensus_estimate": "optional",
+            "source_date": "optional"
+          }
+        },
+        {
+          "key": "finance.earnings.analyst_questions",
+          "required": false,
+          "concepts": [
+            "analyst questions",
+            "earnings call Q&A",
+            "sell-side previews"
+          ],
+          "grain": [
+            "fiscal_period",
+            "question_index"
+          ],
+          "columns": {
+            "fiscal_period": "required",
+            "question_index": "optional",
+            "question": "optional",
+            "speaker_name": "optional",
+            "speaker_company": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "cfo",
+        "fpa",
+        "revenue_finance"
+      ],
+      "jobs_to_be_done": [
+        "assemble the quarterly earnings financial package",
+        "draft CFO earnings-call script",
+        "prepare ranked analyst Q&A"
+      ],
+      "source_system_hints": [
+        "ERP",
+        "Forecasting",
+        "IR"
+      ],
+      "workflow_cadence": [
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.earnings.financial_summary": "official production data for quarterly financials, revenue and margins, operating income; grain: fiscal_quarter; required fields: fiscal_quarter, revenue; optional fields: gross_margin_pct, operating_margin_pct, operating_income",
+        "finance.earnings.comparison_basis": "official production data for QoQ comparison, YoY comparison, prior year actuals; grain: fiscal_quarter; required fields: fiscal_quarter; optional fields: qoq_value, yoy_value",
+        "finance.earnings.guidance": "official production data for issued guidance, guidance range, IR guidance; grain: fiscal_quarter, metric_name; required fields: fiscal_quarter, metric_name; optional fields: guidance_low, guidance_high, guidance_midpoint, issued_date",
+        "finance.earnings.consensus": "official production data for analyst consensus, sell-side estimates, street estimates; grain: fiscal_quarter, metric_name; required fields: fiscal_quarter, metric_name; optional fields: consensus_estimate, source_date",
+        "finance.earnings.analyst_questions": "official production data for analyst questions, earnings call Q&A, sell-side previews; grain: fiscal_period, question_index; required fields: fiscal_period; optional fields: question_index, question, speaker_name, speaker_company"
+      }
+    },
+    {
+      "name": "revenue_analysis",
+      "source_dir": "skills/revenue_analysis",
+      "eval_dir": "evals/revenue_analysis",
+      "persona": [
+        "CFO",
+        "FP&A Lead",
+        "Product Finance"
+      ],
+      "business_value": "Executive revenue narrative across a product or segment hierarchy.",
+      "triggers": [
+        "revenue analysis",
+        "revenue narrative",
+        "QBR prep"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.revenue.hierarchy",
+          "required": true,
+          "concepts": [
+            "revenue by hierarchy",
+            "plan vs actual revenue",
+            "segment revenue"
+          ],
+          "grain": [
+            "hierarchy_level",
+            "entity_name",
+            "period"
+          ],
+          "columns": {
+            "hierarchy_level": "required",
+            "period": "required",
+            "entity_name": "required",
+            "actual_revenue": "required",
+            "plan_revenue": "required",
+            "time_grain": "optional",
+            "customer_count": "optional"
+          }
+        },
+        {
+          "key": "finance.revenue.lifecycle_cohort",
+          "required": false,
+          "concepts": [
+            "new vs existing revenue",
+            "churn cohort",
+            "lifecycle revenue"
+          ],
+          "grain": [
+            "lifecycle_status",
+            "entity_name",
+            "period"
+          ],
+          "columns": {
+            "lifecycle_status": "required",
+            "entity_name": "required",
+            "period": "required",
+            "actual_revenue": "required",
+            "customer_count": "optional"
+          }
+        },
+        {
+          "key": "finance.revenue.concentration",
+          "required": false,
+          "concepts": [
+            "revenue concentration",
+            "top customers",
+            "whale analysis"
+          ],
+          "grain": [
+            "tier_or_customer",
+            "period"
+          ],
+          "columns": {
+            "tier_or_customer": "required",
+            "period": "required",
+            "actual_revenue": "required",
+            "contribution_pct": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "cfo",
+        "fpa",
+        "revenue_finance"
+      ],
+      "jobs_to_be_done": [
+        "explain revenue performance for a QBR",
+        "break down revenue by hierarchy",
+        "assess customer concentration risk"
+      ],
+      "source_system_hints": [
+        "CRM",
+        "Billing",
+        "Revenue"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.revenue.hierarchy": "official production data for revenue by hierarchy, plan vs actual revenue, segment revenue; grain: hierarchy_level, entity_name, period; required fields: hierarchy_level, period, entity_name, actual_revenue, plan_revenue; optional fields: time_grain, customer_count",
+        "finance.revenue.lifecycle_cohort": "official production data for new vs existing revenue, churn cohort, lifecycle revenue; grain: lifecycle_status, entity_name, period; required fields: lifecycle_status, entity_name, period, actual_revenue; optional fields: customer_count",
+        "finance.revenue.concentration": "official production data for revenue concentration, top customers, whale analysis; grain: tier_or_customer, period; required fields: tier_or_customer, period, actual_revenue; optional fields: contribution_pct"
+      }
+    },
+    {
+      "name": "scenario_planning",
+      "source_dir": "skills/scenario_planning",
+      "eval_dir": "evals/scenario_planning",
+      "persona": [
+        "FP&A Lead",
+        "Finance Business Partner",
+        "CFO Office"
+      ],
+      "business_value": "What-if scenario modeling, P&L sensitivity, and root-cause decomposition.",
+      "triggers": [
+        "scenario planning",
+        "what if",
+        "sensitivity analysis"
+      ],
+      "data_needs": [
+        {
+          "key": "finance.scenario.pnl",
+          "required": true,
+          "concepts": [
+            "planning P&L",
+            "income statement forecast",
+            "P&L by period"
+          ],
+          "grain": [
+            "period",
+            "metric_name"
+          ],
+          "columns": {
+            "period": "required",
+            "metric_name": "optional",
+            "value": "optional"
+          }
+        },
+        {
+          "key": "finance.scenario.assumptions",
+          "required": true,
+          "concepts": [
+            "planning assumptions",
+            "forecast drivers",
+            "growth rate assumptions"
+          ],
+          "grain": [
+            "version",
+            "parameter",
+            "period"
+          ],
+          "columns": {
+            "version": "required",
+            "parameter": "required",
+            "period": "required",
+            "value": "required"
+          }
+        },
+        {
+          "key": "finance.scenario.notes",
+          "required": false,
+          "concepts": [
+            "scenario notes",
+            "what-if history",
+            "forecast version notes"
+          ],
+          "grain": [
+            "scenario_id"
+          ],
+          "columns": {
+            "scenario_id": "required",
+            "notes": "optional",
+            "created_date": "optional"
+          }
+        },
+        {
+          "key": "finance.scenario.revenue_detail",
+          "required": false,
+          "concepts": [
+            "revenue by cohort",
+            "revenue by region",
+            "revenue detail"
+          ],
+          "grain": [
+            "period",
+            "customer_cohort",
+            "region"
+          ],
+          "columns": {
+            "period": "required",
+            "customer_cohort": "required",
+            "region": "required",
+            "revenue_amount": "required"
+          }
+        },
+        {
+          "key": "finance.scenario.headcount_cph",
+          "required": false,
+          "concepts": [
+            "headcount",
+            "cost per head",
+            "OPEX drivers"
+          ],
+          "grain": [
+            "period",
+            "cost_center"
+          ],
+          "columns": {
+            "period": "required",
+            "cost_center": "required",
+            "headcount": "required",
+            "cost_per_head": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "fpa",
+        "cfo"
+      ],
+      "jobs_to_be_done": [
+        "model a what-if scenario",
+        "show P&L sensitivity to an assumption change",
+        "decompose a P&L movement into drivers"
+      ],
+      "source_system_hints": [
+        "Planning",
+        "Forecasting",
+        "ERP"
+      ],
+      "workflow_cadence": [
+        "monthly_close",
+        "quarterly_close"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "finance.scenario.pnl": "official production data for planning P&L, income statement forecast, P&L by period; grain: period, metric_name; required fields: period; optional fields: metric_name, value",
+        "finance.scenario.assumptions": "official production data for planning assumptions, forecast drivers, growth rate assumptions; grain: version, parameter, period; required fields: version, parameter, period, value",
+        "finance.scenario.notes": "official production data for scenario notes, what-if history, forecast version notes; grain: scenario_id; required fields: scenario_id; optional fields: notes, created_date",
+        "finance.scenario.revenue_detail": "official production data for revenue by cohort, revenue by region, revenue detail; grain: period, customer_cohort, region; required fields: period, customer_cohort, region, revenue_amount",
+        "finance.scenario.headcount_cph": "official production data for headcount, cost per head, OPEX drivers; grain: period, cost_center; required fields: period, cost_center, headcount, cost_per_head"
+      }
+    }
+  ]
+}

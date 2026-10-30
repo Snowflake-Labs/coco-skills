@@ -1,0 +1,40 @@
+{
+  "domain_access": {"sample_domain": true},
+  "objects": [
+    {
+      "data_need_key": "s.ready.main",
+      "fqn": "SAMPLE_DB.X.READY_MAIN",
+      "official": true,
+      "confidence": "HIGH",
+      "columns_present": ["id", "amount"]
+    },
+    {
+      "data_need_key": "s.partial.main",
+      "fqn": "SAMPLE_DB.X.PARTIAL_MAIN",
+      "official": true,
+      "confidence": "HIGH",
+      "columns_present": ["id"]
+    },
+    {
+      "data_need_key": "s.unsafe.main",
+      "fqn": "SAMPLE_DB.X.UNSAFE_MAIN",
+      "official": true,
+      "confidence": "HIGH",
+      "columns_present": ["id"]
+    },
+    {
+      "data_need_key": "s.merge.summary",
+      "fqn": "SAMPLE_DB.X.MERGE_SUMMARY",
+      "official": true,
+      "confidence": "HIGH",
+      "columns_present": ["period", "amount"]
+    },
+    {
+      "data_need_key": "s.merge.extra",
+      "fqn": "SAMPLE_DB.X.MERGE_EXTRA",
+      "official": true,
+      "confidence": "HIGH",
+      "columns_present": ["note"]
+    }
+  ]
+}

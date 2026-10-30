@@ -1,0 +1,1 @@
+Fixture eval results must not be copied into generated customer plugins.
