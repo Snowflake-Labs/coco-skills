@@ -13,6 +13,8 @@
 
 /skills/                @sfc-gh-chorgan @sfc-gh-lhartzell
 /plugins/               @sfc-gh-chorgan @sfc-gh-lhartzell
+/plugins/people-hydrator/   @sfc-gh-czhang @sfc-gh-ujohnsonagwu
+/plugins/finance-hydrator/  @sfc-gh-sbahi @sfc-gh-rsangtani @sfc-gh-hoh
 
 # Process docs. Changing the review bar should be reviewed by the people who
 # hold that bar.
