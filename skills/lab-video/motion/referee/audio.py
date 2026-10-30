@@ -193,6 +193,18 @@ def main():
         check("the mix is a plain sum", r["sum"]["plainSum"])
         gaps = [g["medianVoiceAboveMusicDb"] for g in r.get("sceneGaps", []) if g["medianVoiceAboveMusicDb"] is not None]
         check("voice sits 12-25 dB over the music where it speaks", gaps and all(12 <= g <= 25 for g in gaps[:2]), gaps)
+        d = r.get("ducking") or {}
+        check("narrated default is the steady duck: one flat level, no swell between lines",
+              d.get("mode") == "steady" and d.get("envelopeSpreadDb", 99) < 1.0, d)
+        s_keyed = json.loads((root / "video.json").read_text())
+        s_keyed["audio"]["music"] = dict(s_keyed["audio"]["music"] if isinstance(s_keyed["audio"]["music"], dict)
+                                         else {"track": s_keyed["audio"]["music"]}, duck="speech")
+        (root / "video.json").write_text(json.dumps(s_keyed, indent=2))
+        rk = mx.render(root, pic, work / "keyed.mp4", final=True)
+        (root / "video.json").write_text(json.dumps(spec, indent=2))
+        dk = rk.get("ducking") or {}
+        check('duck "speech" still keys from the voice (the bed lifts between lines)',
+              dk.get("mode") == "speech" and dk.get("envelopeSpreadDb", 0) >= 3.0, dk)
         meta = mt.run(["-hide_banner", "-i", work / "narrated.mp4"], check=False).stderr.decode(errors="replace")
         check("the CC BY attribution travels in the file", "Something Elated" in meta and "creativecommons.org" in meta)
 

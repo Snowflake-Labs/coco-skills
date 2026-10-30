@@ -22,6 +22,10 @@ Measured across 34 scenes of three shipped videos — anchors, not preferences:
 
 Calibration point: the shipped reference proposal trailer is **43.7s across 10 scenes** (4.4s/beat).
 
+These numbers are for trailers, teasers and pitches. A **walkthrough** the viewer must follow step by step
+runs on different numbers (two beats per step, 10-15 s beats, 3-5 min): `walkthrough.md`, and set
+`"kind": "walkthrough"` so `motion/gate.py` applies them.
+
 **Why the headline is the gate and the total is not.** The first version of `copy_gate.py` counted every
 token on the frame against a limit of 9 and failed 8 of 10 scenes of a video that shipped and worked. An
 `arch` scene legitimately carries 26 label words because they are spatially separated and glanced at.

@@ -74,7 +74,9 @@ def words(s):
     return len([w for w in re.split(r"\s+", str(s).replace("*", " ").replace("_", " ")) if re.search(r"[^\W_]", w)])
 
 
-def audio_checks(root, spec, man, final, texts, fails, warns, notes):
+def audio_checks(root, spec, man, final, texts, fails, warns, notes, music_only=False):
+    # A music-only master leaves the narration out, so its recording state cannot fail that delivery.
+    voice_final = final and not music_only
     try:
         au = audioproject.audio_spec(spec)
     except SystemExit as e:
@@ -101,18 +103,19 @@ def audio_checks(root, spec, man, final, texts, fails, warns, notes):
         st = audioproject.line_status(root, spec)
         for r in st["scenes"]:
             if r["status"] == "long":
-                (fails if final else warns).append(f"{r['scene']}: the recorded line {r['message']}")
-            elif r["status"] in ("missing", "stale") and final:
+                (fails if voice_final else warns).append(f"{r['scene']}: the recorded line {r['message']}")
+            elif r["status"] in ("missing", "stale") and voice_final:
                 fails.append(f"{r['scene']}: narration {r.get('message', r['status'])}")
         sm = st["summary"]
         if sm["missing"] or sm["stale"]:
-            if not final:
+            if not voice_final:
                 warns.append(f"narration: {sm['ok'] + sm['long']} of {sm['lines']} lines recorded"
-                             + (f", {sm['stale']} changed since recording" if sm["stale"] else "") + " (Voice Studio)")
+                             + (f", {sm['stale']} changed since recording" if sm["stale"] else "") + " (Voice Studio)"
+                             + ("; this music-only master leaves it out" if music_only else ""))
         else:
             notes.append(f"narration: all {sm['lines']} lines recorded ({sc['words']} words)")
         if sm["test"]:
-            (fails if final else warns).append("narration includes a TEST_ONLY synthetic voice; record it before shipping")
+            (fails if voice_final else warns).append("narration includes a TEST_ONLY synthetic voice; record it before shipping")
     m = au["music"]
     if m:
         try:
@@ -283,13 +286,14 @@ def caption_checks(root, spec, man, final, texts, fails, warns, notes):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", required=True)
-    ap.add_argument("--max-total", type=float, default=120.0)
-    ap.add_argument("--soft-total", type=float, default=45.0)
+    ap.add_argument("--max-total", type=float, default=None, help="default 120s; 300s for a walkthrough")
+    ap.add_argument("--soft-total", type=float, default=None, help="default 45s; 180s for a walkthrough")
     ap.add_argument("--min-beat", type=float, default=2.0)
-    ap.add_argument("--max-beat", type=float, default=14.0)
+    ap.add_argument("--max-beat", type=float, default=None, help="default 14s; 18s for a walkthrough")
     ap.add_argument("--allow-jargon", action="store_true", help="internal-audience video")
     ap.add_argument("--strict-jargon", action="store_true", help="commercial vocabulary FAILs too")
     ap.add_argument("--final", action="store_true", help="delivery: unrecorded, changed or TEST_ONLY narration FAILs")
+    ap.add_argument("--music-only", action="store_true", help="with --final: a music-only master, which leaves the narration out")
     a = ap.parse_args()
 
     root = pathlib.Path(a.project).expanduser().resolve()
@@ -299,6 +303,13 @@ def main():
     except FileNotFoundError:
         man = {}
     g = spec.get("gate", {})
+    # "kind": "walkthrough" is a how-to the viewer follows step by step (patterns/walkthrough.md). It needs the time a
+    # trailer must not take: two beats per step and code held long enough to read. A reviewer called a two-minute
+    # how-to "useful as an overview, not detailed enough for a walkthrough" (2026-10-27).
+    walk = spec.get("kind") == "walkthrough"
+    a.max_total = a.max_total if a.max_total is not None else (300.0 if walk else 120.0)
+    a.soft_total = a.soft_total if a.soft_total is not None else (180.0 if walk else 45.0)
+    a.max_beat = a.max_beat if a.max_beat is not None else (18.0 if walk else 14.0)
     pace = float((spec.get("global") or {}).get("pace", 1))
     fails, warns, notes = [], [], []
     scenes = spec.get("scenes", [])
@@ -357,7 +368,7 @@ def main():
                 fails.append(f"{sid}: marked simulated but nothing on screen says so "
                              f"(one of: {', '.join(LABEL_WORDS)}). Depict the surface; do not imply the run happened.")
 
-    audio_checks(root, spec, man, a.final, texts, fails, warns, notes)
+    audio_checks(root, spec, man, a.final, texts, fails, warns, notes, a.music_only)
     data_checks(root, spec, man, a.final, fails, warns, notes)
     live_checks(root, spec, a.final, texts, fails, warns, notes)
     caption_checks(root, spec, man, a.final, texts, fails, warns, notes)

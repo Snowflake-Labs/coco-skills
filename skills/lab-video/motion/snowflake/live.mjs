@@ -11,9 +11,15 @@
 //                "setup": [{"wait": "Average order"}],                   // runs before recording starts
 //                "steps": [{"pause": 1}, {"click": "ASIA"}, {"wait": "Asia"}, {"pause": 1.5}],
 //                "forbid": ["re:@example\\.com"]}}
-// Steps: wait, waitGone, click, hover, type (+ into), press, scroll (+ at), pause, mark, goto. A target is text, or
-// {text, exact}, {role, name}, {label}, {placeholder} or {css}; it is found in any frame, so the iframe a
-// Streamlit-in-Snowflake app runs in is reached like the page around it.
+// Steps: wait, waitGone, click, hover, type (+ into), press, scroll (+ at), pause, mark, goto, bookmarklet. A target
+// is text, or {text, exact}, {role, name}, {label}, {placeholder} or {css}; it is found in any frame, so the iframe
+// a Streamlit-in-Snowflake app runs in is reached like the page around it.
+//   {"bookmarklet": "pack.txt"}   runs a javascript: URL (a file of one, relative to the project, ~ or absolute; or
+//                                 the URL itself) the way a bookmark click does, so the page's CSP does not apply.
+//                                 The take records the file and its hash, never the code.
+//   {"type": {"env": "KEY", "file": "~/app/.env"}, "into": {...}}   types a secret from the environment, or from
+//                                 the KEY= line of a dotenv file. Only into a password field, which never shows its
+//                                 value; nothing records the value, only the name.
 //
 // Chrome: once, start it with remote debugging on a profile of its own and sign in by hand (patterns/snowflake.md):
 //   open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir="$HOME/.lab-video/chrome"
@@ -23,6 +29,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
+import crypto from "crypto";
 import { spawnSync } from "child_process";
 import { loadProject, MOTION_ROOT } from "../lib/project.mjs";
 import { playwright } from "../lib/playwright.mjs";
@@ -78,18 +85,59 @@ page.on("pageerror", (e) => errors.push(String(e.message).slice(0, 200)));
 let rec0 = 0;
 const now = () => (rec0 ? Math.round((Date.now() - rec0) / 10) / 100 : -1);   // seconds into the take; -1 in setup
 const seen = new Map();
-let samples = 0;
+let samples = 0, hiddenFrameSkips = 0;
+// A frame's text: its page text plus what it draws inside open shadow roots (Snowsight Packs and many components
+// do), which innerText leaves out, and anything mounted beside <body> (packs attach their hosts to <html> so a
+// page re-render cannot remove them). A root's <style> and <script> are not text.
+const DEEP_TEXT = () => {
+  const out = [document.body ? document.body.innerText : ""];
+  const NOT_TEXT = /^(STYLE|SCRIPT|TEMPLATE|LINK|META|HEAD|BODY)$/;
+  for (const c of document.documentElement.children) if (!NOT_TEXT.test(c.tagName)) out.push(c.innerText || "");
+  const walk = (root) => {
+    for (const el of root.querySelectorAll("*")) {
+      if (!el.shadowRoot) continue;
+      for (const c of el.shadowRoot.children) if (!NOT_TEXT.test(c.tagName)) out.push(c.innerText || "");
+      walk(el.shadowRoot);
+    }
+  };
+  walk(document.documentElement);
+  return out.join("\n");
+};
+// A frame no one can see (no size, off screen, display:none, visibility:hidden, opacity 0, or inside such a frame)
+// shows nothing, so its text is not what was on screen. Snowsight Packs read Snowsight pages in a hidden frame.
+// OCR still reads the picture, and a frame whose visibility cannot be told is read.
+async function shown(f, memo) {
+  if (f === page.mainFrame()) return true;
+  if (memo.has(f)) return memo.get(f);
+  let ok = true;
+  try {
+    const parent = f.parentFrame();
+    if (parent && !(await shown(parent, memo))) ok = false;
+    else ok = await (await f.frameElement()).evaluate((e) => {
+      for (let n = e; n && n.nodeType === 1; n = n.parentElement || (n.getRootNode() && n.getRootNode().host) || null) {
+        const s = getComputedStyle(n);
+        if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0) return false;
+      }
+      const r = e.getBoundingClientRect();
+      return r.width > 2 && r.height > 2 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+    });
+  } catch { ok = true; }
+  memo.set(f, ok);
+  return ok;
+}
 async function scanText() {
+  const memo = new Map();
   for (const f of page.frames()) {
+    if (!(await shown(f, memo))) { hiddenFrameSkips++; continue; }
     let txt = "";
-    try { txt = await f.evaluate(() => (document.body ? document.body.innerText : "")); } catch { continue; }
+    try { txt = await f.evaluate(DEEP_TEXT); } catch { continue; }
     for (const line of txt.split("\n").map((x) => x.trim()).filter(Boolean)) if (!seen.has(line)) seen.set(line, now());
   }
   samples++;
 }
 const frameText = async () => {
   const out = [];
-  for (const f of page.frames()) { try { out.push(await f.evaluate(() => (document.body ? document.body.innerText : ""))); } catch { /* navigating */ } }
+  for (const f of page.frames()) { try { out.push(await f.evaluate(DEEP_TEXT)); } catch { /* navigating */ } }
   return out.join("\n");
 };
 
@@ -164,10 +212,35 @@ async function centre(t) {
 
 // ---- steps ------------------------------------------------------------------------------------------------
 const log = [], marks = [];
+const resolveFile = (p) => (p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : path.resolve(proj.root, p));
+// A secret for a {"type": {"env": ...}} step. The value goes to the keyboard and nowhere else: not the log, the
+// take, an error message or the console.
+function secret(spec) {
+  if (!spec.env) throw new Error("a secret to type is {env: NAME} or {env: NAME, file: dotenv}");
+  if (!spec.file) {
+    if (!process.env[spec.env]) throw new Error(`${spec.env} is not set in the environment`);
+    return process.env[spec.env];
+  }
+  const file = resolveFile(String(spec.file));
+  if (!fs.existsSync(file)) throw new Error(`no dotenv file ${spec.file}`);
+  const line = fs.readFileSync(file, "utf8").split("\n").find((l) => l.startsWith(spec.env + "="));
+  const value = line ? line.slice(spec.env.length + 1).trim().replace(/^(["'])(.*)\1$/, "$2") : "";
+  if (!value) throw new Error(`${spec.env} is not in ${spec.file}`);
+  return value;
+}
+// The javascript: URL a {"bookmarklet": ...} step runs, and what the take may say about it (never the code).
+function bookmarklet(ref) {
+  const inline = String(ref).startsWith("javascript:");
+  const code = inline ? String(ref) : fs.readFileSync(resolveFile(String(ref)), "utf8").trim();
+  if (!code.startsWith("javascript:")) throw new Error(`${ref} is not a javascript: URL`);
+  const sha256 = crypto.createHash("sha256").update(code).digest("hex").slice(0, 16);
+  return { code, about: { file: inline ? "inline" : String(ref), sha256, bytes: Buffer.byteLength(code) } };
+}
 async function step(st, phase) {
-  const kind = Object.keys(st).find((k) => ["wait", "waitGone", "click", "hover", "type", "press", "scroll", "pause", "mark", "goto"].includes(k));
+  const kind = Object.keys(st).find((k) => ["wait", "waitGone", "click", "hover", "type", "press", "scroll", "pause", "mark", "goto", "bookmarklet"].includes(k));
   if (!kind) throw new Error("unknown step " + JSON.stringify(st));
   const t = now(), timeout = Number(st.timeout || 30), started = Date.now();
+  let about = null;
   if (kind === "wait" || kind === "waitGone") {
     const want = st[kind], end = Date.now() + timeout * 1000;
     for (let i = 0; ; i++) {
@@ -183,8 +256,18 @@ async function step(st, phase) {
     if (kind === "click") { await cursor(x, y, true); await page.mouse.down(); await sleep(60); await page.mouse.up(); }
     else await sleep(Number(st.for || 0.8) * 1000);
   } else if (kind === "type") {
-    if (st.into) { const [x, y] = await centre(st.into); await glide(x, y); await cursor(x, y, true); await page.mouse.click(x, y); }
-    await page.keyboard.type(String(st.type), { delay: Number(st.delay || 55) });
+    if (typeof st.type === "object") {
+      // A secret: only into a password field, so the take shows dots, and its text scan never sees the value.
+      if (!st.into) throw new Error("typing a secret needs an \"into\" target");
+      const loc = await locate(st.into);
+      const isPassword = await loc.evaluate((el) => el instanceof HTMLInputElement && el.type === "password").catch(() => false);
+      if (!isPassword) throw new Error(`a secret is only typed into a password field, and ${describe(st.into)} is not one`);
+      const [x, y] = await centre(st.into); await glide(x, y); await cursor(x, y, true); await page.mouse.click(x, y);
+      await page.keyboard.type(secret(st.type), { delay: Number(st.delay || 55) });
+    } else {
+      if (st.into) { const [x, y] = await centre(st.into); await glide(x, y); await cursor(x, y, true); await page.mouse.click(x, y); }
+      await page.keyboard.type(String(st.type), { delay: Number(st.delay || 55) });
+    }
   } else if (kind === "press") {
     await page.keyboard.press(String(st.press));
   } else if (kind === "scroll") {
@@ -198,8 +281,16 @@ async function step(st, phase) {
     marks.push({ name: String(st.mark), t });
   } else if (kind === "goto") {
     await page.goto(st.goto, { waitUntil: "domcontentloaded", timeout: timeout * 1000 });
+  } else if (kind === "bookmarklet") {
+    // Exactly what a bookmark click does: a browser-initiated javascript: navigation, which the page's CSP allows.
+    // Chrome reports net::ERR_ABORTED for every one (no document commits); a later "wait" proves the code ran.
+    const b = bookmarklet(st.bookmarklet);
+    about = b.about;
+    const r = await cdp.send("Page.navigate", { url: b.code });
+    if (r && r.errorText && r.errorText !== "net::ERR_ABORTED") throw new Error(`bookmarklet ${b.about.file}: ${r.errorText}`);
+    await sleep(Number(st.settle ?? 0.3) * 1000);
   }
-  log.push({ phase, step: kind, target: typeof st[kind] === "object" ? st[kind] : String(st[kind]), at: t,
+  log.push({ phase, step: kind, target: about || (typeof st[kind] === "object" ? st[kind] : String(st[kind])), at: t,
     took: Math.round((Date.now() - started) / 10) / 100 });
   await scanText();
 }
@@ -276,7 +367,7 @@ fs.rmSync(tmp, { recursive: true, force: true });
 
 const take = { scene: s.id, take: n, file: name + ".mp4", capturedAt: new Date().toISOString(), url: cap.url, viewport: { width: W, height: H, zoom },
   capture: cap, seconds: Math.round(seconds * 1000) / 1000, frames: frames.length, paintedFps: painted, marks, steps: log,
-  pageErrors: errors.slice(0, 10), text: [...seen].map(([line, t]) => ({ line, t })).slice(0, 800), dom: { samples, lines: seen.size } };
+  pageErrors: errors.slice(0, 10), text: [...seen].map(([line, t]) => ({ line, t })).slice(0, 800), dom: { samples, lines: seen.size, hiddenFrameSkips } };
 const tj = path.join(dir, name + ".json");
 fs.writeFileSync(tj, JSON.stringify(take, null, 1));
 

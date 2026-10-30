@@ -13,6 +13,8 @@
 //      "clock": true, "speed": 1, "from": 0 | "continue": "<previous scene id>",
 //      "deps": ["/static/intro.js", "assets/**"], "webgl": true, "role": "cta", "simulated": true},
 //     {"id": "clip", "kind": "footage", "src": "assets/take.mp4", "in": 2.0, "dur": 4.0, "overlay": "scenes/x.html"},
+//     {"id": "win", "kind": "footage", "src": "takes/win/current.mp4", "dur": 6, "box": [760, 150, 1080, 608],
+//      "overlay": "scenes/window.html"},                // box: the footage fills only that rectangle (x, y, w, h)
 //     {"id": "stat", "src": "scenes/stat.html", "dur": 4, "bind": {"value": "orders.total", "bars": "regions.rows"}}
 //   ],
 //   "data": {"connection": "...", "queries": {...}},     // Snowflake values: ../patterns/snowflake.md

@@ -146,7 +146,17 @@ export async function renderScene(proj, s, { browser, origin, out, proxy = false
 async function renderFootage(proj, s, { browser, origin, out, tmp, proxy, t0 }) {
   const W = proxy ? proj.width / 2 : proj.width, H = proxy ? proj.height / 2 : proj.height;
   const input = ["-ss", String(s.in || 0), "-t", (s.frames / proj.fps).toFixed(6), "-i", path.join(proj.root, s.src)];
-  const fit = `fps=${proj.fps},scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=rgb24`;
+  // "box": [x, y, w, h] (project pixels) places the footage in that rectangle, so the overlay can frame it as a
+  // window beside the copy; without a box it fills the frame. The rest of the frame is the box colour (tokens.bg).
+  const k = proxy ? 0.5 : 1;
+  const box = Array.isArray(s.box) && s.box.length === 4 ? s.box.map((v) => Math.round(Number(v) * k)) : null;
+  if (box && (box[0] < 0 || box[1] < 0 || box[2] < 2 || box[3] < 2 || box[0] + box[2] > W || box[1] + box[3] > H))
+    throw new Error(`scene ${s.id}: box ${JSON.stringify(s.box)} is not inside the ${proj.width}x${proj.height} frame`);
+  const bg = String(s.boxColor || (proj.spec.tokens || {}).bg || "#000000");
+  const place = box
+    ? `scale=${box[2]}:${box[3]}:force_original_aspect_ratio=decrease,pad=${W}:${H}:${box[0]}+(${box[2]}-iw)/2:${box[1]}+(${box[3]}-ih)/2:color=${bg}`
+    : `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2`;
+  const fit = `fps=${proj.fps},${place},setsar=1,format=rgb24`;
   if (!s.overlay) {
     run([...input, "-vf", fit + "," + BT709, "-frames:v", String(s.frames), "-c:v", "libx264", "-preset", "fast", "-crf", "14",
       "-g", String(proj.fps), "-threads", "4", "-movflags", "+faststart", "-an", tmp]);

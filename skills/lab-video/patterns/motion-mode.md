@@ -116,7 +116,9 @@ and Three.js store this way, unmodified. Rules:
 - Set `"webgl": true` on a code scene with a canvas; clock scenes always wait for the compositor.
 
 **Footage scenes** (`"kind": "footage"`) trim and fit a video file, optionally under a transparent
-code-scene overlay.
+code-scene overlay. `"box": [x, y, w, h]` places the footage in that rectangle instead of the whole frame (the
+rest is `tokens.bg`), so the overlay can draw a window, a URL bar and a headline around a live take rather than on
+top of it. A box outside the frame fails the render.
 
 ## Honesty, enforced by `gate.py`
 
@@ -189,10 +191,13 @@ From the first project built this way (7 scenes, 28 s):
 
 ## Not built yet, or not yet proven
 
-- **A real human take has not been through the splitter yet**: only TEST voices and Chrome's fake
-  microphone. Its thresholds (10 dB over the take's floor, 0.3 s joins, the pre-cue cough rule) were
-  calibrated on synthetic speech. Listen to the first real mix, and check `voice.py status` and the take's
-  `.ingest.json` for stray or split phrases.
+- **One real human take has been through the splitter** (2026-10-26, `~/videos/dcr_identity_howto`): a
+  115 s "Record all" split into 17 lines with no strays, plus three pick-ups for one line; the mic recorded on the
+  left channel only and the splitter took that channel. Its thresholds (10 dB over the take's floor, 0.3 s joins,
+  the pre-cue cough rule) were calibrated on synthetic speech, so still listen to each first real mix, and check
+  `voice.py status` and the take's `.ingest.json` for stray or split phrases. That first real mix exposed a mixer
+  bug the synthetic test takes never hit: the speech mask had one window more than the music's levels (fixed in
+  `audio/mix.py`; `referee/audio.py` 28/28).
 - Tempo and ending analysis assumes constant tempo and 4/4. The downbeat is high-confidence only when the
   track has a final hit; on a fading track it is a vote among section changes. Nobody has listened through
   this tool: audition the track in the review page before choosing it.

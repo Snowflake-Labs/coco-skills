@@ -3,6 +3,37 @@
 Use this branch for a short, customer-perspective film with real app footage and replaceable narration.
 The story follows a user's decisions, not a tour of every available control.
 
+## Overview or walkthrough: decide first
+
+These are different deliverables, and a reviewer will tell you which one you made. A 1:56 how-to for a
+clean room team (16 beats, one per step, the step 2 SQL at 14 lines and 21 px) came back as *"useful as an
+overview, not detailed enough for a walkthrough… it's not possible to identify everything happening in the
+code snippets"* (2026-10-27). The fix was a different kind of video, not a polish:
+
+| | Overview | Walkthrough (`"kind": "walkthrough"` in `video.json`) |
+|---|---|---|
+| Job | the viewer understands the idea | the viewer can do the steps afterwards |
+| Beats per step | 1 | 2: **what you do**, then **how it works / what you see** |
+| Beat length | 4-8 s | 10-15 s; the gate allows 18 s |
+| Code on screen | a glimpse is fine | at most ~9 lines, 22-25 px, full width (`code.html` `layout: "wide"`), highlights paced to the narration (`first`, `gap` 2.5-3 s) |
+| Runtime | under 2 min (gate cap 120 s) | 3-5 min (gate cap 300 s, soft 180 s) |
+
+Code excerpts are quoted verbatim from what ran (generate them from the source, don't retype them); mark
+any elision with an in-language comment (`-- FROM and JOIN as in email_match`, `# data_providers: ...`)
+and say "Excerpt" on the card. Keep lines under ~90 characters so a callout still fits after them.
+
+**Explain the mechanism the audience is worried about, not just its result.** "The crosswalk stays inside"
+is a claim; a privacy and security audience asks *how*. Give that its own beat, built from facts already in
+the source (for the clean room: hashed before it arrives → the room sees only listed columns → offerings
+are template-only → the result lands in a protected schema and only its name comes back). The reviewer
+asked for exactly this on the step where data "isn't readable".
+
+**Write it from the viewer's seat.** Frame it as the steps *this* customer takes ("Step one, in your own
+account: register a data offering. Roku does the same."), not the steps "taken overall" by named parties.
+Second person in headlines, subs and narration; the partner stays third person; diagram labels can keep
+party names for clarity. A POV rewrite touches every line, so it means re-recording every line: decide POV
+before the first recording session.
+
 ## Inputs and decisions
 
 Confirm the actual app/version, audience, maximum runtime, must-show workflows, current vs simulated

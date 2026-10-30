@@ -222,7 +222,8 @@ def main():
         if uses_snowflake(spec):
             # Snowflake values, filmed apps and captions all have failure modes a file probe cannot see (a stale
             # query, a leak in a take, captions from an old recording), so the gate decides before anything is built.
-            g = subprocess.run([sys.executable, str(HERE / "gate.py"), "--project", str(root), "--final"], capture_output=True, text=True)
+            g = subprocess.run([sys.executable, str(HERE / "gate.py"), "--project", str(root), "--final"]
+                               + (["--music-only"] if a.music_only else []), capture_output=True, text=True)
             fails = [ln for ln in g.stdout.splitlines() if ln.startswith("FAIL")]
             test_only = [ln for ln in fails if "TEST_ONLY" in ln]
             if g.returncode != 0 and not (a.allow_test_voice and fails and len(test_only) == len(fails)):

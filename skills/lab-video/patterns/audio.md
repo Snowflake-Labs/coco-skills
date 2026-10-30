@@ -49,8 +49,13 @@ hand-writing a filter graph:
 - **The music library** (`library.py`) reads the licence from each track's own FMA page. On Broke For Free's
   "Something EP" only "Something Elated" is CC BY; its four siblings are CC BY-NC, so an assumption made
   from the album would have been wrong four times out of five there.
-- **`mix.py`** keeps the Oct 8 mixer's rules (duck keyed from the voice alone, plain sum, master measured on
-  the decoded AAC, picture stream copied) and adds the music-only target above.
+- **`mix.py`** keeps the Oct 8 mixer's rules (plain sum, master measured on the decoded AAC, picture stream
+  copied) and adds the music-only target above. **The duck is steady by default** (`audio.music.duck:
+  "steady"`): one fixed level for the whole video, at the depth the keyed duck reaches under speech, so the
+  bed never swells back up between lines. The keyed duck (`"duck": "speech"`) lifted the bed in every gap
+  longer than its 0.9 s hold; on a 16-line how-to a reviewer heard it "weave in and out so frequently" that
+  it distracted (2026-10-27). Keep `"speech"` for sparse narration over a music-led piece. The mix report
+  shows `ducking.mode` and `envelopeSpreadDb` (0 when steady); `referee/audio.py` checks both modes.
 
 ## Narration (TTS)
 
@@ -116,8 +121,9 @@ denoising/EQ on an Audacity-cleaned source. Apply modest gain and only the peak 
 report how often it acted instead of calling every limiter "gentle".
 
 Mix music below the actual human speech, not below the old TTS level. A useful starting point is
-roughly 15-20 dB lower during spoken passages, adjusted by content and listening. If ducking is needed,
-use a hold and slow release so music does not swell between words. Measure the final AAC-encoded mix
+roughly 15-20 dB lower during spoken passages, adjusted by content and listening. Under continuous
+narration hold the music at one ducked level for the whole video; a duck that releases between lines
+reads as pumping, even with a hold and slow release. Measure the final AAC-encoded mix
 around -16 LUFS with approximately -1.5 to -2 dB true-peak headroom. Keep voice, music and mix stems.
 Copy the verified picture stream when only audio changes, compare its hash, and update or remove
 stale TTS-timed subtitles rather than imply they match the new recording.

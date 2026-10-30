@@ -97,7 +97,14 @@ node $M/snowflake/live.mjs --project P --scene app --dry-run    # rehearse the s
 - **Steps:**
   - waiting and pausing: `wait` (text or a target), `waitGone`, `pause`;
   - input: `click`, `hover`, `type` (with `into`), `press`, `scroll` (with `at`);
-  - `mark` records a moment, and `goto` opens another page.
+  - `mark` records a moment, and `goto` opens another page;
+  - `bookmarklet` runs a `javascript:` URL from a file (or inline) the way a bookmark click does, so it runs on
+    Snowsight despite its CSP: this is how a Snowsight Pack is filmed (`{"bookmarklet":
+    "~/videos/snowsight_packs/dist/bookmarklets/garden.txt"}`). The take keeps the file name and a hash of
+    the code, never the code;
+  - `type` with `{"env": "KEY"}` or `{"env": "KEY", "file": "path/.env"}` types a secret (a partner key, a demo
+    password). It types only into a password field, so the take shows dots; the value is never logged, written to
+    the take, or printed, only its name.
 - **Targets:** text, or `{role, name}`, `{label}`, `{placeholder}`, `{text, exact}` or `{css}`. `setup` runs before
   recording starts: wait there for the app's slowest part (a chart's axis title, not just its first metric).
 - **Zoom:**

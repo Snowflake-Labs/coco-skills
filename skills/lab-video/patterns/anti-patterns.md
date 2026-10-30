@@ -95,6 +95,8 @@ feature list where a `turn` should be, narration explaining what the visual alre
 
 Cutting is the highest-leverage edit available and the one least often taken.
 
+This is about pitches, trailers and teasers. A walkthrough is the opposite case: see 16.
+
 ## 13. Reviewing a video by watching it once
 
 You cannot catch a 0.3s type collision, an off-brand frame or a mid-transition state at playback speed —
@@ -109,6 +111,19 @@ hidden**: the author rule beats the browser's `[hidden]{display:none}`. Voice St
 overlay covered the page and blocked every button; the review page hit the same thing with `video[hidden]`.
 A browser drive caught both; a screenshot alone did not, because the overlay was transparent at rest. Any
 page with a `hidden` toggle needs `[hidden]{display:none!important}`, and a drive that clicks through it.
+
+## 15. The pumping bed
+
+Music ducked under each line and released between them. With a line per scene it swells back up a dozen
+times, and the listener hears the mixer instead of the voice. Nothing measures it as wrong: loudness, peak
+and voice-over-music gaps all pass. Under continuous narration, duck once and hold it (`mix.py` default).
+
+## 16. The overview sold as a walkthrough
+
+One beat per step, code too small to read, a two-minute cap applied to a how-to. It plays well and
+reviews well ("very professional") and still can't be followed. If the audience must do the steps, give
+each step two beats, quote readable code, explain the mechanism they will be asked about, and let it run
+3-5 minutes (`patterns/walkthrough.md`). Frame every step as the viewer's own.
 
 ## See also
 

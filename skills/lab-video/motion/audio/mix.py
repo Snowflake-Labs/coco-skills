@@ -7,9 +7,13 @@
 
 Each recorded line is placed so its first word lands "voiceAt" seconds (default 0.35) after its scene's cut, at
 its take's measured level matched to -20 LUFS. Nothing is sped up, slowed or retimed. The music bed (bed.py) sits
-6 LU under the voice and ducks under speech, keyed from the voice alone (17.5 dB under the voice's short-term
-level, never deeper than -30 dB; 100 ms look-ahead, 80 ms attack, 0.9 s hold, 1.2 s release), so the music's own
-lifts and drops pass through and gaps shorter than the hold never swell. The sum is a plain sum (checked), then
+6 LU under the voice and is ducked under it. audio.music.duck picks how:
+  "steady" (default when narrated): one fixed duck for the whole video, at the depth the keyed duck reaches during
+           speech, so the bed never swells back up between lines. A reviewer found the keyed duck "weaves in and out
+           so frequently" it distracts (2026-10-27, a 16-line how-to with gaps between every line).
+  "speech": keyed from the voice alone (17.5 dB under the voice's short-term level, never deeper than -30 dB;
+           100 ms look-ahead, 80 ms attack, 0.9 s hold, 1.2 s release), so the bed lifts in every gap longer
+           than the hold. Use it only for sparse narration over a music-led piece (a hype trailer). The sum is a plain sum (checked), then
 one measured fixed gain masters it, checked on the decoded AAC: -16 LUFS narrated, -22 LUFS music only (a
 reviewer found -16 music-only "about 2x as loud", 2026-10-13), true peak at or below -1.5 dBTP, picture stream untouched.
 
@@ -41,7 +45,8 @@ DUCK_GAP, DUCK_FLOOR, SHORT_TERM = 17.5, -30.0, 1.5
 ATTACK, LOOKAHEAD, HOLD, RELEASE = 0.08, 0.10, 0.9, 1.2
 TOLERANCE, CEILING, GAP_WARNING = 0.7, -1.5, 15.0
 END_FADE = 0.04
-VERSION = "mix-1"
+VERSION = "mix-3"
+DUCK_MODES = ("steady", "speech")
 NOTE = "Analysis and level checks, not a listening review. The assistant cannot listen."
 
 
@@ -178,11 +183,14 @@ def build_stems(root, spec, final=False, allow_test=False, allow_missing=False):
         report["lines"] = st["summary"]
     music_meta = bedmod.build(root, spec, quiet=True, narrated=bool(placed)) if a["music"] else None
     gain_db = float((a["music"] or {}).get("gainDb", 0.0))
+    duck_mode = (a["music"] or {}).get("duck", "steady")
+    if duck_mode not in DUCK_MODES:
+        raise SystemExit('audio.music.duck "%s" is not one of %s' % (duck_mode, ", ".join(DUCK_MODES)))
     target = a["targetLufs"] if a["targetLufs"] is not None else (pj.TARGET_NARRATED if (a["narration"] and placed) else pj.TARGET_MUSIC_ONLY + (gain_db if not a["narration"] else 0.0))
     if a["narration"] and not placed and music_meta:
         report["warnings"].append("no narration line is recorded yet: mixed as music only, at %.0f LUFS" % target)
     report["targetLufs"] = target
-    key = hashlib.sha256(json.dumps({"v": VERSION, "bed": music_meta and music_meta["key"], "gain": gain_db, "placed": placed,
+    key = hashlib.sha256(json.dumps({"v": VERSION, "bed": music_meta and music_meta["key"], "gain": gain_db, "placed": placed, "duck": duck_mode,
                                      "count": count, "narr": a["narration"]}, sort_keys=True).encode()).hexdigest()[:12]
     folder = pj.build_audio(root) / ("mix-" + key)
     report.update(key=key, stems=str(folder.relative_to(root)), placed=placed)
@@ -196,21 +204,32 @@ def build_stems(root, spec, final=False, allow_test=False, allow_missing=False):
         return report
     voice_st = np.repeat(voice[:, None], 2, axis=1)
     win = int(round(WINDOW * RATE))
-    active = sustained(mt.rms_db(voice_st, win) > SPEECH_DBFS) if placed else np.zeros(int(round(count / win)), bool)
-    active = np.concatenate([active, np.zeros(max(0, int(round(count / win)) - len(active)), bool)])[:int(round(count / win))]
+    # as many windows as rms_db() returns (whole windows only); round() was one more when the tail was >= half a
+    # window, and the speech mask then no longer indexed the music's levels (seen on a 114.233 s cut, 2026-10-26)
+    n_win = count // win
+    active = sustained(mt.rms_db(voice_st, win) > SPEECH_DBFS) if placed else np.zeros(n_win, bool)
+    active = np.concatenate([active, np.zeros(max(0, n_win - len(active)), bool)])[:n_win]
     if music_meta:
         bed = mt.decode(root / music_meta["file"]).astype(np.float64)[:count]
         bed_lufs = music_meta["level"]["integrated_lufs"]
         music_gain = (pj.VOICE_LUFS - MUSIC_BELOW_VOICE - bed_lufs + gain_db) if placed else 0.0
         music = bed * 10 ** (music_gain / 20)
         duck, duck_db, ref = duck_envelope(mt.rms_db(voice_st, win), mt.rms_db(music, win), active, count) if placed else (np.ones(count), np.zeros(1), None)
-        music_stem = music * duck[:, None]
         speaking = np.repeat(active, int(round(WINDOW / STEP)))[:len(duck_db)]
         during = duck_db[speaking] if placed and speaking.any() else np.zeros(1)
-        report["ducking"] = {"musicGainDb": round(music_gain, 2), "reviewerGainDb": gain_db, "musicReferenceDbfs": ref and round(ref, 1),
+        if placed and duck_mode == "steady":
+            # the keyed duck is measured against the bed after gainDb, so gainDb cancels out of it; under a steady
+            # duck add it back, so gainDb trims the bed under the voice (a dense bed left 7 scenes under 15 dB, 2026-10-27)
+            steady_db = float(np.median(during)) + gain_db
+            duck, duck_db = np.full(count, 10 ** (steady_db / 20)), np.full(len(duck_db), steady_db)
+            during = duck_db[speaking] if speaking.any() else np.zeros(1)
+        music_stem = music * duck[:, None]
+        report["ducking"] = {"mode": duck_mode if placed else None, "musicGainDb": round(music_gain, 2), "reviewerGainDb": gain_db, "musicReferenceDbfs": ref and round(ref, 1),
                              "rangeDuringSpeechDb": [round(float(during.min()), 1), round(float(during.max()), 1)],
                              "medianDuringSpeechDb": round(float(np.median(during)), 1),
-                             "rule": "music's typical level under speech %.1f dB under the voice's short-term level; keyed from the voice alone" % DUCK_GAP}
+                             "envelopeSpreadDb": round(float(duck_db.max() - duck_db.min()), 2) if placed else 0.0,
+                             "rule": ("one fixed duck for the whole video, at the keyed duck's median depth under speech" if duck_mode == "steady"
+                                      else "music's typical level under speech %.1f dB under the voice's short-term level; keyed from the voice alone" % DUCK_GAP)}
     else:
         music_stem = np.zeros((count, 2))
     mix = voice_st + music_stem

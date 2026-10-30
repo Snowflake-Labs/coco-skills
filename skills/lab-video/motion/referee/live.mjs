@@ -35,13 +35,24 @@ document.getElementById("next").onclick = () => {
 const serve = (handler) => new Promise((resolve) => { const s = http.createServer(handler); s.listen(0, "127.0.0.1", () => resolve(s)); });
 const appSrv = await serve((req, res) => {
   const q = new URL(req.url, "http://x").searchParams.get("mode") || "clean";
-  res.writeHead(200, { "content-type": "text/html" }); res.end(APP(q));
+  res.writeHead(200, { "content-type": "text/html" });
+  res.end(req.url.startsWith("/hidden") ? "<!doctype html><body>Hidden owner ACMECORP</body>" : APP(q));
 });
 const appOrigin = `http://127.0.0.1:${appSrv.address().port}`;
 const shell = await serve((req, res) => {
   const q = new URL(req.url, "http://x").searchParams.get("mode") || "clean";
-  res.writeHead(200, { "content-type": "text/html" });
-  res.end(`<!doctype html><meta charset="utf-8"><body style="margin:0;font:22px Helvetica"><div style="padding:14px 24px">Fixture shell</div>
+  // csp: a page whose policy forbids every script, as Snowsight forbids inline ones; a bookmark still runs on it.
+  // secret: a password field and a plain one; the page prints only how many characters arrived, never the value.
+  res.writeHead(200, { "content-type": "text/html", ...(q === "csp" ? { "content-security-policy": "script-src 'none'" } : {}) });
+  const fields = q === "secret" ? `<div style="padding:0 24px"><input id="pw" type="password"> <input id="tx" type="text"> <span id="typed"></span></div>
+<script>for (const id of ["pw", "tx"]) document.getElementById(id).oninput = (e) =>
+  { document.getElementById("typed").textContent = id + " typed " + e.target.value.length; };</script>`
+    // shadow: words drawn inside an open shadow root on a host mounted on <html>, as Snowsight Packs mount theirs
+    : q === "shadow" ? `<script>const h = document.createElement("div"); document.documentElement.appendChild(h);
+  h.attachShadow({ mode: "open" }).innerHTML = "<style>p{color:#333}</style><p>Pack card for ACMECORP</p>";</script>`
+    // hidden: a frame no one can see, as Snowsight Packs read Snowsight pages in a hidden frame
+    : q === "hidden" ? `<iframe src="${appOrigin}/hidden" style="display:none"></iframe>` : "";
+  res.end(`<!doctype html><meta charset="utf-8"><body style="margin:0;font:22px Helvetica"><div style="padding:14px 24px">Fixture shell</div>${fields}
 <iframe src="${appOrigin}/app?mode=${q}" style="width:100%;height:640px;border:0"></iframe></body>`);
 });
 const shellUrl = `http://127.0.0.1:${shell.address().port}/`;
@@ -121,6 +132,43 @@ try {
   check(/capture block changed after take \d+ was filmed/.test(g.out), "steps changed after filming are flagged");
   g = gate("--final");
   check(g.fails.some((f) => /capture block changed/.test(f)), "and FAIL on --final");
+
+  // A bookmarklet from a file runs the way a bookmark click does, through a policy that forbids every script, and
+  // the take names the file and its hash but never carries the code (CODEMARK is a comment that never renders).
+  fs.writeFileSync(path.join(root, "pack.txt"),
+    "javascript:/*CODEMARK*/void(document.body.insertAdjacentHTML('beforeend','<p id=\"packed\">Pack on</p>'))");
+  r = await film("csp", { steps: [{ pause: 0.3 }, { bookmarklet: "pack.txt" }, { wait: "Pack on" }, { pause: 0.6 }] });
+  let tk = current();
+  check(r.code === 0 && tk && tk.text.some((t) => t.line === "Pack on"), "a bookmarklet runs on a page whose CSP forbids scripts",
+    r.code ? r.out.trim().split("\n").slice(-2).join(" | ") : "");
+  const ran = tk && tk.steps.find((x) => x.step === "bookmarklet");
+  check(ran && ran.target.file === "pack.txt" && /^[0-9a-f]{16}$/.test(ran.target.sha256) && !JSON.stringify(tk).includes("CODEMARK"),
+    "the take records the bookmarklet's file and hash, never its code");
+
+  // A secret from a dotenv file reaches the password field and nothing else: not the take, the log or the console.
+  const SECRET = "s3cr3t-VALUE-0042";
+  fs.writeFileSync(path.join(root, "ref.env"), `OTHER=1\nREF_SECRET="${SECRET}"\n`);
+  r = await film("secret", { steps: [{ pause: 0.2 }, { type: { env: "REF_SECRET", file: "ref.env" }, into: { css: "#pw" } },
+    { wait: "pw typed " + SECRET.length }, { pause: 0.4 }] });
+  tk = current();
+  const takeDir = path.join(root, "takes", "app");
+  const leaked = r.out.includes(SECRET) || fs.readdirSync(takeDir).filter((f) => f.endsWith(".json"))
+    .some((f) => fs.readFileSync(path.join(takeDir, f), "utf8").includes(SECRET));
+  check(r.code === 0 && tk && tk.text.some((t) => t.line === "pw typed " + SECRET.length), "a secret from a dotenv file is typed into the password field",
+    r.code ? r.out.trim().split("\n").slice(-2).join(" | ") : "");
+  check(!leaked && tk && JSON.stringify(tk.steps).includes("REF_SECRET"), "and only its name is recorded, nowhere its value");
+  r = await film("secret", { steps: [{ type: { env: "REF_SECRET", file: "ref.env" }, into: { css: "#tx" } }] });
+  check(r.code !== 0 && /only typed into a password field/.test(r.out) && !r.out.includes(SECRET),
+    "a secret is refused for a field that would show it");
+
+  // Text a page draws in an open shadow root is on screen, so it is scanned; a frame no one can see is not.
+  r = await film("shadow");
+  check(r.code === 1 && /HIT.*ACMECORP/.test(r.out), "a blocked word inside an open shadow root is refused",
+    r.out.match(/^HIT.*$/m)?.[0] || r.out.trim().split("\n").slice(-1)[0]);
+  r = await film("hidden");
+  tk = current();
+  check(r.code === 0 && tk && tk.dom.hiddenFrameSkips > 0 && !tk.text.some((t) => /ACMECORP/.test(t.line)),
+    "a hidden frame's text is not counted as on screen", r.code ? r.out.trim().split("\n").slice(-2).join(" | ") : "");
 } finally {
   const gone = new Promise((r) => chrome.once("exit", r));
   chrome.kill();
