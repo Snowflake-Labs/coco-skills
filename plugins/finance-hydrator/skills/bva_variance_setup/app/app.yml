@@ -1,0 +1,68 @@
+install:
+  commands:
+    - ["npm", "ci", "--include=dev"]
+    # Reassemble and extract the vendored CoCo CLI, if present (chunked by
+    # scripts/vendor-cortex-cli.sh, run once on the deploying machine before
+    # deploy). No network needed here — the chunks are already in the
+    # project directory as normal artifacts. See lib/cortex-cli.ts.
+    #
+    # This is OPTIONAL infrastructure for the CLI fallback backend only —
+    # skipped gracefully when the chunk files aren't present (e.g. a fresh
+    # skill checkout/unzip that never ran vendor-cortex-cli.sh), which is the
+    # common case whenever the account has `code_toolset_all` (the REST
+    # backend, primary and preferred — see lib/agent-backend.ts). Do NOT make
+    # this unconditional again: an unconditional `cat` against an unmatched
+    # glob exits non-zero and fails this entire install step (and therefore
+    # the whole `snow app deploy`), even though the CLI fallback would never
+    # actually be used.
+    - ["sh", "-c", "if ls ./vendor/coco-linux-amd64.tar.gz.part-* >/dev/null 2>&1; then cat ./vendor/coco-linux-amd64.tar.gz.part-* > ./vendor/coco-linux-amd64.tar.gz && mkdir -p ./vendor/cortex-cli && tar -xzf ./vendor/coco-linux-amd64.tar.gz -C ./vendor/cortex-cli --strip-components=1 && chmod +x ./vendor/cortex-cli/cortex && echo 'CoCo CLI extracted successfully'; else echo 'No vendored CoCo CLI found — skipping (REST backend, code_toolset_all, will be used instead)'; fi"]
+
+run:
+  command: ["node", ".next/standalone/server.js"]
+
+# Secrets read via getSecret(name, type) in lib/snowflake.ts must be declared here so
+# the SPCS runtime mounts them under /secrets/<name>/. Map a logical `name` to an
+# existing Snowflake SECRET object. `secrets:` (and `environment_variables:`) are
+# TOP-LEVEL keys — siblings of install/run/profile at column 0. Do NOT nest them under
+# `run:`. Uncomment when the app uses secrets. See README → Secrets.
+# secrets:
+#   - name: SOME_API_KEY
+#     secret: DB.SCHEMA.API_KEY
+#   - name: SOME_USER_PASS
+#     secret: DB.SCHEMA.API_KEY_2
+#
+# environment_variables:
+#   - name: LOG_LEVEL
+#     value: "INFO"
+environment_variables:
+  # Increase CoCo SDK initialize timeout to handle XS warehouse cold starts.
+  # Default is 60s; CLI startup (profile/skill loading, connection bootstrap)
+  # can take longer than that.
+  - name: CORTEX_CODE_INITIALIZE_TIMEOUT_MS
+    value: "180000"
+  # Pin this app's Snowflake table locations to a schema the deploying role can
+  # CREATE TABLE in. Replace MY_DB.MY_SCHEMA with the target deployment schema.
+  # See lib/config-server.ts for the resolution order each of these overrides,
+  # and README.md §12 ("Deploying for a customer") for the full runbook.
+  - name: BVA_CONFIG_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_CONFIG"
+  - name: BVA_HISTORY_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_CONFIG_HISTORY"
+  - name: BVA_MATERIALIZED_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_MATERIALIZED"
+  - name: BVA_COMMENTARY_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_COMMENTARY"
+  # Explicit (not derived-by-regex) locations for the two admin-only override
+  # tables. Set explicitly here — rather than left to lib/agent-access-mode.ts
+  # and lib/discovery-scope-mode.ts's regex fallback — because an overly
+  # specific literal-suffix match (e.g. "BVA_APP_CONFIG") can fail to match the
+  # configured BVA_CONFIG_TABLE above, which would alias both tables to the
+  # config table and let a DELETE remove saved config rows.
+  - name: BVA_AGENT_ACCESS_MODE_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_AGENT_ACCESS_MODE"
+  - name: BVA_DISCOVERY_SCOPE_TABLE
+    value: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_DISCOVERY_SCOPE"
+  - name: BVA_WAREHOUSE
+    # Warehouse used for all BvA queries. Replace with a warehouse that exists
+    # in the deployment account.
+    value: "MY_WAREHOUSE"

@@ -1,0 +1,5429 @@
+{
+  "domain": "people",
+  "source_plugin": "people",
+  "subdepartments": [
+    "chro",
+    "hrbp",
+    "talent_acquisition",
+    "total_rewards",
+    "l_and_d",
+    "people_analytics",
+    "other"
+  ],
+  "description": "CHRO and People skills for attrition intelligence, headcount, executive briefings, talent acquisition, candidate workflows, and job descriptions.",
+  "skills": [
+    {
+      "name": "attrition_insights",
+      "source_dir": "skills/attrition_insights",
+      "eval_dir": "evals/attrition_insights",
+      "persona": [
+        "HR Business Partner",
+        "People Analytics Lead",
+        "CHRO",
+        "CPO"
+      ],
+      "business_value": "Daily/weekly attrition brief with watch areas, drivers, and recommended actions across HRBP, leadership, and org-scoped modes.",
+      "triggers": [
+        "attrition brief",
+        "attrition analysis",
+        "turnover report",
+        "regrettable exits",
+        "watch areas",
+        "voluntary attrition",
+        "involuntary attrition",
+        "attrition by org",
+        "attrition trend",
+        "upcoming exits"
+      ],
+      "subdepartments": [
+        "hrbp",
+        "chro",
+        "people_analytics"
+      ],
+      "jobs_to_be_done": [
+        "run daily or weekly attrition brief",
+        "investigate regrettable attrition drivers",
+        "monitor watch areas by org"
+      ],
+      "source_system_hints": [
+        "HRIS",
+        "ATS",
+        "Payroll"
+      ],
+      "workflow_cadence": [
+        "daily",
+        "weekly"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.attrition.snapshot_monthly",
+          "required": true,
+          "concepts": [
+            "employee attrition snapshot",
+            "monthly attrition rate",
+            "exit flag",
+            "regrettable exit flag"
+          ],
+          "grain": [
+            "employee",
+            "snapshot_month"
+          ],
+          "fields": {
+            "snapshot_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "snapshot_month",
+                "month_start",
+                "reporting_date"
+              ]
+            },
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id",
+                "person_id"
+              ]
+            },
+            "is_active": {
+              "required": true,
+              "semantic_type": "boolean",
+              "aliases": [
+                "is_active",
+                "active_flag",
+                "active_headcount_flag",
+                "employment_status"
+              ]
+            },
+            "exit_flag": {
+              "required": true,
+              "semantic_type": "boolean",
+              "aliases": [
+                "exit_flag",
+                "exited",
+                "is_exit"
+              ]
+            },
+            "voluntary_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "voluntary_flag",
+                "voluntary_exit_flag",
+                "is_voluntary"
+              ],
+              "value_hints": [
+                "voluntary",
+                "involuntary"
+              ]
+            },
+            "involuntary_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "involuntary_flag",
+                "involuntary_exit_flag",
+                "is_involuntary"
+              ]
+            },
+            "regrettable_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "regrettable_flag",
+                "regrettable_exit_flag",
+                "is_regrettable"
+              ]
+            },
+            "termination_reason_category": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "termination_reason_category",
+                "termination_reason",
+                "exit_reason"
+              ],
+              "value_hints": [
+                "compensation",
+                "career growth",
+                "relocation",
+                "performance",
+                "restructuring"
+              ]
+            },
+            "management_level": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "management_level",
+                "job_level",
+                "level"
+              ],
+              "value_hints": [
+                "ic",
+                "m1",
+                "m2",
+                "director",
+                "vp",
+                "manager"
+              ]
+            },
+            "tenure_group": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "tenure_group",
+                "tenure_bucket",
+                "tenure_band"
+              ]
+            },
+            "termination_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "termination_date",
+                "exit_date",
+                "last_day"
+              ]
+            },
+            "cost_center_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "cost_center_id",
+                "cost_center",
+                "cc_id"
+              ]
+            },
+            "region": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "region",
+                "area",
+                "geography"
+              ],
+              "value_hints": [
+                "americas",
+                "emea",
+                "apac",
+                "amer",
+                "latam"
+              ]
+            },
+            "employee_type": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "employee_type",
+                "worker_type",
+                "employment_type"
+              ],
+              "value_hints": [
+                "regular",
+                "full-time",
+                "full time",
+                "part-time",
+                "fixed-term",
+                "contractor",
+                "intern",
+                "contingent"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.cost_center.org_mapping",
+          "required": true,
+          "concepts": [
+            "cost center to organization mapping",
+            "finance org name by cost center",
+            "cost center leader"
+          ],
+          "grain": [
+            "cost_center"
+          ],
+          "fields": {
+            "cost_center_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "cost_center_id",
+                "cost_center",
+                "cc_id"
+              ]
+            },
+            "org_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org_name",
+                "finance_org",
+                "organization_name",
+                "org_group",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "cost_center_leader": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "cost_center_leader",
+                "leader_name",
+                "manager_name"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.exits.event_records",
+          "required": true,
+          "concepts": [
+            "individual exit records",
+            "termination events",
+            "regrettable exit detail"
+          ],
+          "grain": [
+            "exit_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "termination_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "termination_date",
+                "exit_date",
+                "last_day",
+                "last_working_day"
+              ]
+            },
+            "termination_category": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "termination_category",
+                "termination_type",
+                "voluntary_involuntary"
+              ],
+              "value_hints": [
+                "voluntary",
+                "involuntary"
+              ]
+            },
+            "regrettable_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "regrettable_flag",
+                "is_regrettable"
+              ]
+            },
+            "termination_reason": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "termination_reason",
+                "exit_reason"
+              ],
+              "value_hints": [
+                "compensation",
+                "career growth",
+                "relocation",
+                "performance",
+                "restructuring"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "termination",
+              "exit",
+              "separation"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.calendar.fiscal",
+          "required": true,
+          "concepts": [
+            "fiscal calendar",
+            "date reference table",
+            "fiscal period boundaries"
+          ],
+          "grain": [
+            "date"
+          ],
+          "fields": {
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "calendar_date",
+                "day"
+              ]
+            },
+            "fiscal_year": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_year",
+                "fy"
+              ]
+            },
+            "fiscal_quarter": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_quarter",
+                "fq",
+                "quarter"
+              ]
+            }
+          },
+          "name_hints": [
+            "calendar",
+            "date",
+            "dates",
+            "dim_date",
+            "fiscal",
+            "period",
+            "periods"
+          ]
+        },
+        {
+          "key": "people.users.org_scoping",
+          "required": true,
+          "concepts": [
+            "session user identity",
+            "org scoping by management hierarchy position"
+          ],
+          "grain": [
+            "user"
+          ],
+          "fields": {
+            "user_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "user_id",
+                "login_name",
+                "email",
+                "employee_id"
+              ]
+            },
+            "position_in_hierarchy": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "position_id",
+                "employee_id",
+                "manager_id",
+                "org_node_id"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.attrition.exec_summary",
+          "required": false,
+          "concepts": [
+            "pre-computed executive reporting",
+            "executive attrition summary by org"
+          ],
+          "grain": [
+            "org",
+            "snapshot_date"
+          ],
+          "fields": {
+            "org": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org",
+                "org_group",
+                "organization",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "snapshot_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "date",
+                "period"
+              ]
+            },
+            "attrition_rate": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "attrition_rate",
+                "attrition_pct",
+                "turnover_rate"
+              ]
+            }
+          },
+          "name_hints": [
+            "dashboard",
+            "exec",
+            "executive",
+            "forecast",
+            "kpi",
+            "plan",
+            "rollup",
+            "summary",
+            "weekly"
+          ]
+        },
+        {
+          "key": "people.attrition.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over attrition snapshot and org mapping for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        }
+      ],
+      "context_queries": {
+        "people.attrition.snapshot_monthly": "official production data for employee attrition snapshot, monthly attrition rate, exit flag, regrettable exit flag; grain: employee, snapshot_month; required fields: snapshot_date, employee_id, is_active, exit_flag",
+        "people.cost_center.org_mapping": "official production data for cost center to organization mapping, finance org name by cost center; grain: cost_center; required fields: cost_center_id, org_name",
+        "people.exits.event_records": "official production data for individual exit records, termination events; grain: exit_event; required fields: employee_id, termination_date",
+        "people.calendar.fiscal": "official production data for fiscal calendar, date reference; grain: date; required fields: date, fiscal_year",
+        "people.users.org_scoping": "official production data for session user identity and org scoping; grain: user; required fields: user_id, position_in_hierarchy",
+        "people.attrition.exec_summary": "optional pre-computed executive attrition summary by org; grain: org, snapshot_date; required fields: org, snapshot_date",
+        "people.attrition.semantic_view": "optional semantic view over attrition snapshot and org mapping for analyst follow-up questions; grain: semantic_view"
+      },
+      "tunables": [
+        {
+          "id": "regular_employee_types",
+          "label": "Employee types counted as regular headcount",
+          "type": "enum_multi",
+          "default": [
+            "regular",
+            "full-time",
+            "fixed-term"
+          ],
+          "infer_from": {
+            "field": "employee_type"
+          },
+          "context_term": "regular_headcount"
+        },
+        {
+          "id": "active_status_values",
+          "label": "Employment status values that mean active",
+          "type": "enum_multi",
+          "default": [
+            "active"
+          ],
+          "infer_from": {
+            "field": "employment_status"
+          }
+        },
+        {
+          "id": "voluntary_values",
+          "label": "Termination categories that are voluntary",
+          "type": "enum_multi",
+          "default": [
+            "voluntary"
+          ],
+          "infer_from": {
+            "field": "termination_category"
+          }
+        },
+        {
+          "id": "regrettable_definition",
+          "label": "What counts as a regrettable exit",
+          "type": "definition",
+          "default": "regrettable_flag is true",
+          "context_term": "regrettable_exit"
+        },
+        {
+          "id": "attrition_window_months",
+          "label": "Rolling attrition window (months)",
+          "type": "threshold",
+          "default": 12
+        },
+        {
+          "id": "fiscal_year_start_month",
+          "label": "Fiscal year start month (1-12)",
+          "type": "calendar",
+          "default": 1,
+          "context_term": "fiscal_calendar"
+        },
+        {
+          "id": "attrition_rate_method",
+          "label": "Attrition rate method",
+          "type": "definition",
+          "default": "average of headcount at period start and end, not annualized",
+          "context_term": "attrition_rate"
+        }
+      ],
+      "context_terms": [
+        "regrettable_exit",
+        "voluntary_exit",
+        "fiscal_calendar",
+        "org_hierarchy"
+      ]
+    },
+    {
+      "name": "headcount_insights",
+      "source_dir": "skills/headcount_insights",
+      "eval_dir": "evals/headcount_insights",
+      "persona": [
+        "HR Business Partner",
+        "People Analytics Lead",
+        "CHRO"
+      ],
+      "business_value": "Current and historical headcount with org and management-chain navigation, plus hires/exits movement drivers.",
+      "triggers": [
+        "headcount",
+        "current HC",
+        "team size",
+        "headcount trend",
+        "headcount by org",
+        "HC change"
+      ],
+      "subdepartments": [
+        "hrbp",
+        "chro",
+        "people_analytics"
+      ],
+      "jobs_to_be_done": [
+        "report current and historical headcount",
+        "navigate org / management chain headcount",
+        "analyze net change drivers (hires vs exits)"
+      ],
+      "source_system_hints": [
+        "HRIS"
+      ],
+      "workflow_cadence": [
+        "on_demand"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.headcount.employee_snapshot",
+          "required": true,
+          "concepts": [
+            "daily or weekly employee snapshot",
+            "point-in-time headcount",
+            "employment status",
+            "employee type",
+            "management level",
+            "org hierarchy"
+          ],
+          "grain": [
+            "employee",
+            "snapshot_date"
+          ],
+          "fields": {
+            "snapshot_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "as_of_date",
+                "date"
+              ]
+            },
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "employment_status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "employment_status",
+                "status",
+                "is_active",
+                "active_flag"
+              ],
+              "value_hints": [
+                "active",
+                "terminated",
+                "on leave",
+                "leave",
+                "inactive"
+              ]
+            },
+            "employee_type": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "employee_type",
+                "worker_type",
+                "employment_type"
+              ],
+              "value_hints": [
+                "regular",
+                "full-time",
+                "full time",
+                "part-time",
+                "fixed-term",
+                "contractor",
+                "intern",
+                "contingent"
+              ]
+            },
+            "management_level": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "management_level",
+                "job_level",
+                "level"
+              ],
+              "value_hints": [
+                "ic",
+                "m1",
+                "m2",
+                "director",
+                "vp",
+                "manager"
+              ]
+            },
+            "cost_center_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "cost_center_id",
+                "cost_center"
+              ]
+            },
+            "location": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "location",
+                "region",
+                "country"
+              ],
+              "value_hints": [
+                "new york",
+                "london",
+                "singapore",
+                "remote"
+              ]
+            },
+            "hire_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "hire_date",
+                "start_date",
+                "date_of_hire"
+              ]
+            },
+            "direct_reports": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "direct_reports",
+                "num_direct_reports",
+                "direct_report_count"
+              ]
+            },
+            "manager_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "manager_id",
+                "supervisor_id",
+                "reports_to_id"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.cost_center.org_mapping",
+          "required": true,
+          "concepts": [
+            "cost center to organization mapping",
+            "finance-certified org grouping"
+          ],
+          "grain": [
+            "cost_center"
+          ],
+          "fields": {
+            "cost_center_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "cost_center_id",
+                "cost_center"
+              ]
+            },
+            "org_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org_name",
+                "organization_name",
+                "org_group",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "cost_center_leader": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "cost_center_leader",
+                "leader_name"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.hires.event_records",
+          "required": true,
+          "concepts": [
+            "hires table",
+            "new hire events",
+            "starts"
+          ],
+          "grain": [
+            "hire_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "hire_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "hire_date",
+                "start_date"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "hire",
+              "new hire",
+              "start"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.exits.event_records",
+          "required": true,
+          "concepts": [
+            "exits table",
+            "terminations",
+            "movement driver exits"
+          ],
+          "grain": [
+            "exit_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "termination_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "termination_date",
+                "exit_date",
+                "last_day"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "termination",
+              "exit",
+              "separation"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.calendar.fiscal",
+          "required": false,
+          "concepts": [
+            "fiscal calendar",
+            "quarter-end alignment",
+            "YoY/QoQ windows"
+          ],
+          "grain": [
+            "date"
+          ],
+          "fields": {
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "calendar_date"
+              ]
+            },
+            "fiscal_year": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_year",
+                "fy"
+              ]
+            },
+            "fiscal_quarter": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_quarter",
+                "quarter"
+              ]
+            }
+          },
+          "name_hints": [
+            "calendar",
+            "date",
+            "dates",
+            "dim_date",
+            "fiscal",
+            "period",
+            "periods"
+          ]
+        },
+        {
+          "key": "people.users.org_scoping",
+          "required": false,
+          "concepts": [
+            "session user identity",
+            "executive org-first scoping"
+          ],
+          "grain": [
+            "user"
+          ],
+          "fields": {
+            "user_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "user_id",
+                "email",
+                "employee_id"
+              ]
+            },
+            "position_in_hierarchy": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "position_id",
+                "employee_id",
+                "org_node_id"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.headcount.exec_summary",
+          "required": false,
+          "concepts": [
+            "pre-computed executive reporting",
+            "executive headcount summary by org group"
+          ],
+          "grain": [
+            "org_group",
+            "snapshot_date"
+          ],
+          "fields": {
+            "org_group": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org_group",
+                "org",
+                "organization",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "snapshot_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "date",
+                "period"
+              ]
+            }
+          },
+          "name_hints": [
+            "dashboard",
+            "exec",
+            "executive",
+            "forecast",
+            "kpi",
+            "plan",
+            "rollup",
+            "summary",
+            "weekly"
+          ]
+        },
+        {
+          "key": "people.headcount.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over employee snapshot and org mapping for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        }
+      ],
+      "context_queries": {
+        "people.headcount.employee_snapshot": "official production data for daily or weekly employee snapshot, point-in-time headcount; grain: employee, snapshot_date; required fields: snapshot_date, employee_id, employment_status, employee_type",
+        "people.cost_center.org_mapping": "official production data for cost center to organization mapping; grain: cost_center; required fields: cost_center_id, org_name",
+        "people.hires.event_records": "official production data for hires table, new hire events; grain: hire_event; required fields: employee_id, hire_date",
+        "people.exits.event_records": "official production data for exits table, terminations; grain: exit_event; required fields: employee_id, termination_date",
+        "people.calendar.fiscal": "optional fiscal calendar for quarter-end alignment; grain: date; required fields: date, fiscal_year",
+        "people.users.org_scoping": "optional session user identity for executive org-first scoping; grain: user; required fields: user_id, position_in_hierarchy",
+        "people.headcount.exec_summary": "optional pre-computed executive headcount summary; grain: org_group, snapshot_date; required fields: org_group, snapshot_date",
+        "people.headcount.semantic_view": "optional semantic view over employee snapshot and org mapping; grain: semantic_view"
+      },
+      "tunables": [
+        {
+          "id": "regular_employee_types",
+          "label": "Employee types counted as regular headcount",
+          "type": "enum_multi",
+          "default": [
+            "regular",
+            "full-time",
+            "fixed-term"
+          ],
+          "infer_from": {
+            "field": "employee_type"
+          },
+          "context_term": "regular_headcount"
+        },
+        {
+          "id": "active_status_values",
+          "label": "Employment status values that mean active",
+          "type": "enum_multi",
+          "default": [
+            "active"
+          ],
+          "infer_from": {
+            "field": "employment_status"
+          }
+        },
+        {
+          "id": "new_hire_window_months",
+          "label": "Tenure window that counts as a new hire (months)",
+          "type": "threshold",
+          "default": 12
+        },
+        {
+          "id": "exit_date_offset_days",
+          "label": "Count an exit N days after termination date",
+          "type": "threshold",
+          "default": 1
+        },
+        {
+          "id": "span_under_threshold",
+          "label": "Under-spanned manager: fewer than N direct reports",
+          "type": "threshold",
+          "default": 3
+        },
+        {
+          "id": "span_over_threshold",
+          "label": "Over-spanned manager: more than N direct reports",
+          "type": "threshold",
+          "default": 10
+        },
+        {
+          "id": "org_concentration_pct",
+          "label": "Flag an org above N% of total headcount",
+          "type": "threshold",
+          "default": 30
+        },
+        {
+          "id": "fiscal_year_start_month",
+          "label": "Fiscal year start month (1-12)",
+          "type": "calendar",
+          "default": 1,
+          "context_term": "fiscal_calendar"
+        }
+      ],
+      "context_terms": [
+        "regular_headcount",
+        "fiscal_calendar",
+        "org_hierarchy",
+        "span_of_control"
+      ]
+    },
+    {
+      "name": "good_morning_chro",
+      "source_dir": "skills/good_morning_chro",
+      "eval_dir": "evals/good_morning_chro",
+      "persona": [
+        "CHRO",
+        "CPO",
+        "People Leadership"
+      ],
+      "business_value": "Daily CHRO briefing: attrition watch, hiring velocity, engagement signals, and workforce hot spots.",
+      "triggers": [
+        "good morning CHRO",
+        "people pulse",
+        "daily HR update",
+        "daily people briefing"
+      ],
+      "subdepartments": [
+        "chro"
+      ],
+      "jobs_to_be_done": [
+        "start the day with a people briefing",
+        "watch attrition hot spots",
+        "check hiring velocity and engagement signals"
+      ],
+      "source_system_hints": [
+        "HRIS",
+        "ATS",
+        "Engagement survey tool"
+      ],
+      "workflow_cadence": [
+        "daily"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.exits.event_records",
+          "required": true,
+          "concepts": [
+            "employee exits",
+            "terminations",
+            "voluntary flag",
+            "regrettable flag"
+          ],
+          "grain": [
+            "exit_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "exit_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "exit_date",
+                "termination_date",
+                "last_day"
+              ]
+            },
+            "org": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org",
+                "department",
+                "org_group",
+                "team",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "voluntary_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "voluntary_flag",
+                "is_voluntary",
+                "voluntary_involuntary"
+              ],
+              "value_hints": [
+                "voluntary",
+                "involuntary"
+              ]
+            },
+            "regrettable_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "regrettable_flag",
+                "is_regrettable"
+              ]
+            },
+            "level": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "level",
+                "management_level",
+                "job_level"
+              ],
+              "value_hints": [
+                "ic",
+                "m1",
+                "m2",
+                "director",
+                "vp"
+              ]
+            },
+            "tenure_months": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "tenure_months",
+                "tenure"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "termination",
+              "exit",
+              "separation"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.headcount.active_employees",
+          "required": true,
+          "concepts": [
+            "headcount snapshot",
+            "current active employees",
+            "ending headcount per org"
+          ],
+          "grain": [
+            "employee"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "org": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org",
+                "department",
+                "org_group",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "snapshot_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "as_of_date",
+                "date"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.offers.pipeline",
+          "required": false,
+          "concepts": [
+            "offer/pipeline table",
+            "offers extended accepted declined",
+            "hiring velocity"
+          ],
+          "grain": [
+            "offer"
+          ],
+          "fields": {
+            "offer_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "offer_id",
+                "id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "offer_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "extended_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "extended_date",
+                "offer_date",
+                "created_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "accept",
+            "acceptance",
+            "decline",
+            "offer",
+            "offers"
+          ]
+        },
+        {
+          "key": "people.reqs.open_positions",
+          "required": false,
+          "concepts": [
+            "job/req table",
+            "open req counts",
+            "stale req detection"
+          ],
+          "grain": [
+            "requisition"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "job_id",
+                "id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "req_status",
+                "job_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "created_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "created_date",
+                "open_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.engagement.pulse_survey",
+          "required": false,
+          "concepts": [
+            "engagement table",
+            "pulse score",
+            "eNPS",
+            "survey response rate"
+          ],
+          "grain": [
+            "org",
+            "survey_date"
+          ],
+          "fields": {
+            "org": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org",
+                "department",
+                "org_group",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "survey_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "survey_date",
+                "date",
+                "period"
+              ]
+            },
+            "pulse_score": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "pulse_score",
+                "score",
+                "engagement_score"
+              ]
+            },
+            "enps": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "enps",
+                "eNPS",
+                "net_promoter"
+              ]
+            }
+          },
+          "name_hints": [
+            "engagement",
+            "enps",
+            "pulse",
+            "qoh",
+            "response",
+            "responses",
+            "sentiment",
+            "survey",
+            "surveys"
+          ]
+        },
+        {
+          "key": "people.pto.leave_balances",
+          "required": false,
+          "concepts": [
+            "PTO/leave balance table",
+            "burnout risk"
+          ],
+          "grain": [
+            "employee"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "used_days": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "used_days",
+                "days_used",
+                "pto_taken"
+              ]
+            },
+            "utilization_pct": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "utilization_pct",
+                "utilization"
+              ]
+            }
+          },
+          "name_hints": [
+            "absence",
+            "absences",
+            "balance",
+            "balances",
+            "leave",
+            "pto",
+            "time_off",
+            "timeoff",
+            "vacation"
+          ]
+        },
+        {
+          "key": "people.attrition.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over exits/headcount data for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        }
+      ],
+      "context_queries": {
+        "people.exits.event_records": "official production data for employee exits, terminations; grain: exit_event; required fields: employee_id, exit_date, org",
+        "people.headcount.active_employees": "official production data for headcount snapshot, current active employees; grain: employee; required fields: employee_id, org",
+        "people.offers.pipeline": "optional offer/pipeline table for hiring velocity; grain: offer; required fields: offer_id, status, extended_date",
+        "people.reqs.open_positions": "optional job/req table for open req counts and stale-req detection; grain: requisition; required fields: req_id, status",
+        "people.engagement.pulse_survey": "optional engagement table with pulse score and eNPS; grain: org, survey_date; required fields: org, survey_date",
+        "people.pto.leave_balances": "optional PTO/leave balance table for burnout-risk flag; grain: employee; required fields: employee_id",
+        "people.attrition.semantic_view": "optional semantic view over exits/headcount data; grain: semantic_view"
+      },
+      "tunables": [
+        {
+          "id": "regular_employee_types",
+          "label": "Employee types counted as regular headcount",
+          "type": "enum_multi",
+          "default": [
+            "regular",
+            "full-time",
+            "fixed-term"
+          ],
+          "infer_from": {
+            "field": "employee_type"
+          },
+          "context_term": "regular_headcount"
+        },
+        {
+          "id": "active_status_values",
+          "label": "Employment status values that mean active",
+          "type": "enum_multi",
+          "default": [
+            "active"
+          ],
+          "infer_from": {
+            "field": "employment_status"
+          }
+        },
+        {
+          "id": "voluntary_values",
+          "label": "Termination categories that are voluntary",
+          "type": "enum_multi",
+          "default": [
+            "voluntary"
+          ],
+          "infer_from": {
+            "field": "termination_category"
+          }
+        },
+        {
+          "id": "regrettable_definition",
+          "label": "What counts as a regrettable exit",
+          "type": "definition",
+          "default": "regrettable_flag is true",
+          "context_term": "regrettable_exit"
+        },
+        {
+          "id": "attrition_window_months",
+          "label": "Rolling attrition window (months)",
+          "type": "threshold",
+          "default": 12
+        },
+        {
+          "id": "open_req_status_values",
+          "label": "Requisition statuses that count as open",
+          "type": "enum_multi",
+          "default": [
+            "open"
+          ],
+          "infer_from": {
+            "field": "status",
+            "need_prefix": "people.ta.requisitions"
+          }
+        },
+        {
+          "id": "attrition_rate_method",
+          "label": "Attrition rate method",
+          "type": "definition",
+          "default": "average of headcount at period start and end, not annualized",
+          "context_term": "attrition_rate"
+        }
+      ],
+      "context_terms": [
+        "regrettable_exit",
+        "regular_headcount",
+        "org_hierarchy"
+      ]
+    },
+    {
+      "name": "good_morning_recruiting",
+      "source_dir": "skills/good_morning_recruiting",
+      "eval_dir": "evals/good_morning_recruiting",
+      "persona": [
+        "Head of Talent Acquisition",
+        "TA Operations Lead"
+      ],
+      "business_value": "TA GM-level briefing: hiring manager sentiment, sourced %, req load, stale candidates, competitor hires, offer declines.",
+      "triggers": [
+        "TA metrics",
+        "GM TA report",
+        "recruiting health",
+        "good morning recruiting",
+        "TA daily brief"
+      ],
+      "subdepartments": [
+        "talent_acquisition"
+      ],
+      "jobs_to_be_done": [
+        "run daily TA health brief",
+        "flag recruiters with low HM sentiment",
+        "detect stale candidates and job openings"
+      ],
+      "source_system_hints": [
+        "ATS",
+        "HRIS"
+      ],
+      "workflow_cadence": [
+        "daily"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.ta.hm_sentiment",
+          "required": true,
+          "concepts": [
+            "hiring manager sentiment",
+            "survey scores by recruiter per period",
+            "HM satisfaction"
+          ],
+          "grain": [
+            "survey_response",
+            "recruiter",
+            "period"
+          ],
+          "fields": {
+            "recruiter_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "recruiter_id",
+                "recruiter"
+              ]
+            },
+            "sentiment_score": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "rating",
+                "response_score",
+                "satisfaction_score",
+                "score",
+                "sentiment_score"
+              ]
+            },
+            "survey_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "period",
+                "response_date",
+                "submission_date",
+                "survey_date"
+              ]
+            },
+            "feedback_text": {
+              "required": false,
+              "semantic_type": "text",
+              "aliases": [
+                "feedback_text",
+                "feedback",
+                "comment"
+              ]
+            }
+          },
+          "name_hints": [
+            "survey",
+            "surveys",
+            "hiring_manager",
+            "hm",
+            "satisfaction",
+            "sentiment",
+            "pulse",
+            "nps",
+            "feedback"
+          ]
+        },
+        {
+          "key": "people.ta.applications",
+          "required": true,
+          "concepts": [
+            "ATS applications",
+            "sourcing",
+            "sourced vs inbound vs referral",
+            "application disposition"
+          ],
+          "grain": [
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id",
+                "id"
+              ]
+            },
+            "recruiter_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "recruiter_id",
+                "recruiter"
+              ]
+            },
+            "source_type": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "source_type",
+                "source",
+                "source_group"
+              ],
+              "value_hints": [
+                "linkedin",
+                "referral",
+                "agency",
+                "career site",
+                "campus",
+                "internal"
+              ]
+            },
+            "application_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "application_date",
+                "applied_date",
+                "created_date"
+              ]
+            },
+            "disposition": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "disposition",
+                "status",
+                "stage"
+              ],
+              "value_hints": [
+                "interview",
+                "offer",
+                "hired",
+                "rejected"
+              ]
+            }
+          },
+          "name_hints": [
+            "applicant",
+            "applicants",
+            "application",
+            "applications",
+            "ats",
+            "candidate",
+            "candidates",
+            "funnel",
+            "interview",
+            "interviews",
+            "pipeline",
+            "recruiting",
+            "stage",
+            "stages"
+          ]
+        },
+        {
+          "key": "people.ta.requisitions",
+          "required": true,
+          "concepts": [
+            "requisitions table",
+            "req load by recruiter",
+            "req status and days open"
+          ],
+          "grain": [
+            "requisition",
+            "recruiter"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "id",
+                "job_id"
+              ]
+            },
+            "recruiter_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "recruiter_id",
+                "recruiter"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "req_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "days_open": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "days_open",
+                "age_days"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.ta.candidates_in_stage",
+          "required": true,
+          "concepts": [
+            "candidates in active stage",
+            "days in stage",
+            "stale candidate detection"
+          ],
+          "grain": [
+            "candidate",
+            "application"
+          ],
+          "fields": {
+            "candidate_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "candidate_id",
+                "id"
+              ]
+            },
+            "application_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "recruiter_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "recruiter_id",
+                "recruiter"
+              ]
+            },
+            "stage_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "stage_name",
+                "stage",
+                "current_stage"
+              ],
+              "value_hints": [
+                "interview",
+                "offer",
+                "hired",
+                "screen",
+                "rejected",
+                "review"
+              ]
+            },
+            "stage_start_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "stage_start_date",
+                "entered_stage_date",
+                "stage_entry_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "applicant",
+            "applicants",
+            "application",
+            "applications",
+            "ats",
+            "candidate",
+            "candidates",
+            "funnel",
+            "interview",
+            "interviews",
+            "pipeline",
+            "recruiting",
+            "stage",
+            "stages"
+          ]
+        },
+        {
+          "key": "people.employees.prior_company",
+          "required": false,
+          "concepts": [
+            "employee prior company",
+            "hire source",
+            "competitor hires"
+          ],
+          "grain": [
+            "employee"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "prior_company_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "prior_company_name",
+                "previous_company",
+                "prior_company"
+              ]
+            },
+            "hire_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "hire_date",
+                "start_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.ta.job_openings",
+          "required": true,
+          "concepts": [
+            "job openings",
+            "evergreen openings",
+            "stale openings"
+          ],
+          "grain": [
+            "opening"
+          ],
+          "fields": {
+            "opening_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "opening_id",
+                "id",
+                "job_id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "opening_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "open_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "open_date",
+                "opened_date",
+                "created_date"
+              ]
+            },
+            "evergreen": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "evergreen",
+                "is_evergreen",
+                "evergreen_flag"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.ta.offers",
+          "required": true,
+          "concepts": [
+            "offers table",
+            "offer declines",
+            "decline reason"
+          ],
+          "grain": [
+            "offer"
+          ],
+          "fields": {
+            "offer_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "offer_id",
+                "id"
+              ]
+            },
+            "application_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "offer_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "offer_declined_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "offer_declined_date",
+                "declined_date",
+                "decision_date"
+              ]
+            },
+            "decline_reason": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "decline_reason",
+                "rejection_reason"
+              ]
+            }
+          },
+          "name_hints": [
+            "accept",
+            "acceptance",
+            "decline",
+            "offer",
+            "offers"
+          ]
+        },
+        {
+          "key": "people.ta.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over ATS tables for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        },
+        {
+          "key": "people.calendar.fiscal",
+          "required": false,
+          "concepts": [
+            "fiscal calendar",
+            "quarter-end alignment",
+            "YoY/QoQ windows"
+          ],
+          "grain": [
+            "date"
+          ],
+          "fields": {
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "calendar_date"
+              ]
+            },
+            "fiscal_year": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_year",
+                "fy"
+              ]
+            },
+            "fiscal_quarter": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_quarter",
+                "quarter"
+              ]
+            }
+          },
+          "name_hints": [
+            "calendar",
+            "date",
+            "dates",
+            "dim_date",
+            "fiscal",
+            "period",
+            "periods"
+          ]
+        }
+      ],
+      "context_queries": {
+        "people.ta.hm_sentiment": "official production data for hiring manager sentiment survey scores by recruiter; grain: survey_response, recruiter, period; required fields: recruiter_id, sentiment_score, survey_date",
+        "people.ta.applications": "official production data for ATS applications and sourcing with source type and disposition; grain: application; required fields: application_id, recruiter_id, source_type",
+        "people.ta.requisitions": "official production data for requisitions and req load by recruiter; grain: requisition, recruiter; required fields: req_id, recruiter_id, status",
+        "people.ta.candidates_in_stage": "official production data for candidates in active stage with days in stage; grain: candidate, application; required fields: candidate_id, recruiter_id, stage_name, stage_start_date",
+        "people.employees.prior_company": "official production data for employee prior company and hire source; grain: employee; required fields: employee_id, prior_company_name, hire_date",
+        "people.ta.job_openings": "official production data for job openings including evergreen flag; grain: opening; required fields: opening_id, status, open_date",
+        "people.ta.offers": "official production data for offers and offer declines with decline reason; grain: offer; required fields: offer_id, status",
+        "people.ta.semantic_view": "optional semantic view over ATS tables; grain: semantic_view"
+      },
+      "tunables": [
+        {
+          "id": "open_req_status_values",
+          "label": "Requisition statuses that count as open",
+          "type": "enum_multi",
+          "default": [
+            "open"
+          ],
+          "infer_from": {
+            "field": "status",
+            "need_prefix": "people.ta.requisitions"
+          }
+        },
+        {
+          "id": "offer_stage_values",
+          "label": "Pipeline stages that count as offer stage",
+          "type": "enum_multi",
+          "default": [
+            "offer"
+          ],
+          "infer_from": {
+            "field": "stage_name"
+          }
+        },
+        {
+          "id": "stale_candidate_days",
+          "label": "Candidate is stale after N days in stage",
+          "type": "threshold",
+          "default": 14
+        }
+      ],
+      "context_terms": [
+        "open_requisition",
+        "offer_stage",
+        "time_to_fill"
+      ]
+    },
+    {
+      "name": "hiring_brief",
+      "source_dir": "skills/hiring_brief",
+      "eval_dir": "evals/hiring_brief",
+      "persona": [
+        "Executive Leader",
+        "CHRO",
+        "Head of Talent Acquisition"
+      ],
+      "business_value": "Weekly Hiring Update brief with KPI banner (current HC, open positions, future starts/exits, projected HC) and Progress/Problems/Plans narrative.",
+      "triggers": [
+        "weekly hiring update",
+        "hiring report",
+        "leader hiring update"
+      ],
+      "subdepartments": [
+        "chro",
+        "talent_acquisition"
+      ],
+      "jobs_to_be_done": [
+        "produce weekly hiring brief for leaders",
+        "track HC plan vs forecast"
+      ],
+      "source_system_hints": [
+        "HRIS",
+        "ATS",
+        "Workforce planning"
+      ],
+      "workflow_cadence": [
+        "weekly"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.hiring.exec_weekly_summary",
+          "required": true,
+          "concepts": [
+            "weekly headcount reporting",
+            "executive summary by leader",
+            "open positions",
+            "future starts",
+            "future exits",
+            "projected HC"
+          ],
+          "grain": [
+            "leader",
+            "snapshot_date"
+          ],
+          "fields": {
+            "leader_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "leader_name",
+                "leader",
+                "manager_name"
+              ]
+            },
+            "snapshot_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "snapshot_date",
+                "date",
+                "week"
+              ]
+            },
+            "current_hc": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "current_hc",
+                "hc",
+                "headcount"
+              ]
+            },
+            "open_positions": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "open_positions",
+                "open_reqs",
+                "approved_unfilled"
+              ]
+            },
+            "future_starts": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "future_starts",
+                "starts"
+              ]
+            },
+            "future_exits": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "future_exits",
+                "exits"
+              ]
+            },
+            "projected_hc": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "projected_hc",
+                "projection"
+              ]
+            }
+          },
+          "name_hints": [
+            "dashboard",
+            "exec",
+            "executive",
+            "forecast",
+            "kpi",
+            "plan",
+            "rollup",
+            "summary",
+            "weekly"
+          ]
+        },
+        {
+          "key": "people.hierarchy.management_chain",
+          "required": true,
+          "concepts": [
+            "management hierarchy table",
+            "management chain levels",
+            "leader indicator"
+          ],
+          "grain": [
+            "employee"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "full_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "full_name",
+                "name",
+                "employee_name"
+              ]
+            },
+            "is_leader": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "is_leader",
+                "leader_flag",
+                "is_manager"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.calendar.fiscal",
+          "required": true,
+          "concepts": [
+            "fiscal calendar",
+            "YTD start computation"
+          ],
+          "grain": [
+            "date"
+          ],
+          "fields": {
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "calendar_date"
+              ]
+            },
+            "fiscal_year": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_year",
+                "fy"
+              ]
+            },
+            "fiscal_year_start_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "fiscal_year_start_date",
+                "fy_start"
+              ]
+            }
+          },
+          "name_hints": [
+            "calendar",
+            "date",
+            "dates",
+            "dim_date",
+            "fiscal",
+            "period",
+            "periods"
+          ]
+        },
+        {
+          "key": "people.hiring.forecast",
+          "required": false,
+          "concepts": [
+            "headcount forecast table",
+            "approved target",
+            "adjusted plan",
+            "forecast version"
+          ],
+          "grain": [
+            "org_group",
+            "forecast_version",
+            "period"
+          ],
+          "fields": {
+            "org_label": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org_label",
+                "organization",
+                "org_group",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "period": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "period",
+                "month",
+                "calendar_month"
+              ]
+            },
+            "forecast_version": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "forecast_version",
+                "version"
+              ]
+            },
+            "approved_target": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "approved_target",
+                "approved_headcount",
+                "target"
+              ]
+            }
+          },
+          "name_hints": [
+            "dashboard",
+            "exec",
+            "executive",
+            "forecast",
+            "kpi",
+            "plan",
+            "rollup",
+            "summary",
+            "weekly"
+          ]
+        },
+        {
+          "key": "people.hires.event_records",
+          "required": false,
+          "concepts": [
+            "starts / new hires event table",
+            "YTD starts fallback"
+          ],
+          "grain": [
+            "hire_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "hire_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "hire_date",
+                "start_date"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "hire",
+              "new hire",
+              "start"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.exits.event_records",
+          "required": false,
+          "concepts": [
+            "exits / terminations event table",
+            "YTD exits fallback"
+          ],
+          "grain": [
+            "exit_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "termination_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "termination_date",
+                "exit_date",
+                "last_day"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "termination",
+              "exit",
+              "separation"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        }
+      ],
+      "context_queries": {
+        "people.hiring.exec_weekly_summary": "official production data for weekly headcount executive summary by leader; grain: leader, snapshot_date; required fields: leader_name, snapshot_date, current_hc",
+        "people.hierarchy.management_chain": "official production data for management hierarchy and chain levels; grain: employee; required fields: employee_id, full_name",
+        "people.calendar.fiscal": "official production data for fiscal calendar; grain: date; required fields: date, fiscal_year",
+        "people.hiring.forecast": "optional headcount forecast table with approved targets; grain: org_group, forecast_version, period; required fields: org_label, period",
+        "people.hires.event_records": "optional starts event table used when exec summary lacks YTD starts; grain: hire_event; required fields: employee_id, hire_date",
+        "people.exits.event_records": "optional exits event table used when exec summary lacks YTD exits; grain: exit_event; required fields: employee_id, termination_date"
+      },
+      "tunables": [
+        {
+          "id": "regular_employee_types",
+          "label": "Employee types counted as regular headcount",
+          "type": "enum_multi",
+          "default": [
+            "regular",
+            "full-time",
+            "fixed-term"
+          ],
+          "infer_from": {
+            "field": "employee_type"
+          },
+          "context_term": "regular_headcount"
+        },
+        {
+          "id": "open_req_status_values",
+          "label": "Requisition statuses that count as open",
+          "type": "enum_multi",
+          "default": [
+            "open"
+          ],
+          "infer_from": {
+            "field": "status",
+            "need_prefix": "people.ta.requisitions"
+          }
+        },
+        {
+          "id": "fiscal_year_start_month",
+          "label": "Fiscal year start month (1-12)",
+          "type": "calendar",
+          "default": 1,
+          "context_term": "fiscal_calendar"
+        }
+      ],
+      "context_terms": [
+        "regular_headcount",
+        "open_requisition",
+        "fiscal_calendar"
+      ]
+    },
+    {
+      "name": "org_health_report",
+      "source_dir": "skills/org_health_report",
+      "eval_dir": "evals/org_health_report",
+      "persona": [
+        "HR Business Partner",
+        "People Analytics Lead",
+        "CHRO"
+      ],
+      "business_value": "Full org health report (4-KPI dashboard) spanning attrition, performance, span of control, well-being, and AI adoption, with peer-benchmark comparison.",
+      "triggers": [
+        "org health report",
+        "manager scorecard",
+        "team health",
+        "org health"
+      ],
+      "subdepartments": [
+        "hrbp",
+        "chro",
+        "people_analytics"
+      ],
+      "jobs_to_be_done": [
+        "assess org health across attrition, performance, span, well-being, AI adoption",
+        "compare org against peer benchmarks"
+      ],
+      "source_system_hints": [
+        "HRIS",
+        "Performance management",
+        "PTO system",
+        "AI usage analytics"
+      ],
+      "workflow_cadence": [
+        "weekly",
+        "monthly"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.org_health.employee_snapshot",
+          "required": true,
+          "concepts": [
+            "current employee snapshot",
+            "span of control",
+            "direct reports",
+            "management chain levels"
+          ],
+          "grain": [
+            "employee",
+            "snapshot_date"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id",
+                "worker_id"
+              ]
+            },
+            "full_name": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "full_name",
+                "name",
+                "employee_name"
+              ]
+            },
+            "manager_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "manager_id",
+                "manager",
+                "direct_manager_id"
+              ]
+            },
+            "management_level": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "management_level",
+                "level",
+                "job_level"
+              ],
+              "value_hints": [
+                "ic",
+                "m1",
+                "m2",
+                "director",
+                "vp",
+                "manager"
+              ]
+            },
+            "employment_status": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "employment_status",
+                "is_active",
+                "active_flag"
+              ],
+              "value_hints": [
+                "active",
+                "terminated",
+                "on leave",
+                "leave",
+                "inactive"
+              ]
+            },
+            "direct_reports": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "direct_reports",
+                "report_count",
+                "span"
+              ]
+            },
+            "cost_center_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "cost_center_id",
+                "cost_center"
+              ]
+            },
+            "email": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "email",
+                "work_email",
+                "email_address",
+                "login"
+              ]
+            },
+            "management_chain": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "management_chain",
+                "manager_chain",
+                "management_chain_ids",
+                "supervisory_org_path"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.exits.event_records",
+          "required": true,
+          "concepts": [
+            "exit records",
+            "termination category",
+            "retention analysis"
+          ],
+          "grain": [
+            "exit_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "termination_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "termination_date",
+                "exit_date",
+                "last_day"
+              ]
+            },
+            "termination_category": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "termination_category",
+                "termination_type",
+                "voluntary_involuntary"
+              ],
+              "value_hints": [
+                "voluntary",
+                "involuntary"
+              ]
+            },
+            "regrettable_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "regrettable_flag",
+                "is_regrettable"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "termination",
+              "exit",
+              "separation"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.org_health.performance_ratings",
+          "required": true,
+          "concepts": [
+            "performance ratings",
+            "review cycle",
+            "LP/HP cohorts",
+            "repeat low performer detection"
+          ],
+          "grain": [
+            "employee",
+            "review_cycle"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "cycle_id": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "cycle_id",
+                "cycle",
+                "review_cycle"
+              ]
+            },
+            "performance_rating": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "performance_rating",
+                "rating",
+                "rating_value"
+              ]
+            }
+          },
+          "name_hints": [
+            "calibration",
+            "cycle",
+            "performance",
+            "rating",
+            "ratings",
+            "review",
+            "reviews"
+          ]
+        },
+        {
+          "key": "people.org_health.pto_usage",
+          "required": true,
+          "concepts": [
+            "well-being / PTO usage",
+            "PTO days taken",
+            "allotment",
+            "burnout risk"
+          ],
+          "grain": [
+            "employee",
+            "period"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "pto_days_taken": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "pto_days_taken",
+                "days_taken",
+                "pto_taken"
+              ]
+            },
+            "period": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "period",
+                "date",
+                "month"
+              ]
+            },
+            "pto_allotment": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "pto_allotment",
+                "allotment",
+                "days_accrued"
+              ]
+            }
+          },
+          "name_hints": [
+            "absence",
+            "absences",
+            "balance",
+            "balances",
+            "leave",
+            "pto",
+            "time_off",
+            "timeoff",
+            "vacation"
+          ]
+        },
+        {
+          "key": "people.org_health.ai_usage",
+          "required": true,
+          "concepts": [
+            "AI tool usage",
+            "AI adoption",
+            "daily active users per tool"
+          ],
+          "grain": [
+            "user",
+            "tool",
+            "date"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "user_id",
+                "emp_id"
+              ]
+            },
+            "tool_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "tool_name",
+                "tool",
+                "application"
+              ]
+            },
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "day",
+                "usage_date"
+              ]
+            },
+            "active_flag": {
+              "required": false,
+              "semantic_type": "boolean",
+              "aliases": [
+                "active_flag",
+                "is_active",
+                "used"
+              ]
+            }
+          },
+          "name_hints": [
+            "activity",
+            "adoption",
+            "ai",
+            "tool",
+            "tools",
+            "usage"
+          ]
+        },
+        {
+          "key": "people.ta.requisitions",
+          "required": true,
+          "concepts": [
+            "open requisitions",
+            "recruiting pipeline",
+            "hiring manager"
+          ],
+          "grain": [
+            "requisition"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "id",
+                "job_id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "req_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "open_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "open_date",
+                "opened_date",
+                "created_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.hires.event_records",
+          "required": true,
+          "concepts": [
+            "starts / new hires",
+            "pending starts",
+            "new hire attrition cohort"
+          ],
+          "grain": [
+            "hire_event"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "hire_date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "hire_date",
+                "start_date"
+              ]
+            }
+          },
+          "row_filter_hint": {
+            "concepts": [
+              "hire",
+              "new hire",
+              "start"
+            ],
+            "applies_when": "shared_table"
+          },
+          "name_hints": [
+            "attrition",
+            "exit",
+            "exits",
+            "hire",
+            "hires",
+            "movement",
+            "offboarding",
+            "onboarding",
+            "separation",
+            "separations",
+            "term",
+            "termination",
+            "terminations",
+            "transaction",
+            "transactions",
+            "turnover"
+          ]
+        },
+        {
+          "key": "people.org_health.peer_benchmarks",
+          "required": false,
+          "concepts": [
+            "peer org benchmark table",
+            "pre-aggregated rate metrics",
+            "executive-level org comparison"
+          ],
+          "grain": [
+            "executive_org"
+          ],
+          "fields": {
+            "org": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "org",
+                "org_group",
+                "executive_org",
+                "department",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name",
+                "team"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            },
+            "attrition_rate": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "attrition_rate",
+                "attrition_pct"
+              ]
+            },
+            "pto_utilization": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "pto_utilization",
+                "pto_rate"
+              ]
+            },
+            "ai_adoption": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "ai_adoption",
+                "ai_adoption_pct"
+              ]
+            }
+          },
+          "name_hints": [
+            "benchmark",
+            "benchmarks",
+            "market",
+            "peer",
+            "peers"
+          ]
+        },
+        {
+          "key": "people.qoh.new_hire_survey",
+          "required": false,
+          "concepts": [
+            "quality-of-hire survey",
+            "new hire satisfaction",
+            "1-5 numeric rating"
+          ],
+          "grain": [
+            "survey_response"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "rating": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "rating",
+                "score",
+                "qoh_rating"
+              ]
+            }
+          },
+          "name_hints": [
+            "engagement",
+            "enps",
+            "pulse",
+            "qoh",
+            "response",
+            "responses",
+            "sentiment",
+            "survey",
+            "surveys"
+          ]
+        },
+        {
+          "key": "people.org_health.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over employee snapshot and exit tables for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        },
+        {
+          "key": "people.calendar.fiscal",
+          "required": false,
+          "concepts": [
+            "fiscal calendar",
+            "quarter-end alignment",
+            "YoY/QoQ windows"
+          ],
+          "grain": [
+            "date"
+          ],
+          "fields": {
+            "date": {
+              "required": true,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "date",
+                "calendar_date"
+              ]
+            },
+            "fiscal_year": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_year",
+                "fy"
+              ]
+            },
+            "fiscal_quarter": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "fiscal_quarter",
+                "quarter"
+              ]
+            }
+          },
+          "name_hints": [
+            "calendar",
+            "date",
+            "dates",
+            "dim_date",
+            "fiscal",
+            "period",
+            "periods"
+          ]
+        }
+      ],
+      "context_queries": {
+        "people.org_health.employee_snapshot": "official production data for current employee snapshot with manager and span of control; grain: employee, snapshot_date; required fields: employee_id, manager_id",
+        "people.exits.event_records": "official production data for exit records with termination category; grain: exit_event; required fields: employee_id, termination_date",
+        "people.org_health.performance_ratings": "official production data for performance ratings per review cycle; grain: employee, review_cycle; required fields: employee_id, cycle_id, performance_rating",
+        "people.org_health.pto_usage": "official production data for PTO usage per employee per period; grain: employee, period; required fields: employee_id, pto_days_taken, period",
+        "people.org_health.ai_usage": "official production data for AI tool usage per user per tool per day; grain: user, tool, date; required fields: employee_id, tool_name, date",
+        "people.ta.requisitions": "official production data for open requisitions; grain: requisition; required fields: req_id, status",
+        "people.hires.event_records": "official production data for starts / new hires; grain: hire_event; required fields: employee_id, hire_date",
+        "people.org_health.peer_benchmarks": "optional pre-built peer org benchmark table with pre-aggregated metrics; grain: executive_org; required fields: org",
+        "people.qoh.new_hire_survey": "optional quality-of-hire survey with 1-5 rating; grain: survey_response; required fields: employee_id, rating",
+        "people.org_health.semantic_view": "optional semantic view over employee snapshot and exit tables; grain: semantic_view"
+      },
+      "tunables": [
+        {
+          "id": "regular_employee_types",
+          "label": "Employee types counted as regular headcount",
+          "type": "enum_multi",
+          "default": [
+            "regular",
+            "full-time",
+            "fixed-term"
+          ],
+          "infer_from": {
+            "field": "employee_type"
+          },
+          "context_term": "regular_headcount"
+        },
+        {
+          "id": "voluntary_values",
+          "label": "Termination categories that are voluntary",
+          "type": "enum_multi",
+          "default": [
+            "voluntary"
+          ],
+          "infer_from": {
+            "field": "termination_category"
+          }
+        },
+        {
+          "id": "attrition_window_months",
+          "label": "Rolling attrition window (months)",
+          "type": "threshold",
+          "default": 12
+        },
+        {
+          "id": "span_under_threshold",
+          "label": "Under-spanned manager: fewer than N direct reports",
+          "type": "threshold",
+          "default": 3
+        },
+        {
+          "id": "span_over_threshold",
+          "label": "Over-spanned manager: more than N direct reports",
+          "type": "threshold",
+          "default": 10
+        },
+        {
+          "id": "open_req_status_values",
+          "label": "Requisition statuses that count as open",
+          "type": "enum_multi",
+          "default": [
+            "open"
+          ],
+          "infer_from": {
+            "field": "status",
+            "need_prefix": "people.ta.requisitions"
+          }
+        },
+        {
+          "id": "attrition_rate_method",
+          "label": "Attrition rate method",
+          "type": "definition",
+          "default": "average of headcount at period start and end, not annualized",
+          "context_term": "attrition_rate"
+        }
+      ],
+      "context_terms": [
+        "regular_headcount",
+        "span_of_control",
+        "regrettable_exit",
+        "org_hierarchy"
+      ]
+    },
+    {
+      "name": "interview_debrief",
+      "source_dir": "skills/interview_debrief",
+      "eval_dir": "evals/interview_debrief",
+      "persona": [
+        "Recruiter",
+        "Hiring Manager",
+        "Head of Talent Acquisition"
+      ],
+      "business_value": "Synthesize all interview scorecards for a candidate with panel alignment and signal-gap analysis.",
+      "triggers": [
+        "debrief for candidate",
+        "compare candidates",
+        "stack rank",
+        "interview debrief",
+        "scorecard summary"
+      ],
+      "subdepartments": [
+        "talent_acquisition"
+      ],
+      "jobs_to_be_done": [
+        "debrief a candidate after interviews",
+        "compare candidate panel signals",
+        "identify signal gaps in the interview loop"
+      ],
+      "source_system_hints": [
+        "ATS",
+        "Interview scheduling tool"
+      ],
+      "workflow_cadence": [
+        "on_demand"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.ats.scorecards",
+          "required": true,
+          "concepts": [
+            "interview scorecards",
+            "overall recommendation",
+            "panel signal"
+          ],
+          "grain": [
+            "scorecard_submission",
+            "application",
+            "interviewer"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "scorecard_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "scorecard_id",
+                "id"
+              ]
+            },
+            "interviewer_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "interviewer_id",
+                "interviewer_user_id",
+                "user_id"
+              ]
+            },
+            "recommendation": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "recommendation",
+                "overall_recommendation",
+                "outcome"
+              ],
+              "value_hints": [
+                "strong yes",
+                "yes",
+                "no",
+                "strong no"
+              ]
+            },
+            "submitted_at": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "submitted_at",
+                "submission_timestamp",
+                "submitted_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "evaluation",
+            "feedback",
+            "rating",
+            "ratings",
+            "rubric",
+            "scorecard",
+            "scorecards"
+          ]
+        },
+        {
+          "key": "people.ats.scorecard_rubric_answers",
+          "required": true,
+          "concepts": [
+            "scorecard rubric",
+            "per-question answers",
+            "free-text feedback"
+          ],
+          "grain": [
+            "scorecard",
+            "question"
+          ],
+          "fields": {
+            "question_text": {
+              "required": true,
+              "semantic_type": "text",
+              "aliases": [
+                "question_text",
+                "question",
+                "prompt"
+              ]
+            },
+            "answer_text": {
+              "required": true,
+              "semantic_type": "text",
+              "aliases": [
+                "answer_text",
+                "answer",
+                "response"
+              ]
+            },
+            "scorecard_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "scorecard_id",
+                "scorecard_ref"
+              ]
+            }
+          },
+          "name_hints": [
+            "evaluation",
+            "feedback",
+            "rating",
+            "ratings",
+            "rubric",
+            "scorecard",
+            "scorecards"
+          ]
+        },
+        {
+          "key": "people.ats.applications",
+          "required": true,
+          "concepts": [
+            "applications table",
+            "candidate name and basics",
+            "current stage and status"
+          ],
+          "grain": [
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "candidate_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "candidate_name",
+                "name",
+                "applicant_name"
+              ]
+            },
+            "job_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "job_id",
+                "req_id"
+              ]
+            },
+            "status": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "application_status",
+                "stage"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            }
+          },
+          "name_hints": [
+            "applicant",
+            "applicants",
+            "application",
+            "applications",
+            "ats",
+            "candidate",
+            "candidates",
+            "funnel",
+            "interview",
+            "interviews",
+            "pipeline",
+            "recruiting",
+            "stage",
+            "stages"
+          ]
+        },
+        {
+          "key": "people.ats.jobs",
+          "required": true,
+          "concepts": [
+            "jobs / requisitions",
+            "job title, grade, level",
+            "comp ranges"
+          ],
+          "grain": [
+            "job"
+          ],
+          "fields": {
+            "job_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "job_id",
+                "req_id",
+                "id"
+              ]
+            },
+            "title": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "title",
+                "job_title"
+              ]
+            },
+            "grade": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "grade",
+                "level",
+                "job_level"
+              ]
+            },
+            "department": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "department",
+                "team",
+                "department_name",
+                "dept",
+                "business_unit",
+                "business_unit_name",
+                "bu",
+                "division",
+                "division_name",
+                "function",
+                "org_unit",
+                "group_name"
+              ],
+              "value_hints": [
+                "@context:org_units"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.ats.interviews",
+          "required": true,
+          "concepts": [
+            "interview events",
+            "stage ordering",
+            "interview timeline"
+          ],
+          "grain": [
+            "interview_event"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "scorecard_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "scorecard_id"
+              ]
+            },
+            "interview_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "interview_date",
+                "date",
+                "scheduled_date"
+              ]
+            },
+            "stage_name": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "stage_name",
+                "stage"
+              ],
+              "value_hints": [
+                "interview",
+                "offer",
+                "hired",
+                "screen",
+                "rejected",
+                "review"
+              ]
+            }
+          },
+          "name_hints": [
+            "applicant",
+            "applicants",
+            "application",
+            "applications",
+            "ats",
+            "candidate",
+            "candidates",
+            "funnel",
+            "interview",
+            "interviews",
+            "pipeline",
+            "recruiting",
+            "stage",
+            "stages"
+          ]
+        },
+        {
+          "key": "people.ats.users_directory",
+          "required": true,
+          "concepts": [
+            "interviewer directory",
+            "user id to name mapping"
+          ],
+          "grain": [
+            "interviewer"
+          ],
+          "fields": {
+            "user_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "user_id",
+                "interviewer_id",
+                "id"
+              ]
+            },
+            "full_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "full_name",
+                "name",
+                "display_name"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        },
+        {
+          "key": "people.ats.offers",
+          "required": false,
+          "concepts": [
+            "offers table",
+            "offer comp details",
+            "offer status"
+          ],
+          "grain": [
+            "offer",
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "status": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "offer_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "base_salary": {
+              "required": false,
+              "semantic_type": "money",
+              "aliases": [
+                "base_salary",
+                "salary",
+                "base"
+              ]
+            }
+          },
+          "name_hints": [
+            "accept",
+            "acceptance",
+            "decline",
+            "offer",
+            "offers"
+          ]
+        },
+        {
+          "key": "people.qoh.application_survey",
+          "required": false,
+          "concepts": [
+            "post-hire quality-of-hire survey",
+            "1-5 numeric rating per application"
+          ],
+          "grain": [
+            "application",
+            "survey_response"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "rating": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "rating",
+                "score"
+              ]
+            }
+          },
+          "name_hints": [
+            "engagement",
+            "enps",
+            "pulse",
+            "qoh",
+            "response",
+            "responses",
+            "sentiment",
+            "survey",
+            "surveys"
+          ]
+        },
+        {
+          "key": "people.ats.semantic_view",
+          "required": false,
+          "concepts": [
+            "semantic view over application, scorecard, interview tables for follow-up questions"
+          ],
+          "grain": [
+            "semantic_view"
+          ],
+          "fields": {
+            "view_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "view_name",
+                "semantic_view"
+              ]
+            }
+          }
+        }
+      ],
+      "context_queries": {
+        "people.ats.scorecards": "official production data for interview scorecards with overall recommendation; grain: scorecard_submission, application, interviewer; required fields: application_id, scorecard_id, interviewer_id, recommendation",
+        "people.ats.scorecard_rubric_answers": "official production data for scorecard rubric per-question answers with free text; grain: scorecard, question; required fields: question_text, answer_text, scorecard_id",
+        "people.ats.applications": "official production data for applications with candidate name and stage; grain: application; required fields: application_id, candidate_name, job_id",
+        "people.ats.jobs": "official production data for jobs / requisitions with title and grade; grain: job; required fields: job_id, title",
+        "people.ats.interviews": "official production data for interview events with stage ordering; grain: interview_event; required fields: application_id",
+        "people.ats.users_directory": "official production data for interviewer / user directory; grain: interviewer; required fields: user_id, full_name",
+        "people.ats.offers": "optional offers table with comp details; grain: offer, application; required fields: application_id, status",
+        "people.qoh.application_survey": "optional post-hire quality-of-hire survey with 1-5 rating; grain: application, survey_response; required fields: application_id, rating",
+        "people.ats.semantic_view": "optional semantic view over ATS application/scorecard/interview tables; grain: semantic_view"
+      },
+      "tunables": [],
+      "context_terms": [
+        "interview_recommendation_scale"
+      ]
+    },
+    {
+      "name": "offer_builder",
+      "source_dir": "skills/offer_builder",
+      "eval_dir": "evals/offer_builder",
+      "persona": [
+        "Recruiter",
+        "Total Rewards / Comp Partner",
+        "Head of Talent Acquisition"
+      ],
+      "business_value": "Compensation justification for offer approval: candidate quality, competitive offer context, and team comp parity.",
+      "triggers": [
+        "offer justification",
+        "comp justification",
+        "comp parity",
+        "justify offer",
+        "offer approval brief"
+      ],
+      "subdepartments": [
+        "talent_acquisition",
+        "total_rewards"
+      ],
+      "jobs_to_be_done": [
+        "justify a candidate's compensation",
+        "check comp parity against team",
+        "structure offer approval brief"
+      ],
+      "source_system_hints": [
+        "ATS",
+        "HRIS",
+        "Compensation benchmarking"
+      ],
+      "workflow_cadence": [
+        "on_demand"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.ats.applications",
+          "required": true,
+          "concepts": [
+            "ATS applications",
+            "candidate profile",
+            "source and recruiter",
+            "prior company and experience"
+          ],
+          "grain": [
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "candidate_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "candidate_name",
+                "name"
+              ]
+            },
+            "job_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "job_id",
+                "req_id"
+              ]
+            },
+            "recruiter_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "recruiter_id",
+                "recruiter"
+              ]
+            },
+            "prior_company_name": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "prior_company_name",
+                "previous_company"
+              ]
+            },
+            "years_of_experience": {
+              "required": false,
+              "semantic_type": "number",
+              "aliases": [
+                "years_of_experience",
+                "yoe",
+                "experience_years"
+              ]
+            }
+          },
+          "name_hints": [
+            "applicant",
+            "applicants",
+            "application",
+            "applications",
+            "ats",
+            "candidate",
+            "candidates",
+            "funnel",
+            "interview",
+            "interviews",
+            "pipeline",
+            "recruiting",
+            "stage",
+            "stages"
+          ]
+        },
+        {
+          "key": "people.ats.scorecards",
+          "required": true,
+          "concepts": [
+            "scorecard recommendations",
+            "4-level recommendation scale",
+            "interviewer recommendation distribution"
+          ],
+          "grain": [
+            "scorecard_submission",
+            "interviewer",
+            "application"
+          ],
+          "fields": {
+            "scorecard_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "scorecard_id",
+                "id"
+              ]
+            },
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "interviewer_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "interviewer_id",
+                "interviewer_user_id"
+              ]
+            },
+            "recommendation": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "recommendation",
+                "overall_recommendation"
+              ],
+              "value_hints": [
+                "strong yes",
+                "yes",
+                "no",
+                "strong no"
+              ]
+            }
+          },
+          "name_hints": [
+            "evaluation",
+            "feedback",
+            "rating",
+            "ratings",
+            "rubric",
+            "scorecard",
+            "scorecards"
+          ]
+        },
+        {
+          "key": "people.ats.scorecard_rubric_answers",
+          "required": true,
+          "concepts": [
+            "scorecard rubric answers",
+            "recruiter notes parsing",
+            "rich-text answers"
+          ],
+          "grain": [
+            "scorecard",
+            "question"
+          ],
+          "fields": {
+            "question_text": {
+              "required": true,
+              "semantic_type": "text",
+              "aliases": [
+                "question_text",
+                "question"
+              ]
+            },
+            "answer_text": {
+              "required": true,
+              "semantic_type": "text",
+              "aliases": [
+                "answer_text",
+                "answer"
+              ]
+            },
+            "scorecard_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "scorecard_id"
+              ]
+            }
+          },
+          "name_hints": [
+            "evaluation",
+            "feedback",
+            "rating",
+            "ratings",
+            "rubric",
+            "scorecard",
+            "scorecards"
+          ]
+        },
+        {
+          "key": "people.ats.jobs",
+          "required": true,
+          "concepts": [
+            "jobs / requisitions",
+            "hiring manager lookup",
+            "job grade and location"
+          ],
+          "grain": [
+            "requisition"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "job_id",
+                "id"
+              ]
+            },
+            "title": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "title",
+                "job_title"
+              ]
+            },
+            "hiring_manager_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "hiring_manager_id",
+                "hm_id",
+                "hiring_manager"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.offer_builder.employee_snapshot",
+          "required": true,
+          "concepts": [
+            "current employee snapshot",
+            "team members by manager",
+            "employee type"
+          ],
+          "grain": [
+            "employee",
+            "snapshot_date"
+          ],
+          "fields": {
+            "employee_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "full_name": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "full_name",
+                "name"
+              ]
+            },
+            "manager_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "manager_id",
+                "direct_manager_id"
+              ]
+            },
+            "employee_type": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "employee_type",
+                "employment_type"
+              ],
+              "value_hints": [
+                "regular",
+                "full-time",
+                "full time",
+                "part-time",
+                "fixed-term",
+                "contractor",
+                "intern",
+                "contingent"
+              ]
+            }
+          },
+          "name_hints": [
+            "census",
+            "employee",
+            "employees",
+            "headcount",
+            "hris",
+            "personnel",
+            "population",
+            "roster",
+            "snapshot",
+            "worker",
+            "workers"
+          ]
+        },
+        {
+          "key": "people.offer_builder.offer_comp",
+          "required": true,
+          "concepts": [
+            "offer / hire compensation",
+            "base salary",
+            "OTE",
+            "equity compa-ratio",
+            "team comp parity"
+          ],
+          "grain": [
+            "offer",
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "employee_id": {
+              "required": false,
+              "semantic_type": "identifier",
+              "aliases": [
+                "employee_id",
+                "emp_id"
+              ]
+            },
+            "base_salary": {
+              "required": true,
+              "semantic_type": "money",
+              "aliases": [
+                "base_salary",
+                "salary",
+                "base"
+              ]
+            },
+            "currency": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "currency",
+                "currency_code"
+              ],
+              "value_hints": [
+                "usd",
+                "eur",
+                "gbp"
+              ]
+            },
+            "ote": {
+              "required": false,
+              "semantic_type": "money",
+              "aliases": [
+                "ote",
+                "ttc",
+                "target_total_comp"
+              ]
+            }
+          },
+          "name_hints": [
+            "accept",
+            "acceptance",
+            "decline",
+            "offer",
+            "offers"
+          ]
+        },
+        {
+          "key": "people.compensation.ranges",
+          "required": false,
+          "concepts": [
+            "compensation ranges",
+            "pay band by job code",
+            "comp band parity"
+          ],
+          "grain": [
+            "job_code",
+            "pay_market"
+          ],
+          "fields": {
+            "job_code": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "job_code",
+                "job_family_code",
+                "grade"
+              ]
+            },
+            "min_salary": {
+              "required": true,
+              "semantic_type": "money",
+              "aliases": [
+                "min_salary",
+                "range_min",
+                "min"
+              ]
+            },
+            "max_salary": {
+              "required": true,
+              "semantic_type": "money",
+              "aliases": [
+                "max_salary",
+                "range_max",
+                "max"
+              ]
+            }
+          },
+          "name_hints": [
+            "band",
+            "bands",
+            "comp",
+            "compensation",
+            "grade",
+            "pay",
+            "range",
+            "ranges",
+            "rewards",
+            "salary"
+          ]
+        },
+        {
+          "key": "people.ats.users_directory",
+          "required": true,
+          "concepts": [
+            "interviewer / user directory",
+            "user id to name mapping"
+          ],
+          "grain": [
+            "interviewer"
+          ],
+          "fields": {
+            "user_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "user_id",
+                "interviewer_id",
+                "id"
+              ]
+            },
+            "full_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "full_name",
+                "name"
+              ]
+            }
+          },
+          "name_hints": [
+            "center",
+            "chain",
+            "cost",
+            "department",
+            "directory",
+            "hierarchy",
+            "management",
+            "manager",
+            "org",
+            "organization",
+            "scope",
+            "scoping",
+            "supervisory",
+            "users"
+          ]
+        }
+      ],
+      "context_queries": {
+        "people.ats.applications": "official production data for ATS applications with candidate profile; grain: application; required fields: application_id, candidate_name, job_id",
+        "people.ats.scorecards": "official production data for scorecard recommendations per interviewer; grain: scorecard_submission, interviewer, application; required fields: scorecard_id, application_id, interviewer_id, recommendation",
+        "people.ats.scorecard_rubric_answers": "official production data for scorecard rubric answers; grain: scorecard, question; required fields: question_text, answer_text, scorecard_id",
+        "people.ats.jobs": "official production data for jobs / requisitions with hiring manager; grain: requisition; required fields: req_id, title",
+        "people.offer_builder.employee_snapshot": "official production data for current employee snapshot filtered to latest; grain: employee, snapshot_date; required fields: employee_id, manager_id",
+        "people.offer_builder.offer_comp": "official production data for offer / hire compensation; grain: offer, application; required fields: application_id, base_salary",
+        "people.compensation.ranges": "official production data for compensation ranges by job code and pay market; grain: job_code, pay_market; required fields: job_code, min_salary, max_salary",
+        "people.ats.users_directory": "official production data for interviewer / user directory; grain: interviewer; required fields: user_id, full_name"
+      },
+      "tunables": [],
+      "context_terms": [
+        "compensation_bands"
+      ]
+    },
+    {
+      "name": "job_description_builder",
+      "source_dir": "skills/job_description_builder",
+      "eval_dir": "evals/job_description_builder",
+      "persona": [
+        "Recruiter",
+        "Hiring Manager",
+        "Talent Acquisition Operations"
+      ],
+      "business_value": "AI-powered job description creator: generate, enhance, and clone JDs with bias scanning, multi-language support, and fill-rate/QoH intelligence.",
+      "triggers": [
+        "create JD",
+        "write job description",
+        "improve JD",
+        "generate job description",
+        "JD bias scan"
+      ],
+      "subdepartments": [
+        "talent_acquisition"
+      ],
+      "jobs_to_be_done": [
+        "generate a new job description",
+        "enhance or clone an existing JD",
+        "scan a JD for bias",
+        "validate posting locations"
+      ],
+      "source_system_hints": [
+        "ATS"
+      ],
+      "workflow_cadence": [
+        "on_demand"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "data_needs": [
+        {
+          "key": "people.ats.jobs",
+          "required": true,
+          "concepts": [
+            "ATS jobs / requisitions",
+            "job metadata",
+            "workplace type",
+            "hiring manager and recruiter"
+          ],
+          "grain": [
+            "requisition"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "job_id",
+                "id"
+              ]
+            },
+            "job_title": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "job_title",
+                "title"
+              ]
+            },
+            "location": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "location",
+                "location_name",
+                "office"
+              ],
+              "value_hints": [
+                "new york",
+                "london",
+                "singapore",
+                "remote"
+              ]
+            },
+            "workplace_type": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "workplace_type",
+                "work_type",
+                "remote_policy"
+              ]
+            },
+            "status": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "status",
+                "job_status"
+              ],
+              "value_hints": [
+                "open",
+                "filled",
+                "closed",
+                "frozen",
+                "on hold",
+                "accepted",
+                "declined",
+                "pending"
+              ]
+            },
+            "job_grade": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "job_grade",
+                "grade",
+                "job_level"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.ats.job_postings",
+          "required": true,
+          "concepts": [
+            "ATS job postings",
+            "published JD content",
+            "content status indicator"
+          ],
+          "grain": [
+            "job_posting"
+          ],
+          "fields": {
+            "job_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "job_id",
+                "req_id",
+                "id"
+              ]
+            },
+            "jd_content": {
+              "required": true,
+              "semantic_type": "text",
+              "aliases": [
+                "jd_content",
+                "description",
+                "content",
+                "job_description"
+              ]
+            },
+            "content_status": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "content_status",
+                "status"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.jd.library",
+          "required": false,
+          "concepts": [
+            "JD library / cache",
+            "saved JDs per language",
+            "content source for enhancement and cloning"
+          ],
+          "grain": [
+            "saved_jd",
+            "language"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "job_id"
+              ]
+            },
+            "language_code": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "language_code",
+                "language",
+                "locale"
+              ]
+            },
+            "jd_markdown": {
+              "required": false,
+              "semantic_type": "text",
+              "aliases": [
+                "jd_markdown",
+                "content",
+                "jd_content"
+              ]
+            },
+            "saved_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "saved_date",
+                "updated_at",
+                "created_at"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.jd.fill_rate",
+          "required": true,
+          "concepts": [
+            "fill rate context",
+            "days to fill per job profile",
+            "closed requisitions"
+          ],
+          "grain": [
+            "requisition",
+            "job_profile"
+          ],
+          "fields": {
+            "req_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "req_id",
+                "job_id"
+              ]
+            },
+            "days_to_fill": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "days_to_fill",
+                "time_to_fill"
+              ]
+            },
+            "close_date": {
+              "required": false,
+              "semantic_type": "date_or_period",
+              "aliases": [
+                "close_date",
+                "closed_date",
+                "filled_date"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.qoh.application_survey",
+          "required": true,
+          "concepts": [
+            "quality-of-hire survey",
+            "favorable % by job",
+            "1-5 rating"
+          ],
+          "grain": [
+            "survey_response"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "rating": {
+              "required": true,
+              "semantic_type": "number",
+              "aliases": [
+                "rating",
+                "score",
+                "qoh_rating"
+              ]
+            }
+          },
+          "name_hints": [
+            "engagement",
+            "enps",
+            "pulse",
+            "qoh",
+            "response",
+            "responses",
+            "sentiment",
+            "survey",
+            "surveys"
+          ]
+        },
+        {
+          "key": "people.ats.valid_locations",
+          "required": true,
+          "concepts": [
+            "approved job posting locations",
+            "location validation list",
+            "country and region"
+          ],
+          "grain": [
+            "location"
+          ],
+          "fields": {
+            "location_name": {
+              "required": true,
+              "semantic_type": "category",
+              "aliases": [
+                "location_name",
+                "location",
+                "name"
+              ]
+            },
+            "country": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "country",
+                "country_code"
+              ]
+            },
+            "region": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "region",
+                "area"
+              ],
+              "value_hints": [
+                "americas",
+                "emea",
+                "apac",
+                "amer",
+                "latam"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        },
+        {
+          "key": "people.jd.sourced_context",
+          "required": false,
+          "concepts": [
+            "ATS applications with source type group",
+            "sourced % context"
+          ],
+          "grain": [
+            "application"
+          ],
+          "fields": {
+            "application_id": {
+              "required": true,
+              "semantic_type": "identifier",
+              "aliases": [
+                "application_id",
+                "app_id"
+              ]
+            },
+            "source_type_group": {
+              "required": false,
+              "semantic_type": "category",
+              "aliases": [
+                "source_type_group",
+                "source_group",
+                "source_type"
+              ],
+              "value_hints": [
+                "linkedin",
+                "referral",
+                "agency"
+              ]
+            }
+          },
+          "name_hints": [
+            "job",
+            "jobs",
+            "location",
+            "locations",
+            "opening",
+            "openings",
+            "position",
+            "positions",
+            "posting",
+            "postings",
+            "req",
+            "reqs",
+            "requisition",
+            "requisitions",
+            "vacancy"
+          ]
+        }
+      ],
+      "context_queries": {
+        "people.ats.jobs": "official production data for ATS jobs / requisitions with job metadata; grain: requisition; required fields: req_id, job_title",
+        "people.ats.job_postings": "official production data for ATS job postings with published JD content; grain: job_posting; required fields: job_id, jd_content",
+        "people.jd.library": "optional JD library / cache of saved JDs per language; grain: saved_jd, language; required fields: req_id",
+        "people.jd.fill_rate": "official production data for fill rate context per job profile; grain: requisition, job_profile; required fields: req_id, days_to_fill",
+        "people.qoh.application_survey": "official production data for quality-of-hire survey responses; grain: survey_response; required fields: application_id, rating",
+        "people.ats.valid_locations": "official production data for approved job posting locations; grain: location; required fields: location_name",
+        "people.jd.sourced_context": "optional ATS applications with source type group; grain: application; required fields: application_id"
+      },
+      "tunables": [],
+      "context_terms": [
+        "approved_locations"
+      ]
+    }
+  ],
+  "catalog_version": 2
+}
