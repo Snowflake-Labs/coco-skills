@@ -83,13 +83,21 @@ class AnalysisTests(unittest.TestCase):
         report, packet = paired(corpus())
         self.assertEqual(ingest.manifest(corpus(), 'example')[1],
                          '6c28bb3293e0a61301fecad12f76b259caf20a53c9136656df84ed7e6c45edfe')
+        # Rules 1.3 changes only the rules_version field for this corpus: it has no
+        # SQL, dependency or plugin-name findings. With 1.2 restored, the report and
+        # legacy packet reproduce their previous hashes exactly.
         self.assertEqual(hashlib.sha256(canonical(report)).hexdigest(),
+                         '27a6068669cf3821783e184e4d05e805108c0f9240f2791da792804a2cc24b3c')
+        restored = copy.deepcopy(report)
+        restored['rules_version'] = '1.2'
+        self.assertEqual(hashlib.sha256(canonical(restored)).hexdigest(),
                          '7eaed312a419f97f63931ee465c242a327f925ea4a8b592bb6c683060de58ef0')
         self.assertEqual(packet['packet_sha256'],
-                         '396e3a8ccb833f8a3bb9b2f795b04772b7b4c92d00213f861b5a4aedb8e03a5b')
+                         '91d1f5ac044bbc3bb6d04227c34f165b849ddbb25328b529fb6e757882f380aa')
         # The only intentional packet change is the corrected LF coordinate count.
         legacy = copy.deepcopy(packet)
         del legacy['packet_sha256']
+        legacy['rules_version'] = '1.2'
         for item in legacy['files']:
             item['line_count'] = len(item['text'].splitlines())
         self.assertEqual(hashlib.sha256(canonical(legacy)).hexdigest(),

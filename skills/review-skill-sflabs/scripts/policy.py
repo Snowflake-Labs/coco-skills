@@ -4,13 +4,13 @@ from functools import lru_cache
 from pathlib import Path
 import re
 
-RULES_VERSION = '1.2'
+RULES_VERSION = '1.3'
 SOURCE_REVISION = '89c57c211105bb5a870ce2f6e6e495a20c962fd8'
 
 # This matrix also renders the contributor table; checks must consume its rules.
 METADATA = {
     'name': {'shape': 'string', 'required': True, 'pattern': r'[a-z0-9]+(?:-[a-z0-9]+){0,3}',
-             'description': 'Required nonblank string; directory match and 1-4 lowercase alphanumeric words separated by hyphens are advisory.'},
+             'description': 'Required nonblank string; directory match and 1-4 lowercase alphanumeric words separated by hyphens are advisory for standalone skills and a hard error for plugin skills.'},
     'description': {'shape': 'string', 'required': True, 'prefix': 'Use when',
                     'trigger': 'triggers:', 'first_person': r'\b(I|My|my|We|we|Our|our|Us|us)\b',
                     'description': 'Required nonblank string; Use when prefix, Triggers: guidance and third-person wording are advisory.'},

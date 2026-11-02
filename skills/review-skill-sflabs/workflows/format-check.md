@@ -7,7 +7,7 @@ into context during admission review.
 ## One contract
 
 [scripts/policy.py](../scripts/policy.py) owns the required/advisory metadata
-matrix, rules version 1.2, and license normalization/claim rules (unchanged from 1.1). Checks consume
+matrix, rules version 1.3, and license normalization/claim rules (unchanged from 1.1). Checks consume
 that matrix; the [CONTRIBUTING table](../../../CONTRIBUTING.md#frontmatter-contract)
 is verified against its renderer in unit tests. Refer there instead of maintaining
 a second field/enum list here. No default metadata or automatic fixes are inserted.
@@ -247,3 +247,15 @@ Owners must record concrete evidence for every item before an authorized rollout
 Until these controls and bootstrap/provisioning evidence are independently verified,
 this is local implementation plus an inert CI example, not an enforced admission
 gate, installed release, published Action, approved image or shipped initiative.
+
+## Vulnerability snapshot
+
+The container has no network, so `dependency.vulnerable` reads
+[scripts/resources/advisories.json](../scripts/resources/advisories.json), an offline
+snapshot of OSV ECOSYSTEM ranges for PyPI and npm. It ships empty; while empty,
+every exact pin reports `dependency.unchecked` instead of passing silently. A
+maintainer refreshes it with `python3 .github/scripts/refresh_advisories.py`, which
+queries the public OSV API (https://api.osv.dev) for package names found in this
+repository, then reviews and commits the diff. The snapshot ships in the image, so
+rebuild the image after a refresh. Matching is exact-version only and is not a
+complete vulnerability audit.

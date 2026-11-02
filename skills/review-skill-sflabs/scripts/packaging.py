@@ -16,6 +16,7 @@ LOCAL_FILES = tuple(REVIEWER + path for path in (
     'scripts/catalog.py', 'scripts/comparison.py', 'scripts/git_context.py',
     'scripts/markdown_checks.py', 'scripts/model_contract.py', 'scripts/packaging.py',
     'scripts/report_cache.py', 'scripts/editorial_broker.py', 'scripts/advisory_cache.py',
+    'scripts/risk_checks.py', 'scripts/resources/advisories.json',
     'scripts/resources/licenses.json', 'references/catalog-snapshot.json',
     'Dockerfile', '.dockerignore', 'requirements.txt', 'pyproject.toml', 'LICENSE',
 ))

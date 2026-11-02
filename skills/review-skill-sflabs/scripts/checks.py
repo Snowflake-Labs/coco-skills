@@ -8,6 +8,7 @@ import yaml
 
 from ingest import PLUGIN_LICENSE, Entry, canonical, lf_line_count, lf_lines
 from markdown_checks import check_documents
+from risk_checks import dependency_findings, sql_findings
 from catalog import related
 from protocol import base_report, bind_report, finding
 from policy import LICENSE_POLICY, METADATA, author_claims, match_license, valid_shape
@@ -140,6 +141,14 @@ def _review(name, entries, catalog):
         if 'skill_metadata' in PurePosixPath(entry.path).parts:
             add('format.internal_directory', 'error', file_id)
     for path, (file_id, text) in texts.items():
+        # License text is legal prose, not code or instructions.
+        if path in ('LICENSE', PLUGIN_LICENSE):
+            continue
+        for code, line in sql_findings(path, text):
+            add(code, 'error', file_id, line)
+        for code, line in dependency_findings(path, text):
+            add(code, file_id=file_id, line=line)
+    for path, (file_id, text) in texts.items():
         for code, pattern in [
             ('policy.tone', r'(?i)\b(critical|failure|violation|danger|urgent|high-risk)\b|\U0001f534'),
             ('policy.identity', r'\b(USER_NAME|LOGIN_NAME|EMAIL|DISPLAY_NAME|CLIENT_IP|SOURCE_IP)\b'),
@@ -183,7 +192,12 @@ def _review(name, entries, catalog):
             candidate_name = meta.get('name')
             if isinstance(candidate_name, str) and (candidate_name != name or
                     not re.fullmatch(METADATA['name']['pattern'], candidate_name)):
-                add('format.name', file_id=file_id)
+                # Plugin skills get no exemption: the community naming rule is a
+                # hard error for them. Standalone skills keep the advisory.
+                if any(entry.path == PLUGIN_LICENSE for entry in entries):
+                    add('format.plugin_name', 'error', file_id)
+                else:
+                    add('format.name', file_id=file_id)
             description = meta.get('description', '')
             description_rule = METADATA['description']
             if isinstance(description, str) and (not description.startswith(description_rule['prefix'])

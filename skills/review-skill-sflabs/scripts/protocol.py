@@ -36,6 +36,15 @@ MESSAGES = {
     'format.internal_directory': 'An internal-only metadata directory was detected.',
     'coverage.unsupported': 'Unsupported file format or encoding; review coverage is incomplete.',
     'security.secret': 'Potential secret detected; value withheld and model packet blocked.',
+    'security.sql_interpolation': 'SQL is built by string interpolation or concatenation; use bind variables or IDENTIFIER().',
+    'security.sql_dynamic': 'Dynamic SQL (EXECUTE IMMEDIATE) is built from variables or concatenation.',
+    'security.sql_substitution': 'SQL uses client-side variable substitution (SnowSQL &var or <% var %>).',
+    'security.sql_payload': 'SQL injection payload pattern found.',
+    'security.sql_splicing': 'Instructions tell the agent to splice values into SQL without bind variables or IDENTIFIER().',
+    'dependency.unpinned': 'Dependency is not pinned to an exact version.',
+    'dependency.vulnerable': 'Pinned dependency version matches a known vulnerability in the offline advisory snapshot.',
+    'dependency.unchecked': 'Pinned dependency was not checked: the offline advisory snapshot is empty.',
+    'format.plugin_name': 'Plugin skill name must match its directory and be 1-4 lowercase hyphenated words.',
     'policy.tone': 'Tone or status-marker pattern needs contextual human review.',
     'policy.identity': 'Identity-field reference needs contextual human review.',
     'policy.hardcoded': 'Environment-specific identifier pattern needs human review.',
@@ -52,13 +61,23 @@ FAILURES = {'input.timeout': 'blocked', 'input.unsafe': 'blocked', 'input.symlin
             'runtime.unavailable': 'unavailable', 'runtime.invalid_output': 'unavailable'}
 ERROR_CODES = set(FAILURES) | {'format.skill_missing', 'format.yaml', 'format.required',
     'format.field_type', 'format.id', 'format.type', 'format.license',
-    'format.internal_directory', 'coverage.unsupported', 'security.secret'}
+    'format.internal_directory', 'coverage.unsupported', 'security.secret',
+    'security.sql_interpolation', 'security.sql_dynamic', 'security.sql_substitution',
+    'security.sql_payload', 'security.sql_splicing', 'format.plugin_name'}
+# Display tiers. Red findings are blocking errors; orange findings are dependency
+# review items. Tiers are derived from codes, so the report schema is unchanged.
+TIERS = {code: 'RED' for code in ('security.sql_interpolation', 'security.sql_dynamic',
+                                  'security.sql_substitution', 'security.sql_payload',
+                                  'security.sql_splicing')}
+TIERS.update({code: 'ORANGE' for code in ('dependency.unpinned', 'dependency.vulnerable',
+                                         'dependency.unchecked')})
 FIELDS = {
     'format.required': {'name', 'description'},
     'format.recommended': {'id', 'authors', 'type', 'status', 'categories'},
     'format.field_type': set(METADATA), 'format.length': {'title', 'summary'},
     'format.id': {'id'}, 'format.type': {'type'}, 'format.status': {'status'},
     'format.name': {'name'}, 'format.description': {'description'},
+    'format.plugin_name': {'name'},
     'format.author_conflict': {'authors'},
 }
 ACTIONS = {
@@ -87,6 +106,15 @@ ACTIONS = {
     'format.internal_directory': 'Remove internal-only metadata from the submission.',
     'coverage.unsupported': 'Provide supported UTF-8 text or arrange separate human review.',
     'security.secret': 'Remove exposed values and ask the owner whether rotation is needed.',
+    'security.sql_interpolation': 'Blocks merge: pass values as bind variables and object names through IDENTIFIER().',
+    'security.sql_dynamic': 'Blocks merge: use EXECUTE IMMEDIATE ... USING binds or IDENTIFIER() instead of concatenation.',
+    'security.sql_substitution': 'Blocks merge: replace client-side substitution with bind variables or IDENTIFIER().',
+    'security.sql_payload': 'Blocks merge: remove the injection payload or rewrite it as an explicitly unsafe counterexample outside runnable SQL.',
+    'security.sql_splicing': 'Blocks merge: instruct the agent to use bind variables or IDENTIFIER() for every value.',
+    'dependency.unpinned': 'Pin an exact version (for example name==1.2.3) or justify the range with a maintainer.',
+    'dependency.vulnerable': 'Upgrade to a fixed version and confirm against the current advisory database.',
+    'dependency.unchecked': 'Ask a maintainer to refresh the offline advisory snapshot, then re-run.',
+    'format.plugin_name': 'Rename the skill so name equals its directory and uses 1-4 lowercase hyphenated words.',
     'policy.tone': 'Is the tone appropriate for an advisory result?',
     'policy.identity': 'Are identity fields necessary and appropriately minimized?',
     'policy.hardcoded': 'Should environment-specific identifiers be parameterized?',
@@ -326,7 +354,8 @@ def render(report, output_format='text'):
             if item['line'] is not None:
                 location += ':' + str(item['line'])
             field = ' [' + item['field'] + ']' if item['field'] else ''
-            lines.append(f"  {item['severity']} {item['code']} {location}{field}: {MESSAGES[item['code']]}")
+            tier = '[' + TIERS[item['code']] + '] ' if item['code'] in TIERS else ''
+            lines.append(f"  {tier}{item['severity']} {item['code']} {location}{field}: {MESSAGES[item['code']]}")
             lines.append('  Next: ' + item['action'])
     lines.append('Related catalog entries (partial pinned corpus; lexical candidates, not acceptance):')
     for item in report['related']:

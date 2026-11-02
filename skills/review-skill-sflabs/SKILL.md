@@ -95,7 +95,12 @@ All runs disclose that model assessment is disabled and public duplicate search
 was not run. Catalog comparison uses the partial, dated Labs snapshot shipped in
 the image, not an exhaustive or current bundled-skill inventory. Unsupported or
 binary files prevent a complete pass. No file sampling or silent truncation.
-Rules 1.2 preserve the metadata/license decisions from 1.1 and add advisory bounded
+Rules 1.3 add RED blocking SQL-escaping errors (interpolated or concatenated SQL,
+dynamic EXECUTE IMMEDIATE, SnowSQL/CLI substitution, injection payloads and prose
+telling the agent to splice values into SQL), ORANGE dependency advisories
+(unpinned versions; pinned versions in the offline OSV snapshot) and a hard
+naming error for plugin skills. Rules 1.2 preserved the 1.1 metadata/license
+decisions and added advisory bounded
 Markdown link/anchor/fence/routing checks. Code examples are not dependencies;
 unsupported syntax requires human review, and no workflow termination is proved.
 Related-skill suggestions return at most three stable public catalog IDs and fixed
