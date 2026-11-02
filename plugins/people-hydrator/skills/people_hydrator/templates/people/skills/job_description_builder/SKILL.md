@@ -14,6 +14,8 @@ description: >
   good_morning_recruiting).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Job Description Builder (Dehydrated)
@@ -23,7 +25,7 @@ type: snowflake
 - **What it does:** Creates, improves or clones a job description: starts from the posted description in your ATS, then your saved library, then generates one fresh only if neither exists. Checks for biased or non-inclusive wording, can translate, and exports to HTML.
 - **Who it's for:** Recruiters, hiring managers and TA operations.
 - **Works with:** The first step of the hiring flow: `job_description_builder` → interviews → `interview_debrief` → `offer_builder`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "create a JD for [requisition or role]", "improve this JD" or "bias check this JD". It always tells you where the content came from.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** The default export is the external (candidate-facing) version; recruiter notes appear only in the internal version when you ask for it. Pay is never put in a job description. The skill reads your data and only saves to your JD library when you ask.

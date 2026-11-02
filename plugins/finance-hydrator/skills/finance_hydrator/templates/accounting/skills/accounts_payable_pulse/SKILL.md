@@ -16,6 +16,8 @@ created_date: 2026-05-28
 version: 1.1.0
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Accounts Payable Pulse

@@ -14,6 +14,8 @@ description: >
   recruiting pipeline metrics (use good_morning_recruiting).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Attrition Insights (Dehydrated)

@@ -15,6 +15,8 @@ owner_name: Snowflake
 version: 1.0.0
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 ## Overview

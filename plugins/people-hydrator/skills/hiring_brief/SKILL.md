@@ -15,6 +15,8 @@ description: >
   headcount trend analysis (use headcount_insights).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Hiring Brief (Weekly Hiring Update) (Dehydrated)

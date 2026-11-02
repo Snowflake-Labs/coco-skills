@@ -15,6 +15,8 @@ description: >
   candidate (use interview_debrief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Org Health Report (Dehydrated)
@@ -24,7 +26,7 @@ type: snowflake
 - **What it does:** An org health report for a leader's team across retention and attrition, performance outcomes (high performers retained, low performers exited), team structure and span, well-being (PTO), AI adoption and recruiting, compared with peer orgs.
 - **Who it's for:** People leaders and the HR Business Partners who support them.
 - **Works with:** Goes deeper than `attrition_insights` and `headcount_insights` for one leader's org. For company-wide headcount use `headcount_insights`; for a candidate use `interview_debrief`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "org health report" (for your own org) or "org health for [name]". You can choose direct reports, full org or company.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** The skill finds you in the employee directory to set your default scope. HP = high performer and LP = low performer, based on your performance ratings. Sections whose data wasn't connected (for example AI adoption or PTO) are marked as not available. The skill reads your data and never changes it.

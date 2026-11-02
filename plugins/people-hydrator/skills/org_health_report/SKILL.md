@@ -15,6 +15,8 @@ description: >
   candidate (use interview_debrief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Org Health Report (Dehydrated)

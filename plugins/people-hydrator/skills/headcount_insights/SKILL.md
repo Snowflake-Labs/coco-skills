@@ -15,6 +15,8 @@ description: >
   report (use hiring_brief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Headcount Insights (Dehydrated)

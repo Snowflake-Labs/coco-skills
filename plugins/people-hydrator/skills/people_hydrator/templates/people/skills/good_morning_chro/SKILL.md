@@ -11,6 +11,8 @@ description: >
   employee lookups, or compensation analysis.
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Good Morning CHRO (Dehydrated)
@@ -20,7 +22,7 @@ type: snowflake
 - **What it does:** A one-page daily briefing on workforce health: new exits and attrition hot spots, hiring velocity (offers out, accepted, declined), engagement signals, and orgs that need attention.
 - **Who it's for:** The CHRO / CPO and People leadership.
 - **Works with:** A summary built on the same data and definitions as `attrition_insights`, `headcount_insights` and the recruiting data, so its numbers match theirs. Use those skills to go deeper on anything the briefing flags.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "good morning CHRO" or "people pulse". Name an org to scope it ("good morning, just engineering").
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** Engagement, PTO and offer sections are optional: if that data wasn't connected, the briefing leaves the section out and says so. The skill reads your data and never changes it.

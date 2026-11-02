@@ -12,6 +12,8 @@ created_date: 2026-05-20
 version: 1.0.0
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Flux Analysis

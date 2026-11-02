@@ -14,6 +14,8 @@ description: >
   org_health_report), or setting skills up on your data (use People Hydrator).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Org Health Precheck

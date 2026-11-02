@@ -15,6 +15,8 @@ description: >
   headcount trend analysis (use headcount_insights).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Hiring Brief (Weekly Hiring Update) (Dehydrated)
@@ -24,7 +26,7 @@ type: snowflake
 - **What it does:** A one-page Weekly Hiring Update (PDF) for a leader: headcount, open positions and projected headcount, a table by org, and a Progress / Problems / Plans narrative drafted for you to review.
 - **Who it's for:** Recruiting teams preparing updates for executive leaders (the top executive, or leaders one or two levels below).
 - **Works with:** Uses the same headcount as `headcount_insights`. For follow-up questions (trends, regions, span of control), the skill hands off to `headcount_insights`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "weekly hiring update for [leader name]". Review and edit the drafted narrative before the PDF is finalized.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** Forecast and plan figures only appear for leaders whose org maps to a forecast; others get the 3-number banner. The skill reads your data and never changes it.

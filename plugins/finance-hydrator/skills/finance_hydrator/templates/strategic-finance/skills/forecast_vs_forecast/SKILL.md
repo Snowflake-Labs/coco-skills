@@ -14,6 +14,8 @@ version: 1.1.0
 binding_contract: hydration_hints.yaml
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Forecast vs Forecast (Dehydrated)

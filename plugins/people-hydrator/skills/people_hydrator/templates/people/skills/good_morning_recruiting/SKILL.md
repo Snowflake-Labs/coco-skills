@@ -16,6 +16,8 @@ description: >
   (use hiring_brief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Good Morning Recruiting (Dehydrated)
@@ -25,7 +27,7 @@ type: snowflake
 - **What it does:** A recruiting health briefing across eight metrics: hiring manager sentiment, sourced % by recruiter, requisition load, stale candidates, hires from competitors, competitor hiring news, stale job openings and recent offer declines. Can produce a PDF.
 - **Who it's for:** Heads of Talent Acquisition and TA operations leads.
 - **Works with:** Stands alone. For a single candidate use `interview_debrief`; for workforce headcount use `headcount_insights`; for a leader-ready weekly report use `hiring_brief`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "TA metrics" or "recruiting briefing" for all eight, or name one ("stale candidates", "offer declines").
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** Competitor hiring news uses web search, so it needs web access in your Cortex Code setup; without it, that section is marked as not available. Hires from competitors needs prior-employer data and is marked as not available if it wasn't connected. The skill reads your data and never changes it.

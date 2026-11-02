@@ -16,6 +16,8 @@ created_date: 2026-06-08
 version: 1.2.0
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Earnings Prep (Dehydrated)

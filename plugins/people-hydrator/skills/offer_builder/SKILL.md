@@ -13,6 +13,8 @@ description: >
   summarizing interview feedback alone (use interview_debrief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Offer Builder (Dehydrated)

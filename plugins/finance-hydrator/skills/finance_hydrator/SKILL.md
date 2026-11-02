@@ -8,6 +8,8 @@ description: >
   bindings, and gives activation instructions.
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Finance Plugin Hydrator

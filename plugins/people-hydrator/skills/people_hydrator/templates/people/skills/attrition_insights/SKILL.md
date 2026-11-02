@@ -14,6 +14,8 @@ description: >
   recruiting pipeline metrics (use good_morning_recruiting).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Attrition Insights (Dehydrated)
@@ -23,7 +25,7 @@ type: snowflake
 - **What it does:** A daily (default) or weekly attrition brief: what changed materially, which orgs or groups to watch, and recommended next steps. Covers total, voluntary, involuntary and regrettable exits.
 - **Who it's for:** HR Business Partners (operational detail, the default), People / HR leadership (executive summary), and executive leaders (automatically scoped to their own org).
 - **Works with:** Uses the same headcount population as `headcount_insights`, so the two always agree. `good_morning_chro` shows a short version of this brief; use this skill to dig deeper. For manager-level drivers, follow up with `org_health_report`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Ask for an "attrition brief", "turnover report" or "regrettable exits". Add a timeframe ("weekly"), an org, or a date. The attrition rate is exits in the period divided by the average of headcount at the start and end of the period (trailing 12 months by default) unless you chose a different definition during setup.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** Numbers follow the definitions you confirmed in People Hydrator (who counts in headcount, what counts as voluntary or regrettable). The skill reads your data and never changes it.

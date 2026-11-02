@@ -15,6 +15,8 @@ created_date: 2026-05-21
 version: 1.1.0
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Financial Planning Scenarios (Dehydrated)

@@ -18,6 +18,8 @@ version: 2.0.0
 binding_contract: hydration_hints.yaml
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Cloud COGS Analysis (Dehydrated)

@@ -12,6 +12,8 @@ description: >
   descriptions (use job_description_builder).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Interview Debrief (Dehydrated)

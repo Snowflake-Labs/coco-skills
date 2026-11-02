@@ -13,6 +13,8 @@ description: >
   summarizing interview feedback alone (use interview_debrief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Offer Builder (Dehydrated)
@@ -22,7 +24,7 @@ type: snowflake
 - **What it does:** Builds the compensation justification for an offer approval: candidate quality from interview scorecards, competing offer and current pay from recruiter notes, and how the offer compares with the team.
 - **Who it's for:** Recruiters and Total Rewards / compensation partners preparing offer approvals.
 - **Works with:** Comes after `interview_debrief` in the hiring flow; it reuses the same scorecards.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "offer justification for [candidate]" and give the candidate name and requisition. Confirm the pay details it reads from recruiter notes before it builds the sheet.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** The output is a Google Sheet if Google Sheets is connected to your Cortex Code setup; otherwise you get the same content as a table in chat. It is for internal approval only, never for candidates. The skill reads your data and never changes it.

@@ -12,6 +12,8 @@ description: >
   descriptions (use job_description_builder).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Interview Debrief (Dehydrated)
@@ -21,7 +23,7 @@ type: snowflake
 - **What it does:** Pulls every interview scorecard for a candidate into one debrief: overall recommendation, panel alignment, interviewer calibration (who tends to score high or low), and gaps against the role. Also compares or ranks candidates for one requisition.
 - **Who it's for:** Recruiters and hiring managers, written for non-technical readers.
 - **Works with:** Part of the hiring flow: `job_description_builder` (write the role) → interviews → `interview_debrief` → `offer_builder` (justify the offer).
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "debrief for [candidate]" or give an application ID; "compare candidates for [requisition]" for a side-by-side.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** It only uses submitted scorecards; missing feedback is called out, not guessed. The skill reads your data and never changes it.

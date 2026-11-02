@@ -11,6 +11,8 @@ description: >
   employee lookups, or compensation analysis.
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Good Morning CHRO (Dehydrated)

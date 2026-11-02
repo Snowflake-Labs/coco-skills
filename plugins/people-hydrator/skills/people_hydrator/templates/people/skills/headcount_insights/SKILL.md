@@ -15,6 +15,8 @@ description: >
   report (use hiring_brief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
 type: snowflake
+language: en
+status: Published
 ---
 
 # Headcount Insights (Dehydrated)
@@ -24,7 +26,7 @@ type: snowflake
 - **What it does:** Answers headcount questions consistently: current headcount, monthly and quarterly trends, change over time, headcount by org, region, management level, tenure or cost center, hires vs exits, span of control and workforce composition.
 - **Who it's for:** HR / People Analytics leaders (company-wide) and executive leaders (scoped to their own management chain, with company-wide on request).
 - **Works with:** Defines the headcount population that `attrition_insights`, `good_morning_chro` and `hiring_brief` also use. For attrition rates, use `attrition_insights`; for manager-level drivers, use `org_health_report`.
-- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`people/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
+- **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Ask "what's our current headcount?", "headcount by org", "headcount trend" or "full headcount summary". The skill shows a menu of analyses if your question is broad.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
 - **Good to know:** Who counts in headcount (for example, which employee types and statuses) is the definition you confirmed during setup. The skill reads your data and never changes it.
