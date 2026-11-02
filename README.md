@@ -48,6 +48,7 @@ Once installed, invoke a skill by typing `$<skill-name>` followed by your prompt
 | Skill                                         | What it does                                                                                                     |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | [`snowflake-docs`](skills/snowflake-docs)     | Answer any Snowflake question by searching official docs via the Cortex Knowledge Extension.                     |
+| [`migrate-snowsql`](skills/migrate-snowsql) | States the migration in the host plan, then rewrites in place only after that plan is approved. Writes migration-plan.md only when the host has no plan mode. |
 | [`quickstart-guide`](skills/quickstart-guide) | Paste a [Snowflake Quickstart](https://quickstarts.snowflake.com) URL and get a guided, interactive walkthrough. |
 
 
