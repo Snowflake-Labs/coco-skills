@@ -1,0 +1,179 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "scenario_planning",
+  "data_needs": {
+    "finance.scenario.pnl": {
+      "required": true,
+      "read_from": "table",
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_PNL_TABLE>",
+          "shape": "long",
+          "grain": [
+            "period",
+            "metric_name"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "metric_name": "<YOUR_METRIC_NAME_COLUMN>",
+            "value": "<YOUR_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "planning P&L",
+        "income statement forecast",
+        "GAAP P&L",
+        "non-GAAP P&L"
+      ],
+      "extra_settings": {
+        "version_column": "<YOUR_VERSION_COLUMN>",
+        "entity_column": "<YOUR_ENTITY_COLUMN>",
+        "metric_columns": []
+      }
+    },
+    "finance.scenario.assumptions": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ASSUMPTIONS_TABLE>",
+          "grain": [
+            "version",
+            "parameter",
+            "period"
+          ],
+          "columns": {
+            "version": "<YOUR_VERSION_COLUMN>",
+            "parameter": "<YOUR_PARAMETER_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "value": "<YOUR_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "planning assumptions",
+        "forecast drivers",
+        "growth rate assumptions"
+      ],
+      "extra_settings": {
+        "defaults_fqn": "<YOUR_DEFAULTS_TABLE>",
+        "domains": []
+      }
+    },
+    "finance.scenario.notes": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_SCENARIO_NOTES_TABLE>",
+          "grain": [
+            "scenario_id"
+          ],
+          "columns": {
+            "scenario_id": "<YOUR_SCENARIO_ID_COLUMN>",
+            "notes": "<YOUR_NOTES_COLUMN>",
+            "created_date": "<YOUR_DATE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "scenario notes",
+        "forecast version notes",
+        "what-if history"
+      ]
+    },
+    "finance.scenario.revenue_detail": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_REVENUE_DETAIL_TABLE>",
+          "grain": [
+            "period",
+            "customer_cohort",
+            "region"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "customer_cohort": "<YOUR_COHORT_COLUMN>",
+            "region": "<YOUR_REGION_COLUMN>",
+            "revenue_amount": "<YOUR_REVENUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "revenue by cohort",
+        "revenue by region",
+        "revenue detail"
+      ]
+    },
+    "finance.scenario.headcount_cph": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_HEADCOUNT_CPH_TABLE>",
+          "grain": [
+            "period",
+            "cost_center"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "cost_center": "<YOUR_COST_CENTER_COLUMN>",
+            "headcount": "<YOUR_HEADCOUNT_COLUMN>",
+            "cost_per_head": "<YOUR_COST_PER_HEAD_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "headcount",
+        "cost per head",
+        "OPEX drivers"
+      ]
+    },
+    "finance.scenario.drivers": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DRIVER_TABLE>",
+          "grain": [
+            "period",
+            "driver_name"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "driver_name": "<YOUR_DRIVER_NAME_COLUMN>",
+            "driver_value": "<YOUR_DRIVER_VALUE_COLUMN>",
+            "lead_lag_periods": "<OPTIONAL_LEAD_LAG_COLUMN>",
+            "elasticity": "<OPTIONAL_ELASTICITY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "usage drivers",
+        "volume drivers",
+        "leading indicators"
+      ]
+    },
+    "finance.scenario.baseline_run_rate": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_BASELINE_TABLE>",
+          "grain": [
+            "period",
+            "metric_name"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "metric_name": "<YOUR_METRIC_NAME_COLUMN>",
+            "baseline_value": "<YOUR_BASELINE_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "no-growth run rate",
+        "baseline forecast",
+        "naive baseline"
+      ]
+    }
+  }
+}

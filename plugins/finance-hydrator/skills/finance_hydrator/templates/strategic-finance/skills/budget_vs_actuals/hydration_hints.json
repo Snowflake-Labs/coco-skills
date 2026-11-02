@@ -1,0 +1,238 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "budget_vs_actuals",
+  "data_needs": {
+    "finance.budget.plan": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_PLAN_OR_BUDGET_TABLE>",
+          "grain": [
+            "line_item_id",
+            "period"
+          ],
+          "columns": {
+            "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "budget_amount": "<YOUR_BUDGET_AMOUNT_COLUMN>",
+            "line_type": "<YOUR_LINE_TYPE_COLUMN>",
+            "currency": "<YOUR_CURRENCY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "annual operating plan",
+        "locked budget",
+        "plan version",
+        "AOP"
+      ],
+      "extra_settings": {
+        "version_column": "<YOUR_VERSION_COLUMN>",
+        "budget_version_label": "<YOUR_LOCKED_PLAN_VERSION>",
+        "budget_version_pattern": "<OPTIONAL_PATTERN>",
+        "forecast_version_pattern": "<OPTIONAL_PATTERN_FOR_BLENDED_MODE>",
+        "fiscal_year_start_month": "<OPTIONAL_MONTH_NUMBER>",
+        "materiality_detail_usd": "<OPTIONAL_DETAIL_THRESHOLD>",
+        "materiality_rollup_usd": "<OPTIONAL_ROLLUP_THRESHOLD>",
+        "pct_budget_floor_usd": "<OPTIONAL_MIN_BUDGET_FOR_PERCENT>",
+        "period_parts": []
+      }
+    },
+    "finance.budget.actuals": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ACTUALS_TABLE>",
+          "grain": [
+            "line_item_id",
+            "period"
+          ],
+          "columns": {
+            "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "actual_amount": "<YOUR_ACTUAL_AMOUNT_COLUMN>",
+            "currency": "<YOUR_CURRENCY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "actuals",
+        "realized expense",
+        "actual spend"
+      ],
+      "extra_settings": {
+        "actuals_version_label": "<OPTIONAL_ACTUALS_VERSION>",
+        "period_parts": []
+      }
+    },
+    "finance.budget.context": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COMMENTARY_TABLE>",
+          "grain": [
+            "line_item_id"
+          ],
+          "columns": {
+            "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
+            "note_text": "<YOUR_NOTE_COLUMN>",
+            "note_date": "<YOUR_DATE_COLUMN>",
+            "author": "<YOUR_AUTHOR_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "variance commentary",
+        "close notes",
+        "line item memo"
+      ]
+    },
+    "finance.budget.dimension": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DIMENSION_TABLE>",
+          "grain": [
+            "line_item_id"
+          ],
+          "columns": {
+            "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
+            "display_name": "<YOUR_DISPLAY_NAME_COLUMN>",
+            "line_type": "<YOUR_LINE_TYPE_COLUMN>",
+            "cost_center": "<YOUR_COST_CENTER_COLUMN>",
+            "department": "<YOUR_DEPARTMENT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "chart of accounts",
+        "line item dimension",
+        "cost center map"
+      ]
+    },
+    "finance.budget.cost_center_mapping": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COST_CENTER_MAPPING_TABLE>",
+          "grain": [
+            "cost_center_id"
+          ],
+          "columns": {
+            "cost_center_id": "<YOUR_COST_CENTER_ID_COLUMN>",
+            "cost_center_name": "<YOUR_COST_CENTER_NAME_COLUMN>",
+            "department": "<YOUR_DEPARTMENT_COLUMN>",
+            "leader": "<YOUR_LEADER_COLUMN>",
+            "snapshot_ts": "<YOUR_SNAPSHOT_TIMESTAMP_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "cost center hierarchy",
+        "org mapping",
+        "leader rollup"
+      ],
+      "extra_settings": {
+        "strip_prefix_regex": "<OPTIONAL_PLACEHOLDER_PREFIX_REGEX>"
+      }
+    },
+    "finance.budget.ledger_account_mapping": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_LEDGER_ACCOUNT_MAPPING_TABLE>",
+          "grain": [
+            "ledger_account"
+          ],
+          "columns": {
+            "ledger_account": "<YOUR_LEDGER_ACCOUNT_COLUMN>",
+            "expense_category": "<YOUR_EXPENSE_CATEGORY_COLUMN>",
+            "parent_category": "<YOUR_PARENT_CATEGORY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "account to category map",
+        "GL category mapping"
+      ]
+    },
+    "finance.budget.gl_journal_lines": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_GL_JOURNAL_TABLE>",
+          "grain": [
+            "journal_line_id"
+          ],
+          "columns": {
+            "accounting_date": "<YOUR_ACCOUNTING_DATE_COLUMN>",
+            "ledger_account": "<YOUR_LEDGER_ACCOUNT_COLUMN>",
+            "cost_center_id": "<YOUR_COST_CENTER_ID_COLUMN>",
+            "amount": "<YOUR_AMOUNT_COLUMN>",
+            "vendor": "<YOUR_VENDOR_COLUMN>",
+            "spend_category": "<YOUR_SPEND_CATEGORY_COLUMN>",
+            "description": "<YOUR_DESCRIPTION_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "journal entries",
+        "GL detail",
+        "transaction lines"
+      ]
+    },
+    "finance.budget.headcount": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_HEADCOUNT_TABLE>",
+          "grain": [
+            "period",
+            "org"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "org": "<YOUR_ORG_COLUMN>",
+            "ending_headcount": "<YOUR_ENDING_HEADCOUNT_COLUMN>",
+            "hires": "<YOUR_HIRES_COLUMN>",
+            "exits": "<YOUR_EXITS_COLUMN>",
+            "transfers_in": "<YOUR_TRANSFERS_IN_COLUMN>",
+            "transfers_out": "<YOUR_TRANSFERS_OUT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "headcount movement",
+        "hires and exits",
+        "people roster"
+      ]
+    },
+    "finance.budget.drivers": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DRIVER_TABLE>",
+          "grain": [
+            "period",
+            "driver_dimension",
+            "driver_value"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "driver_dimension": "<YOUR_DRIVER_DIMENSION_COLUMN>",
+            "driver_value": "<YOUR_DRIVER_VALUE_COLUMN>",
+            "actual": "<YOUR_ACTUAL_COLUMN>",
+            "forecast": "<YOUR_FORECAST_OR_PLAN_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "vendor spend",
+        "PO detail",
+        "project spend",
+        "variance drivers"
+      ]
+    }
+  }
+}

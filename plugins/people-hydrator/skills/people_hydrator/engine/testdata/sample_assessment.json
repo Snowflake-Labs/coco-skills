@@ -1,0 +1,41 @@
+{
+  "skills": [
+    {
+      "domain": "sample_domain",
+      "skill": "ready_skill",
+      "readiness": 100,
+      "status": "READY",
+      "recommendation": "include",
+      "reason": "All required sources and columns resolved.",
+      "bindings": {
+        "s.ready.main": {
+          "fqn": "SAMPLE_DB.X.READY_MAIN",
+          "confidence": "HIGH",
+          "columns": {"id": "ID", "amount": "AMOUNT"}
+        }
+      },
+      "gaps": []
+    },
+    {
+      "domain": "sample_domain",
+      "skill": "merge_skill",
+      "readiness": 100,
+      "status": "READY",
+      "recommendation": "include",
+      "reason": "All required sources and columns resolved.",
+      "bindings": {
+        "s.merge.summary": {
+          "fqn": "SAMPLE_DB.X.MERGE_SUMMARY",
+          "confidence": "HIGH",
+          "columns": {"period": "PERIOD", "amount": "AMOUNT"}
+        },
+        "s.merge.extra": {
+          "fqn": "SAMPLE_DB.X.MERGE_EXTRA",
+          "confidence": "HIGH",
+          "columns": {"note": "NOTE"}
+        }
+      },
+      "gaps": []
+    }
+  ]
+}

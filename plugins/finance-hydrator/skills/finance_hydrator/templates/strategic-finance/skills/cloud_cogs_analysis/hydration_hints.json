@@ -1,0 +1,276 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "cloud_cogs_analysis",
+  "data_needs": {
+    "finance.cogs.summary": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COGS_SUMMARY_TABLE>",
+          "grain": [
+            "period",
+            "cost_category"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "cost_category": "<YOUR_COST_CATEGORY_COLUMN>",
+            "cost_amount": "<YOUR_COST_COLUMN>",
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "product_or_feature": "<YOUR_PRODUCT_OR_FEATURE_COLUMN>",
+            "region": "<YOUR_REGION_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "COGS by category",
+        "cost of goods sold",
+        "cloud cost drilldown",
+        "product COGS"
+      ]
+    },
+    "finance.cogs.revenue": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_REVENUE_SUMMARY_TABLE>",
+          "grain": [
+            "period"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "total_revenue": "<YOUR_REVENUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "total revenue by period",
+        "revenue for margin"
+      ]
+    },
+    "finance.cogs.unit_economics": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_UNIT_ECONOMICS_TABLE>",
+          "grain": [
+            "period",
+            "unit_type"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "unit_type": "<YOUR_UNIT_TYPE_COLUMN>",
+            "quantity": "<YOUR_QUANTITY_COLUMN>",
+            "volume_unit": "<YOUR_VOLUME_UNIT_COLUMN>",
+            "cost": "<YOUR_COST_COLUMN>",
+            "cost_per_unit": "<YOUR_COST_PER_UNIT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "cost per unit",
+        "unit economics",
+        "cost per consumption unit",
+        "cost per terabyte"
+      ]
+    },
+    "finance.cogs.line_item": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COGS_DETAIL_TABLE>",
+          "grain": [
+            "period",
+            "item"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "item": "<YOUR_ITEM_COLUMN>",
+            "amount": "<YOUR_COST_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "COGS line items",
+        "cost drivers",
+        "top cost items"
+      ]
+    },
+    "finance.cogs.cloud_cost_detail": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_CLOUD_COST_DETAIL_TABLE>",
+          "grain": [
+            "period",
+            "cloud_provider",
+            "service_or_sku",
+            "cost_category"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "service_or_sku": "<YOUR_SERVICE_OR_SKU_COLUMN>",
+            "cost_category": "<YOUR_COST_CATEGORY_COLUMN>",
+            "list_cost": "<YOUR_LIST_COST_COLUMN>",
+            "net_cost": "<YOUR_NET_COST_COLUMN>",
+            "amortized_cost": "<YOUR_AMORTIZED_COST_COLUMN>",
+            "usage_quantity": "<YOUR_USAGE_QUANTITY_COLUMN>",
+            "usage_unit": "<YOUR_USAGE_UNIT_COLUMN>",
+            "charge_type": "<YOUR_CHARGE_TYPE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "cloud billing detail",
+        "cost and usage report",
+        "net vs list cost"
+      ]
+    },
+    "finance.cogs.commitment": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COMMITMENT_TABLE>",
+          "grain": [
+            "cloud_provider",
+            "contract",
+            "period"
+          ],
+          "columns": {
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "contract": "<YOUR_CONTRACT_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "commit_amount": "<YOUR_COMMIT_AMOUNT_COLUMN>",
+            "consumed_amount": "<YOUR_CONSUMED_AMOUNT_COLUMN>",
+            "term_start": "<YOUR_TERM_START_COLUMN>",
+            "term_end": "<YOUR_TERM_END_COLUMN>",
+            "discount_pct": "<YOUR_DISCOUNT_PCT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "committed spend",
+        "enterprise agreement",
+        "cloud commitment",
+        "contract term"
+      ]
+    },
+    "finance.cogs.discount_schedule": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DISCOUNT_SCHEDULE_TABLE>",
+          "grain": [
+            "cloud_provider",
+            "sku_or_category",
+            "discount_type"
+          ],
+          "columns": {
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "sku_or_category": "<YOUR_SKU_OR_CATEGORY_COLUMN>",
+            "discount_type": "<YOUR_DISCOUNT_TYPE_COLUMN>",
+            "discount_pct": "<YOUR_DISCOUNT_PCT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "discount tiers",
+        "negotiated discounts",
+        "savings plan coverage"
+      ]
+    },
+    "finance.cogs.ai_gpu_cost": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_AI_GPU_COST_TABLE>",
+          "grain": [
+            "period",
+            "cloud_provider"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "cost_amount": "<YOUR_COST_COLUMN>",
+            "usage_quantity": "<YOUR_USAGE_QUANTITY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "GPU spend",
+        "AI inference cost",
+        "model serving cost"
+      ]
+    },
+    "finance.cogs.manual_adjustments": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ADJUSTMENTS_TABLE>",
+          "grain": [
+            "period",
+            "adjustment_id"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "adjustment_id": "<YOUR_ADJUSTMENT_ID_COLUMN>",
+            "cost_category": "<YOUR_COST_CATEGORY_COLUMN>",
+            "amount": "<YOUR_AMOUNT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "journal entries",
+        "COGS accruals",
+        "manual adjustments"
+      ]
+    },
+    "finance.cogs.forecast": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_COGS_FORECAST_TABLE>",
+          "grain": [
+            "forecast_version",
+            "period",
+            "cost_category"
+          ],
+          "columns": {
+            "forecast_version": "<YOUR_FORECAST_VERSION_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "cost_category": "<YOUR_COST_CATEGORY_COLUMN>",
+            "cloud_provider": "<YOUR_CLOUD_COLUMN>",
+            "product_or_feature": "<YOUR_PRODUCT_OR_FEATURE_COLUMN>",
+            "forecast_amount": "<YOUR_FORECAST_AMOUNT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "COGS forecast",
+        "cloud cost forecast",
+        "published forecast version"
+      ]
+    },
+    "finance.cogs.fiscal_calendar": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_FISCAL_CALENDAR_TABLE>",
+          "grain": [
+            "period"
+          ],
+          "columns": {
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "fiscal_year": "<YOUR_FISCAL_YEAR_COLUMN>",
+            "fiscal_quarter": "<YOUR_FISCAL_QUARTER_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "fiscal calendar",
+        "fiscal periods"
+      ]
+    }
+  }
+}

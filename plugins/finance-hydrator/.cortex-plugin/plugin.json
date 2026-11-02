@@ -1,0 +1,5 @@
+{
+  "name": "finance-hydrator",
+  "description": "Finance plugin builder for CoCo. Assesses customer finance data, recommends Accounting, FinOps, and Strategic Finance skills, then generates a customer-specific Finance plugin.",
+  "version": "0.1.0"
+}

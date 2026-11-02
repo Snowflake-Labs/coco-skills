@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "description": "Business-context connectors for people_hydrator. Each entry tells the wizard how to detect the source among the analyst's configured Cortex Code MCP servers, what scope the analyst must pick, and how risky the source is for HR data. Detection patterns are matched case-insensitively against MCP server / tool names.",
+  "term_vocabulary": {
+    "regular_headcount": ["regular headcount", "regular employee", "headcount definition", "employee type", "counted in headcount", "active headcount"],
+    "regrettable_exit": ["regrettable", "regretted attrition", "regrettable attrition", "regrettable exit"],
+    "voluntary_exit": ["voluntary attrition", "voluntary exit", "voluntary termination", "resignation"],
+    "attrition_rate": ["attrition rate", "turnover rate", "annualized attrition"],
+    "fiscal_calendar": ["fiscal year", "fiscal calendar", "fiscal quarter", "fy starts", "fy begins"],
+    "org_hierarchy": ["org structure", "organization structure", "departments", "business units", "divisions", "org units"],
+    "span_of_control": ["span of control", "direct reports", "spans and layers", "manager span"],
+    "new_hire": ["new hire", "new joiner", "onboarding window"],
+    "open_requisition": ["open requisition", "open req", "open role", "approved headcount"],
+    "offer_stage": ["offer stage", "offer extended", "offer accepted"],
+    "time_to_fill": ["time to fill", "days to fill", "time-to-fill"],
+    "interview_recommendation_scale": ["recommendation scale", "strong yes", "scorecard rating"],
+    "compensation_bands": ["salary band", "pay range", "compensation range", "comp band"],
+    "approved_locations": ["approved locations", "office locations", "work locations"]
+  },
+  "allowed_item_kinds": ["definition", "fiscal_calendar", "org_units", "reference_number", "owner", "caveat", "threshold"],
+  "connectors": [
+    {
+      "id": "confluence",
+      "label": "Confluence / wiki",
+      "detect": ["atlassian", "confluence"],
+      "scope_kind": "spaces",
+      "scope_prompt": "Which Confluence spaces hold HR / People Analytics docs (handbook, metric definitions, data dictionary)?",
+      "risk": "low",
+      "default_on": true,
+      "search_queries": ["headcount definition", "attrition definition", "regrettable", "fiscal year", "org structure", "data dictionary HR", "people metrics glossary"]
+    },
+    {
+      "id": "sharepoint",
+      "label": "SharePoint / OneDrive",
+      "detect": ["sharepoint", "onedrive", "microsoft365", "m365", "graph"],
+      "scope_kind": "sites_or_folders",
+      "scope_prompt": "Which SharePoint sites or folders hold HR policy and metric docs?",
+      "risk": "low",
+      "default_on": true,
+      "search_queries": ["HR handbook", "headcount policy", "attrition definition", "fiscal calendar"]
+    },
+    {
+      "id": "google_drive",
+      "label": "Google Drive",
+      "detect": ["google_drive", "gdrive", "googledrive", "google-drive"],
+      "scope_kind": "folders",
+      "scope_prompt": "Which Drive folders hold HR / People Analytics docs?",
+      "risk": "low",
+      "default_on": true,
+      "search_queries": ["people metrics definitions", "headcount", "attrition", "fiscal year"]
+    },
+    {
+      "id": "jira",
+      "label": "Jira",
+      "detect": ["atlassian", "jira"],
+      "scope_kind": "projects",
+      "scope_prompt": "Which Jira projects belong to People Analytics / HR data (known data issues, metric changes)?",
+      "risk": "medium",
+      "default_on": false,
+      "search_queries": ["headcount discrepancy", "attrition metric change", "data issue employee snapshot", "definition change"]
+    },
+    {
+      "id": "slack",
+      "label": "Slack",
+      "detect": ["slack"],
+      "scope_kind": "named_channels",
+      "scope_prompt": "Name the PUBLIC channels to read (e.g. #people-analytics). Direct messages and private channels are never read.",
+      "risk": "high",
+      "default_on": false,
+      "forbid_scopes": ["dm", "im", "mpim", "private"],
+      "search_queries": ["how do we define headcount", "regrettable", "fiscal year", "which table for attrition"]
+    },
+    {
+      "id": "teams",
+      "label": "Microsoft Teams",
+      "detect": ["teams", "msteams"],
+      "scope_kind": "named_channels",
+      "scope_prompt": "Name the team channels to read. Chats are never read.",
+      "risk": "high",
+      "default_on": false,
+      "forbid_scopes": ["chat", "dm"],
+      "search_queries": ["headcount definition", "attrition", "fiscal year"]
+    },
+    {
+      "id": "email",
+      "label": "Email (Gmail / Outlook)",
+      "detect": ["gmail", "outlook", "email", "mail"],
+      "scope_kind": "named_folders_or_labels",
+      "scope_prompt": "Name the folders or labels to read (e.g. 'People Metrics Announcements'). Inbox-wide reads are not allowed.",
+      "risk": "very_high",
+      "default_on": false,
+      "forbid_scopes": ["inbox", "all", "*"],
+      "search_queries": ["headcount definition", "metric definition change", "fiscal calendar"]
+    },
+    {
+      "id": "local_files",
+      "label": "Uploaded / exported documents",
+      "detect": [],
+      "scope_kind": "paths",
+      "scope_prompt": "Folder of exported docs (markdown, txt, json exports from Confluence/Jira/Slack).",
+      "risk": "low",
+      "default_on": true,
+      "search_queries": []
+    }
+  ]
+}

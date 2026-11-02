@@ -1,0 +1,5 @@
+{
+  "name": "people-hydrator",
+  "description": "People Hydrator: sets up the dehydrated People skills on a customer's own HR data: recommends skills, finds HR tables across the databases your role can see, checks each skill's data connection, shows each skill's real output, asks only the business questions it can't settle, turns your feedback into checked changes, tests each skill against its golden cases, and hydrates it.",
+  "version": "3.0.0"
+}

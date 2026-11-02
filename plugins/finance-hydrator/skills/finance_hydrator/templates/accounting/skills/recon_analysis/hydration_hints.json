@@ -1,0 +1,108 @@
+{
+  "format_version": 1,
+  "plugin": "accounting",
+  "skill": "recon_analysis",
+  "data_needs": {
+    "accounting.recon.profile_store": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_RECON_PROFILE_TABLE_OR_PROCEDURE>",
+          "grain": [
+            "profile_name"
+          ],
+          "columns": {
+            "profile_name": "<YOUR_PROFILE_NAME_COLUMN>",
+            "owner": "<YOUR_OWNER_COLUMN>",
+            "settings": "<YOUR_SETTINGS_COLUMN>",
+            "visibility": "<YOUR_VISIBILITY_COLUMN>",
+            "updated_at": "<YOUR_UPDATED_AT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "reconciliation profile store",
+        "recon config table",
+        "recon profiles",
+        "recon_analysis profiles",
+        "profile store"
+      ],
+      "extra_settings": {
+        "access_mode": "procedure_or_table",
+        "save_procedure": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_SAVE_PROFILE_PROCEDURE>",
+        "note": "For procedure-backed stores, set save_procedure to the FQN of the SAVE procedure. The GET procedure FQN is in sources[0].fqn. Both must accept matching argument signatures.\n"
+      }
+    },
+    "accounting.recon.category_rules": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_CATEGORY_RULES_TABLE>",
+          "grain": [
+            "category_name"
+          ],
+          "columns": {
+            "category_name": "<YOUR_CATEGORY_COLUMN>",
+            "description": "<YOUR_DESCRIPTION_COLUMN>",
+            "auto_threshold": "<YOUR_THRESHOLD_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "break categories",
+        "recon classification rules",
+        "reconciliation categories"
+      ]
+    },
+    "accounting.calendar.fiscal_periods": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_FISCAL_CALENDAR_TABLE>",
+          "grain": [
+            "fiscal_period"
+          ],
+          "columns": {
+            "fiscal_period": "<YOUR_PERIOD_COLUMN>",
+            "period_start": "<YOUR_PERIOD_START_COLUMN>",
+            "period_end": "<YOUR_PERIOD_END_COLUMN>",
+            "fiscal_year": "<YOUR_FISCAL_YEAR_COLUMN>",
+            "period_label": "<YOUR_PERIOD_LABEL_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "fiscal calendar",
+        "accounting calendar",
+        "period table"
+      ]
+    },
+    "accounting.recon.result_store": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_RECON_RESULTS_TABLE>",
+          "grain": [
+            "run_id",
+            "break_id"
+          ],
+          "columns": {
+            "run_id": "<YOUR_RUN_ID_COLUMN>",
+            "profile_name": "<YOUR_PROFILE_NAME_COLUMN>",
+            "run_date": "<YOUR_RUN_DATE_COLUMN>",
+            "break_id": "<YOUR_BREAK_ID_COLUMN>",
+            "category": "<YOUR_CATEGORY_COLUMN>",
+            "amount": "<YOUR_AMOUNT_COLUMN>",
+            "status": "<YOUR_STATUS_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "recon results",
+        "reconciliation history",
+        "break log",
+        "recon run history"
+      ]
+    }
+  }
+}

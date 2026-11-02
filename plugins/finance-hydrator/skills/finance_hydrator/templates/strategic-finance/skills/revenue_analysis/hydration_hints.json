@@ -1,0 +1,100 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "revenue_analysis",
+  "data_needs": {
+    "finance.revenue.hierarchy": {
+      "required": true,
+      "read_from": "table",
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_REVENUE_HIERARCHY_TABLE>",
+          "grain": [
+            "hierarchy_level",
+            "entity_name",
+            "period"
+          ],
+          "columns": {
+            "hierarchy_level": "<YOUR_HIERARCHY_LEVEL_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "time_grain": "<YOUR_TIME_GRAIN_COLUMN>",
+            "entity_name": "<YOUR_ENTITY_NAME_COLUMN>",
+            "actual_revenue": "<YOUR_ACTUAL_REVENUE_COLUMN>",
+            "plan_revenue": "<YOUR_PLAN_REVENUE_COLUMN>",
+            "pop_change_amount": "<YOUR_POP_CHANGE_AMOUNT_COLUMN>",
+            "pop_change_pct": "<YOUR_POP_CHANGE_PCT_COLUMN>",
+            "yoy_pct": "<YOUR_YOY_PCT_COLUMN>",
+            "variance_to_plan": "<YOUR_VARIANCE_TO_PLAN_COLUMN>",
+            "customer_count": "<YOUR_CUSTOMER_COUNT_COLUMN>",
+            "mean_customer_revenue": "<YOUR_MEAN_REVENUE_COLUMN>",
+            "median_customer_revenue": "<YOUR_MEDIAN_REVENUE_COLUMN>",
+            "revenue_mix_pct": "<YOUR_REVENUE_MIX_PCT_COLUMN>",
+            "mix_shift": "<YOUR_MIX_SHIFT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "revenue by segment",
+        "revenue hierarchy",
+        "plan vs actual revenue",
+        "segment revenue"
+      ]
+    },
+    "finance.revenue.lifecycle_cohort": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_LIFECYCLE_COHORT_TABLE>",
+          "grain": [
+            "lifecycle_status",
+            "entity_name",
+            "period"
+          ],
+          "columns": {
+            "lifecycle_status": "<YOUR_LIFECYCLE_STATUS_COLUMN>",
+            "entity_name": "<YOUR_ENTITY_NAME_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "actual_revenue": "<YOUR_ACTUAL_REVENUE_COLUMN>",
+            "pop_change": "<YOUR_POP_CHANGE_COLUMN>",
+            "customer_count": "<YOUR_CUSTOMER_COUNT_COLUMN>",
+            "expansion_revenue": "<YOUR_EXPANSION_REVENUE_COLUMN>",
+            "contraction_revenue": "<YOUR_CONTRACTION_REVENUE_COLUMN>",
+            "churned_revenue": "<YOUR_CHURNED_REVENUE_COLUMN>",
+            "prior_period_revenue": "<YOUR_PRIOR_PERIOD_REVENUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "new vs existing revenue",
+        "churn cohort",
+        "lifecycle revenue"
+      ]
+    },
+    "finance.revenue.concentration": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_CONCENTRATION_TABLE>",
+          "grain": [
+            "tier_or_customer",
+            "period"
+          ],
+          "columns": {
+            "tier_or_customer": "<YOUR_TIER_OR_CUSTOMER_COLUMN>",
+            "entity_context": "<YOUR_ENTITY_CONTEXT_COLUMN>",
+            "period": "<YOUR_PERIOD_COLUMN>",
+            "actual_revenue": "<YOUR_ACTUAL_REVENUE_COLUMN>",
+            "pop_change": "<YOUR_POP_CHANGE_COLUMN>",
+            "contribution_pct": "<YOUR_CONTRIBUTION_PCT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "top customers",
+        "revenue concentration",
+        "customer contribution",
+        "whale analysis"
+      ]
+    }
+  }
+}

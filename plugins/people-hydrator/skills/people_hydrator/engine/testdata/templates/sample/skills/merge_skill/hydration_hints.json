@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "plugin": "sample",
+  "skill": "merge_skill",
+  "data_needs": {
+    "s.merge.summary": {
+      "required": "yes",
+      "synonyms": ["summary", "roll-up"],
+      "grain": ["period"],
+      "sources": [
+        {"fqn": "<YOUR_SUMMARY_TABLE>", "columns": {"period": "<PERIOD>", "amount": "<AMOUNT>"}}
+      ]
+    },
+    "s.merge.extra": {
+      "required": "no",
+      "synonyms": ["extra note"],
+      "sources": [
+        {"fqn": "<YOUR_EXTRA_TABLE>", "columns": {"note": "<NOTE>"}}
+      ]
+    }
+  }
+}

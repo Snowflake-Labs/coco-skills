@@ -1,0 +1,7 @@
+{
+  "finance_subdepartment": "treasury",
+  "persona": "Treasury Analyst",
+  "jobs_to_be_done": ["manage cash forecast", "monitor bank balances"],
+  "source_systems": ["Treasury Management System"],
+  "requested_emitters": ["skill_plugin"]
+}

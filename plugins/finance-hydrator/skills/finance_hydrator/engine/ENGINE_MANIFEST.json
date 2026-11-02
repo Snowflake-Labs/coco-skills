@@ -1,0 +1,18 @@
+{
+  "engine_version": "1.1.0",
+  "files": {
+    "ENGINE_VERSION": "1575e1af4a95f12f70b4ee6a6adce8160953d93ea17dc2611b90883ccc3ad3b8",
+    "references/customer_plugin_layout.md": "73e64525298f0ca37a359e86810c3f96fdd7581d552c4b78a2a37690ba7323b7",
+    "references/emitter_contract.md": "83ca9afac3facdb822cfb8df25be26da894473971776d88e7970dbfbbb9d2e3b",
+    "references/output_contract.md": "3425d30c3eb6195fd2d296a18ad4468707c85797e7198ec0740b73589f08cc26",
+    "references/scoring_model.md": "3dd3fe9a51a20e34e2c8152f61c80b4b55d97eee7d4d2217a13053bdd4fbf0fe",
+    "scripts/_minyaml.py": "4ef4b9e895863dfd7a57217c78919b722601dd24235c0345cd06945de0cb509e",
+    "scripts/build_customer_plugin.py": "9f5144b566d7a6d8ddde6aa89ebd5539e366bf59406ede58547ec9f0011499d5",
+    "scripts/combine_recommendations.py": "164ee495ca6e590033d554e43e6d66f1dcec7691d9a8f3cb3297a6805298b12b",
+    "scripts/score_fit.py": "663ecd4d9927d2748ca8c9fcb5e45285a0d71c94b0c6bf188b504d2ab61c19c3",
+    "scripts/score_readiness.py": "191e0ccb1d6e599e59abfa1a6709733fa6d6a65a14ddd8f5f869a1ca5b1bd442",
+    "scripts/smoke_test_plan.py": "4c3b000b76e2900e8b24f3708bb4b0757c3bc1950a2bd7076121de9163425e0c",
+    "scripts/validate_bindings.py": "06379a87ac6eee214d84753e09b1b73364e9759379a288a638ea358101b038eb",
+    "scripts/validate_catalog.py": "16a1de55f96d870f1ebd59f5cd86d8a1c5d6b1c5e93d23c511c5eccc9b2db316"
+  }
+}

@@ -1,0 +1,626 @@
+{
+  "version": 2,
+  "about": "Business definitions the skills rely on. Each is asked once (shared across skills), only when the chosen skills use it, the customer's data offers a real choice, and documents or earlier answers haven't settled it. Options are built from the customer's tables at run time. Answers write to the setting named in writes_to.",
+  "kinds": {
+    "multi": "which values count (options = values seen in the bound column)",
+    "month": "a month of the year",
+    "choice": "one of fixed answers; options with `requires` appear only when that data exists",
+    "date_choice": "which date column defines the event (options = date columns in the listed tables matching hints)",
+    "date_span": "start date -> end date (options = start/end pairs in the same table)",
+    "number": "a threshold or window; asked only when a document suggests a different value",
+    "link_policy": "a yes/no business rule that uses a linked table (e.g. close a req at offer accepted); offered only when the link exists"
+  },
+  "definitions": [
+    {
+      "id": "headcount_population",
+      "prompt": "Which employee types count in your headcount?",
+      "help": "For example, do you include contractors or interns in the number you report to leadership?",
+      "writes_to": "regular_employee_types",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.headcount.employee_snapshot",
+          "people.org_health.employee_snapshot",
+          "people.attrition.snapshot_monthly"
+        ],
+        "field": "employee_type"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "effect": {
+        "metric": "active_regular_hc"
+      },
+      "impact": 3,
+      "skills": [
+        "headcount_insights",
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro",
+        "hiring_brief"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "active_statuses",
+      "prompt": "Which employment statuses count as active?",
+      "help": "For example, do people on leave count in headcount?",
+      "writes_to": "active_status_values",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.headcount.employee_snapshot",
+          "people.org_health.employee_snapshot"
+        ],
+        "field": "employment_status"
+      },
+      "applies_when": {
+        "min_options": 3
+      },
+      "effect": {
+        "metric": "active_regular_hc"
+      },
+      "impact": 3,
+      "skills": [
+        "headcount_insights",
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "group": "label"
+    },
+    {
+      "id": "exit_date_basis",
+      "label": "Exit date",
+      "prompt": "Which date counts as the exit date?",
+      "help": "Termination date and last day worked can fall in different months, which moves exits between periods.",
+      "writes_to": "def_exit_date_basis",
+      "kind": "date_choice",
+      "dates_from": {
+        "needs": [
+          "people.exits.event_records"
+        ],
+        "hints": [
+          "termination",
+          "term",
+          "last_day",
+          "exit",
+          "separation",
+          "end"
+        ]
+      },
+      "binds": {
+        "need": "people.exits.event_records",
+        "field": "termination_date"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "effect": {
+        "metric": "exits_window"
+      },
+      "impact": 3,
+      "skills": [
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro",
+        "headcount_insights"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "voluntary_exits",
+      "prompt": "Which exit types are voluntary?",
+      "help": "Used to split voluntary from involuntary attrition.",
+      "writes_to": "voluntary_values",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.exits.event_records"
+        ],
+        "field": "termination_category"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 2,
+      "skills": [
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "effect": {
+        "metric": "voluntary_attrition_rate"
+      },
+      "group": "label"
+    },
+    {
+      "id": "regrettable_exits",
+      "label": "Regrettable exits",
+      "prompt": "Which exits count as regrettable?",
+      "help": "Used for the regrettable share of exits. Pick the values that mean 'we wanted to keep this person'.",
+      "writes_to": "def_regrettable_values",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.exits.event_records",
+          "people.attrition.snapshot_monthly"
+        ],
+        "field": "regrettable_flag"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 1,
+      "skills": [
+        "attrition_insights",
+        "good_morning_chro"
+      ],
+      "group": "label"
+    },
+    {
+      "id": "attrition_method",
+      "prompt": "How do you calculate attrition rate?",
+      "help": "Exits during the period divided by headcount. Which headcount, and do you annualize partial years?",
+      "writes_to": "attrition_rate_method",
+      "kind": "choice",
+      "common_answers": [
+        {
+          "label": "Exits / average of headcount at period start and period end (standard)",
+          "value": {
+            "denominator": "start_end",
+            "annualized": false
+          }
+        },
+        {
+          "label": "Exits / average monthly headcount, not annualized",
+          "value": {
+            "denominator": "average",
+            "annualized": false
+          }
+        },
+        {
+          "label": "Exits / average monthly headcount, annualized",
+          "value": {
+            "denominator": "average",
+            "annualized": true
+          }
+        },
+        {
+          "label": "Exits / headcount at the start of the period",
+          "value": {
+            "denominator": "start",
+            "annualized": false
+          }
+        },
+        {
+          "label": "Exits / headcount at the end of the period",
+          "value": {
+            "denominator": "end",
+            "annualized": false
+          }
+        }
+      ],
+      "applies_when": {},
+      "effect": {
+        "metric": "attrition_rate"
+      },
+      "impact": 3,
+      "skills": [
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "attrition_window",
+      "prompt": "Over how many months do you measure attrition?",
+      "help": "Most teams use a rolling 12 months.",
+      "writes_to": "attrition_window_months",
+      "kind": "number",
+      "bounds": [
+        1,
+        36
+      ],
+      "applies_when": {},
+      "impact": 1,
+      "skills": [
+        "attrition_insights",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "effect": {
+        "metric": "attrition_rate"
+      },
+      "group": "convention"
+    },
+    {
+      "id": "fiscal_year",
+      "prompt": "Which month does your fiscal year start?",
+      "help": "Used for year-to-date numbers.",
+      "writes_to": "fiscal_year_start_month",
+      "kind": "month",
+      "applies_when": {},
+      "effect": {
+        "metric": "ytd_involuntary_rate"
+      },
+      "impact": 2,
+      "skills": [
+        "attrition_insights",
+        "headcount_insights",
+        "hiring_brief"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "open_req_statuses",
+      "prompt": "Which requisition statuses count as open?",
+      "help": "For example, are on-hold or pending-approval requisitions open?",
+      "writes_to": "open_req_status_values",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.ta.requisitions",
+          "people.reqs.open_positions",
+          "people.ta.job_openings"
+        ],
+        "field": "status"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "effect": {
+        "metric": "open_reqs"
+      },
+      "impact": 3,
+      "skills": [
+        "good_morning_recruiting",
+        "hiring_brief",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "group": "policy"
+    },
+    {
+      "id": "time_to_fill",
+      "label": "Time to fill",
+      "prompt": "How do you measure time to fill?",
+      "help": "Days from when a requisition opens to when it's filled. Teams differ on both dates, and some already track it as a number.",
+      "writes_to": "def_time_to_fill",
+      "kind": "date_span",
+      "start": {
+        "needs": [
+          "people.ta.requisitions",
+          "people.ta.job_openings",
+          "people.reqs.open_positions"
+        ],
+        "hints": [
+          "approved",
+          "open",
+          "posted",
+          "created"
+        ],
+        "label": "requisition open date"
+      },
+      "end": {
+        "needs": [
+          "people.ta.requisitions",
+          "people.ta.job_openings",
+          "people.reqs.open_positions",
+          "people.ta.applications",
+          "people.ta.offers",
+          "people.offers.pipeline"
+        ],
+        "hints": [
+          "filled",
+          "fill",
+          "offer_accept",
+          "accepted",
+          "hired",
+          "closed",
+          "close"
+        ],
+        "label": "fill or offer-accepted date"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 3,
+      "skills": [
+        "good_morning_recruiting",
+        "hiring_brief",
+        "org_health_report"
+      ],
+      "precomputed_hints": [
+        "days_to_fill",
+        "time_to_fill",
+        "ttf_days"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "time_to_hire",
+      "label": "Time to hire",
+      "prompt": "How do you measure time to hire?",
+      "help": "Days from a candidate entering the process to accepting (or starting).",
+      "writes_to": "def_time_to_hire",
+      "kind": "date_span",
+      "start": {
+        "needs": [
+          "people.ta.applications",
+          "people.ta.candidates_in_stage"
+        ],
+        "hints": [
+          "application",
+          "applied",
+          "created",
+          "sourced",
+          "stage_start"
+        ],
+        "label": "application date"
+      },
+      "end": {
+        "needs": [
+          "people.ta.applications",
+          "people.ta.offers",
+          "people.offers.pipeline"
+        ],
+        "hints": [
+          "offer_accept",
+          "accepted",
+          "hire",
+          "start",
+          "decision"
+        ],
+        "label": "offer-accepted or start date"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 2,
+      "skills": [
+        "good_morning_recruiting",
+        "hiring_brief"
+      ],
+      "precomputed_hints": [
+        "days_to_hire",
+        "time_to_hire"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "pending_start_basis",
+      "label": "Pending start",
+      "prompt": "When does someone count as a pending start?",
+      "help": "People who will join but haven't started yet.",
+      "writes_to": "def_pending_start_basis",
+      "kind": "choice",
+      "common_answers": [
+        {
+          "label": "Offer accepted and start date in the future",
+          "value": "offer_accepted",
+          "requires": {
+            "needs": [
+              "people.ta.offers",
+              "people.offers.pipeline"
+            ],
+            "field": "status",
+            "value_like": "accept"
+          }
+        },
+        {
+          "label": "Offer extended and not yet declined",
+          "value": "offer_extended",
+          "requires": {
+            "needs": [
+              "people.offers.pipeline",
+              "people.ta.offers"
+            ],
+            "field": "extended_date"
+          }
+        },
+        {
+          "label": "Hire record with a start date in the future",
+          "value": "future_hire_date",
+          "requires": {
+            "needs": [
+              "people.hires.event_records"
+            ],
+            "field": "hire_date"
+          }
+        }
+      ],
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 2,
+      "skills": [
+        "org_health_report",
+        "hiring_brief",
+        "good_morning_chro"
+      ],
+      "group": "convention"
+    },
+    {
+      "id": "offer_acceptance_method",
+      "label": "Offer acceptance rate",
+      "prompt": "How do you calculate offer acceptance rate?",
+      "help": "The denominator differs: all offers made, or only offers that got an answer.",
+      "writes_to": "def_offer_acceptance_method",
+      "kind": "choice",
+      "common_answers": [
+        {
+          "label": "Accepted / all offers extended",
+          "value": "accepted_over_extended",
+          "requires": {
+            "needs": [
+              "people.ta.offers",
+              "people.offers.pipeline"
+            ],
+            "field": "status"
+          }
+        },
+        {
+          "label": "Accepted / (accepted + declined), open offers excluded",
+          "value": "accepted_over_decided",
+          "requires": {
+            "needs": [
+              "people.ta.offers",
+              "people.offers.pipeline"
+            ],
+            "field": "status",
+            "value_like": "declin"
+          }
+        }
+      ],
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 2,
+      "skills": [
+        "good_morning_recruiting",
+        "org_health_report",
+        "good_morning_chro"
+      ],
+      "group": "label"
+    },
+    {
+      "id": "offer_stages",
+      "prompt": "Which pipeline stages count as the offer stage?",
+      "help": "Used to count candidates at offer.",
+      "writes_to": "offer_stage_values",
+      "kind": "multi",
+      "options_from": {
+        "needs": [
+          "people.ta.candidates_in_stage"
+        ],
+        "field": "stage_name"
+      },
+      "applies_when": {
+        "min_options": 2
+      },
+      "impact": 1,
+      "skills": [
+        "good_morning_recruiting"
+      ],
+      "group": "label"
+    },
+    {
+      "id": "stale_candidate_days",
+      "prompt": "After how many days in one stage is a candidate stale?",
+      "help": "Used to flag candidates waiting too long.",
+      "writes_to": "stale_candidate_days",
+      "kind": "number",
+      "bounds": [
+        1,
+        120
+      ],
+      "applies_when": {},
+      "impact": 1,
+      "skills": [
+        "good_morning_recruiting"
+      ],
+      "group": "policy"
+    },
+    {
+      "id": "span_under",
+      "group": "policy",
+      "prompt": "Below how many direct reports is a manager's team too small?",
+      "help": "Used to flag managers with very small teams.",
+      "writes_to": "span_under_threshold",
+      "kind": "number",
+      "bounds": [
+        1,
+        20
+      ],
+      "applies_when": {},
+      "effect": {
+        "metric": "under_spanned_managers"
+      },
+      "impact": 2,
+      "skills": [
+        "org_health_report"
+      ]
+    },
+    {
+      "id": "span_over",
+      "group": "policy",
+      "prompt": "Above how many direct reports is a manager's team too large?",
+      "help": "Used to flag managers who may be stretched.",
+      "writes_to": "span_over_threshold",
+      "kind": "number",
+      "bounds": [
+        2,
+        50
+      ],
+      "applies_when": {},
+      "effect": {
+        "metric": "over_spanned_managers"
+      },
+      "impact": 2,
+      "skills": [
+        "org_health_report"
+      ]
+    },
+    {
+      "id": "req_aging_days",
+      "group": "policy",
+      "prompt": "After how many days open is a requisition taking too long?",
+      "help": "Used to flag aging requisitions.",
+      "writes_to": "def_req_aging_days",
+      "kind": "number",
+      "default": 90,
+      "bounds": [
+        7,
+        365
+      ],
+      "applies_when": {},
+      "impact": 2,
+      "skills": [
+        "hiring_brief",
+        "good_morning_recruiting",
+        "good_morning_chro"
+      ]
+    },
+    {
+      "id": "open_req_offer_policy",
+      "group": "policy",
+      "prompt": "Does a requisition still count as open after an offer is accepted?",
+      "help": "Some teams keep it open until the hire starts; others close it at offer acceptance.",
+      "writes_to": "def_open_req_close_at",
+      "kind": "link_policy",
+      "start": {
+        "needs": [
+          "people.ta.requisitions",
+          "people.reqs.open_positions",
+          "people.ta.job_openings"
+        ]
+      },
+      "linked": {
+        "hints": [
+          "offer_accepted",
+          "accepted"
+        ],
+        "keep_label": "Yes, it stays open until the status changes",
+        "close_label": "No, it closes once an offer is accepted"
+      },
+      "applies_when": {},
+      "effect": {
+        "metric": "open_reqs"
+      },
+      "impact": 3,
+      "skills": [
+        "good_morning_recruiting",
+        "hiring_brief",
+        "org_health_report",
+        "good_morning_chro"
+      ]
+    }
+  ],
+  "groups": {
+    "label": "The data labels it clearly: settle from the data during Bind and state it; ask only if the labels are ambiguous.",
+    "convention": "Several valid ways to define it: ask unless documents or the profile already answer it, or every option gives about the same number.",
+    "policy": "A threshold or business rule no data can decide: ask unless documents state it."
+  }
+}

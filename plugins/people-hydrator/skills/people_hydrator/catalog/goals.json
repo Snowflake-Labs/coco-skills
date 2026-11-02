@@ -1,0 +1,248 @@
+{
+  "description": "Role and goal quick-picks for the business-fit recommendation. Goals list the skills they serve (curated, so every recommendation is explainable) plus words that, typed in free text, mean the same goal.",
+  "version": 1,
+  "roles": [
+    {
+      "id": "chro",
+      "label": "CHRO / CPO / People leadership",
+      "matches": [
+        "CHRO",
+        "CPO",
+        "People Leadership",
+        "Executive Leader"
+      ]
+    },
+    {
+      "id": "hrbp",
+      "label": "HR Business Partner",
+      "matches": [
+        "HR Business Partner"
+      ]
+    },
+    {
+      "id": "people_analytics",
+      "label": "People Analytics",
+      "matches": [
+        "People Analytics Lead"
+      ]
+    },
+    {
+      "id": "ta_lead",
+      "label": "Head of Talent Acquisition / TA Ops",
+      "matches": [
+        "Head of Talent Acquisition",
+        "TA Operations Lead",
+        "Talent Acquisition Operations"
+      ]
+    },
+    {
+      "id": "recruiter",
+      "label": "Recruiter / Hiring manager",
+      "matches": [
+        "Recruiter",
+        "Hiring Manager"
+      ]
+    },
+    {
+      "id": "total_rewards",
+      "label": "Total Rewards / Compensation",
+      "matches": [
+        "Total Rewards / Comp Partner"
+      ]
+    }
+  ],
+  "goals": [
+    {
+      "id": "reduce_attrition",
+      "label": "Understand and reduce attrition",
+      "skills": [
+        "attrition_insights",
+        "good_morning_chro",
+        "org_health_report"
+      ],
+      "words": [
+        "attrition",
+        "turnover",
+        "retention",
+        "regrettable",
+        "exits",
+        "leavers",
+        "quit",
+        "resign",
+        "flight risk",
+        "churn",
+        "losing",
+        "leaving",
+        "lose",
+        "left the company",
+        "keep people",
+        "keep our people",
+        "why people leave",
+        "quitting"
+      ]
+    },
+    {
+      "id": "track_headcount",
+      "label": "Track headcount and workforce changes",
+      "skills": [
+        "headcount_insights",
+        "hiring_brief"
+      ],
+      "words": [
+        "headcount",
+        "workforce",
+        "hc",
+        "team size",
+        "org size",
+        "net change",
+        "growth",
+        "hires and exits",
+        "workforce plan",
+        "how many people",
+        "how many employees",
+        "hiring and leaving"
+      ]
+    },
+    {
+      "id": "leadership_briefing",
+      "label": "Brief leadership every day or week",
+      "skills": [
+        "good_morning_chro",
+        "hiring_brief",
+        "good_morning_recruiting"
+      ],
+      "words": [
+        "briefing",
+        "brief",
+        "daily",
+        "weekly",
+        "update",
+        "leadership",
+        "executive",
+        "ceo",
+        "chro",
+        "pulse",
+        "dashboard",
+        "summary"
+      ]
+    },
+    {
+      "id": "org_health",
+      "label": "Assess org and manager health",
+      "skills": [
+        "org_health_report",
+        "attrition_insights"
+      ],
+      "words": [
+        "org health",
+        "manager",
+        "span of control",
+        "team health",
+        "engagement",
+        "well-being",
+        "wellbeing",
+        "performance",
+        "pto",
+        "burnout"
+      ]
+    },
+    {
+      "id": "hiring_speed",
+      "label": "Hire faster and keep recruiting healthy",
+      "skills": [
+        "good_morning_recruiting",
+        "hiring_brief"
+      ],
+      "words": [
+        "recruiting",
+        "hiring",
+        "time to fill",
+        "time to hire",
+        "pipeline",
+        "funnel",
+        "requisition",
+        "req",
+        "reqs",
+        "candidates",
+        "stale",
+        "talent acquisition",
+        "ta",
+        "recruiter",
+        "open roles",
+        "open positions",
+        "fill roles"
+      ]
+    },
+    {
+      "id": "hiring_plan",
+      "label": "Track hiring against plan",
+      "skills": [
+        "hiring_brief",
+        "headcount_insights"
+      ],
+      "words": [
+        "plan",
+        "forecast",
+        "budget",
+        "target",
+        "hiring plan",
+        "vs plan",
+        "behind plan"
+      ]
+    },
+    {
+      "id": "interview_quality",
+      "label": "Make better interview decisions",
+      "skills": [
+        "interview_debrief"
+      ],
+      "words": [
+        "interview",
+        "debrief",
+        "scorecard",
+        "panel",
+        "candidate comparison",
+        "hiring decision",
+        "stack rank"
+      ]
+    },
+    {
+      "id": "offers",
+      "label": "Build fair, competitive offers",
+      "skills": [
+        "offer_builder"
+      ],
+      "words": [
+        "offer",
+        "compensation",
+        "comp",
+        "pay",
+        "salary",
+        "parity",
+        "equity",
+        "pay range",
+        "band",
+        "fair offer",
+        "competitive offer"
+      ]
+    },
+    {
+      "id": "job_descriptions",
+      "label": "Write and improve job descriptions",
+      "skills": [
+        "job_description_builder"
+      ],
+      "words": [
+        "job description",
+        "jd",
+        "job posting",
+        "posting",
+        "bias",
+        "inclusive language",
+        "role description",
+        "write jobs",
+        "job ad"
+      ]
+    }
+  ]
+}

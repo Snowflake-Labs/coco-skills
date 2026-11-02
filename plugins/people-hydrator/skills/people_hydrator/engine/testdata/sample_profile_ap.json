@@ -1,0 +1,7 @@
+{
+  "finance_subdepartment": "other",
+  "persona": "Tester",
+  "jobs_to_be_done": ["exercise ready_skill"],
+  "source_systems": ["Synthetic"],
+  "requested_emitters": ["skill_plugin"]
+}

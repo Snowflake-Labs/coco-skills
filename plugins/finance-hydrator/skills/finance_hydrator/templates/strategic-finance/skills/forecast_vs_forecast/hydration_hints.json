@@ -1,0 +1,124 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "forecast_vs_forecast",
+  "data_needs": {
+    "finance.forecast.snapshot": {
+      "required": true,
+      "read_from": "semantic_view",
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_FORECAST_SNAPSHOT_VIEW_OR_TABLE>",
+          "grain": [
+            "version_id",
+            "item_id",
+            "period_date"
+          ],
+          "columns": {
+            "version_id": "<YOUR_VERSION_COLUMN>",
+            "item_id": "<YOUR_ITEM_ID_COLUMN>",
+            "period_date": "<YOUR_PERIOD_COLUMN>",
+            "forecast_amount": "<YOUR_AMOUNT_COLUMN>",
+            "actual_amount": "<YOUR_ACTUAL_COLUMN>",
+            "segment": "<YOUR_SEGMENT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "forecast snapshot",
+        "named forecast",
+        "forecast version comparison",
+        "forecast variance"
+      ],
+      "extra_settings": {
+        "value_type_column": "<YOUR_VALUE_TYPE_COLUMN>"
+      }
+    },
+    "finance.forecast.version_metadata": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_VERSION_METADATA_TABLE>",
+          "grain": [
+            "version_id"
+          ],
+          "columns": {
+            "version_id": "<YOUR_VERSION_COLUMN>",
+            "version_label": "<YOUR_LABEL_COLUMN>",
+            "run_date": "<YOUR_RUN_DATE_COLUMN>",
+            "model_type": "<OPTIONAL_MODEL_TYPE_COLUMN>",
+            "period_start": "<YOUR_PERIOD_START_COLUMN>",
+            "period_end": "<YOUR_PERIOD_END_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "forecast version tags",
+        "snapshot labels",
+        "planning quarter metadata"
+      ]
+    },
+    "finance.forecast.item_lookup": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ITEM_LOOKUP_TABLE>",
+          "grain": [
+            "item_id"
+          ],
+          "columns": {
+            "item_id": "<YOUR_ITEM_ID_COLUMN>",
+            "display_name": "<YOUR_NAME_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "item lookup",
+        "account name lookup",
+        "item dimension"
+      ]
+    },
+    "finance.forecast.actuals": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ACTUALS_SOURCE>",
+          "grain": [
+            "item_id",
+            "period_date"
+          ],
+          "columns": {
+            "item_id": "<YOUR_ITEM_ID_COLUMN>",
+            "period_date": "<YOUR_PERIOD_COLUMN>",
+            "actual_amount": "<YOUR_ACTUAL_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "historical actuals",
+        "forecast accuracy",
+        "forecast bias"
+      ]
+    },
+    "finance.forecast.fiscal_calendar": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_FISCAL_CALENDAR_TABLE>",
+          "grain": [
+            "period_date"
+          ],
+          "columns": {
+            "period_date": "<YOUR_PERIOD_COLUMN>",
+            "fiscal_year": "<YOUR_FISCAL_YEAR_COLUMN>",
+            "fiscal_quarter": "<YOUR_FISCAL_QUARTER_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "fiscal calendar",
+        "fiscal periods"
+      ]
+    }
+  }
+}

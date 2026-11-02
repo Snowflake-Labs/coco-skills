@@ -1,0 +1,249 @@
+{
+  "format_version": 1,
+  "plugin": "strategic-finance",
+  "skill": "earnings_prep",
+  "data_needs": {
+    "finance.earnings.financial_summary": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_PNL_METRICS_TABLE>",
+          "shape": "wide",
+          "grain": [
+            "fiscal_quarter"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_QUARTER_COLUMN>",
+            "revenue": "<YOUR_REVENUE_COLUMN>",
+            "gross_margin_pct": "<YOUR_GROSS_MARGIN_PCT_COLUMN>",
+            "operating_margin_pct": "<YOUR_OPERATING_MARGIN_PCT_COLUMN>",
+            "operating_income": "<YOUR_OPERATING_INCOME_COLUMN>",
+            "metric_name": "<YOUR_METRIC_NAME_COLUMN>",
+            "value": "<YOUR_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "quarterly financials",
+        "flash metrics",
+        "earnings metrics",
+        "P&L by quarter"
+      ]
+    },
+    "finance.earnings.comparison_basis": {
+      "required": true,
+      "sources": [
+        {
+          "fqn": "<SAME_AS_FINANCIAL_SUMMARY_OR_SEPARATE>",
+          "grain": [
+            "fiscal_quarter"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_QUARTER_COLUMN>",
+            "qoq_value": "<YOUR_QOQ_COLUMN>",
+            "yoy_value": "<YOUR_YOY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "prior year actuals",
+        "QoQ YoY comparison",
+        "restated prior year"
+      ],
+      "extra_settings": {
+        "constant_currency": false
+      }
+    },
+    "finance.earnings.guidance": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_GUIDANCE_TABLE>",
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_QUARTER_COLUMN>",
+            "issued_date": "<YOUR_ISSUED_DATE_COLUMN>",
+            "metric_name": "<YOUR_METRIC_COLUMN>",
+            "guidance_low": "<YOUR_LOW_COLUMN>",
+            "guidance_high": "<YOUR_HIGH_COLUMN>",
+            "guidance_midpoint": "<YOUR_MIDPOINT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "issued guidance",
+        "guidance range",
+        "IR guidance"
+      ]
+    },
+    "finance.earnings.consensus": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_CONSENSUS_TABLE>",
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_QUARTER_COLUMN>",
+            "metric_name": "<YOUR_METRIC_COLUMN>",
+            "consensus_estimate": "<YOUR_ESTIMATE_COLUMN>",
+            "source_date": "<YOUR_SOURCE_DATE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "analyst consensus",
+        "sell-side estimates",
+        "street estimates"
+      ]
+    },
+    "finance.earnings.analyst_questions": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ANALYST_QUESTIONS_TABLE>",
+          "grain": [
+            "fiscal_period",
+            "question_index"
+          ],
+          "columns": {
+            "fiscal_period": "<YOUR_PERIOD_COLUMN>",
+            "question_index": "<YOUR_INDEX_COLUMN>",
+            "question": "<YOUR_QUESTION_COLUMN>",
+            "speaker_name": "<YOUR_SPEAKER_COLUMN>",
+            "speaker_company": "<YOUR_FIRM_COLUMN>",
+            "category": "<OPTIONAL_CATEGORY_COLUMN>",
+            "priority": "<OPTIONAL_PRIORITY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "analyst questions",
+        "earnings call Q&A",
+        "sell-side previews"
+      ]
+    },
+    "finance.earnings.kpi_history": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_KPI_HISTORY_TABLE>",
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_PERIOD_COLUMN>",
+            "metric_name": "<YOUR_METRIC_NAME_COLUMN>",
+            "value": "<YOUR_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "KPI trend",
+        "multi-quarter metrics",
+        "operating metric history"
+      ]
+    },
+    "finance.earnings.detail_breakdown": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_BREAKDOWN_TABLE>",
+          "grain": [
+            "fiscal_quarter",
+            "product_or_feature"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_PERIOD_COLUMN>",
+            "product_or_feature": "<YOUR_PRODUCT_OR_FEATURE_COLUMN>",
+            "revenue": "<YOUR_REVENUE_COLUMN>",
+            "customer_count": "<YOUR_CUSTOMER_COUNT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "revenue by product",
+        "feature breakdown",
+        "verification source"
+      ],
+      "extra_settings": {
+        "verification_proceed_pct": "<OPTIONAL_DEFAULT_5>",
+        "verification_stop_pct": "<OPTIONAL_DEFAULT_15>"
+      }
+    },
+    "finance.earnings.disclosure_data": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DISCLOSURE_TABLE>",
+          "grain": [
+            "fiscal_quarter",
+            "metric_name"
+          ],
+          "columns": {
+            "fiscal_quarter": "<YOUR_PERIOD_COLUMN>",
+            "metric_name": "<YOUR_METRIC_NAME_COLUMN>",
+            "disclosed_value": "<YOUR_DISCLOSED_VALUE_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "published figures",
+        "disclosure tie-out",
+        "reported metrics"
+      ]
+    },
+    "finance.earnings.peer_set": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_PEER_TABLE>",
+          "grain": [
+            "peer_id",
+            "fiscal_quarter"
+          ],
+          "columns": {
+            "peer_id": "<YOUR_PEER_ID_COLUMN>",
+            "fiscal_quarter": "<YOUR_PERIOD_COLUMN>",
+            "growth_metric": "<YOUR_GROWTH_METRIC_COLUMN>",
+            "theme_summary": "<YOUR_THEME_SUMMARY_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "peer comps",
+        "peer earnings themes",
+        "competitor results"
+      ]
+    },
+    "finance.earnings.transcripts": {
+      "required": false,
+      "sources": [
+        {
+          "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_TRANSCRIPT_TABLE>",
+          "grain": [
+            "ticker",
+            "fiscal_quarter",
+            "section"
+          ],
+          "columns": {
+            "ticker": "<YOUR_TICKER_COLUMN>",
+            "fiscal_quarter": "<YOUR_PERIOD_COLUMN>",
+            "section": "<YOUR_SECTION_COLUMN>",
+            "text": "<YOUR_TEXT_COLUMN>"
+          }
+        }
+      ],
+      "synonyms": [
+        "earnings call transcript",
+        "call transcript"
+      ]
+    }
+  }
+}

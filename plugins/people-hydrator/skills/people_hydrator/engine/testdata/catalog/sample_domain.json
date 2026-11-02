@@ -1,0 +1,252 @@
+{
+  "domain": "sample_domain",
+  "source_plugin": "sample",
+  "description": "Synthetic catalog used only by engine unit tests.",
+  "skills": [
+    {
+      "name": "ready_skill",
+      "source_dir": "skills/ready_skill",
+      "eval_dir": "evals/ready_skill",
+      "persona": [
+        "Tester"
+      ],
+      "business_value": "Exercises the fully-resolved READY path.",
+      "triggers": [
+        "ready"
+      ],
+      "data_needs": [
+        {
+          "key": "s.ready.main",
+          "required": true,
+          "concepts": [
+            "ready main"
+          ],
+          "grain": [
+            "id"
+          ],
+          "columns": {
+            "id": "required",
+            "amount": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "other"
+      ],
+      "jobs_to_be_done": [
+        "exercise ready_skill"
+      ],
+      "source_system_hints": [
+        "Synthetic"
+      ],
+      "workflow_cadence": [
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "s.ready.main": "synthetic context query for s.ready.main"
+      }
+    },
+    {
+      "name": "partial_skill",
+      "source_dir": "skills/partial_skill",
+      "eval_dir": "evals/partial_skill",
+      "persona": [
+        "Tester"
+      ],
+      "business_value": "Exercises PARTIAL when an optional column is missing.",
+      "triggers": [
+        "partial"
+      ],
+      "data_needs": [
+        {
+          "key": "s.partial.main",
+          "required": true,
+          "concepts": [
+            "partial main"
+          ],
+          "grain": [
+            "id"
+          ],
+          "columns": {
+            "id": "required",
+            "extra": "optional"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "other"
+      ],
+      "jobs_to_be_done": [
+        "exercise partial_skill"
+      ],
+      "source_system_hints": [
+        "Synthetic"
+      ],
+      "workflow_cadence": [
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "s.partial.main": "synthetic context query for s.partial.main"
+      }
+    },
+    {
+      "name": "blocked_source",
+      "source_dir": "skills/blocked_source",
+      "eval_dir": "evals/blocked_source",
+      "persona": [
+        "Tester"
+      ],
+      "business_value": "Exercises BLOCKED when a required source is absent.",
+      "triggers": [
+        "blocked source"
+      ],
+      "data_needs": [
+        {
+          "key": "s.blocked.main",
+          "required": true,
+          "concepts": [
+            "blocked main"
+          ],
+          "grain": [
+            "id"
+          ],
+          "columns": {
+            "id": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "other"
+      ],
+      "jobs_to_be_done": [
+        "exercise blocked_source"
+      ],
+      "source_system_hints": [
+        "Synthetic"
+      ],
+      "workflow_cadence": [
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "s.blocked.main": "synthetic context query for s.blocked.main"
+      }
+    },
+    {
+      "name": "blocked_unsafe",
+      "source_dir": "skills/blocked_unsafe",
+      "eval_dir": "evals/blocked_unsafe",
+      "persona": [
+        "Tester"
+      ],
+      "business_value": "Exercises BLOCKED when an unsafe scoping column is missing.",
+      "triggers": [
+        "blocked unsafe"
+      ],
+      "data_needs": [
+        {
+          "key": "s.unsafe.main",
+          "required": true,
+          "concepts": [
+            "unsafe main"
+          ],
+          "grain": [
+            "id"
+          ],
+          "columns": {
+            "id": "required"
+          },
+          "unsafe_scoping_columns": [
+            "tenant_id"
+          ]
+        }
+      ],
+      "finance_subdepartments": [
+        "other"
+      ],
+      "jobs_to_be_done": [
+        "exercise blocked_unsafe"
+      ],
+      "source_system_hints": [
+        "Synthetic"
+      ],
+      "workflow_cadence": [
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "s.unsafe.main": "synthetic context query for s.unsafe.main"
+      }
+    },
+    {
+      "name": "merge_skill",
+      "source_dir": "skills/merge_skill",
+      "eval_dir": "evals/merge_skill",
+      "persona": [
+        "Tester"
+      ],
+      "business_value": "Exercises merge of resolved bindings into a source hint sidecar.",
+      "triggers": [
+        "merge"
+      ],
+      "data_needs": [
+        {
+          "key": "s.merge.summary",
+          "required": true,
+          "concepts": [
+            "merge summary"
+          ],
+          "grain": [
+            "period"
+          ],
+          "columns": {
+            "period": "required",
+            "amount": "required"
+          }
+        },
+        {
+          "key": "s.merge.extra",
+          "required": false,
+          "concepts": [
+            "merge extra"
+          ],
+          "grain": [
+            "period"
+          ],
+          "columns": {
+            "note": "required"
+          }
+        }
+      ],
+      "finance_subdepartments": [
+        "other"
+      ],
+      "jobs_to_be_done": [
+        "exercise merge_skill"
+      ],
+      "source_system_hints": [
+        "Synthetic"
+      ],
+      "workflow_cadence": [
+        "ad_hoc"
+      ],
+      "supported_emitters": [
+        "skill_plugin"
+      ],
+      "context_queries": {
+        "s.merge.summary": "synthetic context query for s.merge.summary",
+        "s.merge.extra": "synthetic context query for s.merge.extra"
+      }
+    }
+  ]
+}

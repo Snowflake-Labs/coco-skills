@@ -1,0 +1,23 @@
+definition_version: "2"
+
+entities:
+  BVA_VARIANCE_SETUP:
+    type: snowflake-app
+    identifier:
+      name: BVA_VARIANCE_SETUP
+      database: REPLACE_WITH_TARGET_DATABASE
+      schema: REPLACE_WITH_TARGET_SCHEMA
+    artifacts:
+      - src: ./*
+        dest: ./
+        ignore:
+          - node_modules
+          - .env*
+          - __pycache__
+          - "*.pyc"
+          - .next
+          - .git
+          - snowflake.log
+
+    query_warehouse: REPLACE_WITH_TARGET_WAREHOUSE
+    code_stage: BVA_VARIANCE_SETUP_CODE
