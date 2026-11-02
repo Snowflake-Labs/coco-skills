@@ -1,7 +1,7 @@
 # Report and optional model contracts
 
 The report renderer is scripts/protocol.py, not a model-generated template.
-Schema version 2.1 / rules version 1.2 reports: status, coverage counts, catalog availability,
+Schema version 2.1 / rules version 1.3 reports: status, coverage counts, catalog availability,
 model disabled, public duplicates not run, provenance and bounded hashed source IDs.
 Each finding carries a fixed code, severity, group, allowlisted metadata field (or
 null), file ID, stable source hash, optional line number and exact fixed next action.
@@ -12,8 +12,13 @@ versions are rejected. It never emits candidate names, excerpts, YAML error text
 secret values or model prose. Exit codes remain 0 passed, 1 failed, 2 blocked or
 incomplete, 3 unavailable. Warnings do not fail mechanical validation.
 
-Rules version 1.2 preserves the 1.1 [metadata/license policy](../workflows/format-check.md)
-and adds only advisory Markdown/catalog behavior.
+Rules version 1.3 keeps the 1.1 [metadata/license policy](../workflows/format-check.md)
+and 1.2 advisory Markdown/catalog behavior, and adds tiered findings. Text output
+prefixes `security.sql_*` errors with `[RED]`: they fail the run and must block
+merge. `dependency.unpinned`, `dependency.vulnerable` and `dependency.unchecked`
+are `[ORANGE]` advisories. Tiers derive from codes, so the JSON schema is unchanged.
+Plugin skills whose name differs from the directory or the 1-4 word slug rule get
+the `format.plugin_name` error; standalone skills keep the `format.name` advisory.
 `format.license` is a content/claim error, not a legal judgment;
 `format.author_conflict`, `license.notice`, `license.inherited` and `license.review` are human advisories.
 `input.symlink` is a blocking collection error with fixed text; it never names the

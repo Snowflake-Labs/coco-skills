@@ -33,7 +33,7 @@ Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake
 ### Frontmatter contract
 
 The versioned reviewer policy in [scripts/policy.py](skills/review-skill-sflabs/scripts/policy.py)
-is authoritative for mechanical checks (rules 1.2; metadata/license decisions unchanged from 1.1). The table below is checked
+is authoritative for mechanical checks (rules 1.3; adds blocking SQL-escaping checks, dependency pinning advisories and the plugin naming error; other metadata/license decisions unchanged from 1.1). The table below is checked
 against that matrix by unit tests. It does not claim to define every Cortex Code
 client's metadata behavior. All listed fields reject unsupported YAML types;
 unknown fields are retained without validation. Duplicate keys and aliases fail.
@@ -41,7 +41,7 @@ unknown fields are retained without validation. Duplicate keys and aliases fail.
 <!-- reviewer-policy-table:start -->
 | Field | Reviewer contract |
 |---|---|
-| `name` | Required nonblank string; directory match and 1-4 lowercase alphanumeric words separated by hyphens are advisory. |
+| `name` | Required nonblank string; directory match and 1-4 lowercase alphanumeric words separated by hyphens are advisory for standalone skills and a hard error for plugin skills. |
 | `description` | Required nonblank string; Use when prefix, Triggers: guidance and third-person wording are advisory. |
 | `id` | Optional; recommended. If present, must match the directory and [a-z0-9-]+ (error otherwise). |
 | `author` | Optional string, comma-separated names supported. Either author or authors satisfies the authorship recommendation; differing aliases require human review. |

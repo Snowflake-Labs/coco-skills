@@ -124,6 +124,15 @@ REQUIRED_TESTS = (
     'test_plugin_inheritance.SymlinkReportingTests.test_link_inside_bundle',
     'test_plugin_inheritance.SymlinkReportingTests.test_symlink_is_still_an_oserror_for_existing_callers',
     'test_plugin_inheritance.HeadingAnchorTests.test_markup_unicode_and_empty_slugs_remain_partial',
+    'test_risk_checks.SqlEscapingTests.test_interpolation_forms',
+    'test_risk_checks.SqlEscapingTests.test_dynamic_sql',
+    'test_risk_checks.SqlEscapingTests.test_client_substitution_only_in_sql_regions',
+    'test_risk_checks.SqlEscapingTests.test_payloads_and_multi_statement_sql',
+    'test_risk_checks.SqlEscapingTests.test_prose_splicing',
+    'test_risk_checks.SqlEscapingTests.test_red_errors_fail_and_render_tier',
+    'test_risk_checks.DependencyTests.test_pinned_versions_checked_against_snapshot',
+    'test_risk_checks.DependencyTests.test_empty_snapshot_reports_unchecked',
+    'test_risk_checks.PluginNameTests.test_plugin_name_mismatch_is_error',
 )
 
 
