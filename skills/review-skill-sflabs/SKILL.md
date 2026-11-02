@@ -95,6 +95,11 @@ All runs disclose that model assessment is disabled and public duplicate search
 was not run. Catalog comparison uses the partial, dated Labs snapshot shipped in
 the image, not an exhaustive or current bundled-skill inventory. Unsupported or
 binary files prevent a complete pass. No file sampling or silent truncation.
+Rules 1.4 parse Python with the standard-library ast module (never executed):
+SQL built from values is followed across lines and variables to execute/sql
+calls, shipped .py and JSON/YAML/TOML files that do not parse are errors, Python
+examples in docs that do not parse are advisory, and other code files (shell, JS,
+SQL, Scala, Java and similar) get a syntax.unparsed_language warning.
 Rules 1.3 add RED blocking SQL-escaping errors (interpolated or concatenated SQL,
 dynamic EXECUTE IMMEDIATE, SnowSQL/CLI substitution, injection payloads and prose
 telling the agent to splice values into SQL), ORANGE dependency advisories

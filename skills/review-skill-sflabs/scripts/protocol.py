@@ -45,6 +45,11 @@ MESSAGES = {
     'dependency.vulnerable': 'Pinned dependency version matches a known vulnerability in the offline advisory snapshot.',
     'dependency.unchecked': 'Pinned dependency was not checked: the offline advisory snapshot is empty.',
     'format.plugin_name': 'Plugin skill name must match its directory and be 1-4 lowercase hyphenated words.',
+    'syntax.python': 'Python file does not parse.',
+    'syntax.python_example': 'Python example in documentation does not parse.',
+    'syntax.config': 'JSON, YAML or TOML file does not parse or repeats a key.',
+    'syntax.unchecked': 'File syntax was not checked: template markers or parser limits.',
+    'syntax.unparsed_language': 'Code file in a language the reviewer does not parse; syntax and structure were not checked.',
     'policy.tone': 'Tone or status-marker pattern needs contextual human review.',
     'policy.identity': 'Identity-field reference needs contextual human review.',
     'policy.hardcoded': 'Environment-specific identifier pattern needs human review.',
@@ -63,7 +68,8 @@ ERROR_CODES = set(FAILURES) | {'format.skill_missing', 'format.yaml', 'format.re
     'format.field_type', 'format.id', 'format.type', 'format.license',
     'format.internal_directory', 'coverage.unsupported', 'security.secret',
     'security.sql_interpolation', 'security.sql_dynamic', 'security.sql_substitution',
-    'security.sql_payload', 'security.sql_splicing', 'format.plugin_name'}
+    'security.sql_payload', 'security.sql_splicing', 'format.plugin_name',
+    'syntax.python', 'syntax.config'}
 # Display tiers. Red findings are blocking errors; orange findings are dependency
 # review items. Tiers are derived from codes, so the report schema is unchanged.
 TIERS = {code: 'RED' for code in ('security.sql_interpolation', 'security.sql_dynamic',
@@ -115,6 +121,11 @@ ACTIONS = {
     'dependency.vulnerable': 'Upgrade to a fixed version and confirm against the current advisory database.',
     'dependency.unchecked': 'Ask a maintainer to refresh the offline advisory snapshot, then re-run.',
     'format.plugin_name': 'Rename the skill so name equals its directory and uses 1-4 lowercase hyphenated words.',
+    'syntax.python': 'Fix the syntax error so the shipped script parses.',
+    'syntax.python_example': 'Fix the example, or mark it as an intentionally partial snippet.',
+    'syntax.config': 'Fix the syntax error or duplicate key so the file parses.',
+    'syntax.unchecked': 'Have a human review this file, or remove templating from shipped config.',
+    'syntax.unparsed_language': 'Have a human review this file\'s code, or ask maintainers whether the language should be supported.',
     'policy.tone': 'Is the tone appropriate for an advisory result?',
     'policy.identity': 'Are identity fields necessary and appropriately minimized?',
     'policy.hardcoded': 'Should environment-specific identifiers be parameterized?',

@@ -33,7 +33,7 @@ Skills in this repo follow the [standard SKILL.md format](https://docs.snowflake
 ### Frontmatter contract
 
 The versioned reviewer policy in [scripts/policy.py](skills/review-skill-sflabs/scripts/policy.py)
-is authoritative for mechanical checks (rules 1.3; adds blocking SQL-escaping checks, dependency pinning advisories and the plugin naming error; other metadata/license decisions unchanged from 1.1). The table below is checked
+is authoritative for mechanical checks (rules 1.4; adds blocking SQL-escaping checks, dependency pinning advisories, the plugin naming error, Python AST SQL detection and code/config syntax checks; other metadata/license decisions unchanged from 1.1). The table below is checked
 against that matrix by unit tests. It does not claim to define every Cortex Code
 client's metadata behavior. All listed fields reject unsupported YAML types;
 unknown fields are retained without validation. Duplicate keys and aliases fail.

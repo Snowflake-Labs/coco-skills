@@ -1,7 +1,7 @@
 # Report and optional model contracts
 
 The report renderer is scripts/protocol.py, not a model-generated template.
-Schema version 2.1 / rules version 1.3 reports: status, coverage counts, catalog availability,
+Schema version 2.1 / rules version 1.4 reports: status, coverage counts, catalog availability,
 model disabled, public duplicates not run, provenance and bounded hashed source IDs.
 Each finding carries a fixed code, severity, group, allowlisted metadata field (or
 null), file ID, stable source hash, optional line number and exact fixed next action.
@@ -11,6 +11,14 @@ invalid combinations, duplicate JSON keys, arbitrary prose and incompatible
 versions are rejected. It never emits candidate names, excerpts, YAML error text,
 secret values or model prose. Exit codes remain 0 passed, 1 failed, 2 blocked or
 incomplete, 3 unavailable. Warnings do not fail mechanical validation.
+
+Rules version 1.4 adds parse-only code checks. `syntax.python` (shipped `.py`) and
+`syntax.config` (JSON, YAML, TOML, including duplicate keys) are errors.
+`syntax.python_example` (Python fences in docs), `syntax.unchecked` (template
+markers or parser limits) and `syntax.unparsed_language` (one per code file in a
+language the reviewer does not parse) are advisories. For parseable Python,
+`security.sql_interpolation` comes from the AST and reports both where SQL is built
+and where a built value reaches an execute/sql call.
 
 Rules version 1.3 keeps the 1.1 [metadata/license policy](../workflows/format-check.md)
 and 1.2 advisory Markdown/catalog behavior, and adds tiered findings. Text output

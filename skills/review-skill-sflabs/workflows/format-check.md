@@ -7,7 +7,7 @@ into context during admission review.
 ## One contract
 
 [scripts/policy.py](../scripts/policy.py) owns the required/advisory metadata
-matrix, rules version 1.3, and license normalization/claim rules (unchanged from 1.1). Checks consume
+matrix, rules version 1.4, and license normalization/claim rules (unchanged from 1.1). Checks consume
 that matrix; the [CONTRIBUTING table](../../../CONTRIBUTING.md#frontmatter-contract)
 is verified against its renderer in unit tests. Refer there instead of maintaining
 a second field/enum list here. No default metadata or automatic fixes are inserted.
@@ -259,3 +259,33 @@ queries the public OSV API (https://api.osv.dev) for package names found in this
 repository, then reviews and commits the diff. The snapshot ships in the image, so
 rebuild the image after a refresh. Matching is exact-version only and is not a
 complete vulnerability audit.
+
+## Parse-only code checks
+
+`scripts/code_checks.py` parses candidate text without compiling, importing or
+running it. Python uses the standard-library `ast` module under the image's
+Python 3.11 grammar, so syntax newer than 3.11 can be reported as
+`syntax.python`; JSON uses `json` with duplicate-key rejection; YAML is composed
+only (aliases and custom tags such as `!Ref` are legal) with node and depth
+budgets; TOML uses `tomllib`. Files with `{{`, `{%` or `<%` template markers are
+`syntax.unchecked` rather than errors.
+
+SQL detection in Python treats a string as SQL when it starts with a statement
+keyword or a clause fragment (`WHERE`, `FROM`, `AND`, `ORDER`...), after any
+leading `--` comment lines. Names assigned built SQL are tracked within a
+function, flow-insensitively, and reported where they reach `sql`, `execute`,
+`executemany`, `execute_string`, `execute_async`, `read_sql`, `read_sql_query` or
+`text`. Multi-line string literals are also scanned with the regex patterns, so
+code stored as data (examples, fixtures, generated procedure bodies) is covered.
+Measured on `main` at `e685704`: 268 findings versus 246 from the regex alone
+(uncapped), 4 regex-only hits not reproduced, and a small number of false
+positives from messages that begin with clause words such as "GROUP BY".
+
+`syntax.unparsed_language` covers decoded files with these suffixes: `.bash`,
+`.c`, `.cc`, `.cjs`, `.cpp`, `.cs`, `.go`, `.groovy`, `.h`, `.hpp`, `.java`,
+`.js`, `.jsx`, `.kt`, `.kts`, `.lua`, `.mjs`, `.php`, `.pl`, `.ps1`, `.r`, `.rb`,
+`.rs`, `.sbt`, `.scala`, `.sh`, `.sql`, `.swift`, `.ts`, `.tsx`, `.zsh`, plus
+`Dockerfile`, `Containerfile`, `Makefile`, `Justfile`, `Jenkinsfile` and
+extensionless non-Python `#!` scripts. These suffixes are also decoded as text,
+so the regex SQL and dependency checks scan them instead of reporting
+`coverage.unsupported`.

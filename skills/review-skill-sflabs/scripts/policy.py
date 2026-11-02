@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 import re
 
-RULES_VERSION = '1.3'
+RULES_VERSION = '1.4'
 SOURCE_REVISION = '89c57c211105bb5a870ce2f6e6e495a20c962fd8'
 
 # This matrix also renders the contributor table; checks must consume its rules.

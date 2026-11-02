@@ -8,6 +8,7 @@ import yaml
 
 from ingest import PLUGIN_LICENSE, Entry, canonical, lf_line_count, lf_lines
 from markdown_checks import check_documents
+from code_checks import UNPARSED_SUFFIXES, code_findings
 from risk_checks import dependency_findings, sql_findings
 from catalog import related
 from protocol import base_report, bind_report, finding
@@ -15,8 +16,9 @@ from policy import LICENSE_POLICY, METADATA, author_claims, match_license, valid
 
 TEXT_SUFFIXES = {'.md', '.txt', '.py', '.sh', '.bash', '.json', '.yaml', '.yml',
                  '.toml', '.sql', '.csv', '.js', '.ts', '.html', '.css', '.rst',
-                 '.xml', '.ini', '.cfg', '.r', '.ps1', '.dockerignore'}
-TEXT_NAMES = {'SKILL.md', 'LICENSE', 'Dockerfile', '.dockerignore', '.gitignore', PLUGIN_LICENSE}
+                 '.xml', '.ini', '.cfg', '.r', '.ps1', '.dockerignore'} | UNPARSED_SUFFIXES
+TEXT_NAMES = {'SKILL.md', 'LICENSE', 'Dockerfile', '.dockerignore', '.gitignore', PLUGIN_LICENSE,
+              'Containerfile', 'Makefile', 'Justfile', 'Jenkinsfile'}
 SECRET_PATTERNS = [
     re.compile(r'-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----'),
     re.compile(r'\bAKIA[A-Z0-9]{16}\b'),
@@ -144,7 +146,12 @@ def _review(name, entries, catalog):
         # License text is legal prose, not code or instructions.
         if path in ('LICENSE', PLUGIN_LICENSE):
             continue
-        for code, line in sql_findings(path, text):
+        parsed, masked = code_findings(path, text)
+        for code, line in parsed:
+            add(code, 'error' if code in ('security.sql_interpolation', 'syntax.python', 'syntax.config')
+                else 'warning', file_id, line)
+        for code, line in sql_findings(path, text if masked is None else masked,
+                                       interpolation=masked is not None):
             add(code, 'error', file_id, line)
         for code, line in dependency_findings(path, text):
             add(code, file_id=file_id, line=line)

@@ -1,5 +1,5 @@
 {
-  "rules_version": "1.3",
+  "rules_version": "1.4",
   "normalization": "ascii-whitespace-and-quotes-v1",
   "source_repository": "https://github.com/Snowflake-Labs/coco-skills.git",
   "source_revision": "89c57c211105bb5a870ce2f6e6e495a20c962fd8",

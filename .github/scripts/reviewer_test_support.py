@@ -133,6 +133,14 @@ REQUIRED_TESTS = (
     'test_risk_checks.DependencyTests.test_pinned_versions_checked_against_snapshot',
     'test_risk_checks.DependencyTests.test_empty_snapshot_reports_unchecked',
     'test_risk_checks.PluginNameTests.test_plugin_name_mismatch_is_error',
+    'test_code_checks.PythonSqlTests.test_cross_line_taint_reaches_sink',
+    'test_code_checks.PythonSqlTests.test_accumulation_and_multiline_building',
+    'test_code_checks.PythonSqlTests.test_safe_and_non_sql_strings',
+    'test_code_checks.PythonSqlTests.test_unparseable_python_falls_back_to_regex',
+    'test_code_checks.SyntaxTests.test_config_parsers',
+    'test_code_checks.SyntaxTests.test_severity_in_report',
+    'test_code_checks.UnparsedLanguageTests.test_warning_is_advisory_and_newly_decoded_languages_are_scanned',
+    'test_code_checks.NoExecutionTests.test_marker_never_written',
 )
 
 

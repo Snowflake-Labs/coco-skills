@@ -101,10 +101,14 @@ def _sql_regions(path, text):
         offset += len(line) + 1
 
 
-def sql_findings(path, text):
-    """Return blocking SQL-escaping findings as (code, line) pairs."""
+def sql_findings(path, text, interpolation=True):
+    """Return blocking SQL-escaping findings as (code, line) pairs.
+
+    interpolation=False skips the regex interpolation patterns, for Python
+    sources whose SQL construction the AST analysis in code_checks covers.
+    """
     found = []
-    for pattern in INTERPOLATION:
+    for pattern in INTERPOLATION if interpolation else ():
         found += [('security.sql_interpolation', lf_line_count(text, m.start()))
                   for m in pattern.finditer(text)]
     for pattern in DYNAMIC:
