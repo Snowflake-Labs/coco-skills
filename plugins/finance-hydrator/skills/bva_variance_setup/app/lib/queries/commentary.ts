@@ -3,7 +3,7 @@
 import { querySnowflake } from "../snowflake"
 import { WAREHOUSE } from "../bva"
 
-function esc(s: string) { return s.replace(/'/g, "''") }
+function esc(s: string) { return s.replace(/\\/g, "\\\\").replace(/'/g, "''") }
 
 /**
  * Returns the latest commentary row per (category, fiscal_year, period) for

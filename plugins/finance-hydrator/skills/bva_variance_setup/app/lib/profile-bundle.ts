@@ -76,7 +76,7 @@ async function profileOne(role: keyof SelectedTables, table: string): Promise<Pr
       // about them (cardinality, samples).
       querySnowflake(
         `SELECT column_name, data_type FROM ${q(db)}.INFORMATION_SCHEMA.COLUMNS
-         WHERE table_schema = upper('${schema.replace(/'/g, "''")}') AND table_name = upper('${tbl.replace(/'/g, "''")}')
+         WHERE table_schema = upper('${schema.replace(/\\/g, "\\\\").replace(/'/g, "''")}') AND table_name = upper('${tbl.replace(/\\/g, "\\\\").replace(/'/g, "''")}')
          ORDER BY ordinal_position`,
         { warehouse: WAREHOUSE, tag: "bva:profile-bundle" },
       ),

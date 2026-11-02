@@ -112,7 +112,7 @@ export async function GET(req: Request) {
     let prefixFilter = ""
     if (accountFilterPrefixes?.length && actualsAccountCol) {
       const preds = accountFilterPrefixes.map(
-        (p) => `CAST(a.${q(actualsAccountCol)} AS VARCHAR) LIKE '${p.replace(/'/g, "''")}%'`
+        (p) => `CAST(a.${q(actualsAccountCol)} AS VARCHAR) LIKE '${p.replace(/\\/g, "\\\\").replace(/'/g, "''")}%'`
       )
       prefixFilter = `AND (${preds.join(" OR ")})`
     }

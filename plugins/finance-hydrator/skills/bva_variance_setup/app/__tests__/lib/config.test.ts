@@ -186,3 +186,15 @@ describe("buildFinalSql", () => {
     expect(whereIdx).toBeGreaterThan(sql.indexOf("as with_derived"))
   })
 })
+
+describe("buildFromConfig table-name validation", () => {
+  it("rejects a saved table name that is not a plain DATABASE.SCHEMA.TABLE", () => {
+    const cfg = { sourceType: "single_table", singleTable: "A.B.C UNION SELECT 1" } as BvaConfig
+    expect(() => buildFromConfig(cfg)).toThrow(/Invalid singleTable/)
+  })
+
+  it("accepts a valid table name", () => {
+    const cfg = { sourceType: "single_table", singleTable: "DB.SCHEMA.GL" } as BvaConfig
+    expect(buildFromConfig(cfg)).toBe("select * from DB.SCHEMA.GL")
+  })
+})

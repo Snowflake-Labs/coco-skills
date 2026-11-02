@@ -183,7 +183,7 @@ export async function POST(req: Request) {
     try {
       const existing = await getConfigJsonForBackup(CONFIG_TABLE, body.configName)
       if (existing.length > 0) {
-        const existingJson = JSON.stringify(existing[0].CONFIG_JSON).replace(/'/g, "''")
+        const existingJson = JSON.stringify(existing[0].CONFIG_JSON).replace(/\\/g, "\\\\").replace(/'/g, "''")
         await insertConfigHistory(HISTORY_TABLE, body.configName, existingJson)
       }
     } catch {
@@ -233,7 +233,7 @@ export async function DELETE(req: Request) {
     try {
       const existing = await getConfigJsonBeforeDelete(CONFIG_TABLE, target)
       if (existing.length > 0) {
-        const existingJson = JSON.stringify(existing[0].CONFIG_JSON).replace(/'/g, "''")
+        const existingJson = JSON.stringify(existing[0].CONFIG_JSON).replace(/\\/g, "\\\\").replace(/'/g, "''")
         await insertConfigHistoryOnDelete(HISTORY_TABLE, target, existingJson)
       }
     } catch { /* history backup is best-effort */ }

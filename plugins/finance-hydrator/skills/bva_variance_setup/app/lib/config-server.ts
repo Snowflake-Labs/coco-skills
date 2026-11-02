@@ -160,7 +160,7 @@ export async function loadConfig(name = "default"): Promise<BvaConfig | null> {
     // (usually "default", the config actively driving the dashboard). This
     // result is what gets cached in _configCacheMap below for 60 seconds.
     const rows  = await querySnowflake(
-      `select config_json from ${table} where config_name = '${name.replace(/'/g, "''")}'  limit 1`,
+      `select config_json from ${table} where config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  limit 1`,
       { warehouse: WAREHOUSE },
     )
     const config = rows.length > 0 ? (rows[0].CONFIG_JSON as BvaConfig) : null
@@ -327,7 +327,7 @@ async function updateVersionPeriods(cfg: BvaConfig, configTable: string, matTabl
     if (!changed) return
 
     const configName = cfg.configName ?? "default"
-    const jsonLiteral = JSON.stringify(existing).replace(/'/g, "''")
+    const jsonLiteral = JSON.stringify(existing).replace(/\\/g, "\\\\").replace(/'/g, "''")
     // WRITE_VERSION_PERIODS_PATCH: merges the newly-computed versionPeriods
     // map into the saved config's JSON in place, using object_insert so only
     // that one key changes — the rest of config_json (including any fields
@@ -335,7 +335,7 @@ async function updateVersionPeriods(cfg: BvaConfig, configTable: string, matTabl
     await querySnowflake(
       `update ${configTable}
        set config_json = object_insert(config_json, 'versionPeriods', parse_json('${jsonLiteral}'), true)
-       where config_name = '${configName.replace(/'/g, "''")}'`,
+       where config_name = '${configName.replace(/\\/g, "\\\\").replace(/'/g, "''")}'`,
       { warehouse: WAREHOUSE },
     )
     invalidateConfigCache(configName)

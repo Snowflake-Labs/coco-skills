@@ -38,7 +38,7 @@ export function rowContribution(
 
 /** Escape a value for safe interpolation as a SQL string literal. */
 export function sqlStr(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /**

@@ -263,7 +263,7 @@ export async function buildDiscoveryBundle(scope?: DiscoveryScope | null): Promi
   // an unrecognized naming convention shouldn't be invisible to discovery).
   const scan = async (filtered: boolean): Promise<RawTable[]> => {
     const schemaClause = scope?.schema
-      ? `AND TABLE_SCHEMA = '${scope.schema.replace(/'/g, "''").toUpperCase()}'`
+      ? `AND TABLE_SCHEMA = '${scope.schema.replace(/\\/g, "\\\\").replace(/'/g, "''").toUpperCase()}'`
       : ""
     const keywordClause = filtered
       ? `AND (

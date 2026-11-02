@@ -423,7 +423,7 @@ function q(s: string): string {
 
 /** SQL string literal */
 function lit(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /** System databases to exclude from the browser */

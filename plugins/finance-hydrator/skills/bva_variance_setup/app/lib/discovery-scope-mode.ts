@@ -28,7 +28,7 @@ import type { DiscoveryScope } from "@/lib/discover-bundle"
 export type { DiscoveryScope }
 
 function q(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /**

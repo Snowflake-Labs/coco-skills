@@ -9,6 +9,8 @@
  * Set BVA_CONFIG_TABLE env var to point at the config table location for
  * this deployment (see lib/config-server.ts's getConfigTable()).
  */
+
+import { validateTableParam } from "@/lib/bva"
 /**
  * Client-safe: types + pure SQL assembler only.
  * Server-only functions (loadConfig, invalidateConfigCache) live in lib/config-server.ts.
@@ -299,7 +301,7 @@ export function validateBuildConfig(cfg: BvaConfig): string[] {
 // ─── SQL assembler ───────────────────────────────────────────────────────────
 
 function q(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /**
@@ -311,7 +313,7 @@ function q(s: string): string {
 function stripPrefixExpr(col: string, prefixes: string[] | undefined): string {
   if (!prefixes?.length) return col
   const alt = prefixes
-    .map((p) => p.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/'/g, "''"))
+    .map((p) => p.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/\\/g, "\\\\").replace(/'/g, "''"))
     .join("|")
   return `regexp_replace(${col}, '^(${alt})', '')`
 }
@@ -401,6 +403,22 @@ function applyRenameMap(expr: string, renameMap: Record<string, string>): string
  * The validate API pre-flight (validateBuildConfig) will block SQL execution on errors.
  */
 export function buildFromConfig(cfg: BvaConfig): string {
+  // Defense in depth: table names are validated when a config is saved, but a
+  // config saved before that check existed (or edited directly in Snowflake)
+  // could still hold an unsafe value. Refuse to interpolate it into SQL.
+  const tableFields = {
+    actualsTable: cfg.actualsTable,
+    budgetTable: cfg.budgetTable,
+    costCenterTable: cfg.costCenterTable,
+    ledgerMappingTable: cfg.ledgerMappingTable,
+    singleTable: cfg.singleTable,
+  }
+  for (const [name, val] of Object.entries(tableFields)) {
+    const t = val?.trim()
+    if (t && !validateTableParam(t)) {
+      throw new Error(`Invalid ${name} in saved config: must be a DATABASE.SCHEMA.TABLE identifier.`)
+    }
+  }
   if (cfg.sourceType === "single_table" || !cfg.actualsTable) {
     return `select * from ${cfg.singleTable ?? "/* no source configured — open Settings */"}`
   }

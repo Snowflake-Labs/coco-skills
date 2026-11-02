@@ -34,7 +34,7 @@ import { getConfigTable } from "@/lib/config-server"
 export type AgentAccessMode = "caller" | "owner"
 
 function q(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /**

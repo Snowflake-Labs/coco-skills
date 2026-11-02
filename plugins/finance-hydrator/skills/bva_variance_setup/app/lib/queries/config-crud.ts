@@ -17,8 +17,8 @@ import type { BvaConfig } from "../config"
  * since it must never overwrite an existing "Demo" row).
  */
 export async function upsertConfigRow(table: string, name: string, payload: BvaConfig): Promise<void> {
-  const nameLiteral = name.replace(/'/g, "''")
-  const jsonLiteral = JSON.stringify(payload).replace(/'/g, "''")
+  const nameLiteral = name.replace(/\\/g, "\\\\").replace(/'/g, "''")
+  const jsonLiteral = JSON.stringify(payload).replace(/\\/g, "\\\\").replace(/'/g, "''")
   await querySnowflake(
     `MERGE INTO ${table} AS tgt
      USING (SELECT '${nameLiteral}' AS config_name, PARSE_JSON('${jsonLiteral}') AS config_json) AS src
@@ -67,7 +67,7 @@ export async function getActivatedFrom(table: string) {
 export async function getConfigHistoryRows(historyTable: string, name: string) {
   return querySnowflake(
     `SELECT saved_at, config_json FROM ${historyTable}
-     WHERE config_name = '${name.replace(/'/g, "''")}'
+     WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'
      ORDER BY saved_at DESC LIMIT 10`,
     { warehouse: WAREHOUSE },
   )
@@ -77,7 +77,7 @@ export async function getConfigHistoryRows(historyTable: string, name: string) {
 export async function getConfigAndUpdatedAt(table: string, name: string) {
   return querySnowflake(
     `SELECT config_json, updated_at FROM ${table}
-     WHERE config_name = '${name.replace(/'/g, "''")}'  LIMIT 1`,
+     WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  LIMIT 1`,
     { warehouse: WAREHOUSE },
   )
 }
@@ -85,7 +85,7 @@ export async function getConfigAndUpdatedAt(table: string, name: string) {
 /** Reads just the JSON of a named config, to snapshot into history before a POST overwrites it. */
 export async function getConfigJsonForBackup(table: string, name: string) {
   return querySnowflake(
-    `SELECT config_json FROM ${table} WHERE config_name = '${name.replace(/'/g, "''")}' LIMIT 1`,
+    `SELECT config_json FROM ${table} WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}' LIMIT 1`,
     { warehouse: WAREHOUSE },
   )
 }
@@ -94,7 +94,7 @@ export async function getConfigJsonForBackup(table: string, name: string) {
 export async function insertConfigHistory(historyTable: string, name: string, existingJson: string): Promise<void> {
   await querySnowflake(
     `INSERT INTO ${historyTable} (config_name, config_json)
-     VALUES ('${name.replace(/'/g, "''")}', PARSE_JSON('${existingJson}'))`,
+     VALUES ('${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}', PARSE_JSON('${existingJson}'))`,
     { warehouse: WAREHOUSE },
   )
 }
@@ -102,7 +102,7 @@ export async function insertConfigHistory(historyTable: string, name: string, ex
 /** Reads just the JSON of a named config, to snapshot into history before a DELETE removes it. */
 export async function getConfigJsonBeforeDelete(table: string, name: string) {
   return querySnowflake(
-    `SELECT config_json FROM ${table} WHERE config_name = '${name.replace(/'/g, "''")}'  LIMIT 1`,
+    `SELECT config_json FROM ${table} WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  LIMIT 1`,
     { warehouse: WAREHOUSE },
   )
 }
@@ -111,7 +111,7 @@ export async function getConfigJsonBeforeDelete(table: string, name: string) {
 export async function insertConfigHistoryOnDelete(historyTable: string, name: string, existingJson: string): Promise<void> {
   await querySnowflake(
     `INSERT INTO ${historyTable} (config_name, config_json)
-     VALUES ('${name.replace(/'/g, "''")}'  , PARSE_JSON('${existingJson}'))`,
+     VALUES ('${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  , PARSE_JSON('${existingJson}'))`,
     { warehouse: WAREHOUSE },
   )
 }
@@ -119,7 +119,7 @@ export async function insertConfigHistoryOnDelete(historyTable: string, name: st
 /** Removes a named config row — either dropping a saved profile, or resetting 'default' to a clean slate. */
 export async function deleteConfigRow(table: string, name: string): Promise<void> {
   await querySnowflake(
-    `DELETE FROM ${table} WHERE config_name = '${name.replace(/'/g, "''")}'  `,
+    `DELETE FROM ${table} WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  `,
     { warehouse: WAREHOUSE },
   )
 }
@@ -130,7 +130,7 @@ export async function deleteConfigRow(table: string, name: string): Promise<void
 export async function getNamedConfigJson(table: string, name: string) {
   return querySnowflake(
     `SELECT config_json FROM ${table}
-     WHERE config_name = '${name.replace(/'/g, "''")}'  LIMIT 1`,
+     WHERE config_name = '${name.replace(/\\/g, "\\\\").replace(/'/g, "''")}'  LIMIT 1`,
     { warehouse: WAREHOUSE },
   )
 }

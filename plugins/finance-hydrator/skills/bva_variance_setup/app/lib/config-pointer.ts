@@ -8,7 +8,7 @@ import fs from "fs"
 import path from "path"
 import os from "os"
 import { querySnowflake } from "./snowflake"
-import { WAREHOUSE } from "./bva"
+import { WAREHOUSE, validateTableParam } from "./bva"
 
 export const POINTER_FILENAME = "bva_app_pointer.json"
 const POINTER_STAGE  = `@~/${POINTER_FILENAME}`
@@ -33,7 +33,9 @@ export async function readConfigPointer(): Promise<ConfigPointer | null> {
       { warehouse: WAREHOUSE },
     )
     const v = rows[0]?.V as { configTable?: string } | undefined
-    return v?.configTable ? { configTable: v.configTable } : null
+    // The pointer's table name is interpolated into SQL downstream; ignore a
+    // pointer that isn't a plain DATABASE.SCHEMA.TABLE identifier.
+    return v?.configTable && validateTableParam(v.configTable) ? { configTable: v.configTable } : null
   } catch {
     // Stage file doesn't exist yet or is unreadable — first run
     return null

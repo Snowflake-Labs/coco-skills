@@ -27,8 +27,8 @@ export async function getProfileColumns(
   return querySnowflake(
     `select column_name, data_type, is_nullable, ordinal_position
      from "${db}".information_schema.columns
-     where table_schema = upper('${schema.replace(/'/g, "''")}')
-       and table_name   = upper('${tbl.replace(/'/g, "''")}')
+     where table_schema = upper('${schema.replace(/\\/g, "\\\\").replace(/'/g, "''")}')
+       and table_name   = upper('${tbl.replace(/\\/g, "\\\\").replace(/'/g, "''")}')
      order by ordinal_position`,
     { warehouse: WAREHOUSE },
   )

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseExtraFilters, extraFilterWhereClauses } from "@/lib/bva"
+import { parseExtraFilters, extraFilterWhereClauses, sqlStr } from "@/lib/bva"
 
 describe("parseExtraFilters", () => {
   it("returns an empty object for null input", () => {
@@ -46,5 +46,16 @@ describe("extraFilterWhereClauses", () => {
 
   it("returns an empty array for an empty map", () => {
     expect(extraFilterWhereClauses({})).toEqual([])
+  })
+})
+
+describe("sqlStr", () => {
+  it("doubles single quotes", () => {
+    expect(sqlStr("O'Brien")).toBe("'O''Brien'")
+  })
+
+  it("escapes backslashes so input cannot break out of the literal", () => {
+    expect(sqlStr("a\\")).toBe("'a\\\\'")
+    expect(sqlStr("\\' OR 1=1 --")).toBe("'\\\\'' OR 1=1 --'")
   })
 })

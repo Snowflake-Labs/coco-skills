@@ -45,7 +45,7 @@ import {
 } from "@/lib/demo-seed-data"
 
 function q(s: string): string {
-  return "'" + s.replace(/'/g, "''") + "'"
+  return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
 
 /** Chunked multi-row INSERT — keeps individual statements a reasonable size. */
@@ -332,7 +332,7 @@ export async function ensureDemoDataSeeded(): Promise<void> {
       updatedAt: new Date().toISOString(),
     } as BvaConfig
 
-    const jsonLiteral = JSON.stringify(demoConfig).replace(/'/g, "''")
+    const jsonLiteral = JSON.stringify(demoConfig).replace(/\\/g, "\\\\").replace(/'/g, "''")
     // Demo config upsert — deliberately INSERT-ONLY, not a true upsert like
     // lib/queries/config-crud.ts's upsertConfigRow(). There is no WHEN
     // MATCHED branch, so if a "Demo" row already exists this MERGE is a
