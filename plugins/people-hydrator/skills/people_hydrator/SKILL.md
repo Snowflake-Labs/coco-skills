@@ -1,7 +1,8 @@
 ---
 name: people_hydrator
 description: "Sets up the dehydrated People skills on a customer's own HR data. The analyst describes their goals and picks skills; the engine searches every database their role can see for each data need of the chosen skills (headcount, exits, requisitions, surveys…) by what the tables hold, binds tables, fields, values and definitions using data profiles, a bounded sample of recent usage and consented business context (Confluence, SharePoint, Google Drive, Jira, Slack, Teams, email or uploaded docs), shows each skill's real output, asks only the business questions it can't settle, turns the analyst's own feedback into validated changes, checks each skill, runs its golden cases on the customer's data, saves the analyst's corrections and re-checks them later, and hydrates each skill. What it learns is saved as a versioned customer profile reused by every skill. Use when: people hydrator, hydrate people skills, set up people plugin, onboard HR data, people hydrator v3, add more people skills, configure attrition/headcount/CHRO/recruiting skills for my data."
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # People Hydrator

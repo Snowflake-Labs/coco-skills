@@ -16,7 +16,8 @@ data_domain: "cloud COGS analysis, gross margin trends, cloud infrastructure cos
 created_date: 2026-06-08
 version: 2.0.0
 binding_contract: hydration_hints.yaml
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Cloud COGS Analysis (Dehydrated)

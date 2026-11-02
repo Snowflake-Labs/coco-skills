@@ -12,7 +12,8 @@ data_domain: "forecast snapshot comparison, forecast version analysis, timing ch
 created_date: 2026-06-08
 version: 1.1.0
 binding_contract: hydration_hints.yaml
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Forecast vs Forecast (Dehydrated)

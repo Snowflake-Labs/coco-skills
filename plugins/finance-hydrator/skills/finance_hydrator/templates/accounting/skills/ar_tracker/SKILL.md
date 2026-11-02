@@ -10,7 +10,8 @@ dehydrated: true
 data_domain: "accounts receivable, AR aging, invoices, payments, collections, DSO, overdue accounts, disputes, payment plans, bad debt"
 created_date: 2026-05-28
 version: 0.1.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # AR Tracker

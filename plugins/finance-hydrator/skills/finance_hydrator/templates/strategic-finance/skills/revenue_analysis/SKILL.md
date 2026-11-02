@@ -13,7 +13,8 @@ dehydrated: true
 data_domain: "revenue performance narrative, product hierarchy analysis, customer concentration, lifecycle cohort trends, plan vs actual revenue"
 created_date: 2026-05-22
 version: 2.1.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Revenue Analysis (Dehydrated)

@@ -10,7 +10,8 @@ description: >
 data_domain: "reconciliation output validation, workbook audit, formula accuracy, balance tie-out, cross-sheet consistency, data integrity check"
 created_date: 2026-05-20
 version: 1.0.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Reconcile QA

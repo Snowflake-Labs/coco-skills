@@ -1,5 +1,13 @@
 # Finance Hydrator
 
+> [!WARNING]
+> **For internal use only. These skills process personally identifiable information (PII).**
+>
+> - Once set up on your data, these skills can work with employee and other personal data, for example invoice approvers and requesters, supplier contacts, and payroll and compensation costs. They are intended only for internal use by authorized Finance and Accounting staff within your organization.
+> - **These skills do NOT obfuscate, mask or anonymize PII.** Outputs can include named individuals and sensitive financial details.
+> - **Do NOT expose the results to the public internet**, publish them, or share them outside the people authorized to see that data.
+> - **It is the responsibility of whoever deploys these skills** to make sure their use complies with all applicable local laws and regulations on processing personal data (for example GDPR, CCPA/CPRA and local employment and data-protection laws), and with your organization's own privacy, access-control and data-retention policies.
+
 **For customer onboarding across the CFO org.**
 
 Finance Hydrator is a meta-plugin: it does not replace the Accounting, FinOps, or Strategic Finance plugins. It discovers which finance data a customer actually has, recommends the best-fit skills across those plugins, and generates a smaller customer-specific plugin containing only selected skills.

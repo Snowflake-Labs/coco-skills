@@ -11,7 +11,8 @@ description: >
   approval, comp parity, competing offer [candidate], offer sheet for [candidate].
   Do NOT use for: candidate-facing offer letters, bulk compensation analysis, or
   summarizing interview feedback alone (use interview_debrief).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Offer Builder (Dehydrated)

@@ -13,7 +13,8 @@ description: >
   weekly recruiting summary, hiring update for [leader name].
   Do NOT use for: live recruiting metrics (use good_morning_recruiting) or
   headcount trend analysis (use headcount_insights).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Hiring Brief (Weekly Hiring Update) (Dehydrated)

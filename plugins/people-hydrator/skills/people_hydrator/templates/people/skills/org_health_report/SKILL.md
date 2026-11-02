@@ -13,7 +13,8 @@ description: >
   Do NOT use for: company-wide headcount sizing (use headcount_insights),
   company-wide attrition trends (use attrition_insights), or evaluating a
   candidate (use interview_debrief).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Org Health Report (Dehydrated)

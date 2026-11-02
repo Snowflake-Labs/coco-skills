@@ -14,7 +14,8 @@ data_domain: "earnings preparation, financial summary packaging, guidance vs act
 mcp_optional: [web_search]
 created_date: 2026-06-08
 version: 1.2.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Earnings Prep (Dehydrated)

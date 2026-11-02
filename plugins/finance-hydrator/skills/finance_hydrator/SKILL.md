@@ -6,7 +6,8 @@ description: >
   forecast, COGS, or revenue skills for a customer. Assesses available data,
   recommends the best-fit finance skills, generates a plugin, validates
   bindings, and gives activation instructions.
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Finance Plugin Hydrator

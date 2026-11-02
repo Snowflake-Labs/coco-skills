@@ -1,5 +1,8 @@
 # People skills (dehydrated)
 
+> [!WARNING]
+> **For internal use only.** Once set up on your data, these skills process employee and candidate personally identifiable information (PII). **They do NOT obfuscate, mask or anonymize PII**, so their results must **NOT be exposed to the public internet** or shared beyond authorized internal users. Whoever deploys these skills is responsible for complying with local laws and regulations on processing personal data. See the [People Hydrator README](../README.md) for the full notice.
+
 Nine People Analytics and Talent Acquisition skills: `attrition_insights`, `headcount_insights`, `good_morning_chro`, `good_morning_recruiting`, `hiring_brief`, `org_health_report`, `interview_debrief`, `offer_builder` and `job_description_builder`. See the [People README](../README.md) for what each one does, who it's for and how they fit together.
 
 They are **dehydrated**: no tables, columns, definitions or thresholds are filled in. To run them on your data, set them up with **People Hydrator** (`plugins/people-hydrator/`), which connects each skill to your tables and the definitions you confirm. These are the same templates it uses.

@@ -11,7 +11,8 @@ description: >
 data_domain: "accounts payable invoices, supplier invoices, duplicate invoice detection, invoice matching, overpayment risk, AP controls, accounts payable fraud prevention"
 created_date: 2026-05-27
 version: 1.0.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Duplicate Invoice Check

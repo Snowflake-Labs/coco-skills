@@ -12,7 +12,8 @@ description: >
   Do NOT use for: headcount counts or trends (use headcount_insights), a
   leader's full org health or performance outcomes (use org_health_report), or
   recruiting pipeline metrics (use good_morning_recruiting).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Attrition Insights (Dehydrated)

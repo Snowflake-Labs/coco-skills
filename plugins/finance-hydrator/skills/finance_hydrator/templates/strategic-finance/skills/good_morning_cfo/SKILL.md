@@ -11,7 +11,8 @@ data_domain: "finance daily executive briefing, revenue forecast vs actuals, acc
 mcp_optional: [web_search]
 created_date: 2026-05-19
 version: 1.1.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Good Morning CFO (Dehydrated)

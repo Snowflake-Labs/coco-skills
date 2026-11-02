@@ -10,7 +10,8 @@ description: >
 data_domain: "general ledger journal lines, income statement activity, balance sheet period-end balances, fiscal calendar, variance analysis, flux commentary"
 created_date: 2026-05-20
 version: 1.0.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Flux Analysis

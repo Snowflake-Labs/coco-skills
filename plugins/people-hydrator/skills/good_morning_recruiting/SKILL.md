@@ -14,7 +14,8 @@ description: >
   Do NOT use for: a single candidate's debrief (use interview_debrief),
   workforce headcount (use headcount_insights), or a leader's weekly hiring PDF
   (use hiring_brief).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Good Morning Recruiting (Dehydrated)

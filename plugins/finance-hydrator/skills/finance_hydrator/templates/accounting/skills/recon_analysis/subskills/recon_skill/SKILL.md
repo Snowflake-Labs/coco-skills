@@ -10,7 +10,8 @@ description: >
 data_domain: "data reconciliation, accounts receivable matching, general ledger reconciliation, subledger comparison, intercompany elimination, bank reconciliation, transaction matching, discrepancy analysis"
 created_date: 2026-05-20
 version: 1.0.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Recon Analysis

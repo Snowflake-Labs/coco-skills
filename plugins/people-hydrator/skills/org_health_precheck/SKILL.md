@@ -12,7 +12,8 @@ description: >
   precheck, org health readiness check, are we ready for org health.
   Do NOT use for: running the org health report itself (use
   org_health_report), or setting skills up on your data (use People Hydrator).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Org Health Precheck

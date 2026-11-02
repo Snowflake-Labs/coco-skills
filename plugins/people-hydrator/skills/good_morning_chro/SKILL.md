@@ -9,7 +9,8 @@ description: >
   Do NOT use for: deep attrition, headcount or org health analysis (use
   attrition_insights, headcount_insights or org_health_report), individual
   employee lookups, or compensation analysis.
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Good Morning CHRO (Dehydrated)

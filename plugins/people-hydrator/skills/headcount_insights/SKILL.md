@@ -13,7 +13,8 @@ description: >
   Do NOT use for: attrition rates or regrettable exits (use attrition_insights),
   manager-level org health (use org_health_report), or a leader's weekly hiring
   report (use hiring_brief).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Headcount Insights (Dehydrated)

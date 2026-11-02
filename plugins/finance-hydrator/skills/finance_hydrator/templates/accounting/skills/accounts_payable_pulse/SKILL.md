@@ -13,9 +13,9 @@ description: >
 data_domain: "accounts payable invoices, supplier invoices, overdue invoices, invoice holds, match exceptions, approval workflow, large payments, purchase orders, AP operations, invoice matching, payment status, AP payments health"
 dehydrated: true
 created_date: 2026-05-28
-dehydrated_by: Sakshi Baheti
 version: 1.1.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Accounts Payable Pulse

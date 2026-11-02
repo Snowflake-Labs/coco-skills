@@ -13,7 +13,8 @@ created_date: 2026-07-26
 last_updated: 2026-08-13
 owner_name: Snowflake
 version: 1.0.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 ## Overview

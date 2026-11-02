@@ -12,7 +12,8 @@ description: >
   Do NOT use for: interview feedback (use interview_debrief), offer
   justification (use offer_builder), or recruiting metrics (use
   good_morning_recruiting).
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Job Description Builder (Dehydrated)

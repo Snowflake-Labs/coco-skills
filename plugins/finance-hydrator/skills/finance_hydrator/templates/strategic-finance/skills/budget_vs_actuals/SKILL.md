@@ -13,7 +13,8 @@ dehydrated: true
 data_domain: "budget vs actuals, plan variance, P&L line item comparison, monthly close, quarterly close, opex variance, materiality flagging"
 created_date: 2026-06-08
 version: 1.2.0
-license: Proprietary. See LICENSE.txt for complete terms
+license: Snowflake Skills License. See LICENSE.txt for complete terms
+type: snowflake
 ---
 
 # Budget vs Actuals (Dehydrated)

@@ -1,5 +1,14 @@
 # People Hydrator (`people-hydrator`)
 
+> [!WARNING]
+> **For internal use only. These skills process personally identifiable information (PII).**
+>
+> - Once set up on your data, these skills work with employee and candidate PII, such as names, compensation, performance, interview feedback, time off and exits. They are intended only for internal use by authorized HR, People Analytics and Talent Acquisition staff within your organization.
+> - **These skills do NOT obfuscate, mask or anonymize PII.** Outputs can include named individuals and their sensitive data.
+> - **Do NOT expose the results to the public internet**, publish them, or share them outside the people authorized to see that data.
+> - **It is the responsibility of whoever deploys these skills** to make sure their use complies with all applicable local laws and regulations on processing personal data (for example GDPR, CCPA/CPRA and local employment and data-protection laws), and with your organization's own privacy, access-control and data-retention policies.
+> - The privacy safeguards described below apply to the **setup process only**. They do not limit what the hydrated skills return when they run.
+
 People Hydrator sets up the dehydrated People skills on **your own** HR data in Snowflake. You describe what you want to achieve. It recommends skills, finds the right tables across the databases you can see, shows you each skill's real output, asks only the few business questions it can't settle, turns your own feedback into checked changes, verifies each skill, and hydrates it so it runs on your data. What it learns is saved as your **customer profile**, so adding a skill later only processes what's new.
 
 ## Who it's for
@@ -60,6 +69,7 @@ skills/people_hydrator/
 `python3 -m pytest skills/people_hydrator/engine/tests` (synthetic data only; no account access).
 
 ## Privacy and safety
+These safeguards cover the setup process. Hydrated skills do not obfuscate PII; see the notice at the top of this README.
 - **Search and profiling** read metadata, aggregate counts and low-cardinality code values only. They never read names, emails, IDs or free text. Breakdowns with fewer than 5 people are hidden.
 - **Recent usage** comes from object lists for candidate tables (last 7 days, 30 if sparse); if query text has to be used, it's reduced to structure such as tables, joins and filters. Query text is never stored.
 - **Business context** needs your consent per source and scope. Direct messages, private channels and whole inboxes are refused. Context is redacted when extracted and again when stored, and it never overrides your own answers.
