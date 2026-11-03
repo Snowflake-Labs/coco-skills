@@ -1,0 +1,35 @@
+skill_name: validation-log
+skill_type: customer-facing
+promotion_stage: draft
+version: 1.0.0
+authors:
+- sfc-gh-east
+validation:
+  testers:
+    count: 1
+    names:
+    - sfc-gh-east
+customer_impact:
+  customers:
+    count: 0
+    names: []
+evidence_links: []
+notes: 'Sub-skill of messy-migration-validation. See parent skill for full context.
+
+
+  Dry run 2026-10-30 (sfc-gh-east, demo account): UC5 produced a conditional-pass
+  sign-off summary from 4 logged tests.
+
+  '
+overlap_check:
+  max_score: 0.9871
+  highest_match: testing-record
+  highest_match_source: local
+  method: local-embedding
+  checked_against_count: 178
+  checked_at: '2026-10-30T22:38:21Z'
+  highest_match_description: 'Testing record management — view, annotate, and generate
+    validation reports from the test log. Supports both local markdown and Snowflake
+    table persistence. Triggers: testing record, test log, sign-of'
+  trigger_overlap: 1.0
+  tool_overlap: 1.0

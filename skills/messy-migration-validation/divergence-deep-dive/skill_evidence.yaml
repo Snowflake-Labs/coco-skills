@@ -1,0 +1,37 @@
+skill_name: divergence-deep-dive
+skill_type: customer-facing
+promotion_stage: draft
+version: 1.0.0
+authors:
+- sfc-gh-east
+validation:
+  testers:
+    count: 1
+    names:
+    - sfc-gh-east
+customer_impact:
+  customers:
+    count: 0
+    names: []
+evidence_links: []
+notes: 'Sub-skill of messy-migration-validation. See parent skill for full context.
+
+
+  Dry run 2026-10-30 (sfc-gh-east, demo account): UC4 traced 300 mart-only rows to
+  synthetic records with no legacy source (orphan-row pattern).
+
+  '
+overlap_check:
+  max_score: 0.6465
+  highest_match: messy-migration-validation
+  highest_match_source: local
+  method: local-embedding
+  checked_against_count: 179
+  checked_at: '2026-10-30T22:38:21Z'
+  highest_match_description: 'Validate data marts rebuilt during a messy (not lift-and-shift)
+    migration against a baseline modeled from the legacy system: profile, build a
+    baseline, diff, root-cause divergences, and sign off. Use '
+  highest_match_submitter: sfc-gh-east
+  highest_match_testers:
+  - sfc-gh-east
+  tool_overlap: 0.5
