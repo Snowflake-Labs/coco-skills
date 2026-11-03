@@ -17,7 +17,7 @@ Before you submit the host plan, or write the fallback file, check the plan agai
 
 Preflight must have passed before the plan and before an import. Below 1.4, stop and say to upgrade first. `snow helpers check-snowsql-env-vars` is the read-only environment check.
 
-After the in-place rewrite, `rewrite.diff` is the only record of the old bytes. A Manual review file marked `Leave unchanged` must be unchanged. It is not deleted. Compare each original `-o output_file` and `!spool` path with the rewritten script. The path string must match. Search the rewritten scripts for `snow sql` and `-o` on the same command. There must be no match. The CLI rejects `-o` and exits 2.
+After the in-place rewrite, the host todo list has one pending todo per Manual review row, and the closing note's `Still to review` count matches. `rewrite.diff` is the only record of the old bytes. A Manual review file marked `Leave unchanged` must be unchanged. It is not deleted. Compare each original `-o output_file` and `!spool` path with the rewritten script. The path string must match. Search the rewritten scripts for `snow sql` and `-o` on the same command. There must be no match. The CLI rejects `-o` and exits 2.
 
 ## Optional live SQL
 
