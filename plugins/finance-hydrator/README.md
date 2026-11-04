@@ -37,6 +37,8 @@ Discovery is broad, shallow, and cheap; the expensive confirmation work happens 
 
 ## Quick start
 
+https://github.com/user-attachments/assets/3459eea9-5902-4649-a3da-ebb7809c68b9
+
 ```text
 set up finance plugin
 ```
