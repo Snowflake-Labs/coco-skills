@@ -2,13 +2,13 @@
 name: offer_builder
 description: >
   Gather and structure compensation justification data for offer approval. Pulls
-  candidate profile, interview scorecard signals, team comparison with comp
-  parity, and parses competing offer and current comp from ATS recruiter notes.
-  Produces a Google Sheet combining candidate quality signals, competitive comp
-  data, and team parity. Use when: offer approval, comp justification, competing
-  offer, comp details, indexing on cash or equity, leaving commission behind,
-  unvested equity. Triggers: offer justification, comp justification, offer
-  approval, comp parity, competing offer [candidate], offer sheet for [candidate].
+  candidate profile, interview scorecard signals, aggregate team comp parity, and
+  any competing offer the candidate voluntarily disclosed in ATS recruiter notes.
+  Never uses a candidate's current or prior pay. Produces an in-chat justification
+  summary for internal approval. Use when: offer approval, comp justification,
+  competing offer, comp parity. Triggers: offer justification, comp justification,
+  offer approval, comp parity, competing offer [candidate], offer summary for
+  [candidate].
   Do NOT use for: candidate-facing offer letters, bulk compensation analysis, or
   summarizing interview feedback alone (use interview_debrief).
 license: Snowflake Skills License. See LICENSE.txt for complete terms
@@ -21,17 +21,17 @@ status: Published
 
 ## About this skill
 
-- **What it does:** Builds the compensation justification for an offer approval: candidate quality from interview scorecards, competing offer and current pay from recruiter notes, and how the offer compares with the team.
+- **What it does:** Builds the compensation justification for an offer approval: candidate quality from interview scorecards, any competing offer the candidate chose to share, and how the proposed offer sits against the team's pay range (as aggregates, never individuals).
 - **Who it's for:** Recruiters and Total Rewards / compensation partners preparing offer approvals.
 - **Works with:** Comes after `interview_debrief` in the hiring flow; it reuses the same scorecards.
 - **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
-- **How to use it:** Say "offer justification for [candidate]" and give the candidate name and requisition. Confirm the pay details it reads from recruiter notes before it builds the sheet.
+- **How to use it:** Say "offer justification for [candidate]" and give the candidate name and requisition. Confirm any competing-offer details it reads from recruiter notes before it builds the summary.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
-- **Good to know:** The output is a Google Sheet if Google Sheets is connected to your Cortex Code setup; otherwise you get the same content as a table in chat. It is for internal approval only, never for candidates. The skill reads your data and never changes it.
+- **Good to know:** It never uses the candidate's current or past pay: many US states and cities ban using pay history to set an offer. Team pay is shown only as ranges for groups large enough that no one's pay can be worked out, with no names. The output stays in chat; it is not exported to spreadsheets or other tools. It is for internal approval only, never for candidates. The skill reads your data and never changes it.
 
 ## Intent
 
-Produce a compensation justification output (structured sheet or inline summary) for offer approval decisions. Combines candidate quality signals from interview scorecards, competitive compensation context parsed from recruiter notes, and team comp parity data. Designed for recruiters and HR Business Partners preparing offer approvals — not for candidate-facing outputs and not for bulk compensation analysis.
+Produce an in-chat compensation justification summary for offer approval decisions. Combines candidate quality signals from interview scorecards, competing-offer context the candidate voluntarily disclosed, and aggregate team comp parity. Designed for recruiters and HR Business Partners preparing offer approvals — not for candidate-facing outputs and not for bulk compensation analysis.
 
 Designed for **recruiters who are not technical**. Output must read like a business brief, not a database export — never expose table names, column names, SQL, or internal identifiers.
 
@@ -45,10 +45,10 @@ STEP 2  → [Q1] Candidate profile lookup
 STEP 3  → [Q2] Scorecard recommendations
           [Q3] Scorecard rubric / recruiter notes
 STEP 4  → [Q4] Hiring manager lookup
-          [Q5] Team members + hire-time comp
-STEP 5  → Build team comparison table + narrative              (inline output)
-STEP 6  → Parse comp from recruiter notes                      [STOP — confirm parsed data]
-STEP 7  → Build + open Google Sheet                           [STOP — confirm sheet URL]
+          [Q5] Aggregate team comp
+STEP 5  → Build team parity summary + narrative                (inline output)
+STEP 6  → Extract competing offer from recruiter notes         [STOP — confirm extracted data]
+STEP 7  → Render justification summary in chat
 ```
 
 ### Step 1: Collect Inputs
@@ -84,7 +84,7 @@ Signal quality gate (surface inline warnings — do not stop):
 Summarize and carry forward:
 - Recommendation distribution: count of Strong Yes / Yes / No / Strong No (or customer's equivalent scale)
 - Top 2–3 standout signals (strengths or concerns cited by 2+ interviewers)
-- Capture all **Basic Feedback Form** (recruiter process interview notes) rows verbatim — used for comp parsing in Step 6
+- Capture **Basic Feedback Form** (recruiter process interview notes) rows — used only for competing-offer extraction in Step 6. Do not carry forward or repeat any current or prior pay that appears in them.
 
 ### Step 4: Hiring Manager + Team
 
@@ -94,63 +94,64 @@ Capture: hiring manager ID and name.
 
 **Fallback:** If no hiring manager ID is found, run a title-keyword + region search and use an interactive selector to confirm the correct manager before proceeding.
 
-**4b — Team Comp:** Run the team members + hire-time comp query for the hiring manager.
+**4b — Team Comp:** Run the aggregate team comp query for the hiring manager.
 
 Notes:
-- Currencies vary by country — preserve the currency per row.
-- Null comp = employee predates offer records; display as "—" in the sheet.
+- Currencies vary by country — aggregate within one currency at a time; never combine currencies.
+- Employees who predate offer records are excluded from comp aggregates and counted as "comp not on file".
 - Always apply the required effective date filter (the team comp query must filter to the latest employee snapshot).
+- **Minimum group size:** only report a comp aggregate for a group of at least 5 employees with comp on file (or the customer's configured threshold, if higher). Smaller groups show "— (group too small to report)".
 
-### Step 5: Team Comparison Table + Narrative
+### Step 5: Team Parity Summary + Narrative
 
-Build inline in chat. Candidate row first, then team members ordered by hire date ascending.
+Build inline in chat. No team member names, and no individual pay values.
 
-**Table columns:**
-| Name | Type | YOE | Prior Company | Sales Background | Hire OTE | Currency | OTE Compa-Ratio | Equity Compa-Ratio | Notable Signals |
-|------|------|-----|--------------|-----------------|----------|----------|----------------|-------------------|----------------|
+**Team profile table (counts only):**
+| Metric | Team | Candidate |
+|--------|------|-----------|
+| Headcount (comp on file / total) | | — |
+| YOE (median, range) | | |
+| Sales background mix | | |
+
+**Comp parity table (per currency):**
+| Currency | n | Hire Base (P25 / Median / P75) | Hire OTE (P25 / Median / P75) | Proposed Offer Position |
+|----------|---|--------------------------------|-------------------------------|-------------------------|
+
+Proposed Offer Position = where the proposed offer (supplied by the user) falls in the team distribution: below P25, P25–median, median–P75, or above P75. Compa-ratio percentiles may be added in the same way if the customer's offer data includes them.
 
 **Field derivation:**
 - **YOE:** Use from ATS candidate profile. If null, infer from rubric answers or career history.
 - **Sales Background:** Infer from prior company name + prior position (e.g., "Enterprise SaaS", "Channel / Partner", "Mid-Market").
-- **Type:** "External" for the candidate; "Internal" for team members.
 
 **Narrative (3–5 sentences):**
-1. Where the candidate ranks on YOE vs team.
-2. Whether sales background is differentiated or overlaps with team.
-3. Interview signal strength vs hiring bar.
-4. Comp parity: how proposed OTE and compa-ratio compare to team range.
-5. One-line overall recommendation on fit.
+1. Where the candidate's YOE sits within the team's range.
+2. Whether sales background is differentiated or overlaps with the team mix.
+3. Interview signal strength, described from the recorded scorecards.
+4. Comp parity: where the proposed offer sits within the team's pay range.
+5. Points the approver should weigh. Do not state a decision; approval belongs to the approver.
 
-### Step 6: Parse Comp from Recruiter Notes
+### Step 6: Extract Competing Offer from Recruiter Notes
 
-Parse **Basic Feedback Form** rows (recruiter process interview notes) captured in Step 3b. Surface only what was **voluntarily disclosed** by the candidate — never solicit salary.
+Read the **Basic Feedback Form** rows (recruiter process interview notes) captured in Step 3b. Surface only a competing offer the candidate **voluntarily disclosed** — never solicit it.
 
 Extract if present:
-- Current / last base salary (and currency)
-- Current / last OTE or total comp
-- Competing offer: company, base, variable, equity
-- What the candidate is leaving behind: unvested equity, unpaid commission, sign-on clawback, unpaid bonus
+- Competing offer: company, base, variable, equity, and whether the candidate described it as a written offer
 
-If nothing is disclosed → write: `"Current comp not disclosed in scorecard."`
+**Never extract, display or use pay history.** This includes current or last base salary, current or last OTE / total comp, bonus or commission history, and what the candidate would leave behind (unvested equity, unpaid commission or bonus, sign-on clawback). If the notes contain any of these, ignore them and add one line: "Recruiter notes contain pay-history details, which this skill does not use." If the user supplies pay history directly, decline to use it and explain why in one sentence.
 
-Present parsed data inline and ask: "Does this look accurate? Anything to add or correct before I build the sheet?"
+If no competing offer is disclosed → write: `"No competing offer disclosed."`
+
+Present the extracted data inline and ask: "Does this look accurate? Anything to add or correct before I build the summary?"
 
 **STOP** — Wait for user confirmation or corrections.
 
-### Step 7: Build Google Sheet
+### Step 7: Render Justification Summary
 
-**Sheet title:** `Comp Justification — [Candidate Name] | [Role] | [Requisition ID]`
-**Tab name:** `Comp Justification`
+Render the summary in chat as markdown. Do not export it to Google Sheets or any other external document, spreadsheet or tool, even if a connector is available. If the user asks for an export, explain that the summary stays in chat for privacy and that they can copy it into an approved internal system.
 
-Build the sheet in this order (no skipping):
-1. Create the spreadsheet with the title above.
-2. Write all data blocks in a single batch values update.
-3. Apply all formatting in a single batch formatting update.
-4. Open the sheet in the browser and confirm the URL to the user.
+**Title:** `Comp Justification — [Candidate Name] | [Role] | [Requisition ID]`
 
-**STOP** — Confirm the sheet URL and that the browser opened successfully.
-
-### Sheet Layout (5 Blocks)
+### Summary Layout (5 Blocks)
 
 **Block 1 — Header:** Candidate name, role, req ID, date generated, recruiter name.
 
@@ -158,20 +159,22 @@ Build the sheet in this order (no skipping):
 
 **Block 3 — Interview Signal Summary:** Recommendation distribution (count by level), top strengths, top concerns, signal quality note (if applicable).
 
-**Block 4 — Team Comparison Table:** Same structure as Step 5 inline table — candidate row highlighted, team sorted by hire date. Include narrative below the table.
+**Block 4 — Team Parity:** The Step 5 team profile and comp parity tables, plus the narrative.
 
-**Block 5 — Competitive Comp Context:** Parsed comp data from Step 6. If nothing disclosed, show "Current comp not disclosed in scorecard." as a single row.
+**Block 5 — Competing Offer Context:** Extracted data from Step 6. If nothing disclosed, show "No competing offer disclosed." as a single row.
 
 ### Confidence Handling
 
-- **HIGH confidence:** Candidate profile, scorecards, and team comp all resolve. Produce full sheet.
-- **MEDIUM confidence:** Core candidate/scorecard data resolves but team comp is partially null (some employees predate offer records). Run with null rows shown as "—".
-- **LOW confidence on non-critical bindings** (competitive comp parsing, equity data): Include parsed data with a note flagging the source.
-- **LOW confidence on critical bindings** (candidate profile not found, no scorecards): Surface the specific gap and stop. Do not build a sheet with fabricated data.
+- **HIGH confidence:** Candidate profile, scorecards, and team comp all resolve. Produce the full summary.
+- **MEDIUM confidence:** Core candidate/scorecard data resolves but team comp is partially missing (some employees predate offer records). Aggregate over those on file and state the count.
+- **LOW confidence on non-critical bindings** (competing offer extraction, equity data): Include extracted data with a note flagging the source.
+- **LOW confidence on critical bindings** (candidate profile not found, no scorecards): Surface the specific gap and stop. Do not build a summary with fabricated data.
 
 ### Constraints
 
-- **Never solicit salary** — only record what appears in scorecards or what the user supplies.
+- **Never solicit or use pay history** — not from notes, not from the user, not inferred. Only a voluntarily disclosed competing offer may be recorded.
+- **No individual employee pay.** Never show a named or identifiable team member's salary, OTE, equity or compa-ratio; report aggregates only, subject to the minimum group size.
+- **No export.** Output stays in chat; never write to Google Sheets or any external file, spreadsheet or tool.
 - **Omit:** compensation ranges, salary expectations, age references, immigration sponsorship status.
 - **Data scope:** Only query ATS recruiting data — do not query any other data domain not described in the Context Queries below.
 - Always apply the latest effective date filter when querying current employee data.
@@ -181,7 +184,7 @@ Build the sheet in this order (no skipping):
 
 - Never fabricate scorecard data, comp values, or prior company information.
 - If the ATS migration cutoff date is configured, surface a warning for scorecards predating it.
-- Competing offer data is highly sensitive — never display it in the sheet title, tab name, or any visible header. Keep it in the Competitive Comp Context block.
+- Competing offer data is highly sensitive — never display it in the summary title or any visible header. Keep it in the Competing Offer Context block.
 
 ### Error Handling
 
@@ -192,8 +195,8 @@ Build the sheet in this order (no skipping):
 | Multiple name matches | Present table of matches with job title + status; ask user to select. |
 | Hiring manager not found on req | Run title-keyword fallback. Present candidates for user to confirm. |
 | Authorization / permissions error | "I wasn't able to pull data right now — this is usually a quick permissions fix. Reach out to your People Analytics team." Never expose schema, table, or error text. |
-| Query timeout | "This is taking longer than expected — the system might be busy. Want me to try again?" |
-| Google Sheets creation fails | Offer to provide the output as an inline table in chat instead. |
+| User asks to export to Google Sheets or another tool | "This summary stays in chat to protect candidate and employee pay data. You can copy it into your approved internal system." |
+| User asks for pay history or an individual team member's pay | Decline in one sentence (pay history isn't used to set offers; individual pay isn't shown) and continue with the aggregate summary. |
 
 ## Quality
 
@@ -211,6 +214,6 @@ This skill is tested against `evals/offer_builder/golden_cases.md` and `evals/of
 
 - A current employee snapshot table at one row per employee per snapshot date (filter to latest), with employee ID, full name, management level, direct manager ID, hire date, cost center, and employee type — used to identify team members reporting to the hiring manager.
 
-- An offer / hire compensation table at one row per offer per application, with application ID, employee ID, offer status, base salary, currency, target bonus %, OTE/TTC, equity grant value, equity compa-ratio, OTE compa-ratio, hire date — used for Step 4b team comp. Employees without offer records show null comp.
+- An offer / hire compensation table at one row per offer per application, with application ID, employee ID, offer status, base salary, currency, OTE/TTC, optional compa-ratios, hire date — used only to compute Step 4b aggregate team comp percentiles; individual rows are never displayed. Employees without offer records are excluded from aggregates.
 
 - An interviewer / user directory table at one row per interviewer, mapping interviewer user ID to full name and email — used to display human-readable interviewer names in scorecard output.

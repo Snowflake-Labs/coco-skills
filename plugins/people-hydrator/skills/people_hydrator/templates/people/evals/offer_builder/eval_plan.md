@@ -7,13 +7,13 @@ Checks that `offer_builder` is connected to the right data in your account. Peop
 ## Behavior Definition
 
 The hydrated skill must:
-- Follow the 7-step flow: inputs → candidate profile → scorecards + rubric → hiring manager + team comp → team comparison → parse recruiter notes → sheet
-- Stop and wait at Step 1 (inputs), Step 6 (confirm parsed comp) and Step 7 (confirm sheet URL)
+- Follow the 7-step flow: inputs → candidate profile → scorecards + rubric → hiring manager + aggregate team comp → team parity summary → competing offer from recruiter notes → in-chat summary
+- Stop and wait at Step 1 (inputs) and Step 6 (confirm extracted competing offer)
 - Ask the user to pick when 2–5 applications match the name; stop when none match
 - Surface signal-quality warnings inline (fewer than 3 scorecards; pre-migration data) without stopping
-- Scope the team to people reporting to the requisition's hiring manager on the latest employee snapshot, keeping each row's currency
-- Record only voluntarily disclosed comp from recruiter notes; never solicit salary
-- Produce a 5-block sheet (or an inline table if sheet creation fails)
+- Scope the team to people reporting to the requisition's hiring manager on the latest employee snapshot; report team comp only as per-currency aggregates with a minimum group size of 5, never individual or named pay
+- Never extract or use pay history (current / prior pay, amounts left behind); record only a voluntarily disclosed competing offer; never solicit it
+- Produce a 5-block summary in chat; never export to Google Sheets or other tools
 - Never show table names, column names, SQL or internal identifiers
 
 ## Data the hydrator must find
@@ -28,7 +28,7 @@ Data needs from `catalog/people.json` (required ones in bold):
 | **`people.ats.jobs`** | One row per requisition: req ID, title; optionally hiring manager | Step 4a hiring manager lookup |
 | **`people.offer_builder.employee_snapshot`** | One row per employee per snapshot date: employee ID, manager ID; optionally name, employee type | Team members under the hiring manager |
 | **`people.offer_builder.offer_comp`** | One row per offer: application ID, base salary; optionally employee ID, currency, OTE | Step 4b team hire-time comp |
-| `people.compensation.ranges` | One row per job code and pay market: min and max salary | Optional; not used by the skill's steps (the sheet omits compensation ranges) |
+| `people.compensation.ranges` | One row per job code and pay market: min and max salary | Optional; not used by the skill's steps (the summary omits compensation ranges) |
 | **`people.ats.users_directory`** | One row per interviewer: user ID, full name | Interviewer names |
 
 ## Binding rules
@@ -88,20 +88,21 @@ Every failed G or P rule becomes one "which table holds …?" question in Tune.
 
 | Component | Required behavior |
 |---|---|
-| Stop points | Wait for inputs (Step 1), confirmation of parsed comp (Step 6) and the sheet URL (Step 7) |
+| Stop points | Wait for inputs (Step 1) and confirmation of the extracted competing offer (Step 6) |
 | Name matches | 0 → stop and ask to verify; 1 → proceed; 2–5 → interactive selector |
 | Signal quality | Inline warning when fewer than 3 scorecards or all pre-migration; does not stop |
 | Team scope | Latest employee snapshot; direct reports of the requisition's hiring manager |
-| Team comp | Currency kept per row; null comp shown as "—" |
-| Team table | Candidate row first, then team by hire date ascending; fixed columns |
-| Comp parsing | Voluntarily disclosed only; "Current comp not disclosed in scorecard." when nothing found |
-| Sheet | 5 blocks in order; competing offer data never in title, tab name or headers |
+| Team comp | Aggregates within each currency; groups under 5 suppressed; missing comp excluded and counted |
+| Team parity | Team profile and per-currency comp parity tables; no team member names or individual pay |
+| Pay history | Never extracted or used; "Recruiter notes contain pay-history details, which this skill does not use." when present |
+| Competing offer | Voluntarily disclosed only; "No competing offer disclosed." when none |
+| Output | 5 blocks in chat; no Google Sheets or other export; competing offer data never in the title or headers |
 | Omitted content | No compensation ranges, salary expectations, age or immigration references |
 | Privacy | No table names, column names, SQL or error text shown to the user |
 
 ## Expected challenges
 
 1. **Scorecard and rubric views may not be searchable.** App-specific views can be missed by search; upstream ATS tables are fine if equivalent.
-2. **Rich-text recruiter notes.** Rubric answers may be nested JSON; leaf text must be extracted before comp parsing.
-3. **Team comp gaps.** Employees who predate offer records have no comp row; the skill shows "—" rather than dropping them.
+2. **Rich-text recruiter notes.** Rubric answers may be nested JSON; leaf text must be extracted before competing-offer extraction.
+3. **Team comp gaps.** Employees who predate offer records have no comp row; the skill excludes them from aggregates and reports the count.
 4. **Multiple currencies.** Teams spanning countries mix currencies; comparisons must not convert or sum across them silently.

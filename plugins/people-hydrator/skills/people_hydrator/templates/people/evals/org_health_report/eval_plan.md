@@ -14,6 +14,7 @@ The hydrated skill must:
 - Cover six analysis areas: Retention & Attrition, Performance & LP Outcomes, Team Structure & Span, PTO & Well-Being, AI Adoption, Recruiting
 - Run identity resolution in Phase 1 and all metric blocks in parallel in one Phase 2 message
 - Compare to the peer org (from a pre-built benchmark) and to the prior year, skipping peer comparison only for top-level leaders
+- Report PTO, AI adoption and performance outcomes as aggregates only: never list or name individuals (non-adopters, low-PTO employees, LPs), and suppress any metric over fewer than 5 employees
 
 ## Data the hydrator must find
 
@@ -24,7 +25,7 @@ Data needs from `catalog/people.json` (required ones in bold):
 | **`people.org_health.employee_snapshot`** | One row per employee per snapshot date: employee ID, manager ID; optionally full name, management level, employment status, direct reports, cost center | Identity, scope, team structure, span |
 | **`people.exits.event_records`** | One row per exit: employee ID, termination date; optionally termination category, regrettable flag | Attrition, HP retention, LP exit rate |
 | **`people.org_health.performance_ratings`** | One row per employee per review cycle: employee ID, cycle ID, performance rating | HP / LP cohorts, cycle discovery |
-| **`people.org_health.pto_usage`** | One row per employee per period: employee ID, PTO days taken, period; optionally PTO allotment | PTO utilization, burnout risk |
+| **`people.org_health.pto_usage`** | One row per employee per period: employee ID, PTO days taken, period; optionally PTO allotment | PTO utilization, low-PTO share (aggregate) |
 | **`people.org_health.ai_usage`** | One row per user per tool per day: employee ID, tool name, date; optionally active flag | AI adoption, daily active % |
 | **`people.ta.requisitions`** | One row per requisition: req ID, status; optionally open date | Recruiting section |
 | **`people.hires.event_records`** | One row per hire: employee ID, hire date | New hire attrition, pending starts |
@@ -101,6 +102,7 @@ Every failed G or P rule becomes one "which table holds …?" question in Tune.
 | Peer comparison | Skipped only for top-level leaders; never "—" for a non-top-level leader |
 | Parallelism | All Phase 2 blocks in one message |
 | No internals | No table, column or schema names in any section |
+| Individual privacy | PTO, AI usage and ratings aggregated only; no individual lists; groups under 5 shown as "— (group too small to report)" |
 
 ## Expected challenges
 

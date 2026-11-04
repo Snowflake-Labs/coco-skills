@@ -2,11 +2,12 @@
 name: interview_debrief
 description: >
   Synthesize all interview scorecards for a candidate into a structured debrief with
-  panel-alignment, interviewer-calibration, and signal-gap analysis. Also supports
-  cross-candidate comparison and competency stack-ranking for an open requisition.
+  panel-alignment, interviewer-calibration, and signal-gap analysis to prepare a
+  hiring-team discussion. Also supports an unranked side-by-side evidence view of
+  candidates for an open requisition. Decision support only: it never makes or
+  recommends a hire / no-hire decision and never ranks candidates.
   Triggers: debrief for [candidate], debrief application [id], compare candidates for
-  [req], stack rank candidates, who's the strongest [competency], calibration-weighted
-  ranking, candidate debrief.
+  [req], side-by-side for [req], candidate debrief.
   Do NOT use for: offer or compensation justification (use offer_builder),
   recruiting pipeline reporting (use good_morning_recruiting), or writing job
   descriptions (use job_description_builder).
@@ -20,21 +21,30 @@ status: Published
 
 ## About this skill
 
-- **What it does:** Pulls every interview scorecard for a candidate into one debrief: overall recommendation, panel alignment, interviewer calibration (who tends to score high or low), and gaps against the role. Also compares or ranks candidates for one requisition.
+- **What it does:** Pulls every interview scorecard for a candidate into one debrief: what the panel said, panel alignment, interviewer calibration (who tends to score high or low), gaps against the role, and open questions for the hiring team. Also shows candidates for one requisition side by side, unranked.
 - **Who it's for:** Recruiters and hiring managers, written for non-technical readers.
 - **Works with:** Part of the hiring flow: `job_description_builder` (write the role) → interviews → `interview_debrief` → `offer_builder` (justify the offer).
 - **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "debrief for [candidate]" or give an application ID; "compare candidates for [requisition]" for a side-by-side.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
-- **Good to know:** It only uses submitted scorecards; missing feedback is called out, not guessed. The skill reads your data and never changes it.
+- **Good to know:** It only uses submitted scorecards; missing feedback is called out, not guessed. It prepares the discussion; it does not decide. The hiring team makes every hiring decision, and the skill never gives a hire / no-hire call, a fit verdict or a candidate ranking. The skill reads your data and never changes it.
 
 ## Intent
 
-Synthesize all interview scorecards for a single candidate into a structured, executive-ready debrief that recruiters and hiring managers can act on. Cross-references the role spec to surface signal gaps, weights feedback by interviewer calibration (hawk/dove patterns), and reports panel alignment so hiring decisions are grounded in evidence rather than the loudest voice.
+Synthesize all interview scorecards for a single candidate into a structured debrief that prepares recruiters and hiring managers for their own discussion. Cross-references the role spec to surface signal gaps, gives interviewer calibration context (hawk/dove patterns), and reports panel alignment so the hiring team's discussion is grounded in evidence rather than the loudest voice. The hiring team, not this skill, makes the decision.
 
 Designed for **HRBPs and recruiters who are not technical**. Output must read like a hiring brief, not a database dump — never expose table names, column names, SQL, or row counts to the user.
 
-This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk pipeline reporting, recruiter scorecard automation, comp-band analysis, or workforce-level talent analytics.
+This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk pipeline reporting, recruiter scorecard automation, comp-band analysis, workforce-level talent analytics, screening candidates in or out, or ranking candidates.
+
+### Human Decision Safeguards (MANDATORY)
+
+1. **No decisions or verdicts.** Never output HIRE / NO HIRE / CONDITIONAL, "advance" / "reject", a fit verdict, a score that stands in for a decision, or wording such as "I recommend hiring". If asked "should we hire them?", say the decision belongs to the hiring team and offer the evidence summary and open questions instead.
+2. **No ranking.** Never order candidates by strength, produce a rank, a composite or weighted score, a "top candidate" or "strongest [competency]" answer. Comparisons are side by side, in a neutral order (alphabetical by candidate name), with each candidate's evidence shown as recorded.
+3. **Job-related evidence only.** Summarize only evidence tied to the role's documented competencies and requirements. Never use or relay "culture fit", personality, "vibe", likeability or similar non-job-related impressions as a strength or concern. If an interviewer's note relies on them, or on age, gender, race, ethnicity, national origin, religion, disability, pregnancy, family status, accent or any other protected characteristic, do not repeat the remark; note that "some feedback references non-job-related factors and should be reviewed with the recruiter."
+4. **Every output carries the decision-support note** shown at the end of the debrief template.
+5. **No automated actions.** Never change an application's stage or status, and never draft a rejection or advancement on the skill's own judgment.
+6. **Customer obligations.** Where local law treats tools that assist hiring decisions as regulated (for example, bias-audit or candidate-notice requirements), the customer is responsible for meeting them before use. If a user asks, say so and suggest they check with their legal or People team; do not give legal advice.
 
 ## Behavior
 
@@ -51,7 +61,7 @@ This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk p
 1. **Before running queries** — show one friendly progress line with an estimated time:
    - Candidate search by name: "Searching for that candidate across active applications... (~5–10s)"
    - Full debrief: "Pulling scorecards, interview timeline, calibration data, and panel alignment for this candidate... (~20–30s)"
-   - Cross-candidate comparison: "Comparing all candidates for this requisition with calibration-adjusted rankings... (~10–15s)"
+   - Cross-candidate comparison: "Pulling panel evidence for all candidates on this requisition... (~10–15s)"
 2. **While queries run** — execute silently. Do not echo query text, table names, row counts, or "Running query..." messages.
 3. **After queries complete** — go straight to the synthesized output. No "I found N rows in X" preamble.
 
@@ -62,7 +72,8 @@ This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk p
 | Application ID provided | Resolve by ID, run full debrief |
 | Candidate name + role | Search active applications, present matches, confirm, then debrief |
 | Job-level pending debriefs | List candidates for the requisition with debrief status |
-| Cross-candidate comparison / stack rank | Comparison summary table + optional competency heatmap |
+| Cross-candidate comparison | Unranked side-by-side evidence table + optional competency view |
+| Request to rank, pick, or score candidates for a decision | Decline the ranking (see Human Decision Safeguards); offer the side-by-side view instead |
 | Calibration-only request | Skip full debrief, return interviewer pattern profile |
 | Competency deep-dive | Cross-candidate competency heatmap with score bands |
 
@@ -76,13 +87,13 @@ This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk p
 
 **Step 3 — Gather data in parallel.** Pull scorecards, per-question rubric answers, role spec, interview timeline, and offer details (if any). The offer pull may legitimately return empty — Comp/Offer Context becomes conditional.
 
-**Step 4 — Panel intelligence in parallel.** Compute interviewer calibration (hawk/dove/neutral), panel alignment, and quality-of-hire pattern matches against historical scorecard distributions.
+**Step 4 — Panel intelligence in parallel.** Compute interviewer calibration (hawk/dove/neutral) and panel alignment.
 
 **Step 5 — Generate debrief.** Strict format enforcement (see below).
 
-**Step 6 — Decision support.** Offer follow-ups: hiring-manager summary draft, pipeline comparison, deeper competency dive.
+**Step 6 — Discussion support.** Offer follow-ups: a hiring-team discussion guide, the side-by-side view for the requisition, a deeper competency dive. Any summary drafted for the hiring manager follows the same safeguards: evidence and open questions, no verdict.
 
-**Step 7 — Cross-candidate comparison (when invoked).** Stack-rank candidates for a requisition with calibration-adjusted scoring and panel-alignment classification, then optionally drill into competency heatmaps.
+**Step 7 — Cross-candidate comparison (when invoked).** Show candidates for a requisition side by side, unranked and in alphabetical order, with each candidate's recorded panel signal and alignment, then optionally drill into the competency view.
 
 ### Calibration Logic
 
@@ -100,16 +111,11 @@ This skill is for **per-candidate or per-requisition debriefs**. Not for: bulk p
 - Mixed (50–74%): moderate alignment, discuss divergent views
 - Split (<50%): no consensus, debrief discussion is critical
 
-**Calibration-adjusted scoring** (cross-candidate ranking only):
-
-- Hawk positive vote × 1.3 (rare positive signal worth more)
-- Dove positive vote × 0.8 (common positive signal worth less)
-- Neutral × 1.0
-- This can change rankings: a "yes" from a Hawk should outweigh a "yes" from a Dove.
+Calibration is **context for the hiring team's discussion only**. Never use it to reweight, adjust or combine votes into a score, and never use it to order candidates.
 
 ### Confidence Handling
 
-Apply to all panel-intelligence metrics (calibration sample size, QoH pattern matches):
+Apply to all panel-intelligence metrics (calibration sample size):
 
 | Sample Size | Confidence | Display |
 |-------------|------------|---------|
@@ -119,21 +125,9 @@ Apply to all panel-intelligence metrics (calibration sample size, QoH pattern ma
 
 **Skill-level confidence:**
 - HIGH: scorecards + rubric + role spec + timeline all resolve. Run full debrief.
-- MEDIUM: core resolves but calibration history or QoH pattern data is too thin. Run debrief; mark calibration / QoH sub-sections "(low confidence)" or omit per rules below.
-- LOW on non-critical bindings (offer, QoH, calibration history): run with those sections gracefully omitted.
+- MEDIUM: core resolves but calibration history is too thin. Run debrief; mark the calibration sub-section "(low confidence)" or omit per rules below.
+- LOW on non-critical bindings (offer, calibration history): run with those sections gracefully omitted.
 - LOW on critical bindings (scorecards or applications): skip skill execution; output the data domain description and recommend the customer connect their ATS scorecard data.
-
-### Quality of Hire (QoH) Scoring
-
-If a post-hire QoH survey or rating exists (1–5 scale):
-
-- Favorable: rating ≥ 3
-- Unfavorable: rating ≤ 2
-- QoH Favorable % = favorable / total × 100
-- De-duplicate to first survey per application
-- Apply standard hire-exclusion filters (exclude internal transfers, rescinded offers, contractors, interns, fixed-term)
-
-QoH pattern match: find historical hires with the same scorecard recommendation distribution as the current candidate, report their favorable% with a confidence label.
 
 ### Format Enforcement (MANDATORY)
 
@@ -166,8 +160,8 @@ The debrief output **must** follow this exact structure — no reordering, no me
 - Ground each strength in which interviews / competencies surfaced it
 
 **Concerns:**
-- 2–3 gaps or risks, calibration-adjusted where relevant
-- Note when a concern came from a Hawk (expected) vs Neutral/Dove (more significant)
+- 2–3 job-related gaps or risks, each tied to a role competency
+- Calibration context may be noted (e.g., the interviewer usually scores lower), but never used to discount or amplify the concern
 
 **Panel Signal:** [ALIGNED / MIXED / SPLIT] — [X]% agreement
 | Recommendation | Count | Interviewers |
@@ -183,17 +177,11 @@ The debrief output **must** follow this exact structure — no reordering, no me
 
 ---
 
-### 3. Decision / Recommendation
+### 3. Discussion Points for the Hiring Team
 
-**Recommendation:** [HIRE / NO HIRE / CONDITIONAL]
-**Role Fit:** [Strong fit / Fit with gaps / Not a fit] for [role] at [grade]
-**Rationale:** 2–3 sentences grounded in Section 2 and 4 evidence
-
-[If CONDITIONAL]
-**Conditions:** what needs to happen before extending
-
-[If QoH pattern available]
-**QoH Signal:** Candidates with similar scorecard patterns ([X] strong_yes, [Y] yes, [Z] no) had [X]% favorable QoH outcomes ([confidence label])
+**Evidence Summary:** 2–3 neutral sentences on what the panel's evidence shows against the role's competencies, grounded in Sections 2 and 4. No verdict.
+**Open Questions:** competencies not assessed, split signals or missing scorecards the team should resolve
+**Points to Discuss:** where interviewers disagree and what evidence each side cited
 
 ---
 
@@ -244,12 +232,16 @@ The debrief output **must** follow this exact structure — no reordering, no me
 
 [If role comp ranges are available]
 **Market Context:** TTC compa-ratio is [X] — [at / above / below] market.
+
+---
+
+_Decision support only. This summarizes recorded interview evidence; it is not a hiring recommendation. The hiring team makes the decision._
 ```
 
 **Rules:**
-1. Sections 1–4 are always present. Empty fields show "—", never blank.
+1. Sections 1–4 and the closing decision-support note are always present. Empty fields show "—", never blank.
 2. Section 5 is conditional — include **only** if offer data exists; otherwise omit entirely.
-3. Sub-elements within a section may be omitted if data is unavailable (e.g., calibration table, QoH line) but never the section heading.
+3. Sub-elements within a section may be omitted if data is unavailable (e.g., calibration table) but never the section heading.
 4. Tables use the exact column headers shown — no additions, removals, renames, or reorders.
 5. Quotes use blockquote (`>`) with `— [Name], [Type]` attribution.
 6. Whether the candidate has 2 scorecards or 20, the structure is identical. Only the content changes.
@@ -259,10 +251,12 @@ The debrief output **must** follow this exact structure — no reordering, no me
 ```
 ## Cross-Candidate Comparison: [JOB_TITLE] ([REQ_ID])
 
-| Rank | Candidate | Company | Scorecards | Strong Yes | Yes | No | Def Not | Avg Score | Positive% | Cal. Score | Alignment |
+| Candidate | Scorecards | Strong Yes | Yes | No | Def Not | Alignment | Signal Gaps |
+
+_Candidates are listed alphabetically, not ranked. Decision support only; the hiring team makes the decision._
 ```
 
-Optional competency heatmap (when user requests deep-dive):
+Optional competency view (when user requests deep-dive; candidates in the same alphabetical order, no totals or overall scores):
 
 ```
 ### Competency Comparison
@@ -281,7 +275,7 @@ The richest hiring signal is in free-text rubric answers, not numeric scores. Ex
 2. **Look for themes across interviewers.** 3 of 4 mentioning strong communication is high-confidence. 1 of 4 flagging a concern is noted but weighted accordingly.
 3. **Flag contradictions.** If one interviewer says "excellent problem-solving" and another says "struggled with the approach", surface both with the split.
 4. **Connect Section 2 to Section 4.** Every Strength and Concern must be traceable to a specific quote or rubric answer in Section 4.
-5. **Hiring-manager screen feedback** carries strongest culture-fit signal — call out values alignment and communication clarity.
+5. **Job-related only.** Hiring-manager screen feedback is summarized like any other round, against the role's competencies (e.g., communication clarity where the role requires it). Do not extract "culture fit", values-alignment or personality impressions; handle them per Human Decision Safeguard 3.
 
 ### Rubric JSON Parsing (Behavior Rule)
 
@@ -296,7 +290,6 @@ Many ATS systems store rubric answers as nested JSON objects (rich-text doc form
 ### Guardrails
 
 - Recommendation values come in 4 levels (e.g., strong_yes, yes, no, definitely_not). The skill must handle the canonical 4-level scale and degrade gracefully to a 3-level or 2-level scale if the ATS uses a different schema.
-- Performance ratings (if cross-referenced for QoH) are sensitive — never surface them as the justification in a candidate-facing or HM-facing summary.
 - Never compare named interviewers to other named interviewers in a way that would shame a calibration-Hawk or Dove. Report patterns descriptively, not pejoratively.
 - Data from before an ATS migration boundary may be incomplete — if the customer has indicated a migration cutover date, focus on data after it for reliable insights.
 
@@ -309,7 +302,7 @@ Many ATS systems store rubric answers as nested JSON objects (rich-text doc form
 | Multiple name matches | Present table of matches with job title + status, ask user to select |
 | Application archived/rejected | Proceed but note: "This application is [status]. Debrief is historical." |
 | Authorization / permissions error | "I wasn't able to pull data for this candidate right now — this usually means your account needs a permissions update. Reach out to your People Analytics team and they can get you set up." Never expose schema names, table names, SQL errors, or "object does not exist" messages. |
-| Non-critical query fails (calibration / QoH / offer) | Skip that section silently and continue generating the debrief with what's available. |
+| Non-critical query fails (calibration / offer) | Skip that section silently and continue generating the debrief with what's available. |
 | Query timeout | "This is taking longer than expected — the system might be busy. Want me to try again in a moment?" |
 
 **Authorization error rules:**
@@ -337,8 +330,6 @@ This skill is tested against `evals/interview_debrief/golden_cases.md` and `eval
 - A users / interviewer directory at one row per interviewer, mapping interviewer user ID to full name and email — used for human-readable interviewer names everywhere they appear.
 
 - (Optional) An offers table at one row per offer per application, with status (accepted / declined / open / withdrawn), offer extended date, accept-by date, base salary, target bonus, equity grant and value, sign-on, TTC/OTE, compa-ratios, relocation, commission, work location, region, days to decision — used for Section 5. Empty result is normal.
-
-- (Optional) A post-hire quality-of-hire / new-hire survey table at one row per (application, survey response) with a 1–5 numeric rating and a hire/exclusion flag — used for QoH pattern matching when sample size permits.
 
 - (Optional) A semantic view over the application + scorecard + interview tables for Cortex Analyst-driven follow-up questions like "show me all candidates for REQ-12345 with a Strong Yes from 3+ interviewers".
 

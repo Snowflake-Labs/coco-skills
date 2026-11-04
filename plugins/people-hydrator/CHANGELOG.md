@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.1.0
+
+- `interview_debrief`: decision support only. Removed HIRE / NO HIRE / CONDITIONAL calls, role-fit verdicts, candidate ranking, calibration-weighted scores and the quality-of-hire prediction line. Cross-candidate comparison is an unranked, alphabetical side-by-side. Added human-decision safeguards: job-related evidence only (no culture-fit, personality or protected-characteristic remarks), no automated status changes, a decision-support note on every output.
+- `offer_builder`: never extracts or uses candidate pay history (current / prior pay, amounts left behind); only a voluntarily disclosed competing offer is recorded. Team pay is shown as per-currency aggregates with a minimum group size of 5, never per person. Removed the Google Sheets export; output stays in chat.
+- `org_health_report`: PTO, AI adoption and performance results are aggregates only. Removed the non-adopter and low-PTO individual lists; metrics over fewer than 5 employees are suppressed.
+- Evals, catalog triggers and templates updated to match.
+
 ## 3.0.0
 
 - Four stages: Discover, Bind, Tune, Hydrate. Golden cases now run as the last step of Tune (the separate Evaluate stage is gone).

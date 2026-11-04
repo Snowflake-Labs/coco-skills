@@ -7,12 +7,13 @@ Checks that `interview_debrief` is connected to the right data in your account. 
 ## Behavior Definition
 
 The hydrated skill must:
-- Route by request: debrief by application ID, debrief by candidate name + role (with disambiguation), pending debriefs for a requisition, cross-candidate comparison / stack rank, calibration-only, competency deep-dive
+- Route by request: debrief by application ID, debrief by candidate name + role (with disambiguation), pending debriefs for a requisition, unranked side-by-side comparison, calibration-only, competency deep-dive
 - Run an access preflight first and stop with a plain-language message if access fails
 - Warn up front about interviewers who have not submitted scorecards
-- Classify interviewers as Hawk / Dove / Neutral from their trailing 12-month recommendations, and report panel alignment (Aligned / Mixed / Split)
-- Apply calibration-adjusted scoring (Hawk positive × 1.3, Dove positive × 0.8) in cross-candidate ranking only
-- Produce the fixed 5-section debrief; Section 5 (Comp / Offer Context) only when offer data exists
+- Classify interviewers as Hawk / Dove / Neutral from their trailing 12-month recommendations as descriptive context only, and report panel alignment (Aligned / Mixed / Split)
+- Never give a hire / no-hire / conditional call, a fit verdict, a ranking or a calibration-weighted score; the hiring team decides
+- Use only job-related evidence; never relay culture-fit, personality or protected-characteristic remarks
+- Produce the fixed 5-section debrief plus the decision-support note; Section 5 (Comp / Offer Context) only when offer data exists
 - Never show table names, column names, SQL or row counts to the user
 
 ## Data the hydrator must find
@@ -28,7 +29,6 @@ Data needs from `catalog/people.json` (required ones in bold):
 | **`people.ats.interviews`** | One row per interview event: application ID; optionally scorecard ID, interview date, stage name | Interview timeline, missing scorecards |
 | **`people.ats.users_directory`** | One row per interviewer: user ID, full name | Interviewer names |
 | `people.ats.offers` | One row per offer: application ID, status; optionally base salary | Section 5 Comp / Offer Context |
-| `people.qoh.application_survey` | One row per post-hire survey response: application ID, rating | QoH pattern signal |
 | `people.ats.semantic_view` | A semantic view over application, scorecard and interview data | Follow-up questions |
 
 ## Binding rules
@@ -46,7 +46,6 @@ G = must pass (otherwise key data isn't confirmed and the skill is hydrated as p
 | P4 | Interview timeline | Interviews table with application ID, scorecard ID and interview date |
 | P5 | Interviewer names | Directory with user ID and full name |
 | S1 | Offer context | Offers table with application ID and status |
-| S2 | Quality of hire | Survey table with application ID and rating |
 | S3 | Calibration window | Submitted time bound on the scorecards table |
 | S4 | Semantic view | Semantic view connected |
 
@@ -70,8 +69,6 @@ G = must pass (otherwise key data isn't confirmed and the skill is hydrated as p
    "fields": ["user_id", "full_name"], "min_confidence": "MEDIUM"},
   {"id": "S1", "title": "Offer context", "check": "need", "need": "people.ats.offers",
    "fields": ["application_id", "status"], "min_confidence": "MEDIUM"},
-  {"id": "S2", "title": "Quality of hire", "check": "need", "need": "people.qoh.application_survey",
-   "fields": ["application_id", "rating"], "min_confidence": "MEDIUM"},
   {"id": "S3", "title": "Calibration window", "check": "need", "need": "people.ats.scorecards",
    "fields": ["submitted_at"], "min_confidence": "MEDIUM"},
   {"id": "S4", "title": "Semantic view", "check": "any_need", "needs": ["people.ats.semantic_view"]}
@@ -90,14 +87,15 @@ Every failed G or P rule becomes one "which table holds …?" question in Tune.
 
 | Component | Required behavior |
 |---|---|
-| Calibration | Hawk: bottom-tier rate > 60%; Dove: top-tier rate > 80%; otherwise Neutral; trailing 12 months |
+| Calibration | Hawk: bottom-tier rate > 60%; Dove: top-tier rate > 80%; otherwise Neutral; trailing 12 months; descriptive only, never used to reweight votes |
 | Panel alignment | Max recommendation count ÷ total scorecards: Aligned ≥ 75%, Mixed 50–74%, Split < 50% |
-| Calibration-adjusted score | Hawk positive × 1.3, Dove positive × 0.8, Neutral × 1.0; cross-candidate ranking only |
+| Human decision | No HIRE / NO HIRE / CONDITIONAL, fit verdict, rank or composite score; decision-support note on every output |
+| Comparison order | Side-by-side view alphabetical by candidate; no rank column |
+| Job-related evidence | No culture-fit, personality or protected-characteristic content in strengths, concerns or quotes |
 | Confidence labels | n ≥ 10 HIGH; 5–9 "(limited data)"; < 5 "(low confidence)" |
 | Debrief format | 5 sections in fixed order; Sections 1–4 always present, "—" for empty fields; Section 5 only when offer data exists |
 | Recommendation scale | 4-level scale, degrading gracefully to 3- or 2-level |
 | Rubric parsing | Leaf text extracted from nested rich-text answers; "X out of Y" normalized to the question's max weight |
-| QoH | Favorable = rating ≥ 3; first survey per application |
 | Privacy | No table names, column names, SQL or error text shown to the user |
 
 ## Expected challenges
@@ -106,4 +104,4 @@ Every failed G or P rule becomes one "which table holds …?" question in Tune.
 2. **Rich-text rubric answers.** Answers stored as nested JSON need leaf-text extraction; without it, strengths and quotes come out empty.
 3. **Submitter vs interviewer ID.** The scorecard may record a "submitted by" user while interviews use an interviewer ID; the two must be joined correctly.
 4. **ATS migration boundary.** Data before a migration cutover may be incomplete and skew calibration; the skill focuses on data after the cutover if one is configured.
-5. **Optional data is often empty.** Most candidates have no offer or survey row; that is normal, not an error.
+5. **Optional data is often empty.** Most candidates have no offer row; that is normal, not an error.
