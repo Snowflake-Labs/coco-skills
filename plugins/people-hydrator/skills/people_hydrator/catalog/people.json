@@ -3841,7 +3841,7 @@
       "triggers": [
         "debrief for candidate",
         "compare candidates",
-        "stack rank",
+        "side-by-side candidates",
         "interview debrief",
         "scorecard summary"
       ],
@@ -4315,47 +4315,6 @@
           ]
         },
         {
-          "key": "people.qoh.application_survey",
-          "required": false,
-          "concepts": [
-            "post-hire quality-of-hire survey",
-            "1-5 numeric rating per application"
-          ],
-          "grain": [
-            "application",
-            "survey_response"
-          ],
-          "fields": {
-            "application_id": {
-              "required": true,
-              "semantic_type": "identifier",
-              "aliases": [
-                "application_id",
-                "app_id"
-              ]
-            },
-            "rating": {
-              "required": true,
-              "semantic_type": "number",
-              "aliases": [
-                "rating",
-                "score"
-              ]
-            }
-          },
-          "name_hints": [
-            "engagement",
-            "enps",
-            "pulse",
-            "qoh",
-            "response",
-            "responses",
-            "sentiment",
-            "survey",
-            "surveys"
-          ]
-        },
-        {
           "key": "people.ats.semantic_view",
           "required": false,
           "concepts": [
@@ -4384,7 +4343,6 @@
         "people.ats.interviews": "official production data for interview events with stage ordering; grain: interview_event; required fields: application_id",
         "people.ats.users_directory": "official production data for interviewer / user directory; grain: interviewer; required fields: user_id, full_name",
         "people.ats.offers": "optional offers table with comp details; grain: offer, application; required fields: application_id, status",
-        "people.qoh.application_survey": "optional post-hire quality-of-hire survey with 1-5 rating; grain: application, survey_response; required fields: application_id, rating",
         "people.ats.semantic_view": "optional semantic view over ATS application/scorecard/interview tables; grain: semantic_view"
       },
       "tunables": [],

@@ -10,6 +10,8 @@ description: >
   manager scorecard, attrition for [name]'s org, high-performer (HP) retention, HP retention, LP outcomes, span
   of control, PTO utilization, AI adoption for team, new hire attrition, org health
   snapshot.
+  Reports well-being, AI adoption and performance outcomes as aggregates only; it
+  never lists or flags named individuals for PTO, AI usage or ratings.
   Do NOT use for: company-wide headcount sizing (use headcount_insights),
   company-wide attrition trends (use attrition_insights), or evaluating a
   candidate (use interview_debrief).
@@ -29,13 +31,23 @@ status: Published
 - **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "org health report" (for your own org) or "org health for [name]". You can choose direct reports, full org or company.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
-- **Good to know:** The skill finds you in the employee directory to set your default scope. HP = high performer and LP = low performer, based on your performance ratings. Sections whose data wasn't connected (for example AI adoption or PTO) are marked as not available. The skill reads your data and never changes it.
+- **Good to know:** The skill finds you in the employee directory to set your default scope. HP = high performer and LP = low performer, based on your performance ratings. Sections whose data wasn't connected (for example AI adoption or PTO) are marked as not available. PTO, AI adoption and performance results are team-level aggregates: the skill never names who took little PTO or who isn't using AI tools, and it hides results for groups too small to keep individuals anonymous. The skill reads your data and never changes it.
 
 ## Intent
 
 Provide people leaders and HR Business Partners with a complete, consistent view of org health across six dimensions: retention, talent performance, team structure, well-being, AI adoption, and recruiting. Auto-resolves the session user's identity to scope analysis to their management chain by default. The **Org Health Report** is the flagship output — a fixed 8-section template that must be rendered identically every time it is requested, regardless of the data values.
 
-Not for: company-wide headcount sizing (use `headcount_insights`), individual candidate evaluation (use `interview_debrief`), or bulk attrition trending (use `attrition_insights`).
+Not for: company-wide headcount sizing (use `headcount_insights`), individual candidate evaluation (use `interview_debrief`), bulk attrition trending (use `attrition_insights`), or monitoring, evaluating or flagging individual employees.
+
+### Individual Privacy (MANDATORY)
+
+PTO, AI tool usage and performance ratings are personal data. This skill uses them only to describe the health of a group.
+
+1. **Aggregates only.** Never list, name, count-and-identify or otherwise single out individual employees by PTO taken, PTO utilization, AI tool usage or non-usage, or performance rating / LP / HP status. This includes requests like "who hasn't used AI", "who took the least PTO" or "list my low performers".
+2. **Minimum group size.** Suppress any PTO, AI adoption or performance metric computed over fewer than 5 employees (or the customer's configured threshold, if higher). Show "— (group too small to report)" and use — as the status. Apply this to every scope, breakdown and sub-cohort (e.g., new hire PTO, a single tool's adoption).
+3. **Purpose limitation.** These metrics describe team health and support decisions about programs, workload and enablement. Do not present them as evidence about any person's performance, engagement or conduct.
+4. **Declining individual requests.** If asked for an individual-level list, say in one sentence that the skill reports these only as team-level aggregates to protect employee privacy, and offer the aggregate view or a breakdown by sub-team (subject to the minimum group size).
+5. Section 2 (Direct Reports) shows only name, level, tenure and employment status. It never adds PTO, AI usage or rating data per person.
 
 ## Behavior
 
@@ -71,8 +83,8 @@ When the user hasn't specified a category, present the following options via int
 | **Attrition & Retention** | T12M attrition, vol/invol splits, regrettable exits, HP retention, new hire attrition |
 | **Performance & LP Outcomes** | LP/HP outcomes, exit velocity, repeat LPs, stagnation, off-cycle detection, rating trends |
 | **Team Structure & Span** | Org tree, span of control, over/under-spanned managers, new managers, growth rate |
-| **PTO & Well-Being** | PTO utilization, burnout risk composite, low-PTO individuals |
-| **AI Adoption** | Adoption %, daily active rate, tool breakdown, non-adopter list |
+| **PTO & Well-Being** | PTO utilization, low-PTO share (aggregate) |
+| **AI Adoption** | Adoption %, daily active rate, tool breakdown (aggregate) |
 
 If the user's intent is clear from their message, skip the menu and route directly to the correct analysis.
 
@@ -139,6 +151,7 @@ If the user's intent is clear from their message, skip the menu and route direct
 5. Do NOT add new sections, executive summary paragraphs, charts, or narrative acts.
 6. If the user asks for a different format (e.g., "give me a narrative"), treat that as a separate follow-up in conversational mode — do NOT alter the locked template for the initial output.
 7. Never include internal source names, table names, column names, or schema details in any section.
+8. Sections 1, 4, 6 and 7 follow the Individual Privacy rules: aggregates only, small groups suppressed.
 
 ### Execution Protocol — Two-Phase Parallel Execution
 
@@ -187,6 +200,7 @@ The Org Health Report requires two phases:
 | 15 | Standard employee type filter | Filter only on 'Regular' | Include all standard types; exclude interns and contingent workers unless explicitly requested |
 | 16 | Headcount YoY uses constant-cohort for org-inherited leaders | Hierarchy-at-time for all leaders | For reorged leaders, pin membership to today's org and trace backward — avoids artificial jumps from reorgs |
 | 17 | Top-level leaders skip the peer benchmark query | Submit benchmark for all leaders | Detect top-level leaders; omit peer comparison columns for them |
+| 18 | PTO, AI and performance results are aggregates | List or name individuals (e.g., non-adopters, low-PTO employees, LPs) | Report rates and counts for the group; suppress groups below the minimum size |
 
 ### Analysis Subskill Details
 
@@ -206,7 +220,7 @@ For each available review cycle:
 - LP Exit Rate: `lp_exited / total_lp_cohort × 100` (cohort-based)
 - LP resolution rate: employees who improved their rating in the subsequent cycle and are still active
 - LP improved-then-exited: a separate category (not "resolved")
-- Repeat LPs: employees rated low in 2+ consecutive cycles
+- Repeat LPs: number of employees rated low in 2+ consecutive cycles (count only, never names)
 - Exit velocity: distribution of how many days after a low performance rating employees exited (buckets: ≤60 days, 61–90 days, 91–180 days, 181+ days)
 
 **Off-cycle detection:** Run cycle discovery first. If an org has no review cycle data for a given quarter, surface "off-cycle — no review conducted" rather than "0 low performers".
@@ -223,15 +237,15 @@ For each available review cycle:
 
 - Average PTO days taken in the L12M
 - PTO utilization % (days taken / days allotted × 100)
-- Burnout risk composite: share of employees with PTO utilization < a configurable low-PTO threshold
-- New hire PTO bands: PTO utilization for employees in their first 6 months
+- Low-PTO share: share of employees with PTO utilization < a configurable low-PTO threshold (aggregate rate; never a list of who)
+- New hire PTO bands: PTO utilization for employees in their first 6 months (suppressed if below the minimum group size)
 
 #### AI Adoption
 
 - Adoption %: share of team members who have used any AI tool in the trailing 90 days
 - Daily active %: share who used an AI tool on an average day in the trailing 30 days
-- Tool breakdown: adoption by specific AI tool (configurable list at customer setup)
-- Non-adopter list: employees with zero AI usage in the trailing 90 days
+- Tool breakdown: adoption by specific AI tool (configurable list at customer setup), each tool subject to the minimum group size
+- No individual-level output: never list non-adopters or rank individuals by usage
 
 #### Recruiting Pipeline
 
@@ -274,6 +288,8 @@ The Org Health Report includes comparison columns for the leader's peer org (the
 | Phase 2 query returns 0 rows for a section | Render "No data available" for that section's rows — do NOT drop the section heading |
 | Authorization / permissions error | "I wasn't able to pull data right now — this usually means your account needs a permissions update. Reach out to your People Analytics team." Never expose schema or error text. |
 | Query timeout | "This is taking longer than expected. Want me to try again?" |
+| Request for an individual-level PTO, AI usage or rating list | "I report PTO, AI adoption and performance only as team-level results to protect employee privacy. Want the team view, or a breakdown by sub-team?" |
+| Group below the minimum size | Show "— (group too small to report)" for that metric; do not drop the row |
 | Peer benchmark returns 0 rows for a non-top-level leader | Re-run the benchmark query before rendering — do NOT render comparison columns as "—" for a non-top-level leader |
 
 ## Quality
@@ -288,9 +304,9 @@ This skill is tested against `evals/org_health_report/golden_cases.md` and `eval
 
 - A performance ratings table at one row per employee per review cycle, with employee ID, cycle identifier, cycle end date, performance rating (ordinal scale), and management chain IDs at review time — used for LP/HP cohort tracking, exit velocity, and repeat LP detection.
 
-- A well-being / PTO usage table at one row per employee per period, with employee ID, PTO days taken, PTO allotment, and period — used for PTO utilization and burnout risk composite.
+- A well-being / PTO usage table at one row per employee per period, with employee ID, PTO days taken, PTO allotment, and period — used only to compute aggregate PTO utilization and low-PTO share.
 
-- An AI tool usage table at one row per user per tool per day (or aggregated to weekly), with employee ID, tool name, active flag, and date — used for AI adoption %, daily active %, and non-adopter list.
+- An AI tool usage table at one row per user per tool per day (or aggregated to weekly), with employee ID, tool name, active flag, and date — used only to compute aggregate AI adoption % and daily active %.
 
 - A recruiting / open requisitions table at one row per open req, with req ID, job title, status (approved / draft / on hold), hiring manager, team, and open date — used for recruiting pipeline section.
 

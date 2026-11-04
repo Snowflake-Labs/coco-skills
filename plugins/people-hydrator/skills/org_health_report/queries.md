@@ -103,14 +103,15 @@ All blocks below are submitted as parallel queries in a single assistant message
 
 ### Block 5D — Well-Being / PTO Bundle
 
-**Purpose:** PTO utilization and burnout risk composite.
+**Purpose:** Aggregate PTO utilization and low-PTO share.
 
 **Logic:**
 1. Compute for the leader's org over the L12M period: avg PTO days taken, avg PTO utilization %.
 2. Compute PTO risk %: share of employees with PTO utilization below a configurable low-utilization threshold.
 3. Compute new hire PTO bands: PTO utilization for employees in their first 6 months (separate from the main cohort).
+4. Return employee counts with each metric; null out any metric over fewer than 5 employees (or the configured threshold).
 
-**Output grain:** One summary row.
+**Output grain:** One summary row. Never return employee IDs or names.
 
 ---
 
@@ -123,8 +124,9 @@ All blocks below are submitted as parallel queries in a single assistant message
 2. Compute adoption %: employees with at least one AI tool session in the trailing 90 days / total employees × 100.
 3. Compute daily active %: employees with an AI session on an average weekday in the trailing 30 days / total employees × 100.
 4. Return tool-level breakdown (tool name → adoption %) as a summary.
+5. Return employee counts with each metric; null out any metric (including a single tool's adoption) over fewer than 5 employees (or the configured threshold).
 
-**Output grain:** One summary row with a nested tool breakdown.
+**Output grain:** One summary row with a nested tool breakdown. Never return employee IDs or names.
 
 ---
 
@@ -192,3 +194,4 @@ All blocks below are submitted as parallel queries in a single assistant message
 8. **RIF before organic attrition.** If you report raw attrition without RIF detection, a large involuntary RIF event makes the organic attrition number appear much worse than it is.
 9. **Phase 2 must be parallel.** Sequential Phase 2 queries multiply wall-clock time by the number of blocks. Always submit all blocks in a single parallel tool-call message.
 10. **Cycle discovery before performance queries.** Without cycle discovery, you may query performance data for a cycle that has no active employees in the org, returning misleading zeros.
+11. **No individual-level PTO, AI or rating output.** Blocks 4S, 5D and 6E aggregate in SQL and return no employee-level rows. Small groups (< 5, or the configured threshold) are suppressed, because a rate over 2 people identifies them.

@@ -16,7 +16,6 @@ All physical table/column references are resolved at runtime by the People hydra
 
 **Optional sources:**
 - Offers table (one row per offer per application)
-- Quality-of-hire / new-hire survey table (one row per post-hire survey response)
 - Semantic view for Cortex Analyst follow-ups
 - Cortex Search service for fuzzy candidate-name lookup
 
@@ -133,6 +132,8 @@ All physical table/column references are resolved at runtime by the People hydra
 
 **Output grain**: one row per interviewer.
 
+**Notes**: Calibration is descriptive context only. Never use it to reweight votes or order candidates.
+
 ---
 
 ## Query Type 9 — Calculate Panel Alignment
@@ -148,23 +149,7 @@ All physical table/column references are resolved at runtime by the People hydra
 
 ---
 
-## Query Type 10 — QoH Pattern Match
-
-**Purpose**: Among historical hires with a similar scorecard distribution, what fraction had favorable post-hire outcomes?
-
-**Logic**:
-1. Compute the current candidate's scorecard distribution: counts of each recommendation level.
-2. Find historical hires with the same (or close) distribution shape.
-3. Apply standard hire-exclusion filters: exclude internal transfers, rescinded offers, contractors, interns, fixed-term roles.
-4. Pull QoH survey rating (1–5) — favorable if rating ≥ 3, unfavorable if ≤ 2.
-5. De-duplicate to first survey per application.
-6. Return: total matched hires, favorable count, favorable %, confidence label.
-
-**Output grain**: one summary row per pattern match request.
-
----
-
-## Query Type 11 — Fetch Offer Details
+## Query Type 10 — Fetch Offer Details
 
 **Purpose**: Comp / offer breakdown for the application's current offer (if any).
 
@@ -177,27 +162,25 @@ All physical table/column references are resolved at runtime by the People hydra
 
 ---
 
-## Query Type 12 — Compare Candidates for a Requisition
+## Query Type 11 — Side-by-Side Candidates for a Requisition
 
-**Purpose**: Stack-rank all candidates for a single requisition, with calibration-adjusted scoring and panel-alignment classification.
+**Purpose**: Show the recorded panel evidence for every candidate on a single requisition, unranked.
 
 **Logic**:
 1. For each candidate on the requisition with ≥ 2 scorecards:
    - Count scorecards by recommendation level.
-   - Compute average score (using a 4→1 numeric mapping for strong_yes → definitely_not).
-   - Compute positive % = (strong_yes + yes) / total × 100.
-   - Apply calibration adjustment: positive votes from Hawks × 1.3, from Doves × 0.8, from Neutral × 1.0. Sum to the calibration-adjusted score.
    - Classify panel alignment (Aligned / Mixed / Split) per Query Type 9.
-2. Return: candidate name, prior company (if available), scorecard count, count by recommendation, avg score, positive %, calibration-adjusted score, alignment.
-3. Provide two ranks — raw and calibration-adjusted — so the user can compare.
+   - List role competencies not assessed (signal gaps).
+2. Return: candidate name, scorecard count, count by recommendation, alignment, signal gaps.
+3. Order alphabetically by candidate name. Do not compute a rank, composite score, average score or calibration-adjusted score.
 
 **Output grain**: one row per candidate per requisition.
 
 ---
 
-## Query Type 13 — Cross-Candidate Competency Heatmap
+## Query Type 12 — Cross-Candidate Competency View
 
-**Purpose**: Compare candidates competency-by-competency for a requisition.
+**Purpose**: Show candidates' recorded rubric scores competency by competency for a requisition, unranked (alphabetical order, no totals).
 
 **Logic**:
 1. From rubric answers across all candidates on the requisition:
@@ -223,5 +206,4 @@ All physical table/column references are resolved at runtime by the People hydra
 6. **Missing-scorecard false positives** — only flag interviewers where feedback is required and the interview has already occurred. Otherwise you'll page someone for tomorrow's interview.
 7. **Offer absence is normal** — most candidates do not have an offer record. Empty offer result is the silent-skip path for Section 5, not an error.
 8. **Pre-migration data** — if the customer migrated ATSes, the older data may have different field semantics or missing rubric answers. Respect any cutover date the customer has supplied and weight accordingly.
-9. **Internal transfers and rescinded offers** — always apply the standard hire-exclusion filters in QoH pattern matching, or your favorable% will be skewed by people who never actually started.
-10. **Small-cohort QoH** — a pattern match with n=3 is anecdote, not signal. Apply the LOW confidence label and consider suppressing the QoH Signal line entirely.
+9. **No ranking by accident** — sorting the side-by-side or competency view by any score is a ranking. Always sort by candidate name.

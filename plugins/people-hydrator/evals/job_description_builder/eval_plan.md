@@ -13,7 +13,8 @@ The hydrated skill must:
 - Surface missing requisition fields without blocking generation
 - Use the fixed JD template; grade-to-YOE floors only ("X+ years"), never a range
 - Append an internal-only Recruiter Intelligence brief (fill rate, req completeness, JD source, quality-of-hire signal)
-- Run the inclusivity and bias check with a 1–10 Inclusivity Score; never include compensation, age, visa or protected-characteristic content
+- Run the inclusivity and bias check with a 1–10 Inclusivity Score; never include age, visa or protected-characteristic content
+- Never look up, suggest or invent pay; keep the pay range placeholder for the recruiter to fill, always end with the EEO statement the user provides, verbatim (or its placeholder), and show the posting compliance note
 - Default to the external view; save to the JD library only when the user asks
 
 ## Data the hydrator must find
@@ -83,7 +84,8 @@ Every failed G or P rule becomes one "which table holds …?" question in Tune.
 | Grade-to-YOE | Entry 0+, Early Career 2+, Senior 5+, Staff / first-line manager 8+, Principal / senior manager 10+, Director 12+, Senior Director / VP+ 15+, Intern: currently enrolled |
 | YOE floor | "X+ years" only, never a range; never inferred from title or tech stack |
 | Template | Fixed section order; no em-dashes; "Why join" team text never fabricated |
-| Restricted content | No compensation, age references, visa / citizenship, or protected characteristics |
+| Restricted content | No age references, visa / citizenship, or protected characteristics; no pay figure the recruiter didn't provide |
+| Posting disclosures | `PAY AND BENEFITS` section with the recruiter's range or a placeholder; EEO statement as provided by the user, verbatim (or placeholder); never written by the skill; compliance note shown; never claims the JD is compliant; warns before export if a placeholder is unfilled |
 | Inclusivity Score | 1–10 from the four defined components; fixes suggested when < 7 |
 | Views | External by default; Recruiter Intelligence only on explicit request for internal |
 | Fill rate / QoH | Standard hire exclusions; QoH favorable = rating ≥ 3, first survey per application |

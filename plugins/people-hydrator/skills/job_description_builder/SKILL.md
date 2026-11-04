@@ -28,7 +28,7 @@ status: Published
 - **Before you start:** This skill runs on the data and definitions connected by **People Hydrator** (`plugins/people-hydrator/`). If it hasn't been set up for your account yet, run People Hydrator first.
 - **How to use it:** Say "create a JD for [requisition or role]", "improve this JD" or "bias check this JD". It always tells you where the content came from.
 - **If you don't get what you expect:** If a section is missing or says data isn't available, that data wasn't connected during setup: re-run People Hydrator to add it. If a number looks wrong, tell People Hydrator what you expected; it turns that into a checked correction. If the skill says a table or column has changed, re-run People Hydrator for this skill.
-- **Good to know:** The default export is the external (candidate-facing) version; recruiter notes appear only in the internal version when you ask for it. Pay is never put in a job description. The skill reads your data and only saves to your JD library when you ask.
+- **Good to know:** The default export is the external (candidate-facing) version; recruiter notes appear only in the internal version when you ask for it. The skill never looks up, suggests or invents pay. Where the role's location requires pay or other disclosures in a posting, it adds a placeholder for the approved range, and asks you for your equal employment opportunity (EEO) statement, which it adds word for word at the end of every JD. You are responsible for making sure each posting complies with the local, state and national laws where the role is located. The skill reads your data and only saves to your JD library when you ask.
 
 ## Intent
 
@@ -144,8 +144,23 @@ Every JD follows this structure exactly — whether from ATS, library, or genera
 ### WHY JOIN OUR [TEAM_NAME] TEAM?
 [1-2 paragraphs about team uniqueness and growth opportunities. If team context is unknown, ask the user for 2-3 sentences — NEVER fabricate a team description.]
 
+### PAY AND BENEFITS
+[PAY RANGE: enter the approved range for this location from your compensation team. Required in some locations.]
+[Benefits summary, if the customer's brand template includes one at setup]
+
 [Two standard closing lines — verbatim from the customer's brand template at setup]
+
+[EEO statement — provided by the user, used verbatim. Until provided: "[EEO STATEMENT: add your organization's approved equal employment opportunity statement.]"]
 ```
+
+#### Required Posting Disclosures (Pay Transparency and EEO)
+
+Job posting laws differ by country, state and city, and they change. Many locations (for example Colorado, California, New York, Washington, Illinois, and EU member states under the EU Pay Transparency Directive) require a good-faith pay range, and sometimes benefits or other information, in the posting. Equal employment opportunity statements are often required or expected.
+
+- **Pay range:** The skill NEVER looks up, suggests, calculates or invents a pay figure. It keeps the `PAY AND BENEFITS` section with the placeholder and asks the recruiter to enter the approved range from their compensation team. If the recruiter enters a range, include it exactly as given. If the recruiter asks to remove the section, remove it only after showing: "⚠️ Some locations require a pay range in job postings. Confirm with your compensation or Legal team that this posting can go out without one."
+- **EEO statement:** The EEO statement comes from the user; the skill does not store or supply one. Ask the recruiter to paste their organization's approved EEO statement, and include it verbatim at the end of the JD. Until they do, keep the placeholder and remind them to add it before posting. Never write, suggest or paraphrase an EEO statement yourself.
+- **Compliance note:** Whenever a JD is presented or exported, show once, outside the JD content: "Before posting, check that this JD meets the job-posting laws where the role is located (for example pay range, benefits and EEO disclosures). This is not legal advice."
+- Do NOT decide which laws apply to a location. Flag and ask; the recruiter and their Legal team decide.
 
 **Never use em-dashes (—) anywhere in generated JD content.** Replace with commas, colons, or restructured sentences.
 
@@ -217,7 +232,7 @@ After the JD, append an **Intelligence Brief** visible only to the recruiter —
 
 | Restricted Item | Why Excluded |
 |----------------|-------------|
-| Compensation / salary / equity / bonus | Excluded globally — managed through the offer workflow |
+| Pay figures the recruiter didn't provide (salary, equity, bonus) | The skill never looks up, suggests or invents pay. Only an approved range entered by the recruiter goes in the `PAY AND BENEFITS` section (see Required Posting Disclosures) |
 | Age references (e.g., "recent grad requirement", "digital native", "young and energetic", YOE ceiling) | May constitute age discrimination |
 | Race, ethnicity, national origin | Prohibited |
 | Gender or gender identity | Prohibited — use gender-neutral language throughout |
@@ -267,7 +282,8 @@ When offering export, frame it around the recruiter's use case:
 **Export format:**
 - Styled HTML with brand colors, logo (configured at customer setup), print-optimized CSS with "Save as PDF" button.
 - Zero external dependencies — uses only built-in modules.
-- External mode strips: recruiter intelligence, HM/recruiter names, inclusivity score, internal grade, level.
+- External mode strips: recruiter intelligence, HM/recruiter names, inclusivity score, internal grade, level. It keeps the `PAY AND BENEFITS` section and the EEO statement.
+- If the pay range or EEO placeholder is still unfilled at export, warn before exporting: "This JD still has a placeholder for [pay range / EEO statement]. Fill it in before posting."
 - Internal mode: full intelligence with visual differentiation and "Confidential" footer.
 
 **Save to JD Library (user-triggered, NOT automatic):**
@@ -275,7 +291,8 @@ After export, offer to save. Include clear warning: the library is a learning mo
 
 ### Constraints
 
-- NEVER include compensation, salary, equity, or bonus in any JD content (internal or external).
+- NEVER look up, suggest, calculate or invent pay. Include a pay range only as entered by the recruiter, in the `PAY AND BENEFITS` section.
+- ALWAYS include the EEO statement provided by the user, verbatim (or its placeholder) and the posting compliance note. NEVER state that a JD is legally compliant.
 - NEVER include age references, visa/immigration status, or any legally protected characteristic.
 - NEVER fabricate an "About the Team" section — always ask the user for team context.
 - NEVER auto-generate or fabricate a requisition number.

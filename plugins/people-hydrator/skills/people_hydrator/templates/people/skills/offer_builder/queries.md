@@ -56,7 +56,7 @@ All physical table/column references are resolved at runtime by the People hydra
 **Logic:**
 1. Join rubric/answers table to scorecards on scorecard ID, filtered to the application.
 2. Return: scorecard ID, scorecard title (interview type), question text, answer text (or JSON requiring parsing).
-3. Flag rows where the scorecard title matches a "Basic Feedback Form" pattern (recruiter process notes) — these are the rows used for comp parsing in Step 6.
+3. Flag rows where the scorecard title matches a "Basic Feedback Form" pattern (recruiter process notes) — these are the only rows read for competing-offer extraction in Step 6. Pay history in them (current / prior pay, amounts left behind) is never extracted.
 4. For non-recruiter-notes rubric rows: summarize top strengths and concerns cited by 2+ interviewers.
 
 **Output grain:** One row per (scorecard, question).
@@ -94,20 +94,21 @@ All physical table/column references are resolved at runtime by the People hydra
 
 ---
 
-## Query Type 5 — Team Members + Hire-Time Comp (Q5)
+## Query Type 5 — Aggregate Team Comp (Q5)
 
-**Purpose:** List all current team members reporting to the hiring manager and their compensation at hire.
+**Purpose:** Summarize the hire-time pay of current team members reporting to the hiring manager, as aggregates only.
 
 **Logic:**
 1. From the employee snapshot (latest date), find all employees where direct manager ID = hiring manager ID.
 2. Join to the offer / hire comp table on employee ID (or application ID) to get hire-time compensation.
 3. Apply latest effective date filter on the employee snapshot table.
-4. Return per team member: employee ID (anonymized for display as name only), management level, hire date, prior company (if available), years of experience (if available), sales background inference (from prior company + prior position), hire base salary, hire OTE/TTC, OTE compa-ratio, equity compa-ratio, currency.
-5. For employees without an offer record: show null comp (display as "—").
+4. Group by currency. Per group return: headcount, count with comp on file, P25 / median / P75 of hire base and hire OTE/TTC (and compa-ratios if available).
+5. Separately return team-level counts only: total headcount, YOE median and range, sales background mix.
+6. Suppress (return null for) any comp aggregate where the group has fewer than 5 employees with comp on file, or the customer's configured threshold if higher.
 
-**Output grain:** One row per team member.
+**Output grain:** One row per currency group, plus one team profile row. Never one row per employee in the result shown to the user.
 
-**Notes:** Currencies may vary by country — preserve the currency code per row. Never aggregate across currencies without converting first.
+**Notes:** Currencies may vary by country — aggregate within a currency only. Never combine currencies.
 
 ---
 
@@ -115,9 +116,10 @@ All physical table/column references are resolved at runtime by the People hydra
 
 1. **No scorecard edge case** — an application with no scorecards returns zero rows on Q2/Q3. Do not attempt to parse comp from empty results. Surface the missing-scorecards warning and let the user decide whether to proceed.
 2. **Multiple hiring manager records** — some ATS platforms allow multiple hiring managers on a req. Use the primary/opening hiring manager for team scoping. If the array is empty, fall back to Q4_FALLBACK.
-3. **Null comp is normal** — employees hired before offer data was tracked will have null comp. Show "—" — do not suppress the row or treat null as zero.
-4. **Currency heterogeneity** — teams with members in multiple countries will have comp values in different currencies. Never sum OTEs across currencies without a conversion step. Display each row's currency explicitly.
-5. **Recruiter notes vs candidate feedback** — the rubric table contains both interviewer-written feedback (candidate evaluation) and recruiter process notes (logistics, comp discussions). Distinguish these by scorecard/interview type. Comp parsing is only from recruiter process notes rows, never from candidate evaluation rows.
-6. **Comp data sensitivity** — hire-time compensation is sensitive employee data. Only surface aggregate context (compa-ratio, range position) to the user, not raw salary figures unless the session role has explicit compensation access. Follow the customer's configured data access policy.
-7. **ATS migration cutoff** — scorecards submitted before the ATS migration cutoff date may have different field semantics or missing rubric answers. Always surface the warning and let the user decide how much weight to give pre-migration data.
-8. **Latest effective date filter** — the employee snapshot must be filtered to the latest available effective date. Omitting this filter returns multiple rows per employee (one per historical snapshot date) and inflates team size.
+3. **Null comp is normal** — employees hired before offer data was tracked will have null comp. Exclude them from aggregates and report the count; do not treat null as zero.
+4. **Currency heterogeneity** — teams with members in multiple countries will have comp values in different currencies. Never combine currencies; report each currency group separately.
+5. **Recruiter notes vs candidate feedback** — the rubric table contains both interviewer-written feedback (candidate evaluation) and recruiter process notes (logistics, comp discussions). Distinguish these by scorecard/interview type. Competing-offer extraction is only from recruiter process notes rows, never from candidate evaluation rows.
+6. **Comp data sensitivity** — hire-time compensation is sensitive employee data. Only surface aggregates that meet the minimum group size; never an individual's pay, even with a compensation-access role. Small groups can reveal individuals, so suppress them.
+7. **No pay history** — current or prior pay, and pay the candidate would leave behind, is never extracted or used, even if present in notes.
+8. **ATS migration cutoff** — scorecards submitted before the ATS migration cutoff date may have different field semantics or missing rubric answers. Always surface the warning and let the user decide how much weight to give pre-migration data.
+9. **Latest effective date filter** — the employee snapshot must be filtered to the latest available effective date. Omitting this filter returns multiple rows per employee (one per historical snapshot date) and inflates team size.

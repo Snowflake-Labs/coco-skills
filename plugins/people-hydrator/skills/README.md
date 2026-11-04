@@ -1,7 +1,7 @@
 # People skills (dehydrated)
 
 > [!WARNING]
-> **For internal use only.** Once set up on your data, these skills process employee and candidate personally identifiable information (PII). **They do NOT obfuscate, mask or anonymize PII**, so their results must **NOT be exposed to the public internet** or shared beyond authorized internal users. Whoever deploys these skills is responsible for complying with local laws and regulations on processing personal data. See the [People Hydrator README](../README.md) for the full notice.
+> **For internal use only.** Once set up on your data, these skills process employee and candidate personally identifiable information (PII). **They do NOT anonymize PII**, so their results must **NOT be exposed to the public internet** or shared beyond authorized internal users. They are decision support, not legal advice: a qualified person must review every output before it informs a decision about a candidate or employee. Whoever deploys these skills is responsible for complying with local, state and national laws, including laws on personal data, automated hiring tools and job postings. See the [People Hydrator README](../README.md#legal-and-compliance) for the full notice.
 
 Nine People Analytics and Talent Acquisition skills: `attrition_insights`, `headcount_insights`, `good_morning_chro`, `good_morning_recruiting`, `hiring_brief`, `org_health_report`, `interview_debrief`, `offer_builder` and `job_description_builder`. See the [People README](../README.md) for what each one does, who it's for and how they fit together.
 
