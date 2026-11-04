@@ -48,6 +48,8 @@ You can always stop and come back: your answers and corrections are saved in you
 
 The engine detects where it runs: in Snowsight it uses your session; locally it uses your Snowflake CLI connection (`snow`).
 
+https://github.com/user-attachments/assets/9c2f98c2-456e-4bab-9478-cdbf87bf5977
+
 **Requirements:** Python 3.10+ (the engine uses the standard library only). Local runs need the Snowflake CLI with a connection to the account that holds the HR data.
 
 ## Layout
