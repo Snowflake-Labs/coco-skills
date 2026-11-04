@@ -40,7 +40,7 @@ Discovery is broad, shallow, and cheap; the expensive confirmation work happens 
 https://github.com/user-attachments/assets/3459eea9-5902-4649-a3da-ebb7809c68b9
 
 ```text
-set up finance plugin
+Install the plugins from https://github.com/Snowflake-Labs/coco-skills/tree/main/plugins/finance-hydrator and open finance hydrator
 ```
 
 The skill will ask for a Snowflake connection, role, and optional schema scope. It then produces a recommendation matrix and asks which skills to include.
