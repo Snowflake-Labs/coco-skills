@@ -1,21 +1,20 @@
 ---
 name: migrate-snowsql
+title: Migrate SnowSQL
+summary: States the migration in the host plan, then rewrites in place only after that plan is approved. Writes migration-plan.md only when the host has no plan mode.
 description: "Analyzes a SnowSQL project without editing it. When the host can submit a plan for approval, that plan is the migration plan: approving it rewrites the project files in place, and leaving it unapproved changes nothing. migration-plan.md and an implement / report-only question are the fallback when the host has no plan mode. The rewrite includes output rewrites for SnowSQL parity and does not write a second copy. After the rewrite, reports what was done and asks whether to run snow helpers import-snowsql-connections. Use when migrating SnowSQL scripts, connection files, or SNOWSQL_* variables to Snowflake CLI. Triggers: migrate SnowSQL, convert snowsql scripts, import-snowsql-connections, check-snowsql-env-vars, $migrate-snowsql. Snowflake CLI is a separate client, not a drop-in replacement. Not for unattended migration."
-allowed-tools:
+tools:
   - Bash
   - Read
   - Write
   - Edit
   - Grep
   - Glob
-metadata:
-  title: Migrate SnowSQL
-  summary: States the migration in the host plan, then rewrites in place only after that plan is approved. Writes migration-plan.md only when the host has no plan mode.
-  prompt: Migrate my SnowSQL scripts and connections to Snowflake CLI.
-  language: en
-  status: Published
-  author: Jan Bilek
-  type: snowflake
+prompt: Migrate my SnowSQL scripts and connections to Snowflake CLI.
+language: en
+status: Published
+author: Jan Bilek
+type: snowflake
 ---
 
 # Migrate SnowSQL
