@@ -12,7 +12,7 @@ tools:
   - Glob
 prompt: Migrate my SnowSQL scripts and connections to Snowflake CLI.
 language: en
-status: Hidden
+status: Published
 author: Jan Bilek
 type: snowflake
 ---
@@ -27,25 +27,30 @@ Rule list: [references/compatibility.md](references/compatibility.md). Load a re
 
 Out of scope: continuous SnowSQL sync, runtime SnowSQL compatibility, config-v2, unattended migration.
 
+## When to Use
+
+- Migrating SnowSQL 1.4 or 1.5 scripts, connection files, or `SNOWSQL_*` environment variables to Snowflake CLI.
+- Requests such as "migrate SnowSQL", "convert snowsql scripts", `import-snowsql-connections`, `check-snowsql-env-vars`, or `$migrate-snowsql`.
+- Not for unattended migration, and not for SnowSQL below 1.4 (upgrade first).
+
 ## Working directory
 
 Write `rewrite.diff` in the current working directory. Do not pick another path. Do not write `snowsql-migration-report.md`.
 
-The migration plan lives in the host plan. Write `migration-plan.md` in the working directory only when this session cannot submit a host plan. A chat reply is not a host plan. A host plan is a plan the user approves before any project edit. Cortex Code calls `enter_plan_mode`, then `exit_plan_mode` with this plan. Claude Code calls `EnterPlanMode`, then `ExitPlanMode` with this plan. Cursor switches to Plan mode and puts this plan there; building it is the approval. Any other host uses its own plan approval. If that mode is missing or refused, use the fallback.
+The migration plan lives in the host plan. Write `migration-plan.md` in the working directory only when this session cannot submit a host plan. A chat reply is not a host plan. A host plan is a plan the user approves before any project edit. Cortex Code calls `enter_plan_mode`, then `exit_plan_mode` with this plan; where Cortex Code instead has `switch_mode`, it calls `switch_mode(target_mode_id: "plan")`, then `create_plan` with this plan, and after approval `switch_mode(target_mode_id: "agent")`. Claude Code calls `EnterPlanMode`, then `ExitPlanMode` with this plan. Cursor switches to Plan mode and puts this plan there; building it is the approval. Any other host uses its own plan approval. If that mode is missing or refused, use the fallback.
 
 Do not edit a project file until that plan is approved, or, on the fallback, until they choose implement. Then rewrite those files in place. Do not create `snowsql-migrated/` or any other copy of the project.
 
 ## Workflow
 
-Track this yourself. Do not show it to the user.
+Show these five steps in the host todo list at the start. Mark the current step in progress before you start it, and completed as soon as it finishes. Cortex Code uses `system_todo_write`. Claude Code and Cursor use `TodoWrite`. If the host has no todo list, put the same five steps at the top of the plan. After Implement, the list also holds one pending todo per Manual review row (step 4).
 
 ```text
-Migration progress:
-- [ ] 1. Preflight
-- [ ] 2. Analyze
-- [ ] 3. Submit the host plan, or write the fallback file, then wait
-- [ ] 4. Rewrite files in place, if they approve
-- [ ] 5. Say what changed and offer connection import
+1. Preflight check
+2. Analyze source files
+3. Submit the plan
+4. Implement changes (optional)
+5. Import existing connections (optional)
 ```
 
 ### References (load on demand)
@@ -59,11 +64,11 @@ Migration progress:
 | Before submitting the plan | [references/validation.md](references/validation.md) |
 | Tricky rewrite | [references/mistakes.md](references/mistakes.md) |
 
-### 1. Preflight
+### Step 1: Preflight
 
 Load [references/preflight.md](references/preflight.md) and follow it. Record OS and both client versions. Gate SnowSQL to 1.4/1.5 and Snowflake CLI to `3.30.0.dev0` or later (including the importer help-text check). Do not print secrets. Leave SnowSQL installed. Do not edit its config.
 
-### 2. Analyze
+### Step 2: Analyze
 
 Load references from the table above as needed. Run `snow helpers check-snowsql-env-vars` first (read-only).
 
@@ -112,11 +117,11 @@ The first count is the number of Findings rows with disposition `compatible`. Do
 
 Every Manual review row is one sentence under `Left as written`: the file, what is there, and what a caller would see. A redaction is not one of those lines. When that count is zero, the body is the single word `None`. Approving the plan accepts those rows as written. Do not ask the user to decide them one by one.
 
-### 3. Submit the plan
+### Step 3: Submit the plan
 
 No secrets. Write for someone who has not seen the rule names.
 
-**Host plan.** If this session can submit a plan for approval before edits, enter that mode if you are not already in it, then submit this plan. Cortex Code calls `enter_plan_mode`, then `exit_plan_mode` with the plan text. Claude Code calls `EnterPlanMode`, then `ExitPlanMode` with the plan text. Cursor switches to Plan mode and puts this plan there; building it is the approval. Any other host uses its own plan approval. Do not write `migration-plan.md` or `snowsql-migration-report.md`. Do not ask implement or report-only. In chat, say only that nothing has changed and that approving the plan edits the files in place. Do not paste the plan into chat. Stop until they approve. Approval is the decision to edit. Leaving the plan unapproved, or refusing plan mode, stops with no project changes. Refusing plan mode uses the fallback.
+**Host plan.** If this session can submit a plan for approval before edits, enter that mode if you are not already in it, then submit this plan. Cortex Code calls `enter_plan_mode`, then `exit_plan_mode` with the plan text; where Cortex Code instead has `switch_mode`, it calls `switch_mode(target_mode_id: "plan")`, then `create_plan` with the plan text, and after approval `switch_mode(target_mode_id: "agent")`. Claude Code calls `EnterPlanMode`, then `ExitPlanMode` with the plan text. Cursor switches to Plan mode and puts this plan there; building it is the approval. Any other host uses its own plan approval. Do not write `migration-plan.md` or `snowsql-migration-report.md`. Do not ask implement or report-only. In chat, say only that nothing has changed and that approving the plan edits the files in place. Do not paste the plan into chat. Stop until they approve. Approval is the decision to edit. Leaving the plan unapproved, or refusing plan mode, stops with no project changes. Refusing plan mode uses the fallback.
 
 **Fallback.** If this session cannot submit a host plan, write the same plan to `migration-plan.md`. Do not write `snowsql-migration-report.md`. Send the briefing below. Do not paste the plan into chat.
 
@@ -137,19 +142,19 @@ Reply: implement / report-only
 
 Implement edits every Findings file in place. Manual review files marked `Leave unchanged` stay as they are. If they already approved the plan, or already chose implement, print `Rewriting your files in place.`, and go to Implement. Report-only stops. Do not ask about output gaps or import yet.
 
-### 4. Implement
+### Step 4: Implement
 
 Edit the project files in place. Do not write a second tree. Apply every Findings row without asking again. Leave a Manual review file marked `Leave unchanged` as written. Rewrite a defined `&name` to `<% name %>`. Change `snowsql` to `snow sql`. Before the first edit, snapshot only the files you will change, write `rewrite.diff` (`diff -u` against that snapshot), then delete the snapshot.
 
 Replacement detail stays in compatibility.md. Apply each Suggested fix in Manual review when that row is an output gap on a Findings file. output-gaps.md chooses it from the consumer and from tools already installed. The command stays `snow sql --format … > <original path>`. Keep every `-o output_file` path and extension. A TSV file with no TSV tool still uses its original path, and the bytes are CSV. Record `QUOTING: REWRITE` only when a quote-all pipe was applied.
 
-**Manual review.** Do not invent a translation for a `Leave unchanged` row. Name those files in the closing note. Walk through one only if they ask after that note.
+**Manual review.** Do not invent a translation for a `Leave unchanged` row. After the rewrite, add one pending todo per Manual review row to the host todo list: `Review <file>:<line>: <what a person still has to check>`. A `Leave unchanged` row says what is still SnowSQL. An output gap says what bytes still differ and which fix was applied. A redacted secret says which value the person must supply. Leave these todos pending. Mark one completed, or cancelled, only when the user says that item is handled or accepted. Do not drop them when the five steps finish. If the host has no todo list, the closing note is the only record. Walk through one only if they ask.
 
 Do not import connections in this step.
 
-### 5. Closing note and import offer
+### Step 5: Import existing connections
 
-After Implement, send the note below. Do not write `snowsql-migration-report.md`. A plan covers only the files you read. Live SQL needs another yes and a named non-production connection.
+After Implement, send the note below. A plan covers only the files you read. Live SQL needs another yes and a named non-production connection.
 
 After the files are rewritten, send this once. Name the command. Do not run it until they say yes. Preflight must still pass.
 
@@ -158,17 +163,24 @@ I edited your files in place.
 
 <n> lines: snowsql is now snow sql.
 <n> lines needed a different command. Same groups as the plan summary.
-Left as they were:
-- <file>:<line> <what is still there, and why>
+Still to review (<n>, also in your todo list):
+- <file>:<line> <what a person still has to check, and why>
 
 Import connections? snow helpers import-snowsql-connections
 Backs up the CLI config first. May prompt on overwrite. Not a sync.
 Reply: yes / no
 ```
 
-Same wording rules as the plan summary. `Left as they were` is `None` when nothing was held back.
+Same wording rules as the plan summary. `Still to review` lists every Manual review row: files left unchanged, output gaps that still differ after the fix, and redacted values. It is `None` when the plan had no Manual review rows. Drop `also in your todo list` when the host has none.
 
 If they say yes and Preflight passed: load configuration.md, back up the Snowflake CLI config file, run `snow helpers import-snowsql-connections` once, show a redacted before/after of connection names and key names. Import does not approve script edits or SQL.
+
+## Output
+
+- The migration plan, in the host plan (or `migration-plan.md` in the working directory when the host has no plan mode).
+- After approval: the project files rewritten in place, and `rewrite.diff` in the working directory.
+- One pending todo per Manual review row.
+- A closing note listing what changed and what is still to review, and offering `snow helpers import-snowsql-connections`.
 
 ## Stopping points
 
@@ -236,3 +248,4 @@ Technical traps live in [references/mistakes.md](references/mistakes.md).
 - Importing connections during Analyze or Implement, or running import without naming `snow helpers import-snowsql-connections`.
 - Printing secrets, editing the SnowSQL config, or writing `migration-plan.md` outside the working directory.
 - Guessing a translation for a construct no rule names (`manual review`).
+- Finishing Implement without a pending todo for each Manual review row, marking one completed without the user, or listing only the unchanged files and dropping output gaps.
