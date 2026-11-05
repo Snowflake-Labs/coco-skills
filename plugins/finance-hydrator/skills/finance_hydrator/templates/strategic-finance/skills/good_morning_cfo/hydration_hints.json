@@ -11,11 +11,11 @@
           "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_DAILY_FORECAST_VIEW_OR_TABLE>",
           "grain": [
             "date",
-            "segment_id"
+            "segment"
           ],
           "columns": {
             "date": "<YOUR_DATE_COLUMN>",
-            "segment_id": "<YOUR_SEGMENT_COLUMN>",
+            "segment": "<YOUR_SEGMENT_COLUMN>",
             "actual_amount": "<YOUR_ACTUAL_REVENUE_COLUMN>",
             "forecast_amount": "<YOUR_FORECAST_REVENUE_COLUMN>",
             "currency": "<YOUR_CURRENCY_COLUMN>"
@@ -37,11 +37,11 @@
         {
           "fqn": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_ACCOUNT_FORECAST_TABLE>",
           "grain": [
-            "week_ending_date",
+            "week",
             "account_id"
           ],
           "columns": {
-            "week_ending_date": "<YOUR_WEEK_COLUMN>",
+            "week": "<YOUR_WEEK_COLUMN>",
             "account_id": "<YOUR_ACCOUNT_ID_COLUMN>",
             "account_name": "<YOUR_ACCOUNT_NAME_COLUMN>",
             "forecast_amount": "<YOUR_FORECAST_REVENUE_COLUMN>",

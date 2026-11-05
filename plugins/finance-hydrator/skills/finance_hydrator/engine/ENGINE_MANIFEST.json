@@ -14,6 +14,6 @@
     "scripts/smoke_test_plan.py": "4e9509c3b4288c85835e0aeebd3f44207481ce452ba1d3db4ef4ab4dea40ca88",
     "scripts/update_manifests.py": "6a3fe16273344f72113b57b2d68597f1c863fe185bb30e1c256f7efee79b94dc",
     "scripts/validate_bindings.py": "d1523a7be86335027ec4f17d0c7d7ee4b44324d17ec544471deeb841c92c68ec",
-    "scripts/validate_catalog.py": "447a904419e3d4668b46ea15c6f93710c6b24465098b8c0f01313f388cfd1e56"
+    "scripts/validate_catalog.py": "0a32372e9680505e97de2e99e502a6a51439c09eef07191e1bcc596f2b8b57c9"
   }
 }

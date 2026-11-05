@@ -145,5 +145,69 @@ class HintsPlaceholderTests(unittest.TestCase):
         self.assertTrue(dup["notes"])
 
 
+STRATEGIC = SKILL_DIR / "catalog" / "strategic_finance.json"
+OPTED_IN_STRATEGIC = ("good_morning_cfo", "budget_vs_actuals")
+
+
+class StrategicFinanceTokenTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def lint(self, catalog: dict) -> dict:
+        path = write_json(self.tmp / "catalog.json", catalog)
+        return run_json("validate_catalog.py", "--validate-catalog", "--catalog", path, ok=False)
+
+    def test_opted_in_skills_fully_mapped(self):
+        report = self.lint(json.loads(STRATEGIC.read_text(encoding="utf-8")))
+        self.assertEqual(report["status"], "OK", report.get("errors", []))
+        names = [s["name"] for s in json.loads(STRATEGIC.read_text())["skills"]]
+        for name in OPTED_IN_STRATEGIC:
+            prefix = f"skills[{names.index(name)}]:"
+            self.assertFalse([w for w in report.get("warnings", []) if prefix in w], name)
+
+    def test_cfo_missing_usage_field_fails(self):
+        catalog = json.loads(STRATEGIC.read_text(encoding="utf-8"))
+        usage = need(skill(catalog, "good_morning_cfo"), "finance.consumption.daily_usage")
+        del usage["fields"]["usage_quantity"]
+        report = self.lint(catalog)
+        self.assertEqual(report["status"], "FAILED")
+        self.assertTrue(any("{{cols.usage_quantity}}" in e for e in report.get("errors", [])))
+
+
+class BudgetPlaceholderTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls._tmp = tempfile.TemporaryDirectory()
+        tmp = Path(cls._tmp.name)
+        catalog = ["--catalog", str(STRATEGIC)]
+        fit = run_json("score_fit.py", "--profile", TESTDATA / "profile_cfo.json", *catalog)
+        ready = run_json("score_readiness.py", "--inventory", TESTDATA / "inv_rich.json", *catalog)
+        cls.status = {s["skill"]: s["status"] for s in ready["skills"]}
+        recs = run_json("combine_recommendations.py",
+                        "--fit", write_json(tmp / "fit.json", fit),
+                        "--readiness", write_json(tmp / "ready.json", ready))
+        cls.plugin = tmp / "plugin"
+        cls.build = run("build_customer_plugin.py", "--assessment", write_json(tmp / "recs.json", recs),
+                        *catalog, "--output", cls.plugin, "--include-partial")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tmp.cleanup()
+
+    def test_plan_and_actual_tokens_distinct(self):
+        self.assertEqual(self.build.returncode, 0, self.build.stderr)
+        self.assertIn(self.status["budget_vs_actuals"], {"READY", "PARTIAL"})
+        path = self.plugin / "skills" / "budget_vs_actuals" / "hydration_hints.yaml"
+        ph = _minyaml.load(path.read_text(encoding="utf-8"))["placeholders"]
+        for token in ("plan_fqn", "actuals_fqn", "cols.period", "cols.actual_period",
+                      "cols.line_item_id", "cols.actual_line_item_id"):
+            self.assertIn(token, ph)
+        self.assertNotEqual(ph["plan_fqn"], ph["actuals_fqn"])
+
+
 if __name__ == "__main__":
     unittest.main()
