@@ -237,16 +237,6 @@ def defined_tokens(skill: dict[str, Any], skill_dir: Path) -> tuple[set[str], li
                 )
             owners[token] = key
             tokens.add(token)
-        # Legacy `columns` maps carry no override, so their canonical names are the tokens.
-        for name in (need.get("columns") or {}) if not need.get("fields") else ():
-            token = f"cols.{name}"
-            if token in owners and owners[token] != key:
-                collisions.append(
-                    f"{token} is produced by both {owners[token]} and {key}; "
-                    "convert to `fields` and set a distinct `placeholder` on one"
-                )
-            owners[token] = key
-            tokens.add(token)
     tokens |= {f"settings.{name}" for name in (skill.get("settings") or {})}
     sidecar = skill_dir / "hydration_hints.json"
     if sidecar.exists():
