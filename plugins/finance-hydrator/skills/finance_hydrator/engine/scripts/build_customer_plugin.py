@@ -218,6 +218,75 @@ def split_placeholders(settings: Any) -> tuple[Any, Any]:
     return settings, None
 
 
+def affects_readiness(spec: dict[str, Any]) -> bool:
+    """Catalog flag: ``affects_readiness: false`` marks enrichment-only items."""
+    return spec.get("affects_readiness", True) is not False
+
+
+def field_placeholder(name: str, spec: dict[str, Any]) -> str:
+    """Template token for a field: ``cols.<placeholder or canonical name>``."""
+    return f"cols.{spec.get('placeholder') or name}"
+
+
+def add_unmapped_fields(
+    data_needs: dict[str, Any], catalog_needs: dict[str, Any], unresolved: dict[str, Any]
+) -> None:
+    """List catalog fields a bound need could not map, so none vanish silently.
+
+    Readiness-affecting optional fields go to ``unresolved.columns`` (a warning);
+    enrichment fields go to ``unresolved.enrichment_columns`` (informational).
+    """
+    for key, need in data_needs.items():
+        catalog_need = catalog_needs.get(key) or {}
+        sources = need.get("sources") or [{}]
+        bound = set((sources[0] or {}).get("columns") or {})
+        if (sources[0] or {}).get("object_type") == "procedure":
+            continue
+        for name, spec in (catalog_need.get("fields") or {}).items():
+            if name in bound or spec.get("required"):
+                continue
+            enrichment = not affects_readiness(spec) or not affects_readiness(catalog_need)
+            bucket = "enrichment_columns" if enrichment else "columns"
+            listed = unresolved.setdefault(bucket, {}).setdefault(key, [])
+            if name not in listed:
+                listed.append(name)
+                listed.sort()
+
+
+def build_placeholders(
+    data_needs: dict[str, Any],
+    catalog_needs: dict[str, Any],
+    entry: dict[str, Any],
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """Flat token -> value map that templates substitute literally.
+
+    ``<need placeholder>_fqn`` -> bound FQN, ``cols.<field>`` -> physical column,
+    ``settings.<name>`` -> catalog default overridden by resolved extra_settings.
+    Only resolved values are written; anything else is listed under ``unresolved``.
+    """
+    out: dict[str, Any] = {}
+    for key, need in data_needs.items():
+        catalog_need = catalog_needs.get(key) or {}
+        sources = need.get("sources") or [{}]
+        first = sources[0] or {}
+        fqn = first.get("fqn")
+        if catalog_need.get("placeholder") and fqn and not has_placeholder(fqn):
+            out[f"{catalog_need['placeholder']}_fqn"] = fqn
+        specs = catalog_need.get("fields") or {}
+        for name, physical in (first.get("columns") or {}).items():
+            if physical and not has_placeholder(physical):
+                out[field_placeholder(name, specs.get(name) or {})] = physical
+    settings: dict[str, Any] = dict(entry.get("settings") or {})
+    for need in data_needs.values():
+        settings.update(need.get("extra_settings") or {})
+    settings.update(data.get("extra_settings") or {})
+    for name, value in settings.items():
+        if not isinstance(value, (dict, list)) and not has_placeholder(value):
+            out[f"settings.{name}"] = value
+    return dict(sorted(out.items()))
+
+
 def write_hydration_hints(dest: Path, item: dict[str, Any], entry: dict[str, Any]) -> None:
     """Merge resolved bindings into hydration_hints.yaml.
 
@@ -300,7 +369,8 @@ def write_hydration_hints(dest: Path, item: dict[str, Any], entry: dict[str, Any
         description = catalog_needs.get(key, {}).get("concepts")
         if description:
             hint["concepts"] = description
-        unresolved.setdefault("data_needs", {})[key] = hint
+        bucket = "data_needs" if affects_readiness(catalog_needs.get(key, {})) else "enrichment_data_needs"
+        unresolved.setdefault(bucket, {})[key] = hint
 
     data["data_needs"] = data_needs
     if "extra_settings" in data:
@@ -308,6 +378,11 @@ def write_hydration_hints(dest: Path, item: dict[str, Any], entry: dict[str, Any
         data["extra_settings"] = kept or {}
         if moved:
             unresolved.setdefault("extra_settings", {})["_top_level"] = moved
+    add_unmapped_fields(data_needs, catalog_needs, unresolved)
+    placeholders = build_placeholders(data_needs, catalog_needs, entry, data)
+    data.pop("placeholders", None)
+    if placeholders:
+        data["placeholders"] = placeholders
     data.pop("unresolved", None)
     if unresolved:
         data["unresolved"] = unresolved

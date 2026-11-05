@@ -88,7 +88,7 @@ WITH inv AS (
     {{cols.invoice_amount}} < 0                 AS is_credit_memo,
     COALESCE({{cols.received_date}} BETWEEN :window_start AND :window_end, FALSE) AS is_new
   FROM {{invoice_header_fqn}}
-  WHERE UPPER(COALESCE({{cols.status}}, '')) NOT IN ({{settings.excluded_statuses}})
+  WHERE UPPER(COALESCE({{cols.invoice_status}}, '')) NOT IN ({{settings.excluded_statuses}})
     AND COALESCE({{cols.intercompany_flag}}, FALSE) = FALSE
 ),
 po AS (

@@ -4,16 +4,16 @@
     "ENGINE_VERSION": "1575e1af4a95f12f70b4ee6a6adce8160953d93ea17dc2611b90883ccc3ad3b8",
     "references/customer_plugin_layout.md": "73e64525298f0ca37a359e86810c3f96fdd7581d552c4b78a2a37690ba7323b7",
     "references/emitter_contract.md": "83ca9afac3facdb822cfb8df25be26da894473971776d88e7970dbfbbb9d2e3b",
-    "references/output_contract.md": "acca53ce403eb2318d081dcefd10424c1674d1ec169fccba2e7b3398986b70ca",
+    "references/output_contract.md": "0659fbadd86298dd62f5d1caa615fa276f98121ca7396ee4fd0f75f37342678a",
     "references/scoring_model.md": "97be726bb85ac13368773db55b8e7232b6233a4edb1518daf7e91c159a9a3e6e",
     "scripts/_minyaml.py": "4ef4b9e895863dfd7a57217c78919b722601dd24235c0345cd06945de0cb509e",
-    "scripts/build_customer_plugin.py": "20c0594d19a7175ba557de7884c3d967d896825bd70f0d7ef8c9525add445ad8",
+    "scripts/build_customer_plugin.py": "0afbb4cea4a04db4ffda18fb46a744ba92d05a8e114fa797bc6a352fea360b6d",
     "scripts/combine_recommendations.py": "05d5fb805be39411edce6ebb9f54c1b950b6a36529c92a52ab8335c36c2293e9",
     "scripts/score_fit.py": "11950cb66935fe077e2126e7f1f96274c0e4ba6754318eeda5a3d06534eea89b",
-    "scripts/score_readiness.py": "6440b81ce48dac8e0164f5931d057b4dbbbcf0712454b8a2253cbd45fbc7fad1",
+    "scripts/score_readiness.py": "5bb047b0d22c221de66f737efcd99a9f6993f38e1624de39fba86120cd04e525",
     "scripts/smoke_test_plan.py": "4e9509c3b4288c85835e0aeebd3f44207481ce452ba1d3db4ef4ab4dea40ca88",
     "scripts/update_manifests.py": "6a3fe16273344f72113b57b2d68597f1c863fe185bb30e1c256f7efee79b94dc",
-    "scripts/validate_bindings.py": "aa7f6213ac8d5b9c5dfe11c9dacad38dbbb396cdfe09a46b46f92a8c8b1d9f0c",
-    "scripts/validate_catalog.py": "22c1448e51566d780dd7605d33003e5b2f5f376e1ad4c82d1690ea10a96eb21a"
+    "scripts/validate_bindings.py": "d1523a7be86335027ec4f17d0c7d7ee4b44324d17ec544471deeb841c92c68ec",
+    "scripts/validate_catalog.py": "447a904419e3d4668b46ea15c6f93710c6b24465098b8c0f01313f388cfd1e56"
   }
 }

@@ -1,6 +1,8 @@
 # Query Reference — Recon Analysis
 
-All physical table/column references are discovered at runtime based on the user's connected environment.
+All physical table/column references are discovered at runtime based on the user's connected environment. Bindings come from `hydration_hints.yaml` in the parent `recon_analysis` directory: `{{profile_store_fqn}}` (GET procedure or table), `{{settings.save_procedure}}` (SAVE procedure), `{{cols.*}}` for profile-store columns. Comparison sources (`{{source1}}`, `{{source2}}`) come from the loaded profile, not from the hints file.
+
+**Writes go through the SAVE procedure only.** The skill never issues INSERT / UPDATE / DELETE itself — profile changes are `CALL {{settings.save_procedure}}(...)`, after user confirmation. If only a table (no procedure) is bound, profile saving is unavailable; tell the user to run the hydrator's profile-store setup.
 
 ---
 
@@ -22,8 +24,23 @@ All physical table/column references are discovered at runtime based on the user
 1. Call the profile persistence mechanism (procedure or query)
 2. Return: profile_name, owner, visibility, last_updated, source1 summary, source2 summary
 3. Filter to profiles where visibility = 'public' OR owner = current_user
+4. **Latest version only:** a profile is its latest row; if that row is a deleted tombstone, the profile is not listed
 
 **Output grain**: one row per profile
+
+**Reference SQL:**
+
+```sql
+-- Procedure-backed store (preferred): returns a JSON array of current profiles
+CALL {{profile_store_fqn}}();
+
+-- Table-backed store: latest row per profile, then filter
+SELECT {{cols.profile_name}}, {{cols.owner}}, {{cols.visibility}}, {{cols.updated_at}}
+FROM {{profile_store_fqn}}
+QUALIFY ROW_NUMBER() OVER (PARTITION BY {{cols.profile_name}} ORDER BY {{cols.updated_at}} DESC) = 1
+-- then keep rows that are not deleted and are public or owned by CURRENT_USER()
+ORDER BY {{cols.updated_at}} DESC;
+```
 
 ---
 
@@ -37,6 +54,8 @@ All physical table/column references are discovered at runtime based on the user
 3. Parse into: sources, filters, date_columns, join_keys, comparison_fields, join_type, thresholds
 
 **Output grain**: single profile object
+
+**Reference SQL:** `CALL {{profile_store_fqn}}(:profile_name);` — returns `null` when the profile does not exist or its latest version is deleted.
 
 ---
 
@@ -56,6 +75,21 @@ All physical table/column references are discovered at runtime based on the user
    - match_rate = matched / GREATEST(source1_total, source2_total)
 
 **Output grain**: single summary row
+
+**Reference SQL** (`{{key}}` = the profile's join key column(s); source filters bound as parameters):
+
+```sql
+WITH s1 AS (SELECT DISTINCT {{key}} AS k FROM {{source1}} WHERE {{source1_filters}}),
+     s2 AS (SELECT DISTINCT {{key}} AS k FROM {{source2}} WHERE {{source2_filters}})
+SELECT
+  COUNT(s1.k)                                            AS source1_total_keys,
+  COUNT(s2.k)                                            AS source2_total_keys,
+  COUNT_IF(s1.k IS NOT NULL AND s2.k IS NOT NULL)        AS matched_keys,
+  COUNT_IF(s2.k IS NULL)                                 AS source1_only_keys,
+  COUNT_IF(s1.k IS NULL)                                 AS source2_only_keys,
+  DIV0(matched_keys, GREATEST(source1_total_keys, source2_total_keys)) AS match_rate
+FROM s1 FULL OUTER JOIN s2 ON s1.k = s2.k;
+```
 
 ---
 
@@ -125,11 +159,11 @@ All physical table/column references are discovered at runtime based on the user
 
 **Purpose**: Persist profile configuration changes.
 
-**Logic**:
-1. INSERT: Write new profile row with settings JSON, owner = current_user, visibility flag
-2. UPDATE: Append new version row for existing profile (owner-only)
-3. DELETE: Append tombstone row (soft-delete, owner-only)
-4. Return: success/failure with timestamp
+**Logic** (always via the SAVE procedure, after user confirmation — never direct DML):
+1. INSERT: `CALL {{settings.save_procedure}}('INSERT', :profile_name, :settings_json, :is_public)` — creates a profile; a previously deleted name may be re-used
+2. UPDATE: `CALL {{settings.save_procedure}}('UPDATE', :profile_name, :settings_json, :is_public)` — appends a new version row (owner-only; fails if the profile is deleted)
+3. DELETE: `CALL {{settings.save_procedure}}('DELETE', :profile_name)` — appends a tombstone row (owner-only; fails if already deleted)
+4. Return: the procedure's `{"success": ..., "updated_at" | "error": ...}` response, shown to the user
 
 **Output grain**: single status response
 
@@ -141,6 +175,6 @@ All physical table/column references are discovered at runtime based on the user
 
 **Logic**:
 1. Query all versions of a named profile ordered by timestamp descending
-2. For revert: load settings from a specific historical timestamp, then save as new current version
+2. For revert: `CALL {{profile_store_fqn}}(:profile_name, :as_of)` to load the version current at that timestamp, then save it as the new current version with the SAVE procedure (`UPDATE`, or `INSERT` if the profile is currently deleted)
 
 **Output grain**: one row per historical version

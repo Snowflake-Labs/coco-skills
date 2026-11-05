@@ -79,6 +79,29 @@ contain a deny-list token (`dev`, `demo`, `test`, `sandbox`, `scratch`, `tmp`, `
 `score_readiness.py --inventory account_inventory.json --catalog ...` consumes this and
 emits the Assessment shape below. `confidence` is one of HIGH / MEDIUM / LOW.
 
+## Template placeholders (`hydration_hints.yaml` → `placeholders:`)
+
+Templates reference data only through `{{tokens}}`; `build_customer_plugin.py` writes a flat
+`placeholders:` map into each generated `hydration_hints.yaml` that the skill substitutes literally.
+
+| Token | Source in the catalog | Value written |
+|---|---|---|
+| `{{<p>_fqn}}` | data need `"placeholder": "<p>"` | bound FQN |
+| `{{cols.<f>}}` | field name `<f>`, or the field's `"placeholder"` override | bound physical column |
+| `{{settings.<s>}}` | skill `"settings"` default, overridden by resolved `extra_settings` | value |
+| `{{<r>}}` | skill `"runtime_placeholders"` | not written — supplied at run time (e.g. `dims`, recon `source1`) |
+
+- Only resolved values are written. An unmapped field never disappears silently: readiness-affecting
+  optional fields go to `unresolved.columns` (warning → PARTIAL); enrichment fields go to
+  `unresolved.enrichment_columns` / `unresolved.enrichment_data_needs` (validator `notes`, status unchanged).
+- `"affects_readiness": false` on a field or optional data need marks it enrichment-only: it binds when
+  present but never lowers readiness. Not allowed on required fields or needs.
+- A field's `"placeholder"` override is required when two needs in one skill share a field name
+  (e.g. `cols.period` vs `cols.cal_period`).
+- `validate_catalog.py --validate-catalog` fails when an opted-in skill (any need declares
+  `placeholder`) uses a token the catalog cannot fill, or two needs produce the same token. Skills not
+  yet migrated get a warning.
+
 ## Assessment
 
 ```json

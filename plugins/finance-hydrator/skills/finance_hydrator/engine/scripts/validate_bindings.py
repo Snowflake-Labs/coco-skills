@@ -165,6 +165,22 @@ def validate_hints(
     return errors, warnings
 
 
+def hint_notes(path: Path) -> list[str]:
+    """Informational gaps that never change status (enrichment-only data)."""
+    try:
+        data = _minyaml.load(path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return []
+    unresolved = data.get("unresolved") if isinstance(data, dict) else None
+    if not isinstance(unresolved, dict):
+        return []
+    notes = [f"{path}: optional enrichment data_need {key} is unbound"
+             for key in (unresolved.get("enrichment_data_needs") or {})]
+    notes += [f"{path}: data_need {key} has unbound enrichment columns {cols}"
+              for key, cols in (unresolved.get("enrichment_columns") or {}).items()]
+    return notes
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--plugin-dir", type=Path, required=True)
@@ -219,9 +235,11 @@ def main() -> int:
                 skill_warnings: list[str] = []
             else:
                 skill_errors, skill_warnings = validate_hints(hints, inventory)
+            skill_notes = hint_notes(hints) if hints.exists() else []
             status = "BLOCKED" if skill_errors else ("PARTIAL" if skill_warnings else "READY")
             skills.append({"skill": skill_path.name, "status": status,
-                           "errors": skill_errors, "warnings": skill_warnings})
+                           "errors": skill_errors, "warnings": skill_warnings,
+                           "notes": skill_notes})
             errors.extend(skill_errors)
             warnings.extend(skill_warnings)
 

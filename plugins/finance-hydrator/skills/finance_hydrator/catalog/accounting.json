@@ -23,6 +23,7 @@
       "data_needs": [
         {
           "key": "accounting.gl.journal_entries",
+          "placeholder": "gl",
           "required": true,
           "concepts": [
             "general ledger",
@@ -36,20 +37,26 @@
           "fields": {
             "period": {
               "required": true,
-              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date"]
+              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date", "budat"]
             },
             "account": {
               "required": true,
-              "aliases": ["account", "account_number", "gl_account", "gl_account_number", "ledger_account", "natural_account", "account_code", "account_id", "main_account"]
+              "aliases": ["account", "account_number", "gl_account", "gl_account_number", "ledger_account", "natural_account", "account_code", "account_id", "main_account", "hkont"]
             },
             "amount": {
               "required": true,
-              "aliases": ["amount", "net_amount", "ledger_debit_minus_credit", "debit_minus_credit", "functional_amount", "amount_usd", "amount_functional", "accounted_amount", "amount_in_company_code_currency"]
+              "aliases": ["amount", "net_amount", "ledger_debit_minus_credit", "debit_minus_credit", "functional_amount", "amount_usd", "amount_functional", "accounted_amount", "amount_in_company_code_currency", "wrbtr"]
+            },
+            "account_type": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["account_type", "account_category", "account_class", "gl_account_type", "financial_statement_type", "account_classification"]
             }
           }
         },
         {
           "key": "accounting.calendar.fiscal_periods",
+          "placeholder": "calendar",
           "required": false,
           "concepts": [
             "fiscal calendar",
@@ -62,7 +69,8 @@
           "fields": {
             "period": {
               "required": true,
-              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date"]
+              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date"],
+              "placeholder": "cal_period"
             },
             "period_start": {
               "required": false,
@@ -73,7 +81,45 @@
               "aliases": ["period_end", "end_date", "period_end_date", "fiscal_month_end"]
             }
           }
+        },
+        {
+          "key": "accounting.gl.balance_sheet_balances",
+          "placeholder": "bs",
+          "required": false,
+          "affects_readiness": false,
+          "concepts": [
+            "balance sheet balances",
+            "period-end balance",
+            "trial balance"
+          ],
+          "grain": [
+            "balance_date",
+            "account"
+          ],
+          "fields": {
+            "balance_date": {
+              "required": true,
+              "placeholder": "bs_date",
+              "aliases": ["balance_date", "period_end_date", "as_of_date", "snapshot_date", "period_end", "effective_date"]
+            },
+            "account": {
+              "required": true,
+              "placeholder": "bs_account",
+              "aliases": ["account", "account_number", "gl_account", "gl_account_number", "ledger_account", "natural_account", "account_code", "account_id", "main_account", "hkont"]
+            },
+            "amount": {
+              "required": true,
+              "placeholder": "bs_amount",
+              "aliases": ["ending_balance", "closing_balance", "period_end_balance", "balance", "amount", "balance_amount"]
+            }
+          }
         }
+      ],
+      "settings": {
+        "natural_sign": "credit_negative"
+      },
+      "runtime_placeholders": [
+        "dims"
       ],
       "finance_subdepartments": [
         "controller"
@@ -101,7 +147,8 @@
       ],
       "context_queries": {
         "accounting.gl.journal_entries": "official production data for general ledger, journal entries, account balance; grain: period, account; required fields: period, account, amount",
-        "accounting.calendar.fiscal_periods": "optional official data for fiscal calendar, accounting period, close period; grain: period; required fields: period; optional fields: period_start, period_end"
+        "accounting.calendar.fiscal_periods": "optional official data for fiscal calendar, accounting period, close period; grain: period; required fields: period; optional fields: period_start, period_end",
+        "accounting.gl.balance_sheet_balances": "optional official data for balance sheet period-end balances; grain: balance_date, account; required fields: balance_date, account, amount"
       }
     },
     {
@@ -123,6 +170,7 @@
       "data_needs": [
         {
           "key": "accounting.ap.invoice_header",
+          "placeholder": "invoice_header",
           "required": true,
           "concepts": [
             "invoice header",
@@ -135,7 +183,7 @@
           "fields": {
             "invoice_id": {
               "required": true,
-              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no"]
+              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no", "belnr"]
             },
             "supplier": {
               "required": true,
@@ -143,7 +191,7 @@
             },
             "invoice_amount": {
               "required": true,
-              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd"]
+              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd", "invoice_amt"]
             },
             "invoice_status": {
               "required": true,
@@ -160,6 +208,26 @@
             "open_amount": {
               "required": false,
               "aliases": ["open_amount", "amount_remaining", "amount_due_remaining", "balance", "balance_due", "remaining_amount", "outstanding_amount", "amount_unpaid"]
+            },
+            "supplier_id": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["supplier_id", "vendor_id", "supplier_number", "vendor_number", "vendor_account", "lifnr", "vendor_site_id", "supplier_reference_id"]
+            },
+            "amount_paid": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["amount_paid", "paid_amount", "amount_applied", "payment_amount_applied", "total_paid"]
+            },
+            "currency": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["currency", "currency_code", "transaction_currency", "invoice_currency", "waers"]
+            },
+            "intercompany_flag": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["intercompany_flag", "is_intercompany", "intercompany", "ic_flag"]
             }
           }
         }
@@ -191,6 +259,9 @@
       ],
       "context_queries": {
         "accounting.ap.invoice_header": "official production data for invoice header, payables ledger, AP transaction; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_status; optional fields: invoice_date, due_date, open_amount"
+      },
+      "settings": {
+        "excluded_statuses": "'VOID', 'CANCELLED'"
       }
     },
     {
@@ -213,6 +284,7 @@
       "data_needs": [
         {
           "key": "accounting.ar.aging",
+          "placeholder": "ar",
           "required": true,
           "concepts": [
             "AR aging",
@@ -226,7 +298,7 @@
           "fields": {
             "customer_id": {
               "required": true,
-              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id"]
+              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id", "bill_to"]
             },
             "invoice_id": {
               "required": true,
@@ -243,6 +315,64 @@
             "customer": {
               "required": false,
               "aliases": ["customer", "customer_name", "account_name", "bill_to_customer_name"]
+            },
+            "currency": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["currency", "currency_code", "transaction_currency", "invoice_currency", "waers"]
+            },
+            "invoice_status": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["invoice_status", "status", "payment_status", "transaction_status", "document_status"]
+            }
+          }
+        },
+        {
+          "key": "accounting.ar.disputes",
+          "placeholder": "dispute",
+          "required": false,
+          "affects_readiness": false,
+          "concepts": [
+            "AR disputes",
+            "customer dispute",
+            "deduction"
+          ],
+          "grain": [
+            "dispute_id"
+          ],
+          "fields": {
+            "dispute_amount": {
+              "required": true,
+              "aliases": ["dispute_amount", "disputed_amount", "amount", "deduction_amount"]
+            },
+            "dispute_sla_date": {
+              "required": false,
+              "aliases": ["dispute_sla_date", "sla_date", "resolution_due_date", "target_resolution_date"]
+            }
+          }
+        },
+        {
+          "key": "accounting.calendar.business_days",
+          "placeholder": "calendar",
+          "required": false,
+          "affects_readiness": false,
+          "concepts": [
+            "holiday calendar",
+            "business day calendar",
+            "working days"
+          ],
+          "grain": [
+            "calendar_date"
+          ],
+          "fields": {
+            "calendar_date": {
+              "required": true,
+              "aliases": ["calendar_date", "date", "cal_date", "day_date"]
+            },
+            "is_business_day": {
+              "required": true,
+              "aliases": ["is_business_day", "is_working_day", "business_day_flag", "is_workday"]
             }
           }
         }
@@ -273,7 +403,12 @@
         "skill_plugin"
       ],
       "context_queries": {
-        "accounting.ar.aging": "official production data for AR aging, receivables, overdue invoice; grain: customer_id, invoice_id; required fields: customer_id, invoice_id, due_date, balance; optional fields: customer"
+        "accounting.ar.aging": "official production data for AR aging, receivables, overdue invoice; grain: customer_id, invoice_id; required fields: customer_id, invoice_id, due_date, balance; optional fields: customer",
+        "accounting.ar.disputes": "optional official data for open AR disputes; grain: dispute_id; required fields: dispute_amount; optional fields: dispute_sla_date",
+        "accounting.calendar.business_days": "optional official holiday / business-day calendar; grain: calendar_date; required fields: calendar_date, is_business_day"
+      },
+      "settings": {
+        "excluded_statuses": "'VOID', 'CANCELLED'"
       }
     },
     {
@@ -295,6 +430,7 @@
       "data_needs": [
         {
           "key": "accounting.ap.invoice_header",
+          "placeholder": "invoice_header",
           "required": true,
           "concepts": [
             "invoice header",
@@ -316,7 +452,7 @@
             },
             "invoice_amount": {
               "required": true,
-              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd"]
+              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd", "invoice_amt"]
             },
             "invoice_date": {
               "required": true,
@@ -328,11 +464,52 @@
             },
             "invoice_id": {
               "required": false,
-              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no"]
+              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no", "belnr"]
             },
             "invoice_status": {
               "required": false,
               "aliases": ["invoice_status", "status", "approval_status", "payment_status", "document_status", "invoice_state"]
+            },
+            "currency": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["currency", "currency_code", "transaction_currency", "invoice_currency", "waers"]
+            },
+            "intercompany_flag": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["intercompany_flag", "is_intercompany", "intercompany", "ic_flag"]
+            },
+            "received_date": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["received_date", "date_received", "receipt_date", "entered_date", "created_date"]
+            }
+          }
+        },
+        {
+          "key": "accounting.ap.invoice_lines",
+          "placeholder": "invoice_line",
+          "required": false,
+          "affects_readiness": false,
+          "concepts": [
+            "invoice lines",
+            "invoice line items",
+            "PO match"
+          ],
+          "grain": [
+            "invoice_id",
+            "line_number"
+          ],
+          "fields": {
+            "invoice_id": {
+              "required": true,
+              "placeholder": "line_invoice_id",
+              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no", "belnr"]
+            },
+            "po_reference": {
+              "required": true,
+              "aliases": ["po_reference", "po_number", "purchase_order", "purchase_order_number", "po_id", "ebeln"]
             }
           }
         }
@@ -363,7 +540,11 @@
         "skill_plugin"
       ],
       "context_queries": {
-        "accounting.ap.invoice_header": "official production data for invoice header, supplier invoice, vendor invoice reference; grain: supplier_id, vendor_invoice_reference; required fields: supplier_id, vendor_invoice_reference, invoice_amount, invoice_date; optional fields: supplier, invoice_id, invoice_status"
+        "accounting.ap.invoice_header": "official production data for invoice header, supplier invoice, vendor invoice reference; grain: supplier_id, vendor_invoice_reference; required fields: supplier_id, vendor_invoice_reference, invoice_amount, invoice_date; optional fields: supplier, invoice_id, invoice_status",
+        "accounting.ap.invoice_lines": "optional official data for AP invoice lines with PO references; grain: invoice_id, line_number; required fields: invoice_id, po_reference"
+      },
+      "settings": {
+        "excluded_statuses": "'VOID', 'CANCELLED', 'REVERSED'"
       }
     },
     {
@@ -383,6 +564,7 @@
       "data_needs": [
         {
           "key": "accounting.ar.collector_portfolio",
+          "placeholder": "ar",
           "required": true,
           "unsafe_scoping_columns": [
             "collector_id"
@@ -403,7 +585,7 @@
             },
             "customer_id": {
               "required": true,
-              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id"]
+              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id", "bill_to"]
             },
             "balance": {
               "required": true,
@@ -412,6 +594,26 @@
             "aging_bucket": {
               "required": false,
               "aliases": ["aging_bucket", "aging_category", "days_past_due_bucket", "aging_band"]
+            },
+            "due_date": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["due_date", "payment_due_date", "net_due_date", "invoice_due_date", "duedate"]
+            },
+            "customer": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["customer", "customer_name", "account_name", "bill_to_customer_name"]
+            },
+            "currency": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["currency", "currency_code", "transaction_currency", "invoice_currency", "waers"]
+            },
+            "last_contact_date": {
+              "required": false,
+              "affects_readiness": false,
+              "aliases": ["last_contact_date", "last_contacted", "last_activity_date", "last_touch_date", "last_contact"]
             }
           }
         }
@@ -467,6 +669,7 @@
       "data_needs": [
         {
           "key": "accounting.recon.profile_store",
+          "placeholder": "profile_store",
           "required": true,
           "concepts": [
             "reconciliation profile",
@@ -503,6 +706,7 @@
         },
         {
           "key": "accounting.recon.category_rules",
+          "placeholder": "category_rules",
           "required": false,
           "concepts": [
             "recon category rules",
@@ -535,6 +739,7 @@
         },
         {
           "key": "accounting.calendar.fiscal_periods",
+          "placeholder": "calendar",
           "required": false,
           "concepts": [
             "fiscal calendar",
@@ -561,6 +766,7 @@
         },
         {
           "key": "accounting.recon.result_store",
+          "placeholder": "result_store",
           "required": false,
           "concepts": [
             "recon results",
@@ -575,7 +781,8 @@
           "fields": {
             "profile_name": {
               "required": true,
-              "aliases": ["profile_name", "name", "recon_name"]
+              "aliases": ["profile_name", "name", "recon_name"],
+              "placeholder": "result_profile_name"
             },
             "run_date": {
               "required": true,
@@ -621,7 +828,14 @@
         "accounting.recon.category_rules": "optional table of break classification rules mapping discrepancy patterns to typed categories with comment templates; grain: rule_priority; required fields: rule_priority, category, condition; optional fields: comment_template",
         "accounting.calendar.fiscal_periods": "optional fiscal calendar reference for date-scoped reconciliations; grain: period; required fields: period; optional fields: period_start, period_end",
         "accounting.recon.result_store": "optional table of historical reconciliation run results for reasonableness checks; grain: profile_name + run_date; required fields: profile_name, run_date; optional fields: match_rate"
-      }
+      },
+      "runtime_placeholders": [
+        "source1",
+        "source2",
+        "source1_filters",
+        "source2_filters",
+        "key"
+      ]
     }
   ]
 }
