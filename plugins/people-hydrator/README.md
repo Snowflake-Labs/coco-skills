@@ -14,11 +14,12 @@ People Hydrator sets up the dehydrated People skills on **your own** HR data in 
 ## Who it's for
 The person setting up the People skills for their company, usually a **People Analytics analyst** or HR data lead. You don't need to write code or SQL: you answer questions in chat and review real numbers. You need read access to the HR data in Snowflake. The people who later *use* the skills (CHRO, HR Business Partners, recruiters) don't run People Hydrator.
 
-## What to download
-| You want | Use |
-|---|---|
-| Guided setup of the People skills on your data | This plugin: `plugins/people-hydrator/` |
-| The dehydrated skill templates on their own | `plugins/people-hydrator/skills/` and their tests in `plugins/people-hydrator/evals/` (the templates here are generated from them) |
+## Quick Start
+https://github.com/user-attachments/assets/9c2f98c2-456e-4bab-9478-cdbf87bf5977
+
+```text
+Install the plugins from https://github.com/Snowflake-Labs/coco-skills/tree/main/plugins/people-hydrator and open people hydrator
+```
 
 ## The flow
 | Stage | What happens | Your input |
@@ -47,8 +48,6 @@ You can always stop and come back: your answers and corrections are saved in you
 | Cortex Code on your computer | **Chat**, guided through the stages | `cortex plugin add <path>/people-hydrator`, then say "Open People Hydrator" |
 
 The engine detects where it runs: in Snowsight it uses your session; locally it uses your Snowflake CLI connection (`snow`).
-
-https://github.com/user-attachments/assets/9c2f98c2-456e-4bab-9478-cdbf87bf5977
 
 **Requirements:** Python 3.10+ (the engine uses the standard library only). Local runs need the Snowflake CLI with a connection to the account that holds the HR data.
 
