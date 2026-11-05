@@ -1,9 +1,9 @@
 # Query Reference — Good Morning Collector (Dehydrated)
 
-All physical table/column references are resolved at runtime from `hydration_hints.yaml`.
+All physical table/column references are resolved at runtime from `hydration_hints.yaml`. Reference SQL below uses `{{ar_fqn}}`, `{{cols.*}}` and `{{settings.*}}` placeholders filled from that file. `:collector` is the resolved collector value, always a bound parameter.
 
 **Parameter binding (all user-supplied search text):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
-`{{cols.account_name}} ILIKE '%' || :search || '%' ESCAPE '\\'`
+`{{cols.customer}} ILIKE '%' || :search || '%' ESCAPE '\\'`
 
 **"Yesterday"** = the prior business day (Monday → Friday; holiday calendar if bound, else weekends only — disclosed).
 
@@ -30,6 +30,29 @@ All physical table/column references are resolved at runtime from `hydration_hin
 4. For delta: compare current snapshot vs the prior business day's snapshot (same query, different date filter)
 
 **Output grain**: one row per aging bucket (5 rows total)
+
+**Reference SQL (portfolio aging; use `{{cols.aging_bucket}}` directly instead of the CASE when it is bound):**
+
+```sql
+SELECT
+  CASE
+    WHEN DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE()) <= 0  THEN '1. Current'
+    WHEN DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE()) <= 30 THEN '2. 1-30'
+    WHEN DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE()) <= 60 THEN '3. 31-60'
+    WHEN DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE()) <= 90 THEN '4. 61-90'
+    ELSE '5. 90+'
+  END                                   AS aging_bucket,
+  {{cols.currency}}                     AS currency,
+  SUM({{cols.balance}})                 AS balance,
+  COUNT(DISTINCT {{cols.customer_id}})  AS accounts
+FROM {{ar_fqn}}
+WHERE {{cols.collector_id}} = :collector
+  AND {{cols.balance}} > 0
+GROUP BY 1, 2
+ORDER BY 2, 1;
+```
+
+Report credit balances (`{{cols.balance}} < 0`) as a separate "Unapplied cash / credits" line (see Pitfalls).
 
 ---
 
@@ -69,6 +92,33 @@ priority_score = balance
 4. Include: account_name, balance, days_past_due, last_contact_date
 
 **Output grain**: 5 rows ranked by priority score
+
+**Reference SQL:**
+
+```sql
+WITH accounts AS (
+  SELECT
+    {{cols.customer_id}}                                       AS customer_id,
+    ANY_VALUE({{cols.customer}})                           AS account_name,
+    SUM({{cols.balance}})                                      AS balance,
+    MAX(DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE()))      AS days_past_due,
+    MAX({{cols.last_contact_date}})                            AS last_contact_date
+  FROM {{ar_fqn}}
+  WHERE {{cols.collector_id}} = :collector
+    AND {{cols.balance}} > 0
+  GROUP BY 1
+)
+SELECT
+  account_name, balance, days_past_due, last_contact_date,
+  balance
+    * SQRT(GREATEST(days_past_due, 0))
+    * LN(COALESCE(DATEDIFF(day, last_contact_date, CURRENT_DATE()),
+                  :never_contacted_days) + 1)                  AS priority_score
+FROM accounts
+WHERE days_past_due > 0
+ORDER BY priority_score DESC
+LIMIT 5;
+```
 
 ---
 
@@ -142,6 +192,9 @@ priority_score = balance
 
 **Output grain**: single summary row — MTD collected $, MTD invoiced $, collection rate %, and prior-month comparison if available
 
+---
+
+## Pitfalls
 
 1. **Aging = days past DUE date, not invoice date** — a common confusion. If the table has both, use due_date for aging.
 2. **Collector assignment changes** — some systems reassign mid-month. Use the current assignment, not historical.

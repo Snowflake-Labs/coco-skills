@@ -1,6 +1,10 @@
 # Query Reference — Flux Analysis
 
-All physical table/column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns — no SQL, no FQNs.
+All physical table/column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns, plus reference SQL snippets with `{{placeholders}}` filled from `hydration_hints.yaml` (`{{gl_fqn}}`, `{{bs_fqn}}`, `{{calendar_fqn}}`, `{{cols.*}}`, `{{settings.*}}`). No FQNs.
+
+**Parameter binding:** periods, account lists and dates are bound parameters (`:current_period`, `:prior_period`, `:account_list`, …) — never concatenated into SQL. `{{dims}}` expands to the comma-separated bound dimension columns chosen in Step 0 / the dimension probe.
+
+**Sign convention:** when `{{settings.natural_sign}}` = `credit_negative`, multiply amounts by `-1` for credit-natured accounts (`{{cols.account_type}}` in Revenue / Liability / Equity) **before** computing variance, so increases read as positive. When it is `as_stored`, use amounts unchanged.
 
 ---
 
@@ -27,6 +31,31 @@ All physical table/column references are resolved at runtime against the custome
 
 **Output grain**: One row per GL account with current balance, prior balance, variance, and variance %.
 
+**Reference SQL (account enumeration, activity accounts):**
+
+```sql
+WITH lines AS (
+  SELECT
+    {{cols.account}}                                            AS account,
+    {{cols.period}}                                             AS period,
+    IFF('{{settings.natural_sign}}' = 'credit_negative'
+        AND UPPER({{cols.account_type}}) IN ('REVENUE', 'LIABILITY', 'EQUITY'),
+        -{{cols.amount}}, {{cols.amount}})                      AS amount
+  FROM {{gl_fqn}}
+  WHERE {{cols.period}} IN (:current_period, :prior_period)
+    AND ARRAY_CONTAINS({{cols.account}}::VARIANT, :account_list)
+)
+SELECT
+  account,
+  SUM(IFF(period = :current_period, amount, 0))                 AS current_amount,
+  SUM(IFF(period = :prior_period,   amount, 0))                 AS prior_amount,
+  current_amount - prior_amount                                 AS variance,
+  DIV0(variance, ABS(prior_amount)) * 100                       AS variance_pct
+FROM lines
+GROUP BY account
+ORDER BY ABS(variance) DESC;
+```
+
 ---
 
 ## Query Type 2 — Activity Flux (Income Statement)
@@ -45,6 +74,32 @@ All physical table/column references are resolved at runtime against the custome
 
 **Output grain**: One row per unique dimension combination, ranked by variance contribution.
 
+**Reference SQL (activity drivers):**
+
+```sql
+WITH by_dim AS (
+  SELECT
+    {{dims}},
+    SUM(IFF({{cols.period}} = :current_period, {{cols.amount}}, 0)) AS current_amount,
+    SUM(IFF({{cols.period}} = :prior_period,   {{cols.amount}}, 0)) AS prior_amount
+  FROM {{gl_fqn}}
+  WHERE {{cols.period}} IN (:current_period, :prior_period)
+    AND ARRAY_CONTAINS({{cols.account}}::VARIANT, :account_list)
+  GROUP BY {{dims}}
+)
+SELECT
+  *,
+  current_amount - prior_amount                                      AS change_amount,
+  DIV0(change_amount, ABS(prior_amount)) * 100                       AS change_pct,
+  SUM(ABS(change_amount)) OVER (ORDER BY ABS(change_amount) DESC
+      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+    / NULLIF(SUM(ABS(change_amount)) OVER (), 0) * 100              AS cumulative_pct_of_variance
+FROM by_dim
+ORDER BY ABS(change_amount) DESC;
+```
+
+Apply the sign convention from the top of this file to `{{cols.amount}}` when `natural_sign` = `credit_negative`.
+
 ---
 
 ## Query Type 3 — Balance Flux (Balance Sheet)
@@ -61,6 +116,31 @@ All physical table/column references are resolved at runtime against the custome
 **Key difference from Activity Flux**: Balance sheet uses point-in-time snapshots at specific dates, not activity totals across a date range.
 
 **Output grain**: One row per dimension combination at the two comparison dates.
+
+**Reference SQL (period-end balances — period-end dates come from the fiscal calendar, never hardcoded):**
+
+`{{bs_fqn}}` / `{{cols.bs_*}}` are the balance-sheet binding and `{{cols.cal_period}}` / `{{cols.period_end}}` the fiscal-calendar binding. If no balance-sheet table is bound (it is listed under `unresolved:`), ask the user for it rather than guessing.
+
+```sql
+WITH period_ends AS (
+  SELECT
+    MAX(IFF({{cols.cal_period}} = :current_period, {{cols.period_end}}, NULL)) AS current_end,
+    MAX(IFF({{cols.cal_period}} = :prior_period,   {{cols.period_end}}, NULL)) AS prior_end
+  FROM {{calendar_fqn}}
+  WHERE {{cols.cal_period}} IN (:current_period, :prior_period)
+)
+SELECT
+  {{dims}},
+  SUM(IFF(b.{{cols.bs_date}} = p.current_end, b.{{cols.bs_amount}}, 0)) AS current_balance,
+  SUM(IFF(b.{{cols.bs_date}} = p.prior_end,   b.{{cols.bs_amount}}, 0)) AS prior_balance,
+  current_balance - prior_balance                                        AS change_amount
+FROM {{bs_fqn}} b
+CROSS JOIN period_ends p
+WHERE b.{{cols.bs_date}} IN (p.current_end, p.prior_end)
+  AND ARRAY_CONTAINS(b.{{cols.bs_account}}::VARIANT, :account_list)
+GROUP BY {{dims}}
+ORDER BY ABS(change_amount) DESC;
+```
 
 ---
 

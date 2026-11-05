@@ -3,7 +3,7 @@
 All physical table and column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns, plus a reference aging SQL with `{{placeholders}}` filled from `hydration_hints.yaml`. No customer FQNs.
 
 **Parameter binding (all `supplier_keyword` / reference / free-text filters):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
-`{{cols.supplier_name}} ILIKE '%' || :supplier_keyword || '%' ESCAPE '\\'`
+`{{cols.supplier}} ILIKE '%' || :supplier_keyword || '%' ESCAPE '\\'`
 
 ---
 
@@ -68,7 +68,7 @@ WITH open_inv AS (
     {{cols.invoice_amount}} - COALESCE({{cols.amount_paid}}, 0) AS open_amount,
     DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE())          AS days_past_due
   FROM {{invoice_header_fqn}}
-  WHERE UPPER(COALESCE({{cols.status}}, '')) NOT IN ({{settings.excluded_statuses}})
+  WHERE UPPER(COALESCE({{cols.invoice_status}}, '')) NOT IN ({{settings.excluded_statuses}})
     AND COALESCE({{cols.intercompany_flag}}, FALSE) = FALSE   -- drop if no flag is bound
     AND {{cols.invoice_amount}} - COALESCE({{cols.amount_paid}}, 0) <> 0
 )

@@ -3,7 +3,7 @@
 All physical table/column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns, plus reference SQL snippets with `{{placeholders}}` filled from `hydration_hints.yaml`. No FQNs.
 
 **Parameter binding (all user-supplied search text):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
-`{{cols.account_name}} ILIKE '%' || :search || '%' ESCAPE '\\'`
+`{{cols.customer}} ILIKE '%' || :search || '%' ESCAPE '\\'`
 
 ---
 
@@ -49,11 +49,11 @@ SELECT
   SUM(IFF({{cols.balance}} > 0, {{cols.balance}}, 0))           AS gross_open_ar,
   -SUM(IFF({{cols.balance}} < 0, {{cols.balance}}, 0))          AS unapplied_cash_and_credits,
   SUM({{cols.balance}})                                         AS net_ar,
-  COUNT(DISTINCT IFF({{cols.balance}} > 0, {{cols.account_id}}, NULL)) AS open_accounts,
+  COUNT(DISTINCT IFF({{cols.balance}} > 0, {{cols.customer_id}}, NULL)) AS open_accounts,
   COUNT(DISTINCT IFF({{cols.balance}} > 0, {{cols.invoice_id}}, NULL)) AS open_invoices
 FROM {{ar_fqn}}
 WHERE {{cols.balance}} <> 0
-  AND UPPER(COALESCE({{cols.status}}, '')) NOT IN ({{settings.excluded_statuses}})
+  AND UPPER(COALESCE({{cols.invoice_status}}, '')) NOT IN ({{settings.excluded_statuses}})
 GROUP BY 1;
 ```
 

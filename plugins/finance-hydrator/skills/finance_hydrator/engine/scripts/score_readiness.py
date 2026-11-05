@@ -126,6 +126,7 @@ def normalize_fields(need: dict[str, Any]) -> list[dict[str, Any]]:
                 "required": bool(spec.get("required")),
                 "aliases": aliases,
                 "semantic_type": spec.get("semantic_type"),
+                "affects_readiness": spec.get("affects_readiness", True) is not False,
             })
         return fields
     for canonical, requirement in (need.get("columns") or {}).items():
@@ -134,6 +135,7 @@ def normalize_fields(need: dict[str, Any]) -> list[dict[str, Any]]:
             "required": requirement == "required",
             "aliases": [canonical],
             "semantic_type": None,
+            "affects_readiness": True,
         })
     return fields
 
@@ -169,7 +171,9 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
     }
     fields = normalize_fields(need)
     required_fields = [f for f in fields if f["required"]]
-    optional_fields = [f for f in fields if not f["required"]]
+    # Enrichment fields (affects_readiness: false) are bound when present but
+    # never lower the optional ratio, so adding them cannot demote a READY skill.
+    optional_fields = [f for f in fields if not f["required"] and f["affects_readiness"]]
 
     reason = (
         non_official_reason(obj["fqn"], bool(obj.get("staging_confirmed")))
@@ -283,7 +287,11 @@ def score_skill(skill: dict[str, Any], domain: str, domain_ok: bool,
     req_source = sum(1 for r in required if r["source_present"]) / n_req
     req_column = sum(1 for r in required if r["req_columns_ok"]) / n_req
     confidence = (sum(r["confidence"] for r in required) / n_req)
-    optional = (sum(r["optional_ratio"] for r in per_need) / (len(per_need) or 1))
+    # Enrichment needs (affects_readiness: false) bind when present but are
+    # excluded from the optional-coverage component.
+    scored = [r for n, r in zip(needs, per_need)
+              if n.get("required") or n.get("affects_readiness", True) is not False]
+    optional = (sum(r["optional_ratio"] for r in scored) / (len(scored) or 1))
 
     readiness = round(100 * (0.50 * req_source + 0.30 * req_column
                              + 0.10 * confidence + 0.10 * optional))
