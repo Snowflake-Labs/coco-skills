@@ -141,6 +141,9 @@ Verdict: <CLEAN | ISSUES FOUND | BLOCKED>
 ### Guardrails
 
 - This skill validates — it does NOT fix. Report findings; let the user decide on corrections.
+- Read-only with respect to source data and recon outputs; any persistence goes only to the bound `result_store`, after user confirmation.
+- Validate "Within Threshold" classifications against the run's **configured** settings (nominal, percent, `numeric_gate` AND/OR, `date_tolerance_days`, `round_off_threshold`) — never against hardcoded values such as 3 days or $1.
+- Never re-execute stored source SQL without first showing it to the user; source queries must be a single SELECT.
 - NEVER modify the workbook or recon results. If fixes are needed, suggest re-running `recon_analysis` with corrected parameters.
 - If the workbook structure is unrecognizable (not a recon output), inform the user and suggest pointing to the correct file.
 

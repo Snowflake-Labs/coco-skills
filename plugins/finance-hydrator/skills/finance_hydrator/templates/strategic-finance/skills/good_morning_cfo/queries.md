@@ -162,21 +162,29 @@ latest AS (
   WHERE week_end = (SELECT MAX(week_end) FROM with_wow)
     AND prior_week_forecast IS NOT NULL  -- exclude new accounts
 )
--- Top 5 positive movers
-SELECT 'POSITIVE' AS direction, account_id, account_name, currency,
-       wow_change_amount, wow_change_pct
-FROM latest
-ORDER BY wow_change_amount DESC
-LIMIT 5
-
+-- Each UNION ALL branch is parenthesized so its ORDER BY / LIMIT applies to
+-- that branch only. Amounts are in the row's currency: rank WITHIN currency
+-- (as below), or convert to the configured `reporting_currency` first and
+-- rank on the converted amount. Never rank raw amounts across currencies.
+(
+  -- Top 5 positive movers per currency
+  SELECT 'POSITIVE' AS direction, account_id, account_name, currency,
+         wow_change_amount, wow_change_pct
+  FROM latest
+  WHERE wow_change_amount > 0
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY currency ORDER BY wow_change_amount DESC) <= 5
+  ORDER BY currency, wow_change_amount DESC
+)
 UNION ALL
-
--- Top 5 negative movers
-SELECT 'NEGATIVE' AS direction, account_id, account_name, currency,
-       wow_change_amount, wow_change_pct
-FROM latest
-ORDER BY wow_change_amount ASC
-LIMIT 5;
+(
+  -- Top 5 negative movers per currency
+  SELECT 'NEGATIVE' AS direction, account_id, account_name, currency,
+         wow_change_amount, wow_change_pct
+  FROM latest
+  WHERE wow_change_amount < 0
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY currency ORDER BY wow_change_amount ASC) <= 5
+  ORDER BY currency, wow_change_amount ASC
+);
 ```
 
 ---
@@ -188,28 +196,39 @@ LIMIT 5;
 > If `{{daily_usage_fqn}}` resolves at LOW confidence (customer doesn't have
 > a usage table), Cortex Code skips this query entirely.
 
+> Units: `usage_quantity` is in the configured `usage_unit` setting (e.g.
+> credits, compute-hours, API calls, GB). Label output with that unit.
+>
+> Windows: current week = the 7 full days ending yesterday
+> (`[CURRENT_DATE()-7, CURRENT_DATE())`); prior week = the 7 days before that
+> (`[CURRENT_DATE()-14, CURRENT_DATE()-7)`). Today's partial day is excluded
+> from both so the comparison is exactly 7 days vs 7 days.
+
 ### 3a. Total usage WoW
 
 ```sql
 WITH bucketed AS (
   SELECT
     CASE
-      WHEN {{cols.usage_date}} >= DATEADD(day, -7, CURRENT_DATE()) THEN 'current_week'
-      WHEN {{cols.usage_date}} >= DATEADD(day, -14, CURRENT_DATE()) THEN 'prior_week'
-    END                              AS bucket,
-    SUM({{cols.credits}})            AS credits_used
+      WHEN {{cols.usage_date}} >= DATEADD(day, -7, CURRENT_DATE())
+       AND {{cols.usage_date}} <  CURRENT_DATE()                   THEN 'current_week'
+      WHEN {{cols.usage_date}} >= DATEADD(day, -14, CURRENT_DATE())
+       AND {{cols.usage_date}} <  DATEADD(day, -7, CURRENT_DATE()) THEN 'prior_week'
+    END                                AS bucket,
+    SUM({{cols.usage_quantity}})       AS usage_quantity
   FROM {{daily_usage_fqn}}
   WHERE {{cols.usage_date}} >= DATEADD(day, -14, CURRENT_DATE())
+    AND {{cols.usage_date}} <  CURRENT_DATE()
   GROUP BY 1
 )
 SELECT
-  MAX(CASE WHEN bucket = 'current_week' THEN credits_used END) AS current_week_credits,
-  MAX(CASE WHEN bucket = 'prior_week'   THEN credits_used END) AS prior_week_credits,
+  MAX(CASE WHEN bucket = 'current_week' THEN usage_quantity END) AS current_week_usage_quantity,
+  MAX(CASE WHEN bucket = 'prior_week'   THEN usage_quantity END) AS prior_week_usage_quantity,
   DIV0(
-    MAX(CASE WHEN bucket = 'current_week' THEN credits_used END)
-    - MAX(CASE WHEN bucket = 'prior_week' THEN credits_used END),
-    NULLIF(MAX(CASE WHEN bucket = 'prior_week' THEN credits_used END), 0)
-  )                                                            AS wow_growth_pct
+    MAX(CASE WHEN bucket = 'current_week' THEN usage_quantity END)
+    - MAX(CASE WHEN bucket = 'prior_week' THEN usage_quantity END),
+    NULLIF(MAX(CASE WHEN bucket = 'prior_week' THEN usage_quantity END), 0)
+  )                                                              AS wow_growth_pct
 FROM bucketed;
 ```
 
@@ -220,38 +239,44 @@ WITH per_account AS (
   SELECT
     {{cols.account_id}}              AS account_id,
     SUM(CASE WHEN {{cols.usage_date}} >= DATEADD(day, -7, CURRENT_DATE())
-             THEN {{cols.credits}} END) AS current_week_credits,
+             AND  {{cols.usage_date}} <  CURRENT_DATE()
+             THEN {{cols.usage_quantity}} END) AS current_week_usage_quantity,
     SUM(CASE WHEN {{cols.usage_date}} >= DATEADD(day, -14, CURRENT_DATE())
              AND  {{cols.usage_date}} <  DATEADD(day, -7,  CURRENT_DATE())
-             THEN {{cols.credits}} END) AS prior_week_credits
+             THEN {{cols.usage_quantity}} END) AS prior_week_usage_quantity
   FROM {{daily_usage_fqn}}
   WHERE {{cols.usage_date}} >= DATEADD(day, -14, CURRENT_DATE())
+    AND {{cols.usage_date}} <  CURRENT_DATE()
   GROUP BY 1
 ),
 deltas AS (
   SELECT
     account_id,
-    current_week_credits,
-    prior_week_credits,
-    (current_week_credits - prior_week_credits) AS credit_change,
-    DIV0(current_week_credits - prior_week_credits,
-         NULLIF(prior_week_credits, 0))         AS credit_change_pct
+    COALESCE(current_week_usage_quantity, 0)                     AS current_week_usage_quantity,
+    prior_week_usage_quantity,
+    COALESCE(current_week_usage_quantity, 0) - prior_week_usage_quantity AS usage_change,
+    DIV0(COALESCE(current_week_usage_quantity, 0) - prior_week_usage_quantity,
+         NULLIF(prior_week_usage_quantity, 0))                   AS usage_change_pct
   FROM per_account
-  WHERE prior_week_credits IS NOT NULL AND prior_week_credits > 0
+  WHERE prior_week_usage_quantity IS NOT NULL AND prior_week_usage_quantity > 0
 )
-SELECT 'GROWING' AS direction, account_id, current_week_credits, prior_week_credits,
-       credit_change, credit_change_pct
-FROM deltas
-ORDER BY credit_change DESC
-LIMIT 5
-
+(
+  SELECT 'GROWING' AS direction, account_id, current_week_usage_quantity,
+         prior_week_usage_quantity, usage_change, usage_change_pct
+  FROM deltas
+  WHERE usage_change > 0
+  ORDER BY usage_change DESC
+  LIMIT 5
+)
 UNION ALL
-
-SELECT 'DECLINING', account_id, current_week_credits, prior_week_credits,
-       credit_change, credit_change_pct
-FROM deltas
-ORDER BY credit_change ASC
-LIMIT 5;
+(
+  SELECT 'DECLINING' AS direction, account_id, current_week_usage_quantity,
+         prior_week_usage_quantity, usage_change, usage_change_pct
+  FROM deltas
+  WHERE usage_change < 0
+  ORDER BY usage_change ASC
+  LIMIT 5
+);
 ```
 
 ---
@@ -269,7 +294,8 @@ See SKILL.md → Behavior → Workflow step 2.
    the configured `fiscal_calendar` setting.
 2. **Missing current-day data** — "yesterday" is `MAX({{cols.date}}) WHERE {{cols.date}} < CURRENT_DATE()`,
    NOT `DATEADD(day, -1, CURRENT_DATE())`. Handles weekend gaps and late-arriving rows.
-3. **Currency mixing** — every PARTITION BY includes `currency`. Never sum across currencies.
+3. **Currency mixing** — every PARTITION BY includes `currency`. Never sum or rank
+   across currencies; order within currency or convert to `reporting_currency` first.
 4. **NULL forecast / divide-by-zero** — every `/` is wrapped in `DIV0( …, NULLIF(…, 0) )`.
 5. **New accounts in week 1** — `WHERE prior_week_forecast IS NOT NULL` excludes them from movers.
 6. **Segment explosion** — if `{{cols.segment_id}}` has >20 distinct values, the skill should

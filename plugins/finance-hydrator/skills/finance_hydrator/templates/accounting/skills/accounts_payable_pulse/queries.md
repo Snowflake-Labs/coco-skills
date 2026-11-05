@@ -1,6 +1,9 @@
 # Query Reference — AP Pulse
 
-All physical table and column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns — no SQL, no FQNs.
+All physical table and column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns, plus a reference aging SQL with `{{placeholders}}` filled from `hydration_hints.yaml`. No customer FQNs.
+
+**Parameter binding (all `supplier_keyword` / reference / free-text filters):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
+`{{cols.supplier_name}} ILIKE '%' || :supplier_keyword || '%' ESCAPE '\\'`
 
 ---
 
@@ -30,17 +33,18 @@ All physical table and column references are resolved at runtime against the cus
 
 **Logic — age bucket layer:**
 1. Filter invoice header to records where:
-   - Due date is before current date (past due)
-   - Invoice is not fully paid (payment status is not paid / settled)
-   - Intercompany flag is false (exclude inter-entity transactions)
-2. Compute days overdue = current date minus due date
+   - Open (unpaid) amount ≠ 0 — open amount = invoice amount minus amount paid (or the bound outstanding amount); partial payments are aged at the remaining open amount
+   - Status is not void / cancelled (configured excluded statuses)
+   - Intercompany flag is false, when an intercompany flag is bound (exclude inter-entity transactions)
+2. Compute days past due = current date minus **due date**
 3. Assign each invoice to an age bucket:
+   - **Current (not yet due)** — days past due ≤ 0 (shown in the summary, excluded from overdue totals)
    - **1–30 days overdue**
    - **31–60 days overdue**
    - **61–90 days overdue**
    - **90+ days overdue**
-4. For each bucket: count of invoices, total amount in reporting currency (or transaction currency if reporting currency unavailable), oldest invoice age
-5. Order buckets from 90+ down to 1–30 (most urgent first)
+4. For each bucket: count of invoices, total **open** amount in reporting currency (or transaction currency if reporting currency unavailable), oldest days past due
+5. Order buckets from 90+ down to Current (most urgent first)
 
 **Logic — payment term layer:**
 1. Same filter as above
@@ -51,6 +55,43 @@ All physical table and column references are resolved at runtime against the cus
 **Output grain:** Two result sets — one row per age bucket, one row per payment term.
 
 **Pitfall:** Use due date (when payment was contractually owed), not invoice date (when the supplier issued the invoice). These differ by the payment term length.
+
+**Reference SQL (age bucket layer):**
+
+```sql
+WITH open_inv AS (
+  SELECT
+    {{cols.invoice_id}}                                       AS invoice_id,
+    {{cols.supplier_id}}                                      AS supplier_id,
+    {{cols.due_date}}                                         AS due_date,
+    {{cols.currency}}                                         AS currency,
+    {{cols.invoice_amount}} - COALESCE({{cols.amount_paid}}, 0) AS open_amount,
+    DATEDIFF(day, {{cols.due_date}}, CURRENT_DATE())          AS days_past_due
+  FROM {{invoice_header_fqn}}
+  WHERE UPPER(COALESCE({{cols.status}}, '')) NOT IN ({{settings.excluded_statuses}})
+    AND COALESCE({{cols.intercompany_flag}}, FALSE) = FALSE   -- drop if no flag is bound
+    AND {{cols.invoice_amount}} - COALESCE({{cols.amount_paid}}, 0) <> 0
+)
+SELECT
+  CASE
+    WHEN due_date IS NULL                  THEN 'No due date'
+    WHEN days_past_due <= 0                THEN 'Current'
+    WHEN days_past_due BETWEEN 1  AND 30   THEN '1-30'
+    WHEN days_past_due BETWEEN 31 AND 60   THEN '31-60'
+    WHEN days_past_due BETWEEN 61 AND 90   THEN '61-90'
+    ELSE '90+'
+  END                                      AS age_bucket,
+  currency,
+  COUNT(*)                                 AS invoice_count,
+  SUM(open_amount)                         AS open_amount,
+  MAX(days_past_due)                       AS max_days_past_due
+FROM open_inv
+GROUP BY 1, 2
+ORDER BY MAX(days_past_due) DESC NULLS LAST, currency;
+```
+
+If an outstanding-amount column is bound instead of amount paid, use it directly
+as `open_amount`. Report any `No due date` rows separately and disclose them.
 
 ---
 
@@ -78,7 +119,7 @@ All physical table and column references are resolved at runtime against the cus
 1. Filter invoice header where the hold indicator is active (hold flag = true, or hold reason field is populated and non-empty, or status code indicates a held state)
 2. Exclude fully paid invoices
 3. Group by hold reason
-4. For each reason: count, total amount in reporting currency, oldest hold age in days
+4. For each reason: count, total open amount in reporting currency, oldest hold age in days — measured from the hold date; if no hold date is bound, fall back to invoice date and disclose that in the output
 5. Order by total amount descending
 
 **Output grain:** One row per hold reason.
@@ -91,7 +132,7 @@ All physical table and column references are resolved at runtime against the cus
 
 **Logic:**
 1. Same filter as Q3
-2. Return: invoice reference, supplier name, invoice date, days since invoice date, company / legal entity, amount, currency, reporting-currency amount, hold reason
+2. Return: invoice reference, supplier name, invoice date, hold date, days on hold (from hold date; invoice-date fallback disclosed), company / legal entity, open amount, currency, reporting-currency amount, hold reason
 3. Order by days since invoice date descending (oldest first)
 
 **Parameters:** `hold_reason` filter for drill-down to a specific reason.
@@ -106,7 +147,7 @@ All physical table and column references are resolved at runtime against the cus
 1. Filter invoice header where the match exception indicator is active (exception flag = true, or exception reason field is populated and non-empty, or status indicates an exception state)
 2. Exclude fully paid or resolved invoices
 3. Group by exception reason
-4. For each reason: count, total amount in reporting currency, oldest exception age in days
+4. For each reason: count, total open amount in reporting currency, oldest exception age in days — measured from the exception date; if no exception date is bound, fall back to invoice date and disclose that in the output
 5. Order by total amount descending
 
 **Output grain:** One row per exception reason.
@@ -119,8 +160,8 @@ All physical table and column references are resolved at runtime against the cus
 
 **Logic:**
 1. Same filter as Q5
-2. Return: invoice reference, supplier name, invoice date, days since invoice date, company / legal entity, amount, currency, reporting-currency amount, exception reason
-3. Order by days since invoice date descending
+2. Return: invoice reference, supplier name, invoice date, exception date, days open (from exception date; invoice-date fallback disclosed), company / legal entity, open amount, currency, reporting-currency amount, exception reason
+3. Order by days open descending
 
 **Parameters:** `exception_reason` filter.
 
@@ -274,7 +315,7 @@ Skip these queries if the corresponding data source does not resolve at runtime.
 **Purpose**: Find system invoice records matching the vendor-assigned invoice reference, scoped to a supplier.
 
 **Logic:**
-1. Filter invoice header where the vendor-assigned invoice reference number matches the uploaded value (exact match first; fall back to case-insensitive contains if no exact match)
+1. Filter invoice header where the vendor-assigned invoice reference number matches the uploaded value (exact match first; fall back to case-insensitive contains if no exact match — using the bound-parameter `ILIKE` form above)
 2. Additionally filter by supplier name using a fuzzy / contains match (legal suffix stripped before comparison)
 3. Return: system invoice identifier, vendor invoice reference, supplier name, invoice date, invoice amount, currency, invoice status, payment status, paid date, amount paid, amount outstanding
 4. Order by invoice date descending
@@ -301,7 +342,7 @@ Skip these queries if the corresponding data source does not resolve at runtime.
 
 **Logic:**
 1. Join invoice header to invoice line table on system invoice identifier
-2. Filter invoice lines where the PO reference field contains the uploaded PO number (case-insensitive contains)
+2. Filter invoice lines where the PO reference field contains the uploaded PO number (case-insensitive contains, bound-parameter `ILIKE` form above)
 3. Filter additionally by supplier name if provided
 4. Return distinct invoice header records (all fields from Q15 plus matched PO reference)
 5. Order by invoice date descending
@@ -354,4 +395,5 @@ Skip these queries if the corresponding data source does not resolve at runtime.
 
 7. **PO enrichment grain** — When joining invoice lines to get PO references, aggregate PO references to a list at the invoice header level before joining. Do not cross-join lines to produce duplicate invoice rows.
 
-8. **Age bucket boundary** — An invoice that is exactly 30 days overdue belongs in the 1–30d bucket, not the 31–60d bucket. Use `BETWEEN 1 AND 30`, `BETWEEN 31 AND 60`, etc. — avoid off-by-one errors at bucket boundaries.
+8. **Age bucket boundary** — An invoice due today or later is Current (days past due ≤ 0). An invoice that is exactly 30 days overdue belongs in the 1–30d bucket, not the 31–60d bucket. Use `BETWEEN 1 AND 30`, `BETWEEN 31 AND 60`, etc. — avoid off-by-one errors at bucket boundaries.
+9. **Open vs gross amount** — Age the open (unpaid) amount, not the gross invoice amount. A 10,000 invoice with 6,000 paid is aged at 4,000.

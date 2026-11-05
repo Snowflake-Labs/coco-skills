@@ -25,8 +25,14 @@ WEIGHTS = {
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"score_fit.py: error: cannot read {path}: {exc}")
+    if not isinstance(data, dict):
+        raise SystemExit(f"score_fit.py: error: {path} must contain a JSON object")
+    return data
 
 
 def as_list(value: Any) -> list[str]:
@@ -119,10 +125,14 @@ def main() -> int:
 
     profile_data = load_json(args.profile.resolve())
     profile = profile_data.get("profile", profile_data)
+    if not isinstance(profile, dict):
+        raise SystemExit("score_fit.py: error: profile must be a JSON object")
     skills_out = []
     for cat_path in args.catalog:
         catalog = load_json(cat_path.resolve())
-        domain = catalog["domain"]
+        domain = catalog.get("domain")
+        if not domain:
+            raise SystemExit(f"score_fit.py: error: {cat_path}: missing domain")
         for skill in catalog.get("skills", []):
             skills_out.append(score_skill(skill, domain, profile))
 

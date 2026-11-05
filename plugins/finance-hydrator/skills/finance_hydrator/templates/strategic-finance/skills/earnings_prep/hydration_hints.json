@@ -51,7 +51,9 @@
         "restated prior year"
       ],
       "extra_settings": {
-        "constant_currency": false
+        "constant_currency": false,
+        "guidance_threshold_pct": "<OPTIONAL_DEFAULT_5>",
+        "guidance_threshold_pp": "<OPTIONAL_MARGIN_THRESHOLD_IN_PERCENTAGE_POINTS>"
       }
     },
     "finance.earnings.guidance": {

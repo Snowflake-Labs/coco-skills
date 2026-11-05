@@ -205,8 +205,8 @@ async function runTurnCli(opts: AgentTurnOptions): Promise<void> {
   // For caller's rights: pass the caller token to ensureSpcsAuth so it writes
   // the combined token (service + caller) into connections.toml. The CLI's
   // snowflake_sql_execute tool then runs as the signed-in viewer, not the
-  // service. The caller token's lifetime is controlled by
-  // SERVICE_CALLER_TOKEN_VALIDITY_SECS (set to 600s at deploy time).
+  // service. The caller token's lifetime is the platform default (not
+  // configurable via SERVICE_CALLER_TOKEN_VALIDITY_SECS — see SKILL.md).
   // Re-read the latest relayed caller token from the job store for long turns.
   // forceOwnerMode (admin-controlled agent-access mode) overrides all of
   // this — ignore any caller token entirely and run as the owner role.
@@ -627,9 +627,9 @@ function sleep(ms: number): Promise<void> {
  * avoid: if a browser poll relays a fresher caller token between the thread's
  * creation and a later call (a retry, or a permission-decision continuation),
  * switching identity mid-thread makes the sandbox error out (399525) even
- * though each token is individually valid. The caller token is now valid for
- * SERVICE_CALLER_TOKEN_VALIDITY_SECS (600s) — far longer than any single
- * turn — so there is no need to refresh mid-turn.
+ * though each token is individually valid. The caller token is used for the
+ * whole turn at its platform-default lifetime (SERVICE_CALLER_TOKEN_VALIDITY_SECS
+ * is not a valid setting — see SKILL.md); it is not refreshed mid-turn.
  *
  * Retries only the transient code — any other failure surfaces immediately, so
  * genuine misconfiguration is not hidden behind a retry loop.

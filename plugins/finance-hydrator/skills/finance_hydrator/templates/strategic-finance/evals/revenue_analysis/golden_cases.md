@@ -170,6 +170,17 @@ what is driving growth
 
 ---
 
+---
+
+### Case REV-GRD: Measure guardrail, GRR cap, SQL-derived metrics
+
+**Setup:** Hierarchy table has only base columns (period, hierarchy level, entity, customer_id, actual, plan) — no precomputed PoP / YoY / mix / median columns.
+
+**Expected behavior:**
+- States the revenue measure used (e.g. recognized revenue) and does not mix it with billings / bookings / ARR / consumption
+- Computes PoP, YoY, mix and median customer revenue in SQL from base columns; does not block on missing precomputed columns
+- Gross revenue retention is never reported above 100%
+
 ## Running
 
 ```

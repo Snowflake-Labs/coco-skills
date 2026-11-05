@@ -8,8 +8,8 @@
 #
 # WHY THIS EXISTS
 # ---------------
-# The skill targets an INDEXED semantic view (discoverable via Cortex
-# Sense / Entity Search) rather than ad-hoc convenience views. This
+# The skill targets an INDEXED semantic view (discoverable via SHOW
+# SEMANTIC VIEWS / object search) rather than ad-hoc convenience views. This
 # template gives you a working SV you can deploy quickly by editing
 # only the `base_table:` FQN and the column names.
 #
@@ -33,9 +33,9 @@ tables:
   - name: revenue_forecast_actual
     description: One row per (date, segment, account) with forecast and actual.
     base_table:
-      database: <YOUR_DB>             # e.g. FINANCE
-      schema: <YOUR_SCHEMA>           # e.g. AI
-      table: <YOUR_BASE_TABLE>        # e.g. ACCOUNT_GAAP_REVENUE_FORECAST_AND_ACTUAL_DAILY
+      database: <YOUR_DB>             # e.g. ANALYTICS
+      schema: <YOUR_SCHEMA>           # e.g. REPORTING
+      table: <YOUR_BASE_TABLE>        # e.g. REVENUE_DAILY
 
     dimensions:
       - name: activity_date
@@ -58,8 +58,8 @@ tables:
         data_type: VARCHAR
 
       - name: segment_id
-        synonyms: [segment, region, gvp]
-        description: Revenue segment / region / GVP grouping.
+        synonyms: [segment, region]
+        description: Revenue segment / region grouping.
         expr: <YOUR_SEGMENT_COLUMN>     # e.g. SEGMENT
         data_type: VARCHAR
 
@@ -69,10 +69,9 @@ tables:
         expr: <YOUR_CURRENCY_COLUMN>    # e.g. CURRENCY_CODE
         data_type: VARCHAR
 
-    time_dimensions:
       - name: fiscal_period
         synonyms: [period, fiscal_month, fiscal_quarter]
-        description: Fiscal period derived from activity_date using configured fiscal_calendar.
+        description: Fiscal period label (VARCHAR, so modelled as a dimension) derived from activity_date using configured fiscal_calendar.
         expr: <YOUR_FISCAL_PERIOD_COLUMN>  # e.g. FISCAL_QUARTER
         data_type: VARCHAR
 

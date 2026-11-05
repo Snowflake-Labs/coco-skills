@@ -1,6 +1,6 @@
 # Golden Test Cases: accounts_payable_pulse
 
-13 cases covering Mode 1 (AP Pulse Briefing), Mode 2 (Invoice Lookup), and edge / pitfall scenarios. Run with <EVAL_HARNESS> against the skill in `<customer-plugin>/skills/accounts_payable_pulse/`.
+14 cases covering Mode 1 (AP Pulse Briefing), Mode 2 (Invoice Lookup), and edge / pitfall scenarios. Run with <EVAL_HARNESS> against the skill in `<customer-plugin>/skills/accounts_payable_pulse/`.
 
 ---
 
@@ -286,6 +286,20 @@ invoices
 
 ---
 
+### Case AP-08: Partial payment aged at open amount; Current bucket; unconfigured threshold
+
+**Setup (synthetic):** Invoice A 10,000 due 45 days ago with 6,000 paid; invoice B 2,000 due in 10 days; invoice C 5,000 voided; invoice D on hold with a hold date 20 days ago and an invoice date 60 days ago. No large-payment threshold configured.
+
+**Assertions:**
+- [ ] Invoice A appears in the 31–60 bucket at **4,000** (open amount), not 10,000
+- [ ] Invoice B appears in a **Current (not yet due)** bucket and is excluded from overdue totals
+- [ ] Voided invoice C appears nowhere
+- [ ] Invoice D shows 20 days on hold (from hold date); if hold date is unbound the output says hold age is measured from invoice date
+- [ ] Large Upcoming Payments shows all upcoming payments ranked by amount and states the threshold is not configured — no invented default
+- [ ] Supplier drill-down search uses a bound parameter (`ILIKE '%' || :supplier_keyword || '%'`), not concatenated user text
+
+---
+
 ## Running with <EVAL_HARNESS>
 
 ```bash
@@ -293,7 +307,7 @@ invoices
 
 cortex -p "Use <EVAL_HARNESS> to evaluate \
   <customer-plugin>/skills/accounts_payable_pulse/. \
-  Run cases AP-01, AP-02, AP-03, AP-04, AP-05, AP-06, AP-07, \
+  Run cases AP-01, AP-02, AP-03, AP-04, AP-05, AP-06, AP-07, AP-08, \
   IL-01, IL-02, IL-03, IL-04, E-01, E-02, E-03 \
   from <customer-plugin>/evals/accounts_payable_pulse/golden_cases.md."
 ```

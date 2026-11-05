@@ -18,7 +18,8 @@
             "cost_amount": "<YOUR_COST_COLUMN>",
             "cloud_provider": "<YOUR_CLOUD_COLUMN>",
             "product_or_feature": "<YOUR_PRODUCT_OR_FEATURE_COLUMN>",
-            "region": "<YOUR_REGION_COLUMN>"
+            "region": "<YOUR_REGION_COLUMN>",
+            "account_type": "<OPTIONAL_ACCOUNT_TYPE_COLUMN>"
           }
         }
       ],
@@ -27,7 +28,11 @@
         "cost of goods sold",
         "cloud cost drilldown",
         "product COGS"
-      ]
+      ],
+      "extra_settings": {
+        "natural_sign": "<credit_negative | as_stored \u2014 confirm with user on first run>",
+        "reporting_currency": "<YOUR_REPORTING_CURRENCY e.g. USD>"
+      }
     },
     "finance.cogs.revenue": {
       "required": false,

@@ -300,6 +300,47 @@ export function validateBuildConfig(cfg: BvaConfig): string[] {
 
 // ─── SQL assembler ───────────────────────────────────────────────────────────
 
+/** Every BvaConfig field that holds a bare column name spliced into SQL. */
+export const COLUMN_CONFIG_FIELDS = [
+  "actualsDateCol", "actualsAmountCol", "actualsCostCenterCol", "actualsCategoryCol", "actualsAccountCol",
+  "budgetPeriodCol", "budgetAmountCol", "budgetCostCenterCol", "budgetCategoryCol", "budgetVersionCol",
+  "ledgerAccountKeyCol", "ledgerCategoryCol",
+  "ccIdCol", "ccNameCol", "ccDeptCol", "ccUpdatedAtCol",
+  "fiscalYearColActuals", "fiscalQuarterColActuals", "fiscalYearColBudget", "fiscalQuarterColBudget",
+] as const satisfies readonly (keyof BvaConfig)[]
+
+const SAFE_COLUMN = /^[A-Za-z_][A-Za-z0-9_$]*$/
+
+/** Returns an error message for each set column field that isn't a plain
+ *  unquoted identifier (empty / null values are ignored). */
+export function validateColumnFields(cfg: Partial<BvaConfig>): string[] {
+  const errors: string[] = []
+  for (const f of COLUMN_CONFIG_FIELDS) {
+    const v = cfg[f]
+    if (v == null || v === "") continue
+    if (typeof v !== "string" || !SAFE_COLUMN.test(v)) {
+      errors.push(`Invalid ${f}: must be a plain column name (letters, digits, _ or $; can't start with a digit).`)
+    }
+  }
+  return errors
+}
+
+/** Quotes a validated bare column name. Uppercased first so the quoted form
+ *  resolves exactly like the unquoted identifier it replaces. */
+function qid(col: string): string {
+  return `"${col.toUpperCase().replace(/"/g, '""')}"`
+}
+
+/** Copy of cfg with every set column field replaced by its quoted form. */
+function quoteColumnFields(cfg: BvaConfig): BvaConfig {
+  const out: Record<string, unknown> = { ...cfg }
+  for (const f of COLUMN_CONFIG_FIELDS) {
+    const v = cfg[f]
+    if (typeof v === "string" && v) out[f] = qid(v)
+  }
+  return out as BvaConfig
+}
+
 function q(s: string): string {
   return "'" + s.replace(/\\/g, "\\\\").replace(/'/g, "''") + "'"
 }
@@ -419,6 +460,8 @@ export function buildFromConfig(cfg: BvaConfig): string {
       throw new Error(`Invalid ${name} in saved config: must be a DATABASE.SCHEMA.TABLE identifier.`)
     }
   }
+  const colErrors = validateColumnFields(cfg)
+  if (colErrors.length) throw new Error(`Invalid column in saved config: ${colErrors.join(" ")}`)
   if (cfg.sourceType === "single_table" || !cfg.actualsTable) {
     return `select * from ${cfg.singleTable ?? "/* no source configured — open Settings */"}`
   }
@@ -442,20 +485,20 @@ export function buildFromConfig(cfg: BvaConfig): string {
     ledgerMappingTable,
     ledgerAccountKeyCol,
     ledgerCategoryCol,
-    actualsDateCol = "transaction_date",
-    actualsAmountCol = "amount",
+    actualsDateCol = qid("transaction_date"),
+    actualsAmountCol = qid("amount"),
     actualsCostCenterCol,
     actualsCategoryCol,
     actualsAccountCol,
     accountFilterPrefixes,
     negateAmount,
-    budgetPeriodCol = "period_date",
+    budgetPeriodCol = qid("period_date"),
     budgetPeriodFormat = "date",
-    budgetAmountCol = "budget_amount",
+    budgetAmountCol = qid("budget_amount"),
     budgetCostCenterCol,
-    budgetCategoryCol = "expense_category",
+    budgetCategoryCol = qid("expense_category"),
     budgetVersionCol,
-    ccIdCol = "cost_center_id",
+    ccIdCol = qid("cost_center_id"),
     ccNameCol,
     ccDeptCol,
     ccUpdatedAtCol,
@@ -473,7 +516,7 @@ export function buildFromConfig(cfg: BvaConfig): string {
     accountCategoryOverrides = {},
     excludedCostCenters,
     keyStripPrefixes = {},
-  } = cfg
+  } = quoteColumnFields(cfg)
 
   // Bound helper: strip() applies the configured prefixes for a given
   // join-key role (see BvaConfig.keyStripPrefixes) to a column reference.

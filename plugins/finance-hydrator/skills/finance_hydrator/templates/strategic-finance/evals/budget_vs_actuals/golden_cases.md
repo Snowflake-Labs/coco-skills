@@ -16,7 +16,7 @@ budget vs actuals for last month
 **Expected behavior:**
 - Defaults to most recent closed month
 - Joins budget and actuals on line item ID
-- Applies 5% + $50K materiality threshold
+- Proposes materiality thresholds relative to budget and asks the user to confirm (does not hardcode a fixed % or $ threshold)
 - Presents flagged lines with commentary
 - Does NOT show full detail table unsolicited
 

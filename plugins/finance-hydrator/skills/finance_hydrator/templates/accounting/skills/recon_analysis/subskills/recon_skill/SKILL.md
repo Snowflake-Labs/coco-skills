@@ -44,13 +44,39 @@ If intent is unclear, present a choice:
 
 ### Guardrails
 
-This skill is a **read-only analysis tool**. It compares data — it never modifies it.
+This skill is **read-only with respect to source data**. It compares data — it never modifies the datasets being reconciled. Its only writes go to the bound `profile_store` (profiles) and `result_store` (run results), each after user confirmation.
 
-If a user requests any data modification (INSERT, UPDATE, DELETE, MERGE, TRUNCATE, DROP, or equivalent), refuse immediately:
+If a user requests any modification of source data (INSERT, UPDATE, DELETE, MERGE, TRUNCATE, DROP, or equivalent), refuse immediately:
 
-> "This is a read-only reconciliation tool and cannot modify data. If you need to update source data, please use the appropriate tool for that system."
+> "This is a read-only reconciliation tool and cannot modify source data. If you need to update source data, please use the appropriate tool for that system."
+
+- **Bindings:** load from `hydration_hints.yaml` in the parent `recon_analysis` directory; for anything under `unresolved:` or missing, ask the user / discover via `INFORMATION_SCHEMA` and confirm before running.
+- **Show stored SQL first:** before running a shared or stored profile, display its source definitions (queries, tables, filters) and get user confirmation.
+- **Single SELECT only:** a custom-SQL source must be exactly one `SELECT` / `WITH … SELECT` statement. Reject it if it contains `;`, any DDL or DML, `CALL`, or `EXECUTE IMMEDIATE`.
+- **Parameterized filters:** WHERE-clause values (date range, keys, text) are bound parameters, never string-concatenated.
 
 This applies to all modes. No exceptions.
+
+### Natural sign convention
+
+Most ERPs store debits as positive and credits as negative, so credit-normal accounts
+(Revenue, Liability, Equity) arrive **negative**. The `natural_sign` setting (bound in
+`hydration_hints.yaml`, together with the `account_type` column that classifies each
+account / line as Revenue, Expense, Asset, Liability or Equity) controls presentation:
+
+- `credit_negative` (most ERPs): multiply Revenue, Liability and Equity amounts by −1
+  **before** computing variances or favorability, so all are presented positive.
+- `as_stored`: amounts are already in natural sign; use as-is.
+
+On first run, show a few sample accounts with their stored sign and **confirm the setting
+with the user** before computing anything. After normalization, compare Source 1 vs Source 2:
+
+- **Revenue / income:** actual above comparison = **Favorable**; below = Unfavorable.
+- **Expense / cost:** actual above comparison = **Unfavorable**; below = Favorable.
+- **Balance-sheet accounts:** report Increase / Decrease; do not label favorable/unfavorable
+  unless the user defines a rule.
+
+Apply the same normalization to both sources; a sign flip between systems must be configured, not inferred.
 
 ### Builder Mode Workflow
 
@@ -79,9 +105,12 @@ This applies to all modes. No exceptions.
    - Left (all from Source 1, match where possible)
    - Full Outer (all records from both — find orphans)
 
-6. **Set Thresholds** — Define materiality thresholds:
+6. **Set Thresholds** — Define tolerance settings (all stored in the profile; defaults from `hydration_hints.yaml`):
    - Percent threshold (e.g., 1% tolerance on amounts)
-   - Nominal dollar threshold (e.g., $0.50 de minimis)
+   - Nominal threshold (e.g., 0.50 de minimis, in reporting currency)
+   - Numeric match gate: `OR` (within nominal **or** within percent = match) or `AND` (must be within both)
+   - Date tolerance in days (`date_tolerance_days`)
+   - Round-off threshold (`round_off_threshold`) used by the Round-off category
    - Fuzzy text match threshold (0-100 similarity score)
 
 7. **Validate and Save** — Run a dry-run validation (join key overlap check, column existence, type compatibility), present a full validation report, then save the profile with a user-chosen name and visibility (private/public).
@@ -118,7 +147,8 @@ date_columns: {enabled, source1_col, source2_col}
 join_keys: {source1_key: source2_key}
 comparison_fields: [{name, source1_col, source2_col, data_type}]
 join_type: inner | left | full_outer
-thresholds: {percent, nominal, fuzzy}
+thresholds: {percent, nominal, numeric_gate: AND | OR, date_tolerance_days, round_off_threshold, fuzzy}
+natural_sign: credit_negative | as_stored
 ```
 
 ### Runner Mode Workflow
@@ -127,7 +157,7 @@ thresholds: {percent, nominal, fuzzy}
 
 **Steps:**
 
-1. **Select Profile** — Query available profiles, present as a selection list. Load the selected profile's configuration.
+1. **Select Profile** — Query available profiles, present as a selection list. Load the selected profile's configuration and **display its source SQL / tables and filters**; validate that each custom-SQL source is a single `SELECT` (see Guardrails) before continuing.
 
 2. **Collect Runtime Parameters** — Ask for optional date range filter (start/end dates). Confirm configuration summary before executing.
 
@@ -143,8 +173,8 @@ thresholds: {percent, nominal, fuzzy}
 
    **For numeric fields:**
    - Exact match (diff = 0) → Match
-   - Within nominal threshold → Match (within threshold)
-   - Within percent threshold → Match (within %)
+   - Gate `OR`: within nominal threshold **or** within percent threshold → Match (within threshold)
+   - Gate `AND`: within nominal threshold **and** within percent threshold → Match (within threshold)
    - Otherwise → Discrepancy
 
    **For text fields (fuzzy matching):**
@@ -152,7 +182,7 @@ thresholds: {percent, nominal, fuzzy}
    - Otherwise → Discrepancy
 
    **For date fields:**
-   - Difference <= 3 days → Match (N day diff)
+   - Difference <= `date_tolerance_days` (profile setting) → Match (N day diff)
    - Otherwise → Discrepancy
 
    **Unmatched records (outer joins):**
@@ -171,7 +201,7 @@ thresholds: {percent, nominal, fuzzy}
    | Timing | Key matches but posting dates cross period boundary | "{Month} deal posted in prior period — timing difference" | Ops | monitor | Next business day |
    | Multi-Source Aggregation | One-to-many relationship between sources | "One record in Source2 linked to multiple records in Source1. No actual difference in total." | Accounting | suppress | N/A |
    | Threshold Exception | Named exception rule applies (e.g., specific items excluded from one system) | "Exception amount impacts Source2 total but not Source1" | Accounting | suppress | N/A |
-   | Round-off | Absolute difference < $1 | "Round off issue" | Accounting | suppress | N/A |
+   | Round-off | Absolute difference < `round_off_threshold` (profile setting) | "Round off issue" | Accounting | suppress | N/A |
    | Cut-off | Transaction date in Source1 falls outside Source2 recon window | "Source1 record dated {date} — after recon window end" | Ops | monitor | Period close +1 day |
    | Data Quality | Identifier format mismatch or missing linkage | "No matching record found — review source system linkage" | Reference Data | raise-ticket | Per SLA |
    | Discrepancy | No rule matches | "Discrepancy — manual review required" | Controller | adjust | Before close |

@@ -134,6 +134,16 @@ export function validateCustomLogicSql(
     return { ok: false, reason: `Expression is too long (max ${MAX_SQL_LENGTH} characters).` }
   }
 
+  // Snowflake string literals honor backslash escapes (\'), which would
+  // desync stripStringLiterals() from the real tokenizer; $$ opens a
+  // dollar-quoted literal it doesn't understand at all. Reject both outright.
+  if (trimmed.includes("\\")) {
+    return { ok: false, reason: "Backslashes are not allowed in a custom logic expression." }
+  }
+  if (trimmed.includes("$$")) {
+    return { ok: false, reason: "Dollar-quoted strings ($$) are not allowed in a custom logic expression." }
+  }
+
   const withoutStrings = stripStringLiterals(trimmed)
 
   if (withoutStrings.includes(";")) {
@@ -146,6 +156,13 @@ export function validateCustomLogicSql(
   const forbidden = containsForbiddenKeyword(withoutStrings)
   if (forbidden) {
     return { ok: false, reason: `'${forbidden}' is not allowed — custom logic must be a read-only expression.` }
+  }
+
+  // No subqueries or table references — an expression may only read the
+  // current row's allow-listed columns.
+  const tableRef = /\bselect\b|\bfrom\b|\btable\s*\(|\bwith\b/i.exec(withoutStrings)
+  if (tableRef) {
+    return { ok: false, reason: `'${tableRef[0]}' is not allowed — subqueries and table references can't be used in custom logic.` }
   }
 
   const allowSet = new Set([...ALLOWED_KEYWORDS, ...knownColumns.map((c) => c.toLowerCase())])

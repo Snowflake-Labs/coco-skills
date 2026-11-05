@@ -1,0 +1,15 @@
+{
+  "finance_subdepartment": "controller",
+  "persona": "Controller",
+  "jobs_to_be_done": [
+    "month-end flux",
+    "AP aging",
+    "duplicate invoices"
+  ],
+  "source_systems": [
+    "NetSuite"
+  ],
+  "requested_emitters": [
+    "skill_plugin"
+  ]
+}

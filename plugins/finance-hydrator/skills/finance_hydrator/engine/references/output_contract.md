@@ -9,12 +9,12 @@ All scripts exchange JSON-compatible structures so the skill can use determinist
 ```json
 {
   "scope": {"databases": ["<CUSTOMER_DB>"], "role": "<FINANCE_READER_ROLE>"},
-  "domain_access": {"finops": true, "accounting": true, "strategic_finance": false},
+  "domain_access": {"accounting": true, "strategic_finance": false},
   "objects": [
     {
       "data_need_key": "accounting.ap.invoice_header",
       "fqn": "<CUSTOMER_DB>.AP.INVOICE_HEADER",
-      "columns_present": ["INVOICE_ID", "SUPPLIER", "INVOICE_AMOUNT"],
+      "columns_present": {"invoice_id": "INVOICE_NUMBER", "supplier": "VENDOR_NAME", "invoice_amount": "TOTAL_AMOUNT", "invoice_status": "APPROVAL_STATUS"},
       "official": true,
       "usage": {"events_7d": 214, "distinct_users": 9, "last_access": "2026-07-11"},
       "confidence": "HIGH"
@@ -35,6 +35,22 @@ All scripts exchange JSON-compatible structures so the skill can use determinist
 }
 ```
 
+**`columns_present`** (REQUIRED format: `{canonical: physical}` mapping):
+- Keys are the catalog field names of the data need (`fields` or legacy `columns`); values are the
+  exact physical column names found by `DESCRIBE`. Include only fields that were actually mapped.
+- `score_readiness.py` matches each catalog field by its canonical name or any of its `aliases`
+  (case-insensitive, double quotes ignored) and binds the physical name.
+- A flat list of physical names is still accepted for backward compatibility (alias matching
+  only); `{}` is used for procedures.
+- Emit exactly one object per `data_need_key`; duplicates are rejected.
+
+**`official`** — set by discovery, but not trusted alone: the scorer blocks any FQN whose parts
+contain a deny-list token (`dev`, `demo`, `test`, `sandbox`, `scratch`, `tmp`, `temp`, `bkp`,
+`backup`, `clone`, `snapshot`, `archive`) or end in `_YYYYMMDD` / `_YYYYMM`, with
+`block_kind: NON_OFFICIAL`, even when `official` is `true`. Staging/raw tokens (`prep`, `raw`,
+`stg`, `staging`, `landing`, `bronze`, `snap`) are also blocked unless the object carries
+`staging_confirmed: true` (the user confirmed that layer is official).
+
 **`object_type`** (optional field on each inventory object — for the `objects[]` array):
 - Omit or `null` for tables and views (default — all standard column-resolution logic applies).
 - `"procedure"` for stored procedures discovered via SHOW PROCEDURES. `columns_present` must be
@@ -45,7 +61,7 @@ All scripts exchange JSON-compatible structures so the skill can use determinist
 **`setup_eligible`** (optional boolean on `gaps[]` entries):
 - `true` when the hydrator can offer to create the missing object on the customer's behalf.
   Currently set only for `accounting.recon.profile_store` when neither a matching table nor
-  a matching procedure was found. When `true`, `recommend_skills.md` Phase 4 Step 5 presents
+  a matching procedure was found. When `true`, `recommend_skills.md` (Phase 4) Step 5 presents
   a **Setup** action alongside the BLOCKED status rather than a plain exclude.
 - Omit (or `false`) for all other gaps.
 
@@ -69,26 +85,32 @@ emits the Assessment shape below. `confidence` is one of HIGH / MEDIUM / LOW.
 {
   "skills": [
     {
-      "domain": "finops",
-      "skill": "warehouse_deep_dive",
-      "readiness": 91,
+      "domain": "accounting",
+      "skill": "flux_analysis",
+      "readiness": 100,
       "status": "READY",
       "recommendation": "include",
-      "reason": "ACCOUNT_USAGE metering and query history objects are available.",
+      "reason": "All required sources and columns resolved from account inventory.",
       "bindings": {
-        "finops.account_usage.metering": {
-          "fqn": "SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY",
+        "accounting.gl.journal_entries": {
+          "fqn": "<CUSTOMER_DB>.GL.JOURNAL_LINES",
           "confidence": "HIGH",
           "columns": {
-            "warehouse_name": "WAREHOUSE_NAME"
+            "period": "POSTING_PERIOD",
+            "account": "GL_ACCOUNT",
+            "amount": "NET_AMOUNT"
           }
         }
       },
-      "gaps": []
+      "gaps": [],
+      "block_kinds": []
     }
   ]
 }
 ```
+
+`block_kinds` (BLOCKED rows only): `MISSING_SOURCE`, `MISSING_REQUIRED_FIELD`, `NON_OFFICIAL`,
+`DOMAIN_INACCESSIBLE`.
 
 ## Status Values
 

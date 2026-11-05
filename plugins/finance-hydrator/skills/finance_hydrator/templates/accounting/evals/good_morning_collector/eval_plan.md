@@ -76,7 +76,7 @@ cortex -p "Run the golden cases from <customer-plugin>/evals/good_morning_collec
 
 1. **No collector assignment in demo data** — `CUSTOMERS` table has no `<COLLECTOR_COL>` (e.g. `collector_name`) column. The skill must gracefully fall back to full-portfolio mode rather than failing hard.
 
-2. **No `last_contact_date` column** — The priority score uses `LOG(days_since_last_contact + 1)`. With no contact date, all accounts default to 90 days (maximum priority weight). Priority list will sort purely on balance × √DPD.
+2. **No `last_contact_date` column** — The priority score uses `LN(COALESCE(days_since_last_contact, :never_contacted_days) + 1)`. With no contact date, all accounts default to the `never_contacted_days` setting (default 90). Priority list will sort purely on balance × √DPD.
 
 3. **Monthly Progress with sparse PAYMENTS table** — Demo has only 12 payment rows. If no payments fall within the current month, cash_collected_mtd = $0 and collection rate = 0%. Skill should show 0%, not crash or omit the section.
 

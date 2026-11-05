@@ -55,7 +55,9 @@ export function sqlStr(s: string): string {
  * lib/profile-bundle.ts.
  */
 export function validateTableParam(table: string | null | undefined): table is string {
-  return typeof table === "string" && /^[A-Za-z0-9_$"]+\.[A-Za-z0-9_$"]+\.[A-Za-z0-9_$"]+$/.test(table)
+  // No `"` — an embedded quote could break out of a caller's own identifier
+  // quoting (e.g. q() in lib/semantic-view-bundle.ts).
+  return typeof table === "string" && /^[A-Za-z0-9_$]+\.[A-Za-z0-9_$]+\.[A-Za-z0-9_$]+$/.test(table)
 }
 
 /** NUMBER(38,x) columns can arrive as strings; coerce safely. */
@@ -184,24 +186,4 @@ export function parseExtraFilters(raw: string | null): Record<string, string[]> 
 /** Builds `col in (...)` WHERE predicates from a parsed extraFilters map. */
 export function extraFilterWhereClauses(extra: Record<string, string[]>): string[] {
   return Object.entries(extra).map(([col, vals]) => `${col} in (${vals.map(sqlStr).join(",")})`)
-}
-
-/**
- * Build the shared WHERE predicates (year, quarter, departments, categories).
- * Version predicates are added by each route separately.
- */
-export function commonPredicates(params: URLSearchParams): string[] {
-  const where: string[] = []
-  const year = params.get("year") ?? "All"
-  const quarter = params.get("quarter") ?? "All"
-  const departments = csvParam(params.get("departments"))
-  const categories = csvParam(params.get("categories"))
-
-  if (year === "FY2026" || year === "FY2027") where.push(`fiscal_year = ${sqlStr(year)}`)
-  if (["Q1", "Q2", "Q3", "Q4"].includes(quarter)) where.push(`fiscal_quarter = ${sqlStr(quarter)}`)
-  if (departments.length) {
-    where.push(`coalesce(department, '(Unmapped)') in (${departments.map(sqlStr).join(",")})`)
-  }
-  if (categories.length) where.push(`expense_category in (${categories.map(sqlStr).join(",")})`)
-  return where
 }

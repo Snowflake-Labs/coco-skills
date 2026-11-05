@@ -58,6 +58,8 @@ complete, then deliver the full brief in one response.**
 
 **Stream E — Consumption pulse (optional):** If `finance.consumption.daily_usage` resolves,
 include a fifth section. If LOW confidence, skip silently with no mention.
+Usage is reported as `usage_quantity` in the configured `usage_unit` setting
+(e.g. credits, compute-hours, API calls) — never assume the unit.
 
 **Time window defaults:**
 - Revenue pulse: yesterday vs prior business day; MTD vs MTD prior year
@@ -117,7 +119,7 @@ Output rules:
 <2-sentence commentary on the largest flagged line>
 
 ## Consumption Pulse  [include only if data available]
-- WoW usage: +X.X%
+- WoW usage (<usage_unit>): +X.X%
 - Top growing accounts: <list>
 - Watch list (declining): <list>
 
@@ -143,9 +145,13 @@ Hydration: <N bindings via SV>, <N via INFORMATION_SCHEMA>, <N via hints>
 - Never expose internal system identifiers or raw IDs in output — use account names.
 - Never assume a fiscal calendar. Read from plugin config (`feb_start`, `jan_start`, or `custom`).
 - If no data has landed for the requested window, surface this explicitly: "No data yet for <window> — last available: <timestamp>."
-- Currency: respect the `currency` column. Display in dominant currency; group by currency if multiple present.
+- Currency: respect the `currency` column. Display in the configured `reporting_currency` setting
+  (convert using the customer's FX source, and disclose the rate basis); if no conversion is
+  available, group and rank by currency — never mix currencies in a total or a ranking.
 - Web search: only include sources from the last 24 hours. If no relevant results, skip the section silently.
-- Expense anomalies: apply a materiality threshold (suggest >5% OR >$50K absolute). Do not flag immaterial lines. Confirm the thresholds with the user rather than hardcoding them.
+- Expense anomalies: apply materiality the same way as `budget_vs_actuals` — propose thresholds
+  relative to the scope's budget (or use customer-configured thresholds) and confirm with the user.
+  Do not hardcode a fixed % or $ threshold. Do not flag immaterial lines.
 - Keep the full brief under 600 words.
 
 ### Error Handling

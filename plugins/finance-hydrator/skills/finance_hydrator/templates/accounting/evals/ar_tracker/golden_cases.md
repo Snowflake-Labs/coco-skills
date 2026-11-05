@@ -1,6 +1,6 @@
 # Golden Test Cases: ar_tracker
 
-6 test cases covering all routing modes, DSO degraded path, multi-currency handling, and single-account drill-down. Run against the hydrated ar_tracker skill and score with eval metrics.
+7 test cases covering all routing modes, DSO degraded path, multi-currency handling, and single-account drill-down. Run against the hydrated ar_tracker skill and score with eval metrics.
 
 ---
 
@@ -94,7 +94,7 @@ Show me our AR health
 
 **Expected behavior:**
 - Full dashboard runs normally
-- DSO falls back to estimated path: Total Open AR ÷ (invoiced in trailing 90 days ÷ 90)
+- DSO falls back to estimated path: Net AR ÷ (invoiced in trailing 90 days ÷ 90), with the basis disclosed
 - Output labels DSO clearly as "estimated"
 - If trailing 90-day invoiced amount is also unavailable: DSO omitted with message "DSO unavailable — revenue or billing table not found"
 - All other sections run normally
@@ -157,6 +157,19 @@ What does Acme Corp owe us?
 - If dispute table exists: open disputes shown for the account
 - Zero-balance invoices excluded (paid invoices not shown in open AR list)
 - Total open balance for the account shown as a summary at the top
+
+---
+
+## Case 7: Credit Memos, Unapplied Cash, and Business-Day SLA
+
+**Setup (synthetic):** Open invoices totalling 100,000; an open credit memo of −5,000 and unapplied cash of −3,000; a dispute with SLA date 3 calendar days away that spans a weekend.
+
+**Key assertions:**
+- Headline shows Gross open AR 100,000, Unapplied cash / credits 8,000, Net AR 92,000 — separately
+- DSO is computed on Net AR and the output states that basis
+- Credit balances are not silently dropped by a `balance > 0` filter
+- The dispute is evaluated against 3 **business** days (weekend excluded); output discloses whether a holiday calendar was used
+- Account search for a name containing `%` or `_` is escaped and bound, not concatenated
 
 ---
 

@@ -1,0 +1,119 @@
+{
+  "scope": {
+    "databases": [
+      "ERP_PROD"
+    ],
+    "role": "FIN_READER"
+  },
+  "domain_access": {
+    "accounting": true,
+    "strategic_finance": true
+  },
+  "objects": [
+    {
+      "data_need_key": "accounting.gl.journal_entries",
+      "fqn": "ERP_PROD.GL.JOURNAL_LINES",
+      "columns_present": {
+        "period": "POSTING_PERIOD",
+        "account": "GL_ACCOUNT",
+        "amount": "NET_AMOUNT"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.calendar.fiscal_periods",
+      "fqn": "ERP_PROD.GL.ACCOUNTING_PERIODS",
+      "columns_present": {
+        "period": "PERIOD_NAME",
+        "period_start": "START_DATE",
+        "period_end": "END_DATE"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.ap.invoice_header",
+      "fqn": "ERP_PROD.AP.VENDOR_BILLS",
+      "columns_present": {
+        "invoice_id": "INTERNAL_ID",
+        "supplier": "VENDOR_NAME",
+        "supplier_id": "VENDOR_ID",
+        "vendor_invoice_reference": "SUPPLIER_INVOICE_NUMBER",
+        "invoice_amount": "TOTAL_AMOUNT",
+        "invoice_status": "APPROVAL_STATUS",
+        "invoice_date": "TRANDATE",
+        "due_date": "DUEDATE",
+        "open_amount": "AMOUNT_REMAINING"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.ar.aging",
+      "fqn": "ERP_PROD.AR.OPEN_RECEIVABLES",
+      "columns_present": {
+        "customer_id": "CUSTOMER_NUMBER",
+        "invoice_id": "TRX_NUMBER",
+        "due_date": "PAYMENT_DUE_DATE",
+        "balance": "AMOUNT_DUE_REMAINING",
+        "customer": "CUSTOMER_NAME"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.budget.plan",
+      "fqn": "ERP_PROD.PLANNING.BUDGET_LINES",
+      "columns_present": {
+        "line_item_id": "LINE_ITEM",
+        "period": "FISCAL_PERIOD",
+        "budget_amount": "BUDGET_AMOUNT"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.budget.actuals",
+      "fqn": "ERP_PROD.PLANNING.ACTUAL_LINES",
+      "columns_present": {
+        "line_item_id": "LINE_ITEM",
+        "period": "FISCAL_PERIOD",
+        "actual_amount": "ACTUAL_AMOUNT"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "gaps": []
+}

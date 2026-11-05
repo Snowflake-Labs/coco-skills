@@ -10,13 +10,23 @@ from typing import Any
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"combine_recommendations.py: error: cannot read {path}: {exc}")
+    if not isinstance(data, dict):
+        raise SystemExit(f"combine_recommendations.py: error: {path} must contain a JSON object")
+    return data
 
 
 def decide(business_fit: int, data_status: str) -> tuple[str, str, str]:
     if data_status == "BLOCKED" and business_fit >= 70:
         return "BLOCKED", "exclude", "High business fit, but required data is blocked."
+    # A relevant skill with blocked data must surface its data gap, not be
+    # hidden as NOT_RELEVANT.
+    if data_status == "BLOCKED" and business_fit >= 40:
+        return "BLOCKED", "exclude", "Some business fit, but required data is blocked."
     if business_fit < 40:
         return "NOT_RELEVANT", "exclude", "Low business fit for the collected profile."
     if business_fit < 70:

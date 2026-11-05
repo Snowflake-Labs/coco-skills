@@ -1,6 +1,6 @@
 # Golden Test Cases: flux_analysis
 
-6 test cases covering all 3 workflow modes + commentary generation + dimension probe + theme extraction. Run against the hydrated flux_analysis skill and score with eval metrics.
+7 test cases covering all 3 workflow modes + commentary generation + dimension probe + theme extraction. Run against the hydrated flux_analysis skill and score with eval metrics.
 
 ---
 
@@ -139,7 +139,7 @@ Explain the variance in Employee Expenses for March vs February
 
 **Input:**
 ```
-Analyze account 120200 (Restricted Cash) QoQ
+Analyze account <RESTRICTED_CASH_ACCOUNT> (Restricted Cash) QoQ
 ```
 
 **Expected behavior:**
@@ -147,7 +147,7 @@ Analyze account 120200 (Restricted Cash) QoQ
 - Resolves BS balance table
 - Runs dimension probe — expects sparse results (cash accounts typically have limited dimensional data)
 - Falls back to theme extraction from journal descriptions
-- Identifies business themes (e.g., investment distributions, letter of credit releases, reclassifications)
+- Identifies business themes (e.g., escrow releases, reclassifications)
 - Applies netting rules if applicable (e.g., reclassification in/out nets to zero)
 - Generates commentary using themes as drivers
 - If no clear themes: "Driver unclear — flag for controller review"
@@ -161,6 +161,19 @@ Analyze account 120200 (Restricted Cash) QoQ
 - Netting rules applied where applicable
 - Commentary references themes by name
 - Amount coverage noted (what % of variance is explained by identified themes)
+
+---
+
+## Case 7: Sign Convention and Balance-Sheet Ending Balances
+
+**Setup:** ERP stores credits negative; `natural_sign = credit_negative`. User runs a QoQ flux on a revenue account and a liability account.
+
+**Key assertions:**
+- On first run the skill shows sample stored signs and confirms `natural_sign` with the user
+- Revenue is multiplied by −1 before variance; an increase in revenue is labelled Favorable; an increase in an expense is Unfavorable
+- The liability account uses the quarter-end **ending balance**, not summed activity, and is labelled Increase / Decrease rather than Favorable / Unfavorable
+- Materiality gate is either absolute-only or % AND minimum absolute, confirmed with the user
+- Commentary cites only drivers present in the query output
 
 ---
 

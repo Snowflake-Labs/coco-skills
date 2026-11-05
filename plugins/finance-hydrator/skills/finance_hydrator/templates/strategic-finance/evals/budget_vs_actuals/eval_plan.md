@@ -27,7 +27,7 @@ Run these cases with `/skill_eval` pointed at `evals/budget_vs_actuals/golden_ca
 
 | ID | Metric | Pass Condition |
 |---|---|---|
-| P1 | Materiality threshold applied | Only lines exceeding BOTH % and $ thresholds are flagged |
+| P1 | Materiality threshold applied | Thresholds proposed relative to budget and confirmed with user; only lines exceeding the confirmed threshold(s) are flagged |
 | P2 | FAV/UNFAV direction correct | Expense lines: actual < budget = FAV. Revenue lines: actual > budget = FAV. |
 | P3 | Commentary present for each flagged line | Every flagged line has 2–3 sentences of commentary |
 | P4 | Full detail table gated behind request | Full detail table NOT shown unsolicited — only after user asks |
@@ -38,7 +38,7 @@ Run these cases with `/skill_eval` pointed at `evals/budget_vs_actuals/golden_ca
 | ID | Metric | Pass Condition |
 |---|---|---|
 | S1 | Summary stat present | "X of Y line items exceeded materiality threshold" shown at top |
-| S2 | Materiality thresholds stated in footer | Footer shows the threshold used (e.g., ">5% and >$50K") |
+| S2 | Materiality thresholds stated in footer | Footer shows the confirmed threshold used |
 | S3 | Context data unavailable handled | When no notes table, commentary says "Context data unavailable — manual review required" rather than being blank |
 | S4 | Period labeled in output | Output clearly shows the period analyzed (month/quarter start and end) |
 | S5 | Zero flagged case handled | If no lines exceed threshold, outputs "No lines exceeded materiality threshold" — does not produce empty table |

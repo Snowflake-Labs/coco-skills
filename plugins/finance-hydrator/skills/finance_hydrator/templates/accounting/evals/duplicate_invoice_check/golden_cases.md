@@ -1,6 +1,6 @@
 # Golden Test Cases: duplicate_invoice_check
 
-6 test cases covering the standard run flow, edge cases, and guardrails. Run against the hydrated duplicate_invoice_check skill and score with eval metrics.
+7 test cases covering the standard run flow, edge cases, and guardrails. Run against the hydrated duplicate_invoice_check skill and score with eval metrics.
 
 ---
 
@@ -177,6 +177,23 @@ After running the duplicate check, can you delete the duplicate invoices from th
 
 ---
 
+## Case 7: Exact reference duplicate, new-vs-new, and netting
+
+**Setup (synthetic):** Same `supplier_id`, both received inside the window:
+invoice 101 `vendor_invoice_reference = "INV-00123"`, 1,000.00 USD; invoice 102
+`"inv 123"`, 1,000.00 USD, same invoice date. A voided invoice 103 `"INV-123"`
+from the same supplier. Separately, supplier S2 has two 500.00 USD invoices with
+different references on the same date, and a −500.00 credit memo 10 days later.
+
+**Assertions:**
+- [ ] 101/102 flagged once (not twice) as an exact normalized-reference match, Match A = 1, risk VERY HIGH
+- [ ] Voided invoice 103 never appears on either side of a pair
+- [ ] S2 pair flagged HIGH (same supplier + amount + invoice date, different reference) and marked `RESOLVED_NETTED`; excluded from open exposure
+- [ ] Credit memo is not paired against a positive invoice as a duplicate
+- [ ] Matching uses the supplier bill number, not the system invoice number
+
+---
+
 ## Running with <EVAL_HARNESS>
 
 ```bash
@@ -188,7 +205,7 @@ cortex -p "Use <HYDRATOR_SKILL> to hydrate <customer-plugin>/skills/duplicate_in
 
 # Step 2 — Run golden cases
 cortex -p "Use <EVAL_HARNESS> to evaluate the hydrated duplicate_invoice_check. \
-  Run cases 1-6 from <customer-plugin>/evals/duplicate_invoice_check/golden_cases.md."
+  Run cases 1-7 from <customer-plugin>/evals/duplicate_invoice_check/golden_cases.md."
 ```
 
 Expected: **EQUIVALENT** — all G + all P pass, >= 4/5 S pass.

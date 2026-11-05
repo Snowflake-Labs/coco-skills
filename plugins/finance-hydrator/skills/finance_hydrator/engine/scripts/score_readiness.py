@@ -17,19 +17,88 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import sys
 from pathlib import Path
 from typing import Any
 
 CONFIDENCE_SCORE = {"HIGH": 1.0, "MEDIUM": 0.6, "LOW": 0.3}
 
+# Whole-token markers of non-production data. Matched against FQN parts split
+# on "." and "_", so DEVICE / CONTEST / TEMPLATE never trip "dev"/"test"/"temp".
+NON_OFFICIAL_TOKENS = {
+    "dev", "demo", "test", "sandbox", "scratch", "tmp", "temp", "bkp",
+    "backup", "clone", "snapshot", "archive",
+}
+DATED_SUFFIX = re.compile(r"_(\d{8}|\d{6})$")
+# Staging/raw-layer markers. Blocked unless the user confirmed this staging
+# layer is the official source (inventory object ``staging_confirmed: true``).
+STAGING_TOKENS = {"prep", "raw", "stg", "staging", "landing", "bronze", "snap"}
+
+
+class InputError(Exception):
+    """Malformed input file; reported as a one-line error, not a traceback."""
+
 
 def load_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except FileNotFoundError:
+        raise InputError(f"{path}: file not found") from None
+    except json.JSONDecodeError as exc:
+        raise InputError(f"{path}: invalid JSON ({exc})") from None
+    if not isinstance(data, dict):
+        raise InputError(f"{path}: must contain a JSON object")
+    return data
+
+
+def non_official_reason(fqn: str, staging_confirmed: bool = False) -> str | None:
+    """Return why an FQN looks non-production, or None if it looks official.
+
+    Deterministic and token-based so it applies even when the inventory marks
+    the object ``official: true``.
+    """
+    for part in fqn.replace('"', "").split("."):
+        if DATED_SUFFIX.search(part):
+            return f"dated snapshot suffix in {part!r}"
+        for token in re.split(r"[._]", part.lower()):
+            if token in NON_OFFICIAL_TOKENS:
+                return f"non-official token {token!r} in {part!r}"
+            if token in STAGING_TOKENS and not staging_confirmed:
+                return (
+                    f"staging/raw token {token!r} in {part!r} "
+                    "(set staging_confirmed: true if the user confirmed it is official)"
+                )
+    return None
 
 
 def index_inventory(inventory: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {obj["data_need_key"]: obj for obj in inventory.get("objects", [])}
+    objects = inventory.get("objects", [])
+    if not isinstance(objects, list):
+        raise InputError("inventory.objects must be a list")
+    index: dict[str, dict[str, Any]] = {}
+    for idx, obj in enumerate(objects):
+        if not isinstance(obj, dict):
+            raise InputError(f"inventory.objects[{idx}] must be an object")
+        key = obj.get("data_need_key")
+        if not key or not obj.get("fqn"):
+            raise InputError(f"inventory.objects[{idx}] is missing data_need_key or fqn")
+        if key in index:
+            raise InputError(
+                f"duplicate data_need_key {key!r} in inventory.objects "
+                "(emit one object per data-need key)"
+            )
+        index[key] = obj
+    return index
+
+
+def confidence_of(obj: dict[str, Any], default: str) -> str:
+    return str(obj.get("confidence") or default).upper()
+
+
+def column_key(name: str) -> str:
+    return str(name).replace('"', "").lower()
 
 
 def normalize_fields(need: dict[str, Any]) -> list[dict[str, Any]]:
@@ -78,7 +147,7 @@ def resolve_field(field: dict[str, Any], present_map: dict[str, str]) -> str | N
     deterministic; it never fuzzy-guesses a column.
     """
     for alias in field["aliases"]:
-        physical = present_map.get(alias.lower())
+        physical = present_map.get(column_key(alias))
         if physical is not None:
             return physical
     return None
@@ -102,7 +171,22 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
     required_fields = [f for f in fields if f["required"]]
     optional_fields = [f for f in fields if not f["required"]]
 
-    if obj is None or not obj.get("official", False):
+    reason = (
+        non_official_reason(obj["fqn"], bool(obj.get("staging_confirmed")))
+        if obj is not None
+        else None
+    )
+    if obj is not None and (reason or not obj.get("official", False)):
+        result["source_present"] = False
+        if result["required"]:
+            why = reason or "inventory marks it official: false"
+            result["block_reason"] = (
+                f"non-official source {obj['fqn']} for {need['key']} ({why})"
+            )
+            result["block_kind"] = "NON_OFFICIAL"
+        return result
+
+    if obj is None:
         if result["required"]:
             result["block_reason"] = f"missing required source for {need['key']}"
             result["block_kind"] = "MISSING_SOURCE"
@@ -115,10 +199,10 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
     if obj.get("object_type") == "procedure":
         result["req_columns_ok"] = True
         result["optional_ratio"] = 1.0
-        result["confidence"] = CONFIDENCE_SCORE.get(obj.get("confidence", "MEDIUM"), 0.6)
+        result["confidence"] = CONFIDENCE_SCORE.get(confidence_of(obj, "MEDIUM"), 0.6)
         result["binding"] = {
             "fqn": obj["fqn"],
-            "confidence": obj.get("confidence", "MEDIUM"),
+            "confidence": confidence_of(obj, "MEDIUM"),
             "columns": {},
             "object_type": "procedure",
         }
@@ -131,10 +215,12 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
         # matching works regardless of which inventory format was written.
         present_map: dict[str, str] = {}
         for _canonical, _physical in columns_present_raw.items():
-            present_map[_physical.lower()] = _physical
-            present_map[_canonical.lower()] = _physical
+            present_map[column_key(_physical)] = _physical
+            present_map[column_key(_canonical)] = _physical
+    elif isinstance(columns_present_raw, list):
+        present_map = {column_key(c): c for c in columns_present_raw}
     else:
-        present_map = {c.lower(): c for c in columns_present_raw}
+        raise InputError(f"columns_present for {obj['fqn']} must be a mapping or list")
     present = set(present_map)
     # Resolve each canonical field to a real physical column via alias matching.
     resolved: dict[str, str] = {}
@@ -150,10 +236,12 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
         ) / len(optional_fields)
     else:
         result["optional_ratio"] = 1.0
-    result["confidence"] = CONFIDENCE_SCORE.get(obj.get("confidence", "LOW"), 0.3)
+    result["confidence"] = CONFIDENCE_SCORE.get(confidence_of(obj, "LOW"), 0.3)
 
     unsafe = need.get("unsafe_scoping_columns") or []
-    missing_unsafe = [c for c in unsafe if c.lower() not in present]
+    missing_unsafe = [
+        c for c in unsafe if c not in resolved and column_key(c) not in present
+    ]
     if missing_unsafe:
         result["unsafe_missing"] = True
         result["block_reason"] = (
@@ -172,7 +260,7 @@ def score_need(need: dict[str, Any], obj: dict[str, Any] | None) -> dict[str, An
     # generated hydration_hints reference columns that actually exist.
     result["binding"] = {
         "fqn": obj["fqn"],
-        "confidence": obj.get("confidence", "LOW"),
+        "confidence": confidence_of(obj, "LOW"),
         "columns": dict(resolved),
     }
     if obj.get("object_type"):
@@ -256,17 +344,25 @@ def main() -> int:
     parser.add_argument("--catalog", action="append", type=Path, required=True)
     args = parser.parse_args()
 
-    inventory = load_json(args.inventory.resolve())
-    inv_index = index_inventory(inventory)
-    domain_access = inventory.get("domain_access", {})
+    try:
+        inventory = load_json(args.inventory.resolve())
+        inv_index = index_inventory(inventory)
+        domain_access = inventory.get("domain_access") or {}
+        if not isinstance(domain_access, dict):
+            raise InputError("inventory.domain_access must be an object")
 
-    skills_out: list[dict[str, Any]] = []
-    for cat_path in args.catalog:
-        catalog = load_json(cat_path.resolve())
-        domain = catalog["domain"]
-        domain_ok = domain_access.get(domain, True)
-        for skill in catalog.get("skills", []):
-            skills_out.append(score_skill(skill, domain, domain_ok, inv_index))
+        skills_out: list[dict[str, Any]] = []
+        for cat_path in args.catalog:
+            catalog = load_json(cat_path.resolve())
+            domain = catalog.get("domain")
+            if not domain:
+                raise InputError(f"{cat_path}: missing domain")
+            domain_ok = domain_access.get(domain, True)
+            for skill in catalog.get("skills", []):
+                skills_out.append(score_skill(skill, domain, domain_ok, inv_index))
+    except InputError as exc:
+        print(f"score_readiness.py: error: {exc}", file=sys.stderr)
+        return 2
 
     print(json.dumps({"skills": skills_out}, indent=2))
     return 0

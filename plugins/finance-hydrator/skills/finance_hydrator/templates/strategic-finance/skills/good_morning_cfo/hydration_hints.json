@@ -26,7 +26,10 @@
         "daily revenue forecast",
         "actuals vs forecast",
         "daily revenue"
-      ]
+      ],
+      "extra_settings": {
+        "reporting_currency": "<YOUR_REPORTING_CURRENCY e.g. USD>"
+      }
     },
     "finance.revenue.account_forecast": {
       "required": true,
@@ -90,15 +93,18 @@
           "columns": {
             "usage_date": "<YOUR_USAGE_DATE_COLUMN>",
             "account_id": "<YOUR_ACCOUNT_ID_COLUMN>",
-            "credits": "<YOUR_CREDITS_COLUMN>"
+            "usage_quantity": "<YOUR_USAGE_QUANTITY_COLUMN>"
           }
         }
       ],
       "synonyms": [
         "daily usage by account",
         "consumption",
-        "billable credits per day"
-      ]
+        "billable usage units per day"
+      ],
+      "extra_settings": {
+        "usage_unit": "<YOUR_USAGE_UNIT e.g. credits | compute_hours | api_calls | gb>"
+      }
     }
   }
 }

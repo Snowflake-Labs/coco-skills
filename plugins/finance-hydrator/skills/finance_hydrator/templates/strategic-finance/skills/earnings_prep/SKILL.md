@@ -115,12 +115,20 @@ Metrics to include (include what's available; note any that are missing):
 
 **Step 4 — Flag material guidance misses/beats.**
 
-Any metric where actual vs guidance is outside ±5% (or user-specified threshold):
-flag as BEAT or MISS with the absolute and % deviation.
+Use separate thresholds by metric type (both user-configurable; confirm on first run):
+- **Dollar metrics** (revenue, operating income, EPS, …): flag when actual vs guidance midpoint
+  is outside ±`guidance_threshold_pct` (default 5%) — report absolute and % deviation.
+- **Margin / ratio metrics** (gross margin, operating margin, …): flag when the deviation is
+  outside ±`guidance_threshold_pp` **percentage points** — report the deviation in pp, never
+  as a percent-of-a-percent.
+
+Flag as BEAT or MISS accordingly.
 
 **Output:**
 
 ```
+**Confidential — contains unreleased financial information**
+
 # Financial Package — Q<N> FY<YYYY>
 *Prepared <date>*
 
@@ -314,12 +322,28 @@ figures that are not in the transcript before using them.
 | Confidence | Behavior |
 |---|---|
 | HIGH (financial actuals + comparison basis + key operating metrics all resolved — across one or more tables) | Full 3-mode workflow; complete financial package with all comparisons |
-| MEDIUM (actuals resolve but guidance history or consensus is unavailable **or RBAC-blocked**) | Mode 1: omit guidance/consensus columns; flag as "not available"; Modes 2–3 work from available data |
+| MEDIUM (actuals resolve but guidance history or consensus is unavailable — not bound / empty) | Mode 1: omit guidance/consensus columns; flag as "not available"; Modes 2–3 work from available data |
 | MEDIUM (the summary is spread across multiple wide tables) | Compose the package across them, keyed by fiscal quarter (see Adaptation Patterns); run normally |
+| Permission / RBAC denial on any source | **Stop.** Tell the user which object was denied and that access must be granted by their administrator. Do not substitute `web_search` or any other source for the denied data. Continue only if the user explicitly says to proceed without it. |
 | LOW on critical (no financial actuals source at all) | Block. Output: "Earnings prep requires quarterly financial metrics. Add a binding under finance.earnings.financial_summary in hydration_hints.yaml and re-verify." |
 | LOW on non-critical (operating metrics unavailable) | Mode 1: financial lines only; note "operating metrics not found"; Modes 2–3 continue without those metrics |
 
 ### Guardrails
+
+**MNPI / Reg FD / quiet period (apply in every mode):**
+- Unreleased results are material non-public information. **Never include unreleased figures,
+  specific numbers, or results-revealing phrasing in any external tool call** (`web_search`,
+  web fetch, or any MCP that leaves the account). External searches are limited to
+  already-public information — published consensus, peer press releases, macro data — and the
+  query text must not contain internal figures or hints about them.
+- Label every output (chat, file, export) **"Confidential — contains unreleased financial
+  information"**.
+- Respect the company's quiet period: do not draft or suggest any external communication,
+  and do not prepare content for sharing outside the authorized earnings working group. If
+  the user's request implies external distribution during a quiet period, stop and remind
+  them of the policy.
+- Scripts, talking points, and non-GAAP reconciliations are drafts. They require IR, Legal and
+  Disclosure Committee sign-off before any use; state this on every Mode 2 / Mode 3 output.
 
 - Sanity-check every figure against its neighbors before presenting it. If a value in the
   summary source is far out of scale with adjacent periods (for example a future-quarter
@@ -344,16 +368,18 @@ figures that are not in the transcript before using them.
 - Use the customer's defined non-GAAP definitions if available. Do not construct non-GAAP
   adjustments without knowing the reconciliation methodology.
 - All guidance language must cite the guidance source (most recent issued date and channel).
-- A guidance source that returns an authorization/RBAC error is treated the same as
-  "absent" — skip the guidance column gracefully and note it; never block the whole skill
-  on a missing optional source.
+- A source that returns an authorization / RBAC error is **not** treated as absent. Stop and
+  tell the user which object was denied; never fall back to `web_search` or another source to
+  work around the permission boundary. Proceed without it only on the user's explicit instruction.
+- A source that is simply not bound or empty is optional: skip it gracefully and note it.
 
 ### Error Handling
 
 | Scenario | Action |
 |---|---|
 | Financial actuals missing entirely | Block; output setup instructions |
-| Guidance history missing OR RBAC-blocked (auth error) | Run Mode 1 without guidance column; note "no guidance history available"; try `web_search` for issued guidance |
+| Guidance history not bound / empty | Run Mode 1 without guidance column; note "no guidance history available"; `web_search` may be used only for **publicly issued** guidance, with no internal figures in the query |
+| Any source RBAC-blocked (auth error) | Stop; tell the user which object was denied; do not substitute `web_search`; continue only if the user explicitly says to proceed without it |
 | Guidance range has no midpoint | Compute midpoint = (guidance_low + guidance_high) / 2 |
 | Gross profit $ not stored (only GM%) | Derive $ = revenue × GM%; label "derived" |
 | Summary spread across multiple tables | Compose across them keyed by fiscal quarter |
@@ -361,14 +387,14 @@ figures that are not in the transcript before using them.
 | Multiple fiscal periods available | Ask user to confirm which quarter |
 | User runs Mode 2 before Mode 1 | Prompt: "Let me assemble the financial package first — do you want Mode 1?" |
 | User runs Mode 3 before Mode 1 | Prompt: "Mode 3 requires the financial package. Would you like to run Mode 1 first?" |
-| Zero guidance flags (all within ±5%) | Output: "No material guidance variances — all metrics within ±X% of guidance midpoint." |
+| Zero guidance flags | Output: "No material guidance variances — dollar metrics within ±X% and margin metrics within ±Y pp of guidance midpoint." |
 | Metric labels in financial table don't match standard names | Prompt user to confirm which column maps to Revenue, Gross Margin, etc. |
 
 ## Adaptation Patterns
 
 IR/earnings data is rarely in one tidy "tall" table. Inspect resolved objects with
-`INFORMATION_SCHEMA.COLUMNS` and adapt — use Cortex Sense / `cortex_context_sql` to confirm
-columns before composing the package.
+`INFORMATION_SCHEMA.COLUMNS` and adapt — use `DESCRIBE TABLE` / `INFORMATION_SCHEMA.COLUMNS`
+(and column comments, if available) to confirm columns before composing the package.
 
 | If the data looks like… | Do this |
 |---|---|
@@ -376,7 +402,8 @@ columns before composing the package.
 | **Wide / metrics-as-columns** (one row per quarter, metrics like `PRODUCT_REVENUE`, `GROSS_MARGIN`, `OPERATING_MARGIN` as columns) | Read the columns directly per quarter; no UNPIVOT needed for a fixed metric list. Pre-computed `QOQ_*` / `YOY_*` columns, if present, satisfy the comparison bindings. |
 | **Gross profit only as a %** | Derive gross profit $ = revenue × GM%; label "derived". |
 | **YoY/QoQ already pre-computed** (`QOQ_REVENUE`, `YOY_OPERATING_MARGIN_PCT_CHANGE`, etc.) | Use them directly instead of self-joining prior periods. |
-| **Guidance source RBAC-blocked or empty** | Treat as absent: skip the guidance column, note it, fall back to `web_search` for publicly issued guidance. |
+| **Guidance source empty / not bound** | Skip the guidance column and note it; `web_search` may be used for publicly issued guidance only (no internal figures in the query). |
+| **Guidance source RBAC-blocked** | Stop and tell the user; do not work around it with `web_search`. |
 | **Only constant-currency / non-GAAP revenue available** | Use it but label clearly; flag the GAAP-vs-adjusted materiality risk (see Guardrails). |
 | **Historical analyst-questions / sell-side preview tables exist** | Seed Mode 3 from them (real questions analysts asked) instead of only the generic recurring list — a meaningful upgrade. |
 
@@ -398,7 +425,8 @@ columns before composing the package.
 - A guidance history giving the issued guidance range (or midpoint) per (quarter, metric).
   Columns: fiscal quarter (STRING or DATE), guidance issued date (DATE), metric name
   (STRING), guidance low/high (NUMBER), optionally midpoint (NUMBER). *(non-critical —
-  guidance column skipped if absent, empty, or RBAC-blocked; `web_search` used as fallback)*
+  guidance column skipped if absent or empty, with `web_search` for publicly issued guidance only;
+  an RBAC denial stops the skill and is reported to the user)*
 
 - (Optional) An analyst consensus table with one row per (quarter, metric_name) containing
   consensus estimate (NUMBER) and source date. If absent, the skill attempts web_search

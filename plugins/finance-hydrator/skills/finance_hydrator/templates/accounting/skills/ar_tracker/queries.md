@@ -1,6 +1,9 @@
 # Query Reference — AR Tracker
 
-All physical table/column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns — no SQL, no FQNs.
+All physical table/column references are resolved at runtime against the customer's Snowflake account. This file describes query types and logic patterns, plus reference SQL snippets with `{{placeholders}}` filled from `hydration_hints.yaml`. No FQNs.
+
+**Parameter binding (all user-supplied search text):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
+`{{cols.account_name}} ILIKE '%' || :search || '%' ESCAPE '\\'`
 
 ---
 
@@ -21,30 +24,47 @@ All physical table/column references are resolved at runtime against the custome
 
 ## Query Type 1 — AR Health Summary
 
-**Purpose**: Single-row summary: total open AR, account count, invoice count, % current, % overdue, % 90+, and DSO.
+**Purpose**: Single-row summary: Gross open AR, Unapplied cash / credits, Net AR, account count, invoice count, % current, % overdue, % 90+, and DSO.
 
 **Logic**:
-1. Filter AR table to open invoices only (exclude paid, voided, credited)
-2. COUNT(DISTINCT account_id) and COUNT(DISTINCT invoice_id) for totals
-3. SUM(balance) for total open AR
+1. Filter AR table to open items only: balance ≠ 0, status not paid / void (keep open credit memos and unapplied cash — they carry credit balances)
+2. COUNT(DISTINCT account_id) and COUNT(DISTINCT invoice_id) for totals (debit items)
+3. Gross open AR = SUM(balance WHERE balance > 0); Unapplied cash / credits = −SUM(balance WHERE balance < 0) plus any bound unapplied-cash table; Net AR = Gross − Unapplied
 4. Compute % current: SUM(balance WHERE not_yet_overdue) / SUM(balance) × 100
 5. Compute % overdue: SUM(balance WHERE days_past_due > 0) / SUM(balance) × 100
 6. Compute % 90+: SUM(balance WHERE days_past_due > 90) / SUM(balance) × 100
 7. For DSO:
-   - Preferred path: SUM(open AR) / (SUM(revenue in trailing 90 days) / 90)
-   - Fallback path: SUM(open AR) / (SUM(invoiced in trailing 90 days) / 90)
+   - Preferred path: Net AR / (SUM(revenue in trailing 90 days) / 90)
+   - Fallback path: Net AR / (SUM(invoiced in trailing 90 days) / 90)
+   - Always output the basis: "DSO on Net AR; denominator = <revenue | billings>, 90 days"
    - If denominator is zero or no data: omit DSO
 
-**Output grain**: single summary row
+**Output grain**: single summary row (one per currency if no reporting-currency column)
+
+**Reference SQL (headline AR figures):**
+
+```sql
+SELECT
+  {{cols.currency}}                                             AS currency,
+  SUM(IFF({{cols.balance}} > 0, {{cols.balance}}, 0))           AS gross_open_ar,
+  -SUM(IFF({{cols.balance}} < 0, {{cols.balance}}, 0))          AS unapplied_cash_and_credits,
+  SUM({{cols.balance}})                                         AS net_ar,
+  COUNT(DISTINCT IFF({{cols.balance}} > 0, {{cols.account_id}}, NULL)) AS open_accounts,
+  COUNT(DISTINCT IFF({{cols.balance}} > 0, {{cols.invoice_id}}, NULL)) AS open_invoices
+FROM {{ar_fqn}}
+WHERE {{cols.balance}} <> 0
+  AND UPPER(COALESCE({{cols.status}}, '')) NOT IN ({{settings.excluded_statuses}})
+GROUP BY 1;
+```
 
 ---
 
 ## Query Type 2 — Aging Buckets
 
-**Purpose**: Distribution of open AR across five aging buckets with counts and optional delta.
+**Purpose**: Distribution of open AR across five aging buckets with counts and optional delta. These buckets are the canonical AR aging definition shared with `good_morning_collector`.
 
 **Logic**:
-1. Filter AR table to open invoices only (balance > 0)
+1. Filter AR table to open debit items (balance > 0) for the buckets; report credit balances (balance < 0) as a separate "Unapplied cash / credits" line rather than dropping them
 2. If a pre-computed aging bucket column exists, use it directly
 3. If no bucket column, compute: DATEDIFF(day, due_date, CURRENT_DATE()) → assign to bucket
    - Current: computed_days <= 0 (not yet past due)
@@ -104,10 +124,35 @@ All physical table/column references are resolved at runtime against the custome
 **Logic**:
 1. COUNT(*) and SUM(dispute_amount) for all open disputes
 2. New disputes this week = filter by dispute_opened_date >= Monday of current week, COUNT and SUM
-3. Approaching SLA = filter by dispute_sla_date BETWEEN CURRENT_DATE() AND DATEADD(day, 3, CURRENT_DATE()), COUNT and SUM
+3. Approaching SLA = dispute_sla_date between today and the **3rd business day** after today, COUNT and SUM. Use the bound fiscal / holiday calendar if available; otherwise exclude weekends only and disclose that holidays were not considered (see reference SQL below)
 4. Optional: GROUP BY dispute_status to show breakdown by status type
 
 **Output grain**: summary counts and amounts; optional status breakdown
+
+**Reference SQL (SLA within N business days):**
+
+```sql
+WITH business_days AS (
+  -- Preferred: bound holiday / fiscal calendar
+  --   SELECT {{cols.calendar_date}} AS d FROM {{calendar_fqn}}
+  --   WHERE {{cols.is_business_day}} AND {{cols.calendar_date}} > CURRENT_DATE()
+  -- Fallback (no calendar bound): weekdays only — disclose in output
+  SELECT d FROM (
+    SELECT DATEADD(day, ROW_NUMBER() OVER (ORDER BY SEQ4()), CURRENT_DATE()) AS d  -- gap-free
+    FROM TABLE(GENERATOR(ROWCOUNT => 30))
+  )
+  WHERE DAYOFWEEKISO(d) < 6
+),
+sla_cutoff AS (
+  SELECT d AS cutoff_date
+  FROM business_days
+  QUALIFY ROW_NUMBER() OVER (ORDER BY d) = :sla_business_days   -- default 3
+)
+SELECT COUNT(*) AS disputes_near_sla, SUM(x.{{cols.dispute_amount}}) AS amount_near_sla
+FROM {{dispute_fqn}} x
+CROSS JOIN sla_cutoff c
+WHERE x.{{cols.dispute_sla_date}} BETWEEN CURRENT_DATE() AND c.cutoff_date;
+```
 
 ---
 
@@ -116,7 +161,7 @@ All physical table/column references are resolved at runtime against the custome
 **Purpose**: Full AR profile for a specific customer when user names an account. Triggered by routing logic, not part of the standard dashboard.
 
 **Logic**:
-1. Filter AR table by account_name ILIKE '%<user input>%' (fuzzy match)
+1. Filter AR table by account name using the bound-parameter form `account_name ILIKE '%' || :search || '%' ESCAPE '\\'` (user text escaped and bound — never concatenated into the SQL string). If several accounts match, ask the user to pick one
 2. Return all open invoices for that account: invoice ID, invoice date, due date, amount, days_past_due, status
 3. If payment activity table exists: show last 5–10 payments for the account (payment date, amount)
 4. If dispute table exists: show any open disputes for the account
@@ -171,6 +216,7 @@ All physical table/column references are resolved at runtime against the custome
 
 5. **Payment activity date ambiguity** — Use the payment received or deposit date, not the payment applied or posted date. These can differ by days or weeks in some ERP systems. The deposit date is what matters for collection rate and cash receipt metrics.
 
-6. **Zero-balance invoices** — Always exclude invoices with balance = 0 (fully paid) from aging and overdue calculations. Including them inflates account counts and distorts percentages.
+6. **Zero-balance invoices** — Always exclude invoices with balance = 0 (fully paid) from aging and overdue calculations. Including them inflates account counts and distorts percentages. Do **not** use `balance > 0` as the open-item filter for totals — it silently drops credit memos and unapplied cash; use `balance <> 0` and split debit / credit balances.
 
-7. **Open vs closed invoices** — Some AR systems keep all invoices in one table with a status column (open / closed / void / credit). Always filter to open/unpaid status before any aggregation. Voided and credited invoices should never appear in AR totals.
+7. **Open vs closed invoices** — Some AR systems keep all invoices in one table with a status column (open / closed / void / credit). Always filter to open/unpaid status before any aggregation. Voided invoices should never appear in AR totals. Open credit memos and unapplied cash are reported as Unapplied cash / credits and reduce Net AR; fully applied credits (balance = 0) drop out naturally.
+8. **Business days** — "Within N business days" uses the bound fiscal / holiday calendar; if none is bound, exclude weekends only and disclose it. Never substitute calendar days.

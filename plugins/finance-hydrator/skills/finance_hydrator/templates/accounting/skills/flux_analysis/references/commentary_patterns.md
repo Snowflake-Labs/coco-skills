@@ -8,10 +8,10 @@ Every driver explanation must answer WHY the movement happened — not restate W
 
 | Quality | Example |
 |---|---|
-| Good | "Cloud hosting up $1.2M on incremental GPU reservations for product launch" |
-| Bad | "Cloud hosting increased $1.2M (18%)" |
-| Good | "Headcount cost decreased $3.4M due to 47 attrition departures not backfilled" |
-| Bad | "Headcount cost was $3.4M lower than prior month" |
+| Good | "Hosting cost up $1M on incremental capacity purchased for a new product launch" |
+| Bad | "Hosting cost increased $1M (20%)" |
+| Good | "Headcount cost decreased $3M due to open roles not backfilled" |
+| Bad | "Headcount cost was $3M lower than prior month" |
 | Good | "Prepaid insurance decreased $0.8M from scheduled amortization of annual premium" |
 | Bad | "Prepaid insurance went down $0.8M" |
 
@@ -27,7 +27,7 @@ When the data does not clearly explain the driver:
 
 Write: **"Driver unclear from available data — flag for controller review"**
 
-NEVER invent an explanation. NEVER use an LLM to speculate about business reasons. The controller will investigate manually.
+NEVER invent an explanation. Commentary must be grounded only in query output — never speculate about business reasons. The controller will investigate manually.
 
 ### Principle 3: "Always Comment" List
 
