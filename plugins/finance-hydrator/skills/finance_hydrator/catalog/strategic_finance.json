@@ -222,9 +222,10 @@
           ],
           "fields": {
             "line_item_id": {"required": true, "aliases": ["line_item_id", "line_item", "account", "account_id", "gl_account"]},
-            "period": {"required": true, "semantic_type": "date_or_period", "aliases": ["period", "fiscal_period", "fiscal_month", "period_name"]},
+            "period": {"required": true, "semantic_type": "date_or_period", "aliases": ["period", "period_start_date", "fiscal_period", "fiscal_month"]},
             "budget_amount": {"required": true, "semantic_type": "money", "aliases": ["budget_amount", "budget", "plan_amount"]},
             "account_type": {"required": false, "affects_readiness": false, "aliases": ["account_type", "line_type", "account_category", "account_class"]},
+            "cost_center": {"required": false, "affects_readiness": false, "aliases": ["cost_center", "cost_center_id", "cost_center_number", "department", "department_id"]},
             "currency": {"required": false, "affects_readiness": false, "aliases": ["currency", "currency_code", "reporting_currency"]}
           }
         },
@@ -243,8 +244,10 @@
           ],
           "fields": {
             "line_item_id": {"required": true, "placeholder": "actual_line_item_id", "aliases": ["line_item_id", "line_item", "account", "account_id", "gl_account"]},
-            "period": {"required": true, "semantic_type": "date_or_period", "placeholder": "actual_period", "aliases": ["period", "fiscal_period", "fiscal_month", "period_name"]},
-            "actual_amount": {"required": true, "semantic_type": "money", "aliases": ["actual_amount", "actual", "amount"]},
+            "period": {"required": true, "semantic_type": "date_or_period", "placeholder": "actual_period", "aliases": ["period", "period_start_date", "fiscal_period", "fiscal_month", "accounting_date"]},
+            "actual_amount": {"required": true, "semantic_type": "money", "aliases": ["actual_amount", "actual", "actual_spend"]},
+            "account_type": {"required": false, "affects_readiness": false, "placeholder": "actual_account_type", "aliases": ["account_type", "line_type", "account_category", "account_class"]},
+            "cost_center": {"required": false, "affects_readiness": false, "placeholder": "actual_cost_center", "aliases": ["cost_center", "cost_center_id", "cost_center_number", "department", "department_id"]},
             "currency": {"required": false, "affects_readiness": false, "placeholder": "actual_currency", "aliases": ["currency", "currency_code", "reporting_currency"]}
           }
         }
