@@ -64,6 +64,15 @@ Identify from the user's request:
 
 If not specified, detect the latest available period from the data.
 
+**Step 1b — Confirm the revenue measure (ASC 606 guardrail)**
+
+State which measure the narrative uses and confirm it with the user on first run, using
+the `revenue_measure` setting from `hydration_hints.yaml`: **recognized revenue** (ASC 606 /
+IFRS 15), **billings**, **bookings**, **ARR**, or **consumption / usage**. These are different
+measures with different timing — never mix them in one total, ratio, or comparison (e.g.
+recognized actuals vs a bookings plan). If actual and plan are on different measures, stop
+and say so. Only call a figure "revenue" when it is recognized revenue.
+
 **Step 2 — Check period completeness**
 
 Determine whether the requested period has complete or partial actuals. If partial
@@ -72,6 +81,15 @@ status with the user if unexpected. If the source carries an actual/forecast fla
 forecast days inside the requested period: a "closed" quarter can still include a few
 forecast days at the end. Report the actual-through date and label figures "actuals
 through [date] plus forecast to period end" rather than presenting them as final.
+
+**Compute derived metrics in SQL.** PoP and YoY change ($ and %), variance to plan, mix %,
+mix shift, customer count, mean and **median** customer revenue are computed in SQL from the
+base columns — period, hierarchy level, entity, `customer_id`, actual, plan — using window
+functions (`LAG` over period within entity), `SUM … / SUM(...) OVER (PARTITION BY period,
+parent)`, `COUNT(DISTINCT customer_id)` and `MEDIAN()`. Use precomputed columns only if they
+are bound in `hydration_hints.yaml`, and spot-check them against the SQL computation. Load all
+bindings from `hydration_hints.yaml` in this skill's directory; for anything under
+`unresolved:` or missing, ask the user / discover via `INFORMATION_SCHEMA.COLUMNS` and confirm.
 
 **Step 3 — Fetch parent-level data + historical trajectory (parallel)**
 
@@ -106,8 +124,9 @@ Skip children below a materiality threshold (default $50K; configurable).
 Retrieve New / Existing / Churned revenue breakdown for the subject, and split
 **Existing** into **expansion** (customers whose revenue grew) and **contraction**
 (customers whose revenue shrank but did not churn) when the data supports it. Gross
-retention = (prior-period revenue − contraction − churn) / prior-period revenue; net
-retention adds expansion.
+retention = (prior-period revenue − contraction − churn) / prior-period revenue, **capped at
+100%** (GRR can never exceed 100%; if the computation exceeds it, the inputs are wrong — say
+so); net retention adds expansion and may exceed 100%.
 - Rising churn revenue → retention signal
 - Flat/declining Existing revenue → usage contraction (check whether contraction or
   weak expansion is the cause)
@@ -221,7 +240,11 @@ the customer's business.
 - Customer names embedded inline within their relevant paragraph — not in a separate section.
 - Do not recurse past the lowest hierarchy level into individual customer detail for the standard narrative.
 - If a metric doesn't sharpen the story, cut it. Every sentence must earn its place.
-- Respect currency from the data. Display in dominant currency; group by currency if multiple present.
+- Display amounts in the configured `reporting_currency` setting; if no reporting-currency amount
+  is bound, group by currency — never sum across currencies.
+- ASC 606: state the revenue measure used (recognized revenue vs billings / bookings / ARR /
+  consumption) and never mix measures in one comparison.
+- Gross revenue retention is capped at 100%.
 - For partial periods: label ALL figures with "through [date]" and note comparisons may shift.
 - Unmapped and test buckets: before ranking children or summing to a total, look for rows
   with a blank hierarchy value or a test/placeholder name (for example a bucket that is
@@ -250,12 +273,11 @@ the customer's business.
 
 - A table where each row is one entity per period at a specific hierarchy level, with
   columns for: hierarchy level indicator (STRING), period identifier (STRING or DATE),
-  time grain (STRING — quarterly or monthly), entity name (STRING), actual revenue
-  (NUMBER), plan/forecast revenue (NUMBER), period-over-period change in dollars (NUMBER),
-  period-over-period change percentage (NUMBER), year-over-year percentage (NUMBER),
-  variance to plan in dollars (NUMBER), customer count (NUMBER), mean customer revenue
-  (NUMBER), median customer revenue (NUMBER), revenue mix percentage (NUMBER), and mix
-  shift (NUMBER). Grain: one row per entity per period per hierarchy level. Primary
+  time grain (STRING — quarterly or monthly), entity name (STRING), customer identifier
+  (STRING — needed for customer count and median), actual revenue (NUMBER), and plan/forecast
+  revenue (NUMBER). PoP / YoY change, variance to plan, customer count, mean / median customer
+  revenue, mix % and mix shift are **computed in SQL** from these base columns; precomputed
+  versions are optional and used only if bound. Grain: one row per entity per period per hierarchy level. Primary
   binding for hierarchy navigation, trajectory, and child breakdown. *(critical)*
 
 - A table with lifecycle cohort data where each row is one cohort status (New, Existing,

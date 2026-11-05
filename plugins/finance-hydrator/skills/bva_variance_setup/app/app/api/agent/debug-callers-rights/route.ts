@@ -12,12 +12,9 @@ export const dynamic = "force-dynamic"
 // combined `<service>.<caller>` token), which is the one question that decides
 // the app's agent architecture.
 //
-// An EARLIER version of this route was misleading: it read only the first 5KB
-// of the SSE stream and then cancelled the reader, so it observed the agent
-// *starting to plan* and reported that as a pass. It never confirmed a tool
-// actually ran. Two cases were therefore recorded as working that did not.
+// Disabled (404) unless BVA_ENABLE_DIAGNOSTICS=true, and admin-only when on.
 //
-// This version proves execution instead of inferring it:
+// Proves execution instead of inferring it:
 //   - consumes the stream to completion (no byte cap, no early cancel)
 //   - answers the `always_ask` permission request, because without a
 //     permission_decision reply the turn legitimately stalls and a truncated
@@ -96,9 +93,7 @@ function paddedPrompt(chars: number): string {
 //
 // The table MUST be this deployment's own resolved materialized table
 // (getMaterializedTable(), same as the dashboard uses) — never a hardcoded
-// absolute path. An earlier version of this probe hardcoded an absolute
-// table path, which (a) is environment-specific and (b) would just silently
-// fail to resolve on any other deployment.
+// absolute path, which would fail to resolve on any other deployment.
 function probeMessage(table: string): string {
   return (
     "Run this exact SQL and report the result verbatim: " +
@@ -526,15 +521,10 @@ async function requireAdmin(): Promise<Response | null> {
   return null
 }
 
-// GET so this can be opened as a plain URL in a browser (no body needed —
-// always runs the default A/B matrix, never the sizes sweep).
-export async function GET() {
-  const denied = await requireAdmin()
-  if (denied) return denied
-  return handleDiagnostic(undefined)
-}
-
 export async function POST(req: Request) {
+  if (process.env.BVA_ENABLE_DIAGNOSTICS !== "true") {
+    return Response.json({ error: "Not found" }, { status: 404 })
+  }
   const denied = await requireAdmin()
   if (denied) return denied
   // Optional `sizes` sweeps system-prompt length under the combined token, so

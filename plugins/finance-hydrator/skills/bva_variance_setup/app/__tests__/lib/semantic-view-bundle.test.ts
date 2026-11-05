@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest"
+import { describe, it, expect, vi, beforeEach } from "vitest"
 
 const querySnowflakeMock = vi.fn()
 vi.mock("@/lib/snowflake", () => ({
@@ -119,5 +119,36 @@ describe("buildSemanticViewBundle", () => {
     querySnowflakeMock.mockResolvedValue([])
     const bundle = await buildSemanticViewBundle(["DB.SCHEMA.VIEW_A", "DB.SCHEMA.VIEW_B"])
     expect(bundle.warnManyViews).toBe(false)
+  })
+
+  describe("manual ref hardening", () => {
+    beforeEach(() => {
+      querySnowflakeMock.mockReset()
+      querySnowflakeMock.mockResolvedValue([])
+      vi.spyOn(console, "warn").mockImplementation(() => {})
+    })
+
+    it("quotes each part of a manual ref (uppercased) in DESCRIBE", async () => {
+      await buildSemanticViewBundle(["my_db.My_Schema.VIEW_A"])
+      expect(querySnowflakeMock).toHaveBeenCalledWith('DESCRIBE SEMANTIC VIEW "MY_DB"."MY_SCHEMA"."VIEW_A"', expect.anything())
+    })
+
+    it("skips invalid refs (injection, embedded quotes, wrong arity) without querying them", async () => {
+      const bundle = await buildSemanticViewBundle([
+        "DB.S.V; DROP TABLE X",
+        'DB.S."V"',
+        "DB.V",
+        "DB.SCHEMA.GOOD",
+      ])
+      expect(querySnowflakeMock).toHaveBeenCalledTimes(1)
+      expect(bundle.candidatesConsidered).toEqual(["DB.SCHEMA.GOOD"])
+      expect(console.warn).toHaveBeenCalled()
+    })
+
+    it("caps manual refs at 20", async () => {
+      const refs = Array.from({ length: 25 }, (_, i) => `DB.SCHEMA.VIEW_${i}`)
+      await buildSemanticViewBundle(refs)
+      expect(querySnowflakeMock).toHaveBeenCalledTimes(20)
+    })
   })
 })

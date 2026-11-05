@@ -2,8 +2,8 @@
 name: finance_hydrator
 description: >
   Build a customer-specific finance plugin. Use when setting up finance,
-  accounting, finops, FP&A, CFO, controller, cloud cost, AP, AR, GL, budget,
-  forecast, COGS, or revenue skills for a customer. Assesses available data,
+  accounting, FP&A, CFO, controller, close, flux, reconciliation, AP, AR, GL,
+  budget, forecast, COGS, or revenue skills for a customer. Assesses available data,
   recommends the best-fit finance skills, generates a plugin, validates
   bindings, and gives activation instructions.
 license: Snowflake Skills License. See LICENSE.txt for complete terms
@@ -14,7 +14,7 @@ status: Published
 
 # Finance Plugin Hydrator
 
-Builds a customer-specific finance plugin from Accounting, FinOps, and Strategic Finance
+Builds a customer-specific finance plugin from Accounting and Strategic Finance
 templates. It discovers available finance data cheaply, recommends best-fit skills, generates a
 customer-owned plugin with only those skills, then deep-validates the bindings. It does **not**
 run the finance analyses itself.
@@ -90,8 +90,11 @@ Phase 6: Validate & Activate  --> subskills/validate_and_activate.md
   300` on every query. On timeout: record a gap, do not widen or retry broadly.
 - **Deep only when it pays.** Bounded data probes, wider usage windows, and better-data searches
   happen in Phase 6 on selected skills only — never during discovery.
-- **Official data only.** Disqualify dev/demo/test/sandbox/backup, staging/raw, per-user scratch,
-  dated snapshots — regardless of search rank or usage.
+- **Official data only.** Disqualify names with a whole-token `dev`/`demo`/`test`/`sandbox`/
+  `scratch`/`tmp`/`temp`/`bkp`/`backup`/`clone`/`snapshot`/`archive` part, `_YYYYMMDD`/`_YYYYMM`
+  dated snapshots, and per-user scratch — regardless of search rank or usage. Staging/raw layers are
+  disqualified unless the user confirms they are the official layer. `score_readiness.py` enforces
+  the token rule (`NON_OFFICIAL`) even if discovery marked an object official.
 - **No Cortex Sense.** Discovery uses metadata + `snowflake_object_search` + semantic-view
   discovery only.
 - **No fabricated numbers.** Readiness comes only from `score_readiness.py` over the real
@@ -101,13 +104,25 @@ Phase 6: Validate & Activate  --> subskills/validate_and_activate.md
 
 ## Scripts
 
-| Script | Purpose |
-|---|---|
-| `engine/scripts/validate_catalog.py --validate-catalog` | Lint the catalog files |
-| `engine/scripts/score_readiness.py --inventory ... --catalog ...` | Inventory -> assessment |
-| `engine/scripts/build_customer_plugin.py` | Write the customer plugin + hydration hints |
-| `engine/scripts/validate_bindings.py --plugin-dir ...` | Static binding validation |
-| `engine/scripts/smoke_test_plan.py --plugin-dir ...` | Golden-case readiness |
+Run every script with bare `python3` from this skill's directory (`skills/finance_hydrator/`,
+written `<SKILL_DIR>` below), or call it by absolute path (`python3 <SKILL_DIR>/engine/scripts/...`).
+Relative paths such as `catalog/accounting.json` assume the skill directory as the working
+directory. Pass one `--catalog` for each `catalog/*.json` file that exists.
+
+| Script | Phase | Purpose |
+|---|---|---|
+| `engine/scripts/validate_catalog.py --validate-catalog --catalog ...` | dev | Lint the catalog files |
+| `engine/scripts/score_fit.py --profile ... --catalog ...` | 4 | Profile -> business fit |
+| `engine/scripts/score_readiness.py --inventory ... --catalog ...` | 4 | Inventory -> data readiness |
+| `engine/scripts/combine_recommendations.py --fit ... --readiness ...` | 4 | Fit + readiness -> recommendation matrix |
+| `engine/scripts/build_customer_plugin.py --assessment ... --catalog ... --output ...` | 5 | Write the customer plugin + hydration hints |
+| `engine/scripts/validate_bindings.py --plugin-dir ... --metadata-only --inventory ...` | 6 | Static binding validation (no SQL) |
+| `engine/scripts/smoke_test_plan.py --plugin-dir ...` | 6 | Golden-case readiness |
+| `engine/scripts/update_manifests.py` | dev | Regenerate engine/template manifests |
+
+Engine tests: `python3 -m unittest discover -s engine/tests` from `<SKILL_DIR>`.
+
+The JSON contracts between scripts are in `engine/references/output_contract.md`.
 
 ## Output
 

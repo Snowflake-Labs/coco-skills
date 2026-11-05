@@ -32,7 +32,7 @@ const CONFIRM_TO_CALLER =
   "Switch the agent back to caller's rights? Each viewer will only see what they already have direct access to " +
   "(requires the owner role to hold GRANT CALLER privileges — see the deploy docs if queries start failing)."
 
-/** Shape returned by GET /api/agent/debug-callers-rights (default, non-sweep run). */
+/** Shape returned by POST /api/agent/debug-callers-rights (default, non-sweep run). */
 interface CallersRightsCheckResponse {
   error?: string
   caseA_service_token?: { verdict?: string }
@@ -139,7 +139,15 @@ export function AgentAccessControls() {
     setChecking(true)
     setCheckResult(null)
     try {
-      const res = await fetch("/api/agent/debug-callers-rights")
+      const res = await fetch("/api/agent/debug-callers-rights", { method: "POST" })
+      if (res.status === 404) {
+        setCheckResult({
+          tone: "error",
+          title: "Diagnostics are disabled",
+          detail: "Set BVA_ENABLE_DIAGNOSTICS=true on the app service to enable this check.",
+        })
+        return
+      }
       const json = (await res.json()) as CallersRightsCheckResponse
       setCheckResult(res.ok ? summarize(json) : { tone: "error", title: "Couldn't run the check", detail: json.error ?? `HTTP ${res.status}` })
     } catch (e) {

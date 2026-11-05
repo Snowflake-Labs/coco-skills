@@ -43,6 +43,10 @@ vi.mock("@/lib/agent-backend", () => ({
   runAgentTurn: vi.fn(async () => {}),
 }))
 
+vi.mock("@/lib/agent-access-mode", () => ({
+  checkIsAdmin: vi.fn(async () => ({ isAdmin: true })),
+}))
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: vi.fn(() => null) })),
 }))
@@ -52,6 +56,7 @@ import { buildDiscoveryBundle } from "@/lib/discover-bundle"
 import { getDiscoveryScopeOverride } from "@/lib/discovery-scope-mode"
 import { runAgentTurn } from "@/lib/agent-backend"
 import { runExclusive } from "@/lib/job-store"
+import { checkIsAdmin } from "@/lib/agent-access-mode"
 import type { BvaConfig } from "@/lib/config"
 
 const DEMO_CONFIG = { actualsTable: "MY_DB.MY_SCHEMA.BVA_VARIANCE_SETUP_DEMO_GL_ACTUALS" } as unknown as BvaConfig
@@ -82,6 +87,15 @@ beforeEach(() => {
   })
 })
 
+describe("POST /api/agent/setup admin gate", () => {
+  it("returns 403 for a non-admin and never queues work", async () => {
+    vi.mocked(checkIsAdmin).mockResolvedValueOnce({ isAdmin: false } as Awaited<ReturnType<typeof checkIsAdmin>>)
+    const res = await postAndFlush({ message: "hi" })
+    expect(res.status).toBe(403)
+    expect(vi.mocked(runExclusive)).not.toHaveBeenCalled()
+  })
+})
+
 // ─── buildSystemPrompt ────────────────────────────────────────────────────
 
 describe("buildSystemPrompt scope directive", () => {
@@ -93,7 +107,7 @@ describe("buildSystemPrompt scope directive", () => {
   it("includes the directive with the database-only label when scope has no schema", () => {
     const prompt = buildSystemPrompt(null, null, { database: "MY_DB" })
     expect(prompt).toContain("ADMIN-ENFORCED DISCOVERY SCOPE")
-    expect(prompt).toContain("**FINANCE**")
+    expect(prompt).toContain("**MY_DB**")
   })
 
   it("includes the directive with the database.schema label when scope has a schema", () => {

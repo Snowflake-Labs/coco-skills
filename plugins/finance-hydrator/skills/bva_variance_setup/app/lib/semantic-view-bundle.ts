@@ -19,7 +19,7 @@
  * restriction (see lib/agent-backend.ts).
  */
 import { querySnowflake } from "@/lib/snowflake"
-import { WAREHOUSE } from "@/lib/bva"
+import { WAREHOUSE, validateTableParam } from "@/lib/bva"
 
 // Kept in sync with lib/discover-bundle.ts's DB_KEYWORDS / FINANCE_KEYWORDS —
 // same vocabulary, applied to semantic view names/comments instead of tables.
@@ -38,6 +38,16 @@ const MAX_AUTO_CANDIDATES = 8
 // and more expensive the more there are — the customer should know that
 // trade-off, not have views silently dropped.
 const WARN_MANUAL_VIEWS_THRESHOLD = 12
+/** Hard cap on customer-provided refs described per bundle. */
+const MAX_MANUAL_REFS = 20
+
+function q(s: string): string { return `"${s.replace(/"/g, '""')}"` }
+
+/** Quoted FQN for a validated, unquoted DB.SCHEMA.VIEW ref. Uppercased so it
+ *  resolves exactly like the unquoted identifier the customer typed. */
+function quoteManualRef(ref: string): string {
+  return ref.split(".").map((p) => q(p.toUpperCase())).join(".")
+}
 // Per view, per kind (dimension/fact/metric) — guards against a single huge
 // semantic view (common in real Cortex Analyst deployments: 50+ columns
 // across many tables) blowing up the prompt even when the view count itself
@@ -175,12 +185,12 @@ export function parseDescribeSemanticView(viewFqn: string, rows: Record<string, 
   }
 }
 
-async function describeOne(viewFqn: string): Promise<SemanticViewInfo | null> {
+async function describeOne(viewFqn: string, sqlRef: string): Promise<SemanticViewInfo | null> {
   try {
     // DESCRIBE SEMANTIC VIEW is a metadata-only read (any privilege on the
     // view is enough — SELECT isn't required), so this is safe to run for
     // every candidate without worrying about accidentally querying real data.
-    const rows = await querySnowflake(`DESCRIBE SEMANTIC VIEW ${viewFqn}`, {
+    const rows = await querySnowflake(`DESCRIBE SEMANTIC VIEW ${sqlRef}`, {
       warehouse: WAREHOUSE,
       tag: "bva:semantic-view-bundle",
     })
@@ -202,13 +212,22 @@ export async function buildSemanticViewBundle(manualRefs?: string[]): Promise<Se
   if (manualRefs?.length) {
     // Customer-provided refs skip discovery entirely — just describe each one
     // directly (in parallel) rather than scanning the account for candidates.
-    const described = await Promise.all(manualRefs.map((ref) => describeOne(ref.trim())))
+    if (manualRefs.length > MAX_MANUAL_REFS) {
+      console.warn(`[semantic-view-bundle] ${manualRefs.length} semantic view refs given; only the first ${MAX_MANUAL_REFS} are used`)
+    }
+    const refs: string[] = []
+    for (const raw of manualRefs.slice(0, MAX_MANUAL_REFS)) {
+      const ref = typeof raw === "string" ? raw.trim() : ""
+      if (validateTableParam(ref)) refs.push(ref)
+      else console.warn(`[semantic-view-bundle] skipping invalid semantic view ref: ${JSON.stringify(raw)}`)
+    }
+    const described = await Promise.all(refs.map((ref) => describeOne(ref, quoteManualRef(ref))))
     return {
       views: described.filter((v): v is SemanticViewInfo => v !== null),
       source: "manual",
-      candidatesConsidered: manualRefs,
+      candidatesConsidered: refs,
       elapsedMs: Date.now() - t0,
-      warnManyViews: manualRefs.length > WARN_MANUAL_VIEWS_THRESHOLD,
+      warnManyViews: refs.length > WARN_MANUAL_VIEWS_THRESHOLD,
     }
   }
 
@@ -229,7 +248,7 @@ export async function buildSemanticViewBundle(manualRefs?: string[]): Promise<Se
     const db = String(r.database_name ?? r.DATABASE_NAME ?? "")
     const schema = String(r.schema_name ?? r.SCHEMA_NAME ?? "")
     const name = String(r.name ?? r.NAME ?? "")
-    return { fqn: `${db}.${schema}.${name}`, comment: (r.comment ?? r.COMMENT) as string | null }
+    return { fqn: `${db}.${schema}.${name}`, sqlRef: [db, schema, name].map(q).join("."), comment: (r.comment ?? r.COMMENT) as string | null }
   }).filter((v) => v.fqn && !v.fqn.startsWith("."))
 
   const candidates = allNames
@@ -243,7 +262,7 @@ export async function buildSemanticViewBundle(manualRefs?: string[]): Promise<Se
   // Describe every finance-relevant candidate in parallel — this is the
   // expensive step (one round-trip per view), which is why we filtered down
   // to MAX_AUTO_CANDIDATES first instead of describing every view SHOW returned.
-  const described = await Promise.all(candidates.map((c) => describeOne(c.fqn)))
+  const described = await Promise.all(candidates.map((c) => describeOne(c.fqn, c.sqlRef)))
 
   return {
     views: described.filter((v): v is SemanticViewInfo => v !== null),

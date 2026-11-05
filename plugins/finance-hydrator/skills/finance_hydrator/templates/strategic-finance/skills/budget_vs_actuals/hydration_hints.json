@@ -63,7 +63,9 @@
       ],
       "extra_settings": {
         "actuals_version_label": "<OPTIONAL_ACTUALS_VERSION>",
-        "period_parts": []
+        "period_parts": [],
+        "natural_sign": "<credit_negative | as_stored \u2014 confirm with user on first run>",
+        "reporting_currency": "<YOUR_REPORTING_CURRENCY e.g. USD>"
       }
     },
     "finance.budget.context": {
@@ -101,7 +103,8 @@
             "display_name": "<YOUR_DISPLAY_NAME_COLUMN>",
             "line_type": "<YOUR_LINE_TYPE_COLUMN>",
             "cost_center": "<YOUR_COST_CENTER_COLUMN>",
-            "department": "<YOUR_DEPARTMENT_COLUMN>"
+            "department": "<YOUR_DEPARTMENT_COLUMN>",
+            "account_type": "<YOUR_ACCOUNT_TYPE_COLUMN (Revenue/Expense/Asset/Liability/Equity)>"
           }
         }
       ],
@@ -109,7 +112,8 @@
         "chart of accounts",
         "line item dimension",
         "cost center map"
-      ]
+      ],
+      "extra_settings": {}
     },
     "finance.budget.cost_center_mapping": {
       "required": false,

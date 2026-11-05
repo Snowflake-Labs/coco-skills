@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 # scripts -> engine -> <skill> ; templates live at <skill>/templates
 DEFAULT_TEMPLATES_ROOT = Path(__file__).resolve().parents[2] / "templates"
 KNOWN_EMITTERS = {"skill_plugin"}
+# Skill names become directory names in the generated plugin.
+SKILL_NAME_RE = re.compile(r"^[a-z0-9_]+$")
 KNOWN_FINANCE_SUBDEPARTMENTS = {
     "fpa",
     "ap_ar",
@@ -70,7 +73,7 @@ def validate_catalog(path: Path, templates_root: Path) -> tuple[list[str], list[
     if source_plugin and not plugin_root.exists():
         errors.append(
             f"{path}: templates for source_plugin not vendored: "
-            f"{source_plugin} (expected {plugin_root}). Run sync.py --vendor-templates."
+            f"{source_plugin} (expected {plugin_root})."
         )
 
     names: set[str] = set()
@@ -82,6 +85,8 @@ def validate_catalog(path: Path, templates_root: Path) -> tuple[list[str], list[
         name = skill.get("name")
         if not name:
             errors.append(f"{prefix}: missing name")
+        elif not isinstance(name, str) or not SKILL_NAME_RE.match(name):
+            errors.append(f"{prefix}: invalid skill name {name!r} (must match {SKILL_NAME_RE.pattern})")
         elif name in names:
             errors.append(f"{prefix}: duplicate skill name {name}")
         else:
@@ -122,7 +127,7 @@ def validate_catalog(path: Path, templates_root: Path) -> tuple[list[str], list[
             if not eval_path.exists():
                 errors.append(f"{prefix}: eval_dir not vendored: {eval_dir}")
             elif not (eval_path / "golden_cases.md").exists():
-                # Non-fatal: the skill can still hydrate, but Phase 5 smoke-testing
+                # Non-fatal: the skill can still hydrate, but Phase 6 smoke-testing
                 # will report it INCONCLUSIVE with no golden cases to run.
                 warnings.append(
                     f"{prefix}: eval_dir {eval_dir} has no golden_cases.md "

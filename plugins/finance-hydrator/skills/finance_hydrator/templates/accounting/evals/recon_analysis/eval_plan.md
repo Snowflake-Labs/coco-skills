@@ -29,4 +29,4 @@ against the hydrated recon_analysis skill."
 | H3 | If profile store missing: setup path offered (not hard BLOCKED) | |
 | H4 | All golden cases return expected behavior (see golden_cases.md) | |
 | H5 | No fabricated FQNs — all bindings reference real objects | |
-| H6 | Read-only guardrail respected — no DML outside profile CRUD | |
+| H6 | Read-only guardrail respected — no writes to source data; writes only to bound profile_store / result_store | |

@@ -1,0 +1,36 @@
+{
+  "scope": {
+    "databases": [
+      "ERP_PROD"
+    ],
+    "role": "FIN_READER"
+  },
+  "domain_access": {
+    "accounting": true,
+    "strategic_finance": true
+  },
+  "objects": [
+    {
+      "data_need_key": "accounting.gl.journal_entries",
+      "fqn": "ERP_PROD.GL.GL_BALANCES",
+      "columns_present": [
+        "ACCOUNTING_PERIOD",
+        "NATURAL_ACCOUNT",
+        "LEDGER_DEBIT_MINUS_CREDIT"
+      ],
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "medium"
+    }
+  ],
+  "gaps": [
+    {
+      "data_need_key": "accounting.ap.invoice_header",
+      "reason": "no official match"
+    }
+  ]
+}

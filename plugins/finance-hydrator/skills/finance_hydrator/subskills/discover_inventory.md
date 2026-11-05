@@ -1,8 +1,8 @@
-# Phase 2 — Discover Inventory (cheap, fast, shallow)
+# Phase 3 — Discover Inventory (cheap, fast, shallow)
 
 Produce one `account_inventory.json` from a metadata-only crawl. This is the single most important
-efficiency guarantee of the hydrator: discover once, reuse for scoring (Phase 3) and validation
-(Phase 5). No warehouse compute, no Cortex Sense, no data reads.
+efficiency guarantee of the hydrator: discover once, reuse for scoring (Phase 4) and validation
+(Phase 6). No warehouse compute, no Cortex Sense, no data reads.
 
 ## Hard rules
 
@@ -10,78 +10,88 @@ efficiency guarantee of the hydrator: discover once, reuse for scoring (Phase 3)
   giant schema or a data-heavy account. On timeout: record a `gap` for that data-need key and move
   on — do NOT widen the query, lower specificity, or retry broadly.
 - **Metadata only:** `SHOW`, `DESCRIBE`, `RESULT_SCAN`, and one batched `ACCESS_HISTORY` count.
-  No `SELECT` against business tables in this phase (that is Phase 5's job).
-- **Never `SHOW ... IN ACCOUNT`.** Always scope to the Phase-1 databases.
-- **Official data only.** Discard dev/demo/test/sandbox/backup, staging/raw, per-user scratch,
-  dated snapshots — regardless of usage.
+  No `SELECT` against business tables in this phase (that is Phase 6's job).
+- **Never `SHOW ... IN ACCOUNT`.** Always scope to the Phase-2 `scope.databases`, or to
+  `scope.schemas` when the user named schemas.
+- **`SHOW` → `RESULT_SCAN` is strictly sequential.** `RESULT_SCAN(LAST_QUERY_ID())` reads the result
+  of the previous query *in the same session*. Run each `SHOW` and then its `RESULT_SCAN` back to
+  back, one pair at a time, on the same connection. Never run `SHOW` calls in parallel and never put
+  another statement between a `SHOW` and its `RESULT_SCAN`, or `LAST_QUERY_ID()` points at the wrong
+  result.
+- **Official data only** (see Step 2's deny-list) — regardless of name match or usage.
 
-## Step 1 — FinOps shortcut (near-zero cost)
+## Step 1 — Concept keywords
 
-The FinOps catalog binds to fixed `SNOWFLAKE.ACCOUNT_USAGE.*` objects, so no keyword crawl is
-needed — just an existence/access probe (run as the Phase-1 role):
+Union the `concepts` phrases and `key` stems from every `catalog/*.json` file into a small keyword
+set (e.g. `invoice`, `journal`, `ledger`, `aging`, `receivable`, `payable`, `forecast`, `budget`,
+`cogs`, `revenue`, `customer`, `calendar`). Cap at ~2–3 variants per data-need key.
 
-```sql
-SELECT table_schema, table_name
-FROM SNOWFLAKE.ACCOUNT_USAGE.TABLES
-WHERE table_schema = 'ACCOUNT_USAGE'
-  AND table_name IN ('WAREHOUSE_METERING_HISTORY','METERING_DAILY_HISTORY','QUERY_HISTORY');
-```
+## Step 2 — Table and view sweep
 
-- Rows returned → set `domain_access.finops = true` and add an inventory object for each matched
-  FinOps data-need key (map: `finops.account_usage.metering` and
-  `finops.account_usage.warehouse_metering` → `SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY`;
-  `finops.account_usage.daily_metering` → `METERING_DAILY_HISTORY`;
-  `finops.account_usage.query_history` → `QUERY_HISTORY`). Confidence HIGH (these are system
-  views). `finops.cost_allocation.mapping` has no ACCOUNT_USAGE equivalent → leave as a gap unless
-  the user names a mapping table.
-- Error / empty → `domain_access.finops = false`; skip FinOps objects.
+Choose the scope clause once:
 
-## Step 2 — Concept-index sweep (accounting + strategic finance)
+- `scope.schemas` set (e.g. `["ERP_PROD.GL", "ERP_PROD.AP"]`) → `IN SCHEMA <db>.<schema>` for each.
+- otherwise → `IN DATABASE <db>` for each entry in `scope.databases`.
 
-These domains live in customer-specific schemas. Union the `concepts` phrases and `key` stems from
-`catalog/accounting.json` + `catalog/strategic_finance.json` into a small keyword set (e.g.
-`invoice`, `journal`, `ledger`, `aging`, `forecast`, `budget`, `cogs`, `revenue`, `customer`).
-Cap at ~2–3 variants per data-need key.
-
-Per candidate database from `scope.databases`:
+For each keyword stem and each scope entry, run these pairs **sequentially**:
 
 ```sql
-SHOW TERSE TABLES LIKE '%<stem>%' IN DATABASE <db>;
+SHOW TERSE TABLES LIKE '%<stem>%' IN DATABASE <db>;   -- or IN SCHEMA <db>.<schema>
+SELECT "database_name"||'.'||"schema_name"||'.'||"name" AS fqn, "kind"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+SHOW TERSE VIEWS LIKE '%<stem>%' IN DATABASE <db>;    -- or IN SCHEMA <db>.<schema>
+SELECT "database_name"||'.'||"schema_name"||'.'||"name" AS fqn, "kind"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 ```
 
-Immediately filter non-official candidates without touching data:
+Then drop non-official candidates without touching data. Match **whole tokens**: split each FQN part
+on `.` and `_` and compare tokens case-insensitively against the deny-list — never use substring
+`LIKE '%dev%'`, which wrongly drops names such as `DEVICE` or `CONTEST`.
 
-```sql
-SELECT "database_name"||'.'||"schema_name"||'.'||"name" AS fqn
-FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
-WHERE NOT (LOWER("database_name"||'.'||"schema_name"||'.'||"name")
-           LIKE ANY ('%dev%', '%demo%', '%test%', '%sandbox%', '%backup%'));
--- also drop staging/raw, clones, dated snapshots, and per-user scratch by judgment.
-```
+| Deny-list (whole tokens) | Also disqualify |
+|---|---|
+| `dev`, `demo`, `test`, `sandbox`, `scratch`, `tmp`, `temp`, `bkp`, `backup`, `clone`, `snapshot`, `archive` | Names ending in a date suffix `_YYYYMMDD` or `_YYYYMM`; per-user scratch schemas |
 
-Run independent `SHOW` calls in parallel where possible. `snowflake_object_search` on the same key
-nouns is a valid supplementary nominator; apply the same official-only filter to its results.
+Examples: `DEV_FINANCE.GL.LINES`, `ERP.SNAPSHOT.AP`, `ERP.AR.AGING_20260101` are dropped;
+`DEVICE_SALES.GL.LINES` is kept.
+
+**Staging and raw layers** (`STG_*`, `STAGING`, `RAW`, `LANDING`, `BRONZE`, `PREP_*`, `SNAP_*`) are
+disqualified unless the user confirms that layer is the official, reporting-grade source for that
+data. Ask once; if confirmed, set `staging_confirmed: true` on each such inventory object. The
+scorer blocks these tokens as `NON_OFFICIAL` otherwise.
+
+`score_readiness.py` re-applies the same token deny-list to every bound FQN and blocks the need with
+`block_kind: NON_OFFICIAL` even if the inventory says `"official": true`, so a slip here cannot reach
+the generated plugin.
+
+`snowflake_object_search` on the same key nouns is a valid supplementary nominator; apply the same
+official-only filter to its results.
 
 ## Step 2b — Stored procedure sweep (procedure-backed data needs only)
 
 Some data needs may be backed by a stored procedure rather than a table — specifically
 `accounting.recon.profile_store`, whose `context_queries` description mentions "stored procedure".
-Run this step **only for those keys**, in parallel with the table sweep:
-
-Per candidate schema in the scoped databases:
+Run this step **only for those keys**, after the table/view sweep, keeping each `SHOW` and its
+`RESULT_SCAN` back to back:
 
 ```sql
 SHOW PROCEDURES LIKE '%recon%' IN SCHEMA <db>.<schema>;
-SHOW PROCEDURES LIKE '%profile%' IN SCHEMA <db>.<schema>;
+SELECT "catalog_name"||'.'||"schema_name"||'.'||"name" AS fqn, "arguments"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+WHERE "is_builtin" = 'N';
 ```
 
-Apply the same official-only filter (discard dev/test/demo/sandbox). If a matching procedure is
+Repeat with `'%profile%'`. Filter `is_builtin = 'N'` so system procedures never match. A profile store
+normally has a GET (read) and a SAVE procedure: **bind the GET/read procedure** as the data-need
+`fqn` (names containing `GET`, `READ`, `LOAD`, or `LIST`) and record the SAVE procedure under the
+object's `extra.save_procedure`. Apply the same official-only filter. If a matching procedure is
 found:
 
 - Record it as an inventory object with **`"object_type": "procedure"`** and
   **`"columns_present": {}`** — procedure return schemas cannot be described at inventory time;
   the skill discovers output columns at runtime via CALL.
-- Skip Step 3 (DESCRIBE TABLE) for this entry.
+- Skip Step 3 (DESCRIBE) for this entry.
 - Set confidence **MEDIUM** (procedure located but output schema unverified).
 - If a table match was also found for the same key, prefer the table (confidence is fully
   verifiable via DESCRIBE); record the procedure as a secondary note in `gaps`.
@@ -91,15 +101,29 @@ resolves overloads at runtime).
 
 ## Step 3 — Confirm columns once (cap ≤3 per data-need key)
 
-For the top surviving **table** candidates per data-need key (skip procedure entries — they have
-no describable columns):
+For the top surviving **table/view** candidates per data-need key (skip procedure entries — they
+have no describable columns):
 
 ```sql
-DESCRIBE TABLE <fqn>;
+DESCRIBE TABLE <fqn>;   -- DESCRIBE VIEW <fqn> for views
 ```
 
-Match the catalog need's `columns` (required + optional) to real column names. The `comment`
-column on each field is useful context. Record `columns_present` as the actual column names found.
+Map each catalog field of the need (`fields` with `aliases`, or legacy `columns`) to a real column.
+Aliases list the common ERP names (NetSuite, SAP, Oracle, Workday, Dynamics) in preference order;
+the `comment` column on each field is useful context. When no alias matches, a column may still be
+mapped by judgment if its name or comment clearly means the same thing.
+
+**Required format — `columns_present` is a `{canonical: physical}` mapping**, keyed by the catalog
+field name, with the exact physical column name as the value:
+
+```json
+"columns_present": {"period": "POSTING_PERIOD", "account": "GL_ACCOUNT", "amount": "NET_AMOUNT"}
+```
+
+Include only fields you actually mapped; leave unmapped fields out (never write placeholders). Keep
+quoted mixed-case identifiers exactly as Snowflake reports them. A flat list of physical names is
+still accepted by the scorer for backward compatibility, but then only exact alias matches resolve,
+so always prefer the mapping.
 
 ## Step 4 — One batched usage check
 
@@ -117,23 +141,28 @@ WHERE query_start_time >= DATEADD(day, -7, CURRENT_TIMESTAMP())
 GROUP BY 1;
 ```
 
+Reading `ACCESS_HISTORY` requires `IMPORTED PRIVILEGES` on the `SNOWFLAKE` database or the
+`GOVERNANCE_VIEWER` database role. If the query is denied, do not ask for elevated access or retry
+with another role: record a gap (`{"data_need_key": "*", "reason": "ACCESS_HISTORY not readable by
+<role>; usage unverified"}`), skip usage, cap confidence at MEDIUM, and continue.
+
 Assign `confidence`: HIGH (official + all required columns present + recent multi-user access),
-MEDIUM (official + required columns present but light/older usage), LOW (official but thin column
-match or single nominator). If `ACCESS_HISTORY` is not readable by the role, skip usage and cap
-confidence at MEDIUM (note the degradation).
+MEDIUM (official + required columns present but light/older usage, or usage unverifiable), LOW
+(official but thin column match or single nominator).
 
 ## Step 5 — Emit account_inventory.json
 
-Write `account_inventory.json` in the shape from `references/output_contract.md`: `scope`,
-`domain_access`, `objects[]` (one per resolved data-need key with `fqn`, `columns_present`,
-`official`, `usage`, `confidence`), and `gaps[]` (unresolved or timed-out needs). This single file
-is the input to Phase 3 and Phase 5.
+Write `account_inventory.json` in the shape from `engine/references/output_contract.md`: `scope`,
+`domain_access`, `objects[]` (exactly **one per resolved data-need key** with `fqn`,
+`columns_present`, `official`, `usage`, `confidence`), and `gaps[]` (unresolved or timed-out needs).
+This single file is the input to Phase 4 and Phase 6. `score_readiness.py` rejects duplicate
+`data_need_key` entries.
 
 **Setup-eligible gaps:** If `accounting.recon.profile_store` ends up in `gaps[]` — that is,
-neither a matching table (Step 2) nor a matching procedure (Step 2b) was found in the scoped
-databases — add `"setup_eligible": true` to that gap entry. This flag signals Phase 4
-(`recommend_skills.md`) to offer the user the option to create the profile store rather than
-simply excluding `recon_analysis` as BLOCKED.
+neither a matching table (Step 2) nor a matching procedure (Step 2b) was found in scope — add
+`"setup_eligible": true` to that gap entry. This flag signals Phase 4 (`recommend_skills.md`) to
+offer the user the option to create the profile store rather than simply excluding
+`recon_analysis` as BLOCKED.
 
 ```json
 // Example gap entry for a setup-eligible missing profile store
@@ -150,6 +179,6 @@ without the flag.
 ## Checkpoint
 
 Present a one-line-per-object summary and the `gaps`. Confirm before moving on. Do NOT score or
-recommend here — that is Phase 3.
+recommend here — that is Phase 4.
 
 **Next:** load `subskills/recommend_skills.md`, passing `account_inventory.json`.

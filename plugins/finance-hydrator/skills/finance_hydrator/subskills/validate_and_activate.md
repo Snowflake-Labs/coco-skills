@@ -4,15 +4,29 @@ Confirm the generated plugin's bindings are real and good. This is where the exp
 discovery phase deliberately skipped happens — but only on the SELECTED skills, reusing
 `account_inventory.json` (no second crawl).
 
-## Step 1 — Static validation
+## Step 1 — Static validation (no SQL)
+
+Run from the skill directory (or use absolute `<SKILL_DIR>` paths):
 
 ```bash
-python3 engine/scripts/validate_bindings.py --plugin-dir <generated_plugin_dir> --metadata-only
+python3 engine/scripts/validate_bindings.py \
+  --plugin-dir <generated_plugin_dir> \
+  --metadata-only \
+  --inventory <path>/account_inventory.json
 ```
 
-Statuses: `READY` (required FQNs + columns resolved, no placeholders), `PARTIAL` (required pass,
-optional unresolved), `BLOCKED` (required FQN/column/access missing). Fix any placeholder before
-continuing.
+`--inventory` cross-checks every bound FQN and column against the Phase-3 inventory; it never runs
+SQL. The JSON output has an overall `status` plus one entry per skill:
+
+| Status | Meaning |
+|---|---|
+| `READY` | Every bound source (required and optional) has a 3-part FQN and real columns; no placeholders or empty strings in `data_needs` or `extra_settings`. |
+| `PARTIAL` | No errors, but the skill's `unresolved:` block lists open optional needs, columns or settings (reported as `warnings`). |
+| `BLOCKED` | Any error: placeholder or empty value outside `unresolved:`, malformed FQN, unparseable hints file, missing hints file, or an FQN/column absent from the inventory. |
+
+The script exits non-zero when the overall status is `BLOCKED`. Fix every error before continuing.
+For PARTIAL skills, show the user the `unresolved:` items: they can supply values now (move the
+entry out of `unresolved:` into its need) or leave them for later.
 
 ## Step 2 — Deep confirmation (the depth discovery skipped)
 

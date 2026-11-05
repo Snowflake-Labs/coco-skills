@@ -26,7 +26,7 @@ status: Published
 Enable FP&A teams to explore "what if?" questions against their financial model. Four capabilities: (1) find similar historical scenarios and recommend assumption changes, (2) show before/after P&L impact when assumptions are adjusted, (3) explain WHY a P&L metric changed by decomposing into drivers, and (4) project revenue from leading usage or volume drivers.
 
 For: FP&A analysts, finance business partners, CFO office doing scenario planning, budget owners exploring trade-offs.
-Not for: actual data entry into planning tools (this skill recommends and analyzes, not writes), daily revenue monitoring (use briefing skills), or cost optimization (use cost intelligence skills).
+Not for: actual data entry into planning tools (this skill recommends and analyzes on session-scoped copies; it never writes to the shared planning model), daily revenue monitoring (use briefing skills), or cost optimization (use cost intelligence skills).
 
 ## Behavior
 
@@ -100,9 +100,17 @@ stop and ask rather than comparing against an unlabeled number.
    - Snapshot the current state of key P&L metrics before the change.
    - Key metrics: operating income, operating margin, net income (or whichever P&L metrics are configured as highlights).
 
-3. **Apply the adjustment.**
-   - Modify the assumption in the planning model.
-   - Trigger downstream recomputation (if the model supports cascading recalculation).
+3. **Apply the adjustment — on a session-scoped copy only.**
+   - Never modify the shared planning model or its source tables.
+   - Apply the changed assumption to a session-scoped copy of the baseline (a CTE or a
+     `TEMPORARY` table), or compute the impact analytically from the driver relationship
+     (e.g., Δ headcount × fully-loaded cost per head).
+   - Recompute downstream lines in that copy using the model's documented driver logic;
+     if cascading logic is not known, say which secondary effects are not modelled.
+   - If the customer's planning tool supports **sandbox / what-if versions** and the user
+     wants the change written there, require explicit user confirmation that **names the
+     target sandbox version** before any write. Never write to a published, locked, or
+     shared version.
 
 4. **Capture post-adjustment state.**
    - Snapshot the same P&L metrics after recomputation.
@@ -243,7 +251,8 @@ Want to see the detailed breakout by <cohort / region / cost center>?
 
 ### Guardrails
 
-- Never show P&L impact from a historical scenario — only show impact after adjustments are applied to the user's own forecast.
+- Never show P&L impact from a historical scenario — only show impact after adjustments are applied to (a session-scoped copy of) the user's own forecast.
+- Sensitivity runs on session-scoped copies (CTE / temporary table) or analytically — never on the shared planning model. Any write to a planning-tool sandbox version requires explicit user confirmation naming that version.
 - Always verify the user's claim before running root cause analysis. Do not assume their observation is correct.
 - Root cause drivers must be causal, not observational. Every driver must explain WHY, not just WHAT.
 - Do not hardcode planning domains, assumption names, or default values. Discover them from the resolved data.
@@ -267,7 +276,7 @@ Want to see the detailed breakout by <cohort / region / cost center>?
 
 Planning data varies enormously across customers. Inspect the resolved objects with
 `INFORMATION_SCHEMA.COLUMNS` and adapt — do not assume a single canonical layout. Use
-Cortex Sense / `cortex_context_sql` to confirm the actual columns before building queries.
+`DESCRIBE TABLE` / `INFORMATION_SCHEMA.COLUMNS` (and column comments, if available) to confirm the actual columns before building queries.
 
 | If the data looks like… | Do this |
 |---|---|

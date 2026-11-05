@@ -6,12 +6,16 @@ comes from `engine/scripts/score_readiness.py`.
 
 ## Step 1 — Score business fit
 
+Run every command from the skill directory (`skills/finance_hydrator/`, referred to as
+`<SKILL_DIR>`), or prefix each path with the absolute `<SKILL_DIR>`. Pass one `--catalog` per
+file that exists in `catalog/` (currently `catalog/accounting.json` and
+`catalog/strategic_finance.json`).
+
 Write the Phase-1 profile JSON to `<path>/profile.json`, then run:
 
 ```bash
 python3 engine/scripts/score_fit.py \
   --profile <path>/profile.json \
-  --catalog catalog/finops.json \
   --catalog catalog/accounting.json \
   --catalog catalog/strategic_finance.json
 ```
@@ -23,7 +27,6 @@ Capture the output as `fit_assessment`.
 ```bash
 python3 engine/scripts/score_readiness.py \
   --inventory <path>/account_inventory.json \
-  --catalog catalog/finops.json \
   --catalog catalog/accounting.json \
   --catalog catalog/strategic_finance.json
 ```
@@ -56,6 +59,8 @@ business fit, then readiness.
 - `ASK` → ask before including; name the readiness gap.
 - `OPTIONAL` → ask only if the user wants broader coverage; do not default include.
 - `BLOCKED` → exclude unless the user explicitly provides a better binding candidate.
+  BLOCKED rows always carry the data reason (missing source, unmapped required field, or
+  `NON_OFFICIAL` source); show it so the user knows what to fix.
   - **Setup-eligible exception**: before excluding a BLOCKED skill, check whether any of its
     `block_kinds` is `MISSING_SOURCE` AND the missing data-need key has `setup_eligible: true` in
     `account_inventory.json` gaps. If so, present a two-option prompt instead of a plain exclude:

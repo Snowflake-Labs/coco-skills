@@ -37,6 +37,10 @@ function extractRoleFromError(msg: string): string {
 // ── GET: return current config table location ─────────────────────────────────
 
 export async function GET() {
+  const admin = await checkIsAdmin()
+  if (!admin.isAdmin) {
+    return Response.json({ error: "Admin only" }, { status: 403 })
+  }
   try {
     const pointer     = await readConfigPointer()
     const configTable = await getConfigTable()

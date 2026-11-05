@@ -26,6 +26,7 @@ import { buildSemanticViewBundle, formatSemanticViewMarkdown } from "@/lib/seman
 import { createJob, appendEvent, pollJob, runExclusive, updateCallerToken } from "@/lib/job-store"
 import { runAgentTurn } from "@/lib/agent-backend"
 import { headers } from "next/headers"
+import { checkIsAdmin } from "@/lib/agent-access-mode"
 
 export const dynamic = "force-dynamic"
 
@@ -903,6 +904,12 @@ export async function GET(req: Request) {
 // for progress. See lib/agent-backend.ts and lib/job-store.ts.
 
 export async function POST(req: Request) {
+  // Precompute (discovery/profiling) reads run as the app's owner role, so
+  // this endpoint is admin-only.
+  const admin = await checkIsAdmin()
+  if (!admin.isAdmin) {
+    return Response.json({ error: "Admin only" }, { status: 403 })
+  }
   let body: { message?: string; config?: BvaConfig | null; sessionId?: string }
   try {
     body = await req.json()

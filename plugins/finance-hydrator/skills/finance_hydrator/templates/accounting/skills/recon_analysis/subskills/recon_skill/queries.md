@@ -64,15 +64,15 @@ All physical table/column references are discovered at runtime based on the user
 **Purpose**: Execute the core comparison logic entirely in Snowflake.
 
 **Logic**:
-1. CTE for Source 1 (with filters + date range)
-2. CTE for Source 2 (with filters + date range)
+1. CTE for Source 1 (with filters + date range — values bound as parameters; custom-SQL source must be a single SELECT)
+2. CTE for Source 2 (same rules; apply `natural_sign` normalization identically to both sides)
 3. JOIN on configured join keys (join type per profile)
 4. For each comparison field, classify:
    - Both NULL → Match
    - One NULL → Discrepancy
-   - Numeric: diff = 0 → Match; diff <= nominal → Match (threshold); pct_diff <= pct_threshold → Match (%); else Discrepancy
+   - Numeric: diff = 0 → Match; else apply the profile's `numeric_gate` — `OR`: diff <= nominal OR pct_diff <= pct_threshold; `AND`: both — → Match (threshold); else Discrepancy
    - Text: similarity >= fuzzy_threshold → Match (fuzzy); else Discrepancy
-   - Date: day_diff <= 3 → Match (date); else Discrepancy
+   - Date: day_diff <= `date_tolerance_days` → Match (date); else Discrepancy
 5. Compute overall status per row (worst-case across all fields)
 6. ORDER BY: Discrepancies first, then by absolute difference descending
 

@@ -11,10 +11,11 @@ function q(s: string) { return `"${s.replace(/"/g, '""')}"` }
  * given the month the fiscal year starts (1 = Jan, 2 = Feb, …).
  *
  * Example: FY2027, fyStartMonth=2 → 2026-02-01 to 2027-01-31
+ * Returns null when `fy` isn't of the form FYyyyy.
  */
-function fiscalYearDateRange(fy: string, fyStartMonth: number): { start: string; end: string } {
-  const match = fy.match(/FY(\d{4})/)
-  if (!match) return { start: "1900-01-01", end: "2100-12-31" }
+function fiscalYearDateRange(fy: string, fyStartMonth: number): { start: string; end: string } | null {
+  const match = fy.match(/^FY(\d{4})$/)
+  if (!match) return null
   const calYear = parseInt(match[1], 10)
 
   if (fyStartMonth === 1) {
@@ -89,7 +90,11 @@ export async function GET(req: Request) {
     const fyStartMonth = fyStartMonthRaw ?? 1
 
     // Date range filter
-    const { start, end } = fiscalYearDateRange(fiscalYear, fyStartMonth)
+    const range = fiscalYearDateRange(fiscalYear, fyStartMonth)
+    if (!range) {
+      return Response.json({ error: "Invalid fiscalYear: expected FYyyyy (e.g. FY2027)." }, { status: 400 })
+    }
+    const { start, end } = range
     const dateFilter = `a.${q(actualsDateCol)} BETWEEN '${start}' AND '${end}'`
 
     // Optional quarter sub-filter — map fiscal quarter to calendar months

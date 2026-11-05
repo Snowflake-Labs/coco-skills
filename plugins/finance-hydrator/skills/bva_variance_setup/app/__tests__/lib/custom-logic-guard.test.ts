@@ -73,6 +73,34 @@ describe("validateCustomLogicSql", () => {
     expect(validateCustomLogicSql(long, "filter", cols).ok).toBe(false)
   })
 
+  // Regression: backslash-escaped quotes desync our literal stripper from
+  // Snowflake's tokenizer, smuggling a subquery / function call past it.
+  it.each([
+    String.raw`category = '\'' OR (SELECT COUNT(*) FROM other_db.s.salaries) > 0 OR ''=''`,
+    String.raw`category = '\'' || system$whitelist() || ''''`,
+    String.raw`expense_category = '\'' OR (SELECT COUNT(*) FROM other_db.s.salaries) > 0 OR ''=''`,
+    "$$x$$",
+    "expense_category = $$x$$",
+  ])("rejects injection payload %s", (payload) => {
+    expect(validateCustomLogicSql(payload, "filter", cols).ok).toBe(false)
+  })
+
+  it("rejects subqueries and table references even without escapes", () => {
+    for (const sql of [
+      "expense_category IN (SELECT x FROM t)",
+      "actual_expense > (select 1)",
+      "expense_category = 'a' AND exists (select 1 from t)",
+      "actual_expense > table(foo)",
+      "with x as (1) actual_expense",
+    ]) {
+      expect(validateCustomLogicSql(sql, "filter", cols).ok).toBe(false)
+    }
+  })
+
+  it("still allows keywords inside string literals", () => {
+    expect(validateCustomLogicSql("expense_category = 'select from with'", "filter", cols)).toEqual({ ok: true })
+  })
+
   it("rejects a filter expression with no boolean-looking predicate", () => {
     const res = validateCustomLogicSql("actual_expense", "filter", cols)
     expect(res.ok).toBe(false)

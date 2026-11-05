@@ -30,7 +30,11 @@
       "extra_settings": {
         "access_mode": "procedure_or_table",
         "save_procedure": "<YOUR_DB>.<YOUR_SCHEMA>.<YOUR_SAVE_PROFILE_PROCEDURE>",
-        "note": "For procedure-backed stores, set save_procedure to the FQN of the SAVE procedure. The GET procedure FQN is in sources[0].fqn. Both must accept matching argument signatures.\n"
+        "note": "For procedure-backed stores, set save_procedure to the FQN of the SAVE procedure. The GET procedure FQN is in sources[0].fqn. Both must accept matching argument signatures.\n",
+        "natural_sign": "<credit_negative | as_stored \u2014 confirm with user on first run>",
+        "default_date_tolerance_days": "<DEFAULT e.g. 3>",
+        "default_round_off_threshold": "<DEFAULT e.g. 1.00 in reporting currency>",
+        "default_numeric_gate": "<OR | AND>"
       }
     },
     "accounting.recon.category_rules": {

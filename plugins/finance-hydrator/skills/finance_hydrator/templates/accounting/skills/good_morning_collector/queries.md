@@ -1,6 +1,11 @@
 # Query Reference — Good Morning Collector (Dehydrated)
 
-All physical table/column references are resolved at runtime.
+All physical table/column references are resolved at runtime from `hydration_hints.yaml`.
+
+**Parameter binding (all user-supplied search text):** never concatenate user text into SQL. Escape `\`, `%` and `_` in the user's term, then bind it:
+`{{cols.account_name}} ILIKE '%' || :search || '%' ESCAPE '\\'`
+
+**"Yesterday"** = the prior business day (Monday → Friday; holiday calendar if bound, else weekends only — disclosed).
 
 ---
 
@@ -20,9 +25,9 @@ All physical table/column references are resolved at runtime.
 
 **Logic**:
 1. Filter AR table by collector_assignment = <resolved collector>
-2. GROUP BY aging_bucket
+2. GROUP BY aging bucket — canonical buckets shared with `ar_tracker`: Current (≤ 0), 1–30, 31–60, 61–90, 90+ days past due date
 3. SUM(balance), COUNT(DISTINCT account_id) per bucket
-4. For delta: compare current snapshot vs prior day's snapshot (same query, different date filter)
+4. For delta: compare current snapshot vs the prior business day's snapshot (same query, different date filter)
 
 **Output grain**: one row per aging bucket (5 rows total)
 
@@ -33,7 +38,7 @@ All physical table/column references are resolved at runtime.
 **Purpose**: Cash received yesterday.
 
 **Logic**:
-1. Filter collections table by payment_date = yesterday AND account in collector's portfolio
+1. Filter collections table by payment_date = prior business day (Monday → Friday) AND account in collector's portfolio
 2. SUM(payment_amount), COUNT(DISTINCT account_id)
 3. MAX(payment_amount) for "largest payment"
 
@@ -43,13 +48,25 @@ All physical table/column references are resolved at runtime.
 
 ## Query Type 3 — Today's Priority List
 
-**Purpose**: Top 5 accounts to call based on composite risk score.
+**Purpose**: Top 5 accounts to call based on composite risk score. **This is the single authoritative priority formula** — SKILL.md references it; no other variant is used.
+
+**Priority formula** (per account):
+
+```
+priority_score = balance
+               * SQRT(GREATEST(days_past_due, 0))
+               * LN(COALESCE(days_since_last_contact, :never_contacted_days) + 1)
+```
+
+- `balance` = account open balance; `days_past_due` = days past due of the account's oldest open invoice
+- `:never_contacted_days` (setting, default 90) is used when there is no last-contact date
+- Accounts not yet past due score 0 and therefore never outrank past-due accounts
 
 **Logic**:
-1. Filter AR table by collector_assignment AND aging_bucket IN ('90', '120+')
-2. Compute score = balance * SQRT(days_overdue) * LOG(days_since_last_contact + 1)
-3. ORDER BY score DESC LIMIT 5
-4. Include: account_name, balance, days_overdue, last_contact_date
+1. Filter AR table by collector_assignment AND balance > 0 AND days_past_due > 0
+2. Compute `priority_score` with the formula above
+3. ORDER BY priority_score DESC LIMIT 5
+4. Include: account_name, balance, days_past_due, last_contact_date
 
 **Output grain**: 5 rows ranked by priority score
 
@@ -62,8 +79,8 @@ All physical table/column references are resolved at runtime.
 **Logic**:
 1. Filter AR table by collector_assignment AND dispute_flag = true
 2. COUNT(*), SUM(dispute_amount)
-3. For "new yesterday": filter additionally by dispute_opened_date = yesterday
-4. For "approaching SLA": filter by dispute_sla_date <= DATEADD(day, 3, CURRENT_DATE())
+3. For "new yesterday": filter additionally by dispute_opened_date = prior business day
+4. For "approaching SLA": dispute_sla_date between today and the 3rd business day after today (same business-day logic and reference SQL as `ar_tracker` Query Type 5)
 
 **Output grain**: summary counts + flagged items
 
@@ -74,7 +91,7 @@ All physical table/column references are resolved at runtime.
 **Purpose**: When user asks about a specific account by name.
 
 **Logic**:
-1. Filter AR table by account_name ILIKE '%<user input>%'
+1. Filter AR table by account name using the bound-parameter form `account_name ILIKE '%' || :search || '%' ESCAPE '\\'` (never concatenate user text); if several accounts match, ask the user to pick one
 2. Return all aging/dispute/payment details for that account
 3. If collections table exists, show last 10 payments
 
@@ -128,6 +145,6 @@ All physical table/column references are resolved at runtime.
 
 1. **Aging = days past DUE date, not invoice date** — a common confusion. If the table has both, use due_date for aging.
 2. **Collector assignment changes** — some systems reassign mid-month. Use the current assignment, not historical.
-3. **Weekend effect** — "yesterday" on Monday should pull Friday's collections. Use business-day logic.
+3. **Weekend effect** — "yesterday" is the prior business day everywhere in this skill: on Monday it is Friday. Use the holiday calendar if bound; otherwise weekends only, disclosed.
 4. **Multi-currency portfolios** — if a collector handles USD + EUR accounts, group by currency in the summary. Don't sum across currencies.
-5. **Zero-balance accounts** — exclude from aging summary (they paid, they're done). Only show accounts with balance > 0.
+5. **Zero-balance accounts** — exclude from aging summary (they paid, they're done). Credit balances (unapplied cash, open credit memos) are shown as a separate line, as in `ar_tracker`, not silently dropped.

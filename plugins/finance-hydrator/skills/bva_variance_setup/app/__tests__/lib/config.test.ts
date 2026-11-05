@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { buildFromConfig, buildFinalSql, type BvaConfig, type CustomLogicRule, type ClusterPattern } from "@/lib/config"
+import { buildFromConfig, buildFinalSql, validateColumnFields, type BvaConfig, type CustomLogicRule, type ClusterPattern } from "@/lib/config"
 
 const baseConfig: BvaConfig = {
   configName: "default",
@@ -196,5 +196,23 @@ describe("buildFromConfig table-name validation", () => {
   it("accepts a valid table name", () => {
     const cfg = { sourceType: "single_table", singleTable: "DB.SCHEMA.GL" } as BvaConfig
     expect(buildFromConfig(cfg)).toBe("select * from DB.SCHEMA.GL")
+  })
+})
+
+describe("column config field hardening", () => {
+  it("quotes configured column names in the generated SQL", () => {
+    const sql = buildFromConfig({ ...multiTableBase, budgetPeriodFormat: "date" })
+    expect(sql).toContain('b."AMOUNT"')
+    expect(sql).toContain('b."CATEGORY"')
+  })
+
+  it("throws instead of interpolating an unsafe column name", () => {
+    expect(() => buildFromConfig({ ...multiTableBase, budgetAmountCol: "amount) from x --" })).toThrow(/Invalid column/)
+    expect(() => buildFromConfig({ ...multiTableBase, actualsDateCol: 'a"b' })).toThrow(/Invalid column/)
+  })
+
+  it("validateColumnFields accepts identifiers and ignores unset fields", () => {
+    expect(validateColumnFields({ actualsDateCol: "TXN_DATE", ccNameCol: "name$1", budgetVersionCol: null })).toEqual([])
+    expect(validateColumnFields({ actualsDateCol: "1bad", ccIdCol: "a b" })).toHaveLength(2)
   })
 })

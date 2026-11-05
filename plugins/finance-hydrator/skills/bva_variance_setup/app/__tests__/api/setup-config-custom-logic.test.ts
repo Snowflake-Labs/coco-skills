@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { validateCustomLogicRules } from "@/app/api/setup/config/route"
+import { validateCustomLogicRules, validateConfigColumns } from "@/app/api/setup/config/route"
 import type { CustomLogicRule } from "@/lib/config"
 
 // Server-side enforcement of lib/custom-logic-guard.ts's policy — the only
@@ -84,5 +84,18 @@ describe("validateCustomLogicRules", () => {
       rule({ id: "f1", kind: "filter", sql: "allocation_status = 'A'" }),
     ]
     expect(validateCustomLogicRules(rules)).toBeNull()
+  })
+})
+
+describe("validateConfigColumns", () => {
+  const base = { configName: "default", sourceType: "multi_table" } as const
+
+  it("accepts plain identifiers and unset fields", () => {
+    expect(validateConfigColumns({ ...base, actualsDateCol: "TXN_DATE", budgetVersionCol: null })).toBeNull()
+  })
+
+  it("rejects a column name that could break out of the generated SQL", () => {
+    expect(validateConfigColumns({ ...base, actualsAmountCol: "amt) from other.s.t --" })).toMatch(/actualsAmountCol/)
+    expect(validateConfigColumns({ ...base, ccIdCol: 'id"' })).toMatch(/ccIdCol/)
   })
 })

@@ -76,7 +76,8 @@ LIMIT 5;
 **Guard checks:**
 - [ ] G1: Hydration succeeded
 - [ ] G2: account_forecast resolved
-- [ ] Two separate queries (one for top, one for bottom)
+- [ ] Two separate queries (one for top, one for bottom), or one UNION ALL with each branch parenthesized
+- [ ] Movers ranked within currency (or after conversion to `reporting_currency`) — never across mixed currencies
 
 **Expected output:**
 - Two ranked lists of 5 accounts each
@@ -99,6 +100,8 @@ good morning
 **Expected:**
 - Consumption Pulse section appears with WoW growth, top growing, top declining
 - No "data unavailable" message
+- Quantities labelled with the configured `usage_unit` (not assumed to be credits)
+- Current and prior windows are each exactly 7 days and exclude today's partial day
 
 ---
 
@@ -203,3 +206,21 @@ good morning
 ```
 /skill_eval — point it at this file for golden case assertions.
 ```
+
+---
+
+## Expense anomaly materiality (aligned with budget_vs_actuals)
+
+### Case X-01: Materiality thresholds are proposed, not hardcoded
+
+**Input:**
+```
+good morning
+```
+
+**Setup:** `finance.budget.expense` resolved; no customer-configured thresholds.
+
+**Expected behavior:**
+- Proposes thresholds relative to budget (same approach as `budget_vs_actuals`) and asks the user to confirm before flagging
+- Does NOT silently apply a fixed "5% + $50K" threshold
+

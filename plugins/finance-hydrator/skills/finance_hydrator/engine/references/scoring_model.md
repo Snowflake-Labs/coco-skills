@@ -30,7 +30,11 @@ score (e.g. 91%), which would blur the READY/PARTIAL boundary.
 | Missing required source | 40 |
 | Source inaccessible | 30 |
 | Missing unsafe scoping column | 40 |
-| No business fit | `NOT_RELEVANT` |
+| Non-official source (deny-list token or dated suffix in the FQN) | 40 (`NON_OFFICIAL`) |
+| Business fit < 40 | `NOT_RELEVANT` |
+
+When data is BLOCKED and business fit is ≥ 40, `combine_recommendations.py` reports `BLOCKED`
+with the data reason rather than `NOT_RELEVANT`, so a relevant skill always shows what to fix.
 
 Unsafe scoping columns are required fields that prevent safe output scoping, such as collector/user/account ownership filters.
 

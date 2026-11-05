@@ -1,0 +1,13 @@
+{
+  "finance_subdepartment": "cfo",
+  "persona": "CFO",
+  "jobs_to_be_done": [
+    "budget vs actuals variance"
+  ],
+  "source_systems": [
+    "Anaplan"
+  ],
+  "requested_emitters": [
+    "skill_plugin"
+  ]
+}

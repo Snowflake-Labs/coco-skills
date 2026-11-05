@@ -1,5 +1,5 @@
 import { getConfigTable, getHistoryTable, invalidateConfigCache, materializeBva, dropMaterializedBva } from "@/lib/config-server"
-import { BVA_BASELINE_COLUMNS, type BvaConfig } from "@/lib/config"
+import { BVA_BASELINE_COLUMNS, validateColumnFields, type BvaConfig } from "@/lib/config"
 import { checkIsAdmin } from "@/lib/agent-access-mode"
 import { validateTableParam } from "@/lib/bva"
 import { validateCustomLogicSql, validateCustomLogicAlias } from "@/lib/custom-logic-guard"
@@ -74,6 +74,12 @@ export function validateConfigTables(cfg: BvaConfig): string | null {
     }
   }
   return null
+}
+
+/** Rejects any *Col field that isn't a plain column identifier — these are
+ *  spliced into the generated BvA SQL (see buildFromConfig). */
+export function validateConfigColumns(cfg: BvaConfig): string | null {
+  return validateColumnFields(cfg)[0] ?? null
 }
 
 export const dynamic = "force-dynamic"
@@ -169,6 +175,10 @@ export async function POST(req: Request) {
     const tableError = validateConfigTables(body)
     if (tableError) {
       return Response.json({ error: tableError }, { status: 400 })
+    }
+    const columnError = validateConfigColumns(body)
+    if (columnError) {
+      return Response.json({ error: columnError }, { status: 400 })
     }
 
     const customLogicError = validateCustomLogicRules(body.customLogicRules)

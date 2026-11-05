@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { parseExtraFilters, extraFilterWhereClauses, sqlStr } from "@/lib/bva"
+import { parseExtraFilters, extraFilterWhereClauses, sqlStr, validateTableParam } from "@/lib/bva"
 
 describe("parseExtraFilters", () => {
   it("returns an empty object for null input", () => {
@@ -57,5 +57,17 @@ describe("sqlStr", () => {
   it("escapes backslashes so input cannot break out of the literal", () => {
     expect(sqlStr("a\\")).toBe("'a\\\\'")
     expect(sqlStr("\\' OR 1=1 --")).toBe("'\\\\'' OR 1=1 --'")
+  })
+})
+
+describe("validateTableParam", () => {
+  it("accepts a plain three-part name", () => {
+    expect(validateTableParam("MY_DB.MY_SCHEMA.MY_TABLE")).toBe(true)
+  })
+
+  it("rejects double quotes, extra parts and injection attempts", () => {
+    for (const t of ['"DB".S.T', 'DB.S.T"', "DB.S", "DB.S.T.U", "DB.S.T UNION SELECT 1", null, undefined, ""]) {
+      expect(validateTableParam(t)).toBe(false)
+    }
   })
 })

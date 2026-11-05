@@ -15,7 +15,10 @@
       "triggers": [
         "run flux",
         "variance analysis",
-        "month over month variance"
+        "month over month variance",
+        "month-end flux",
+        "flux",
+        "close variance"
       ],
       "data_needs": [
         {
@@ -30,15 +33,24 @@
             "period",
             "account"
           ],
-          "columns": {
-            "period": "required",
-            "account": "required",
-            "amount": "required"
+          "fields": {
+            "period": {
+              "required": true,
+              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date"]
+            },
+            "account": {
+              "required": true,
+              "aliases": ["account", "account_number", "gl_account", "gl_account_number", "ledger_account", "natural_account", "account_code", "account_id", "main_account"]
+            },
+            "amount": {
+              "required": true,
+              "aliases": ["amount", "net_amount", "ledger_debit_minus_credit", "debit_minus_credit", "functional_amount", "amount_usd", "amount_functional", "accounted_amount", "amount_in_company_code_currency"]
+            }
           }
         },
         {
           "key": "accounting.calendar.fiscal_periods",
-          "required": true,
+          "required": false,
           "concepts": [
             "fiscal calendar",
             "accounting period",
@@ -47,10 +59,19 @@
           "grain": [
             "period"
           ],
-          "columns": {
-            "period": "required",
-            "period_start": "optional",
-            "period_end": "optional"
+          "fields": {
+            "period": {
+              "required": true,
+              "aliases": ["period", "fiscal_period", "accounting_period", "posting_period", "period_name", "fiscal_month", "accounting_date", "gl_date", "posting_date"]
+            },
+            "period_start": {
+              "required": false,
+              "aliases": ["period_start", "start_date", "period_start_date", "fiscal_month_start"]
+            },
+            "period_end": {
+              "required": false,
+              "aliases": ["period_end", "end_date", "period_end_date", "fiscal_month_end"]
+            }
           }
         }
       ],
@@ -60,7 +81,10 @@
       "jobs_to_be_done": [
         "explain period-over-period GL variance",
         "run close-cycle flux analysis",
-        "identify material account balance changes"
+        "identify material account balance changes",
+        "month-end flux",
+        "flux",
+        "close variance"
       ],
       "source_system_hints": [
         "ERP",
@@ -77,7 +101,7 @@
       ],
       "context_queries": {
         "accounting.gl.journal_entries": "official production data for general ledger, journal entries, account balance; grain: period, account; required fields: period, account, amount",
-        "accounting.calendar.fiscal_periods": "official production data for fiscal calendar, accounting period, close period; grain: period; required fields: period; optional fields: period_start, period_end"
+        "accounting.calendar.fiscal_periods": "optional official data for fiscal calendar, accounting period, close period; grain: period; required fields: period; optional fields: period_start, period_end"
       }
     },
     {
@@ -92,7 +116,9 @@
       "triggers": [
         "AP pulse",
         "AP health",
-        "invoice status"
+        "invoice status",
+        "AP aging",
+        "payables aging"
       ],
       "data_needs": [
         {
@@ -106,11 +132,35 @@
           "grain": [
             "invoice_id"
           ],
-          "columns": {
-            "invoice_id": "required",
-            "supplier": "required",
-            "invoice_amount": "required",
-            "invoice_status": "required"
+          "fields": {
+            "invoice_id": {
+              "required": true,
+              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no"]
+            },
+            "supplier": {
+              "required": true,
+              "aliases": ["supplier", "supplier_name", "vendor", "vendor_name", "payee", "payee_name"]
+            },
+            "invoice_amount": {
+              "required": true,
+              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd"]
+            },
+            "invoice_status": {
+              "required": true,
+              "aliases": ["invoice_status", "status", "approval_status", "payment_status", "document_status", "invoice_state"]
+            },
+            "invoice_date": {
+              "required": false,
+              "aliases": ["invoice_date", "document_date", "bill_date", "transaction_date", "trandate"]
+            },
+            "due_date": {
+              "required": false,
+              "aliases": ["due_date", "payment_due_date", "net_due_date", "invoice_due_date", "duedate"]
+            },
+            "open_amount": {
+              "required": false,
+              "aliases": ["open_amount", "amount_remaining", "amount_due_remaining", "balance", "balance_due", "remaining_amount", "outstanding_amount", "amount_unpaid"]
+            }
           }
         }
       ],
@@ -121,7 +171,9 @@
       "jobs_to_be_done": [
         "monitor AP health",
         "lookup supplier invoice status",
-        "prioritize overdue invoices"
+        "prioritize overdue invoices",
+        "AP aging",
+        "payables aging"
       ],
       "source_system_hints": [
         "ERP",
@@ -138,7 +190,7 @@
         "skill_plugin"
       ],
       "context_queries": {
-        "accounting.ap.invoice_header": "official production data for invoice header, payables ledger, AP transaction; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_status"
+        "accounting.ap.invoice_header": "official production data for invoice header, payables ledger, AP transaction; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_status; optional fields: invoice_date, due_date, open_amount"
       }
     },
     {
@@ -155,7 +207,8 @@
         "AR health",
         "DSO",
         "overdue accounts",
-        "AR tracker"
+        "AR tracker",
+        "AR aging"
       ],
       "data_needs": [
         {
@@ -170,11 +223,27 @@
             "customer_id",
             "invoice_id"
           ],
-          "columns": {
-            "customer_id": "required",
-            "invoice_id": "required",
-            "due_date": "required",
-            "balance": "required"
+          "fields": {
+            "customer_id": {
+              "required": true,
+              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id"]
+            },
+            "invoice_id": {
+              "required": true,
+              "aliases": ["invoice_id", "invoice_number", "document_number", "transaction_number", "trx_number", "document_no", "belnr"]
+            },
+            "due_date": {
+              "required": true,
+              "aliases": ["due_date", "payment_due_date", "net_due_date", "invoice_due_date", "duedate"]
+            },
+            "balance": {
+              "required": true,
+              "aliases": ["balance", "open_amount", "amount_remaining", "amount_due_remaining", "remaining_amount", "outstanding_amount", "open_balance", "balance_due"]
+            },
+            "customer": {
+              "required": false,
+              "aliases": ["customer", "customer_name", "account_name", "bill_to_customer_name"]
+            }
           }
         }
       ],
@@ -185,7 +254,9 @@
       "jobs_to_be_done": [
         "monitor AR aging",
         "prioritize overdue customer invoices",
-        "track DSO and collections risk"
+        "track DSO and collections risk",
+        "AR aging",
+        "DSO"
       ],
       "source_system_hints": [
         "ERP",
@@ -202,7 +273,7 @@
         "skill_plugin"
       ],
       "context_queries": {
-        "accounting.ar.aging": "official production data for AR aging, receivables, overdue invoice; grain: customer_id, invoice_id; required fields: customer_id, invoice_id, due_date, balance"
+        "accounting.ar.aging": "official production data for AR aging, receivables, overdue invoice; grain: customer_id, invoice_id; required fields: customer_id, invoice_id, due_date, balance; optional fields: customer"
       }
     },
     {
@@ -217,7 +288,9 @@
       "triggers": [
         "duplicate invoice",
         "overpayment risk",
-        "invoice fraud"
+        "invoice fraud",
+        "duplicate invoices",
+        "duplicate payments"
       ],
       "data_needs": [
         {
@@ -226,16 +299,41 @@
           "concepts": [
             "invoice header",
             "supplier invoice",
-            "invoice amount"
+            "vendor invoice reference"
           ],
           "grain": [
-            "invoice_id"
+            "supplier_id",
+            "vendor_invoice_reference"
           ],
-          "columns": {
-            "invoice_id": "required",
-            "supplier": "required",
-            "invoice_amount": "required",
-            "invoice_date": "required"
+          "fields": {
+            "supplier_id": {
+              "required": true,
+              "aliases": ["supplier_id", "vendor_id", "supplier_number", "vendor_number", "vendor_account", "lifnr", "vendor_site_id", "supplier_reference_id"]
+            },
+            "vendor_invoice_reference": {
+              "required": true,
+              "aliases": ["vendor_invoice_reference", "supplier_invoice_number", "vendor_invoice_number", "supplier_invoice_reference", "bill_number", "external_invoice_number", "external_document_number", "invoice_reference", "reference_number", "invoice_num", "xblnr"]
+            },
+            "invoice_amount": {
+              "required": true,
+              "aliases": ["invoice_amount", "total_amount", "gross_amount", "invoice_total", "total_invoice_amount", "amount", "amount_usd"]
+            },
+            "invoice_date": {
+              "required": true,
+              "aliases": ["invoice_date", "document_date", "bill_date", "transaction_date", "trandate"]
+            },
+            "supplier": {
+              "required": false,
+              "aliases": ["supplier", "supplier_name", "vendor", "vendor_name", "payee", "payee_name"]
+            },
+            "invoice_id": {
+              "required": false,
+              "aliases": ["invoice_id", "invoice_number", "document_number", "invoice_document_number", "transaction_id", "bill_id", "internal_id", "document_no"]
+            },
+            "invoice_status": {
+              "required": false,
+              "aliases": ["invoice_status", "status", "approval_status", "payment_status", "document_status", "invoice_state"]
+            }
           }
         }
       ],
@@ -246,7 +344,9 @@
       "jobs_to_be_done": [
         "detect duplicate invoices",
         "reduce overpayment risk",
-        "review invoice fraud signals"
+        "review invoice fraud signals",
+        "duplicate invoices",
+        "duplicate payments"
       ],
       "source_system_hints": [
         "ERP",
@@ -263,7 +363,7 @@
         "skill_plugin"
       ],
       "context_queries": {
-        "accounting.ap.invoice_header": "official production data for invoice header, supplier invoice, invoice amount; grain: invoice_id; required fields: invoice_id, supplier, invoice_amount, invoice_date"
+        "accounting.ap.invoice_header": "official production data for invoice header, supplier invoice, vendor invoice reference; grain: supplier_id, vendor_invoice_reference; required fields: supplier_id, vendor_invoice_reference, invoice_amount, invoice_date; optional fields: supplier, invoice_id, invoice_status"
       }
     },
     {
@@ -296,11 +396,23 @@
             "collector_id",
             "customer_id"
           ],
-          "columns": {
-            "collector_id": "required",
-            "customer_id": "required",
-            "balance": "required",
-            "aging_bucket": "optional"
+          "fields": {
+            "collector_id": {
+              "required": true,
+              "aliases": ["collector_id", "collector", "collector_name", "collector_email", "assigned_collector", "collections_owner"]
+            },
+            "customer_id": {
+              "required": true,
+              "aliases": ["customer_id", "customer_number", "customer_account_id", "customer_account_number", "bill_to_customer_id", "cust_account_id", "kunnr", "account_id"]
+            },
+            "balance": {
+              "required": true,
+              "aliases": ["balance", "open_amount", "amount_remaining", "amount_due_remaining", "remaining_amount", "outstanding_amount", "open_balance", "balance_due"]
+            },
+            "aging_bucket": {
+              "required": false,
+              "aliases": ["aging_bucket", "aging_category", "days_past_due_bucket", "aging_band"]
+            }
           }
         }
       ],
@@ -484,7 +596,8 @@
         "compare two datasets and find discrepancies",
         "build and save a reconciliation profile",
         "classify breaks with root-cause commentary",
-        "validate reconciliation output integrity"
+        "validate reconciliation output integrity",
+        "reconciliation"
       ],
       "source_system_hints": [
         "ERP",

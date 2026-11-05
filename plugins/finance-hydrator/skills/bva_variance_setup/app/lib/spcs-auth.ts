@@ -109,9 +109,10 @@ export function ensureSpcsAuth(callerToken?: string, jobId?: string): SpcsAuth |
     // For caller's rights: combine the service token with the caller token.
     // The combined token format is `<service-oauth-token>.<Sf-Context-Current-User-Token>`.
     // The Snowflake server splits at the "." and resolves both identities.
-    // The caller token's lifetime is controlled by SERVICE_CALLER_TOKEN_VALIDITY_SECS
-    // (default 2 min, extendable up to 7 days). The app sets this to 600 (10 min)
-    // at deploy time — see README.md §14 (Step 5 — Verify and hand off).
+    // The caller token's lifetime is the platform default: there is no
+    // ALTER APPLICATION SERVICE property for it, and the older
+    // SERVICE_CALLER_TOKEN_VALIDITY_SECS command is not valid on current App
+    // Runtime — see SKILL.md (Step 5 — Verify and hand off).
     const token = callerToken ? serviceToken + "." + callerToken : serviceToken
 
     // The Snowflake CLI requires an `account` field in the connection config.

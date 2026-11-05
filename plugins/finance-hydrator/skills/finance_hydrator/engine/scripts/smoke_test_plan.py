@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 
@@ -14,6 +15,10 @@ def main() -> int:
     args = parser.parse_args()
 
     plugin_dir = args.plugin_dir.resolve()
+    if not (plugin_dir / "skills").is_dir():
+        print(f"smoke_test_plan.py: error: no generated plugin at {plugin_dir} "
+              "(missing skills/ directory)", file=sys.stderr)
+        return 2
     results = []
     for skill_dir in sorted((plugin_dir / "skills").glob("*")):
         if not skill_dir.is_dir():

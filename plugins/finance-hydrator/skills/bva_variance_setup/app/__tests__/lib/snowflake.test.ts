@@ -70,6 +70,7 @@ function setupFiles(files: Record<string, string>) {
 
 const ENV_KEYS_TO_CLEAR = [
   "SNOWFLAKE_CONNECTION_NAME",
+  "SNOWFLAKE_DEFAULT_CONNECTION_NAME",
   "SNOWFLAKE_HOME",
   "SNOWFLAKE_ACCOUNT",
   "SNOWFLAKE_USER",
@@ -101,13 +102,16 @@ function makeNoTomlFsMock() {
 describe("readTomlDefaultConnection", () => {
   beforeEach(() => {
     resetTomlConfigCache()
+    // stubEnv (not delete) so the real environment is restored afterwards and
+    // results don't depend on the developer's shell.
     for (const key of ENV_KEYS_TO_CLEAR) {
-      delete process.env[key]
+      vi.stubEnv(key, undefined)
     }
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
     delete process.env.SNOWFLAKE_RANDOM_KEY
   })
 

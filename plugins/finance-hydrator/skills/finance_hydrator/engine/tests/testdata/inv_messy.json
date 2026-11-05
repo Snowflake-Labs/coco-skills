@@ -1,0 +1,248 @@
+{
+  "scope": {},
+  "domain_access": {
+    "accounting": true,
+    "strategic_finance": true
+  },
+  "objects": [
+    {
+      "data_need_key": "accounting.gl.journal_entries",
+      "fqn": "DEV_FINANCE.GL.JOURNAL_LINES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.ap.invoice_header",
+      "fqn": "ERP_PROD.SNAPSHOT.AP_INVOICES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.ar.aging",
+      "fqn": "ERP_PROD.AR.AGING_20260101",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.ar.collector_portfolio",
+      "fqn": "FIN.SANDBOX.LEDGER",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "accounting.recon.profile_store",
+      "fqn": "ERP_PROD.GL_BKP.LINES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.revenue.forecast_daily",
+      "fqn": "ERP_PROD.FINANCE.PLAN_CLONE",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.revenue.account_forecast",
+      "fqn": "ERP_PROD.TMP.ACTUALS",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.forecast.snapshot",
+      "fqn": "ERP_PROD.ARCHIVE.FORECAST",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.forecast.version_metadata",
+      "fqn": "ERP_PROD.FINANCE.COGS_202601",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.budget.plan",
+      "fqn": "DEMO_DB.FINANCE.REVENUE",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.budget.actuals",
+      "fqn": "ERP_PROD.TEST.SCENARIOS",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.cogs.summary",
+      "fqn": "ERP_PROD.SCRATCH.EARNINGS",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.earnings.financial_summary",
+      "fqn": "DEV_FINANCE12.GL.JOURNAL_LINES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.earnings.comparison_basis",
+      "fqn": "ERP_PROD13.SNAPSHOT.AP_INVOICES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.revenue.hierarchy",
+      "fqn": "ERP_PROD14.AR.AGING_20260101",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.scenario.pnl",
+      "fqn": "FIN15.SANDBOX.LEDGER",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "data_need_key": "finance.scenario.assumptions",
+      "fqn": "ERP_PROD16.GL_BKP.LINES",
+      "columns_present": {
+        "period": "PERIOD"
+      },
+      "official": true,
+      "usage": {
+        "events_7d": 120,
+        "distinct_users": 6,
+        "last_access": "2026-11-01"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "gaps": []
+}

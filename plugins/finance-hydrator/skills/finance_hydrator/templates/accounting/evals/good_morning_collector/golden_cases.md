@@ -21,7 +21,7 @@ Good morning, give me my briefing
 
 **Key assertions:**
 - Output opens with `# Good Morning, Alex` and today's date
-- Portfolio Snapshot shows 5 aging buckets with balances and account counts
+- Portfolio Snapshot shows the 5 canonical aging buckets (Current, 1–30, 31–60, 61–90, 90+ — same as `ar_tracker`) with balances and account counts
 - Yesterday's Collections section present (even if $0 — shows "None found")
 - Due This Week section: all open invoices due Mon–Fri with urgency labels; overdue invoices also shown
 - Monthly Progress section: MTD collection rate shown with formula label
@@ -65,8 +65,8 @@ What should I work on today?
 **Expected behavior:**
 - Routes to priority list section only (not full briefing)
 - Runs Query Type 3 only
-- Returns top 5 accounts by composite score: `balance × SQRT(days_overdue) × LOG(days_since_last_contact + 1)`
-- Where `last_contact_date` is unavailable, treats as 90 days (maximum priority)
+- Returns top 5 accounts by the single priority formula in queries.md → Query Type 3: `balance × SQRT(GREATEST(days_past_due, 0)) × LN(COALESCE(days_since_last_contact, :never_contacted_days) + 1)`
+- Where `last_contact_date` is unavailable, uses the `never_contacted_days` setting (default 90)
 - If fewer than 5 overdue accounts: shows all available (no padding with current accounts)
 
 **Key assertions:**
@@ -74,7 +74,8 @@ What should I work on today?
 - Top 5 rows (or fewer if portfolio has fewer overdue accounts)
 - Composite score logic applied (not sorted by simple balance)
 - Each entry shows: account name, balance, days overdue, last contact date (or "never contacted")
-- Only accounts from the 61–90 and 90+ buckets appear (past due only)
+- Only past-due accounts appear (days past due > 0); no current-only accounts
+- No alternative priority formula is used or mentioned
 
 ---
 
@@ -116,7 +117,8 @@ Good morning collector briefing
 
 **Key assertions:**
 - Collections section shows Friday's payments, not Sunday
-- Date filter for "yesterday" uses business-day logic: `DATEADD(day, -3, CURRENT_DATE())` on Monday
+- Date filter for "yesterday" uses prior-business-day logic (Friday on a normal Monday; earlier if Friday was a holiday and a holiday calendar is bound)
+- The same prior-business-day definition is used for new disputes and the aging delta, not just collections
 - Due This Week section covers full Mon–Fri of current week
 - No empty collections section just because "yesterday" was a weekend
 

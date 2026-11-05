@@ -21,15 +21,16 @@
             "entity_name": "<YOUR_ENTITY_NAME_COLUMN>",
             "actual_revenue": "<YOUR_ACTUAL_REVENUE_COLUMN>",
             "plan_revenue": "<YOUR_PLAN_REVENUE_COLUMN>",
-            "pop_change_amount": "<YOUR_POP_CHANGE_AMOUNT_COLUMN>",
-            "pop_change_pct": "<YOUR_POP_CHANGE_PCT_COLUMN>",
-            "yoy_pct": "<YOUR_YOY_PCT_COLUMN>",
-            "variance_to_plan": "<YOUR_VARIANCE_TO_PLAN_COLUMN>",
-            "customer_count": "<YOUR_CUSTOMER_COUNT_COLUMN>",
-            "mean_customer_revenue": "<YOUR_MEAN_REVENUE_COLUMN>",
-            "median_customer_revenue": "<YOUR_MEDIAN_REVENUE_COLUMN>",
-            "revenue_mix_pct": "<YOUR_REVENUE_MIX_PCT_COLUMN>",
-            "mix_shift": "<YOUR_MIX_SHIFT_COLUMN>"
+            "customer_id": "<YOUR_CUSTOMER_ID_COLUMN>",
+            "pop_change_amount": "<OPTIONAL_POP_CHANGE_AMOUNT_COLUMN \u2014 computed in SQL if not bound>",
+            "pop_change_pct": "<OPTIONAL_POP_CHANGE_PCT_COLUMN \u2014 computed in SQL if not bound>",
+            "yoy_pct": "<OPTIONAL_YOY_PCT_COLUMN \u2014 computed in SQL if not bound>",
+            "variance_to_plan": "<OPTIONAL_VARIANCE_TO_PLAN_COLUMN \u2014 computed in SQL if not bound>",
+            "customer_count": "<OPTIONAL_CUSTOMER_COUNT_COLUMN \u2014 computed in SQL if not bound>",
+            "mean_customer_revenue": "<OPTIONAL_MEAN_CUSTOMER_REVENUE_COLUMN \u2014 computed in SQL if not bound>",
+            "median_customer_revenue": "<OPTIONAL_MEDIAN_CUSTOMER_REVENUE_COLUMN \u2014 computed in SQL if not bound>",
+            "revenue_mix_pct": "<OPTIONAL_REVENUE_MIX_PCT_COLUMN \u2014 computed in SQL if not bound>",
+            "mix_shift": "<OPTIONAL_MIX_SHIFT_COLUMN \u2014 computed in SQL if not bound>"
           }
         }
       ],
@@ -38,7 +39,11 @@
         "revenue hierarchy",
         "plan vs actual revenue",
         "segment revenue"
-      ]
+      ],
+      "extra_settings": {
+        "revenue_measure": "<recognized_revenue | billings | bookings | arr | consumption>",
+        "reporting_currency": "<YOUR_REPORTING_CURRENCY e.g. USD>"
+      }
     },
     "finance.revenue.lifecycle_cohort": {
       "required": false,

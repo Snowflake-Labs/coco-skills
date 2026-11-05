@@ -15,7 +15,9 @@
       "triggers": [
         "good morning CFO",
         "daily finance briefing",
-        "start my day"
+        "start my day",
+        "CFO briefing",
+        "daily briefing"
       ],
       "data_needs": [
         {
@@ -63,7 +65,9 @@
       "jobs_to_be_done": [
         "start daily finance briefing",
         "review revenue forecast movement",
-        "summarize CFO priorities"
+        "summarize CFO priorities",
+        "CFO briefing",
+        "daily briefing"
       ],
       "source_system_hints": [
         "Forecasting",
@@ -165,13 +169,16 @@
       "eval_dir": "evals/budget_vs_actuals",
       "persona": [
         "FP&A Lead",
-        "Controller"
+        "Controller",
+        "CFO",
+        "FP&A Manager"
       ],
       "business_value": "Compare actuals to plan or budget baseline.",
       "triggers": [
         "budget vs actuals",
         "BVA",
-        "plan vs actuals"
+        "plan vs actuals",
+        "variance to plan"
       ],
       "data_needs": [
         {
@@ -183,11 +190,11 @@
             "locked plan version"
           ],
           "grain": [
-            "line_item",
+            "line_item_id",
             "period"
           ],
           "columns": {
-            "line_item": "required",
+            "line_item_id": "required",
             "period": "required",
             "budget_amount": "required"
           }
@@ -201,11 +208,11 @@
             "actual spend"
           ],
           "grain": [
-            "line_item",
+            "line_item_id",
             "period"
           ],
           "columns": {
-            "line_item": "required",
+            "line_item_id": "required",
             "period": "required",
             "actual_amount": "required"
           }
@@ -213,12 +220,16 @@
       ],
       "finance_subdepartments": [
         "fpa",
-        "controller"
+        "controller",
+        "cfo"
       ],
       "jobs_to_be_done": [
         "compare budget to actuals",
         "explain expense variance",
-        "monitor plan performance"
+        "monitor plan performance",
+        "budget vs actuals",
+        "BvA",
+        "variance to plan"
       ],
       "source_system_hints": [
         "ERP",
