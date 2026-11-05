@@ -4,7 +4,7 @@
     "ENGINE_VERSION": "1575e1af4a95f12f70b4ee6a6adce8160953d93ea17dc2611b90883ccc3ad3b8",
     "references/customer_plugin_layout.md": "73e64525298f0ca37a359e86810c3f96fdd7581d552c4b78a2a37690ba7323b7",
     "references/emitter_contract.md": "83ca9afac3facdb822cfb8df25be26da894473971776d88e7970dbfbbb9d2e3b",
-    "references/output_contract.md": "0659fbadd86298dd62f5d1caa615fa276f98121ca7396ee4fd0f75f37342678a",
+    "references/output_contract.md": "ec1e6f3b873796f07206f49d602a0de60d5d9659218fcca0469279df2f4aa0db",
     "references/scoring_model.md": "97be726bb85ac13368773db55b8e7232b6233a4edb1518daf7e91c159a9a3e6e",
     "scripts/_minyaml.py": "4ef4b9e895863dfd7a57217c78919b722601dd24235c0345cd06945de0cb509e",
     "scripts/build_customer_plugin.py": "0afbb4cea4a04db4ffda18fb46a744ba92d05a8e114fa797bc6a352fea360b6d",

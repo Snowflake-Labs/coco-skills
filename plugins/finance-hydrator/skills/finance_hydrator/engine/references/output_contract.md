@@ -101,6 +101,8 @@ Templates reference data only through `{{tokens}}`; `build_customer_plugin.py` w
 - `validate_catalog.py --validate-catalog` fails when an opted-in skill (any need declares
   `placeholder`) uses a token the catalog cannot fill, or two needs produce the same token. Skills not
   yet migrated get a warning.
+- Legacy `"columns": {...}` needs produce `cols.<name>` tokens with no override; convert the need to
+  `fields` to give a shared name a distinct token.
 
 ## Assessment
 
