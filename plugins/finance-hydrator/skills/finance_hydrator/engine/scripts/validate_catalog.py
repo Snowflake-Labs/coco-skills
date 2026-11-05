@@ -197,7 +197,83 @@ def validate_catalog(path: Path, templates_root: Path) -> tuple[list[str], list[
                         errors.append(
                             f"{need_prefix}.columns.{column_name}: must be required or optional"
                         )
+
+        if isinstance(data_needs, list) and source_dir and plugin_root.exists():
+            check_placeholders(skill, plugin_root / source_dir, prefix, errors, warnings)
     return errors, warnings
+
+
+# {{token}} references in template markdown. `{{placeholders}}` / `{{cols.*}}`
+# are prose, not tokens, and are not matched (`*` is outside the class).
+TOKEN_RE = re.compile(r"\{\{([a-z0-9_.]+)\}\}")
+PROSE_TOKENS = {"placeholders", "token"}
+
+
+def defined_tokens(skill: dict[str, Any], skill_dir: Path) -> tuple[set[str], list[str], list[str]]:
+    """Tokens the builder can fill, plus (flag errors, token collisions)."""
+    tokens: set[str] = set(skill.get("runtime_placeholders") or [])
+    problems: list[str] = []
+    collisions: list[str] = []
+    owners: dict[str, str] = {}
+    for need in skill.get("data_needs") or []:
+        if not isinstance(need, dict):
+            continue
+        key = need.get("key", "?")
+        if need.get("affects_readiness") is False and need.get("required"):
+            problems.append(f"data_need {key}: affects_readiness false on a required need")
+        if need.get("placeholder"):
+            tokens.add(f"{need['placeholder']}_fqn")
+        for name, spec in (need.get("fields") or {}).items():
+            if not isinstance(spec, dict):
+                continue
+            if spec.get("affects_readiness") is False and spec.get("required") \
+                    and need.get("affects_readiness") is not False:
+                problems.append(f"data_need {key}.fields.{name}: affects_readiness false on a required field")
+            token = f"cols.{spec.get('placeholder') or name}"
+            if token in owners and owners[token] != key:
+                collisions.append(
+                    f"{token} is produced by both {owners[token]} and {key}; "
+                    "set a distinct `placeholder` on one field"
+                )
+            owners[token] = key
+            tokens.add(token)
+    tokens |= {f"settings.{name}" for name in (skill.get("settings") or {})}
+    sidecar = skill_dir / "hydration_hints.json"
+    if sidecar.exists():
+        hints = load_json(sidecar)
+        settings = dict(hints.get("extra_settings") or {})
+        for need in (hints.get("data_needs") or {}).values():
+            if isinstance(need, dict):
+                settings.update(need.get("extra_settings") or {})
+        tokens |= {f"settings.{name}" for name in settings}
+    return tokens, problems, collisions
+
+
+def check_placeholders(skill: dict[str, Any], skill_dir: Path, prefix: str,
+                       errors: list[str], warnings: list[str]) -> None:
+    """Every {{token}} a template uses must be fillable from the catalog.
+
+    Enforced (error) once a skill opts in by declaring any need `placeholder`;
+    skills not yet migrated only get a warning so other verticals keep building.
+    """
+    tokens, problems, collisions = defined_tokens(skill, skill_dir)
+    errors.extend(f"{prefix}: {p}" for p in problems)
+    opted_in = any(isinstance(n, dict) and n.get("placeholder") for n in skill.get("data_needs") or [])
+    report = errors if opted_in else warnings
+    report.extend(f"{prefix}: {c}" for c in collisions)
+    used: dict[str, str] = {}
+    for md in sorted(skill_dir.rglob("*.md")):
+        for token in TOKEN_RE.findall(md.read_text(encoding="utf-8")):
+            if token not in PROSE_TOKENS:
+                used.setdefault(token, md.relative_to(skill_dir).as_posix())
+    unknown = sorted(t for t in used if t not in tokens)
+    if not unknown:
+        return
+    detail = ", ".join(f"{{{{{t}}}}} ({used[t]})" for t in unknown)
+    if opted_in:
+        errors.append(f"{prefix}: template tokens not defined in catalog: {detail}")
+    else:
+        warnings.append(f"{prefix}: template tokens not mapped (no need `placeholder` declared): {detail}")
 
 
 def main() -> int:

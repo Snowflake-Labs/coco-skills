@@ -28,8 +28,9 @@ by `SHOW PROCEDURES`).
 ## Section A — Backing Table
 
 Exact schema derived from `GET_DDL('TABLE', '<TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>')`.
-Append-only: new rows are INSERTed for every save/update; the latest non-deleted row per
-`PROFILE_NAME` is treated as current. No UPDATE statements are ever issued against this table.
+Append-only: new rows are INSERTed for every save/update/delete; the **latest row** per
+`PROFILE_NAME` is current, and the profile is deleted when that latest row is a tombstone
+(`IS_DELETED = TRUE`). No UPDATE statements are ever issued against this table.
 
 ```sql
 -- ============================================================
@@ -65,6 +66,11 @@ Behavior:
 - `PROFILE_NAME` arg → returns full `PROFILE_SETTINGS` VARIANT for that profile
 - `PROFILE_NAME` + `AS_OF` → returns settings as of that timestamp (for revert)
 
+**Latest-row-wins.** The table is append-only, so older versions of a deleted profile still carry
+`IS_DELETED = FALSE`. Every read first reduces the table to the **latest row per `PROFILE_NAME`**
+(`QUALIFY ROW_NUMBER() ... = 1`) and only then tests `IS_DELETED` and visibility. Never test
+"does any active row exist" — that resurrects deleted profiles and lists every version.
+
 ```sql
 -- ============================================================
 -- Section B: Recon Profile Store — GET Procedure
@@ -82,7 +88,7 @@ DECLARE
     v_result VARCHAR;
 BEGIN
     IF (:PROFILE_NAME IS NULL) THEN
-        -- List mode: return summary array of all accessible profiles
+        -- List mode: one row per profile (its latest version), excluding deleted profiles
         SELECT ARRAY_AGG(
             OBJECT_CONSTRUCT(
                 'profile_name',  PROFILE_NAME,
@@ -91,33 +97,42 @@ BEGIN
                 'updated_at',    TO_CHAR(UPDATED_AT, 'YYYY-MM-DD HH24:MI:SS'),
                 'source1',       PROFILE_SETTINGS:source1:value::STRING,
                 'source2',       PROFILE_SETTINGS:source2:value::STRING
-            ) ORDER BY UPDATED_AT DESC
-        )::VARCHAR INTO :v_result
-        FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+            )
+        ) WITHIN GROUP (ORDER BY UPDATED_AT DESC)::VARCHAR INTO :v_result
+        FROM (
+            SELECT *
+            FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY PROFILE_NAME ORDER BY UPDATED_AT DESC) = 1
+        )
         WHERE IS_DELETED = FALSE
           AND (IS_PUBLIC = TRUE OR UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER()));
         RETURN NVL(:v_result, '[]');
 
     ELSEIF (:AS_OF IS NULL) THEN
-        -- Load mode: return full settings for the latest version of a named profile
-        SELECT PROFILE_SETTINGS::VARCHAR INTO :v_result
-        FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
-        WHERE PROFILE_NAME = :PROFILE_NAME
-          AND IS_DELETED   = FALSE
-          AND (IS_PUBLIC   = TRUE OR UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER()))
-        ORDER BY UPDATED_AT DESC
-        LIMIT 1;
+        -- Load mode: latest version only; a tombstone as the latest row means "deleted"
+        SELECT MAX(PROFILE_SETTINGS::VARCHAR) INTO :v_result
+        FROM (
+            SELECT *
+            FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+            WHERE PROFILE_NAME = :PROFILE_NAME
+            QUALIFY ROW_NUMBER() OVER (ORDER BY UPDATED_AT DESC) = 1
+        )
+        WHERE IS_DELETED = FALSE
+          AND (IS_PUBLIC = TRUE OR UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER()));
         RETURN NVL(:v_result, 'null');
 
     ELSE
-        -- Revert mode: return settings as they existed at a specific timestamp
-        SELECT PROFILE_SETTINGS::VARCHAR INTO :v_result
-        FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
-        WHERE PROFILE_NAME = :PROFILE_NAME
-          AND UPDATED_AT  <= :AS_OF
-          AND (IS_PUBLIC   = TRUE OR UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER()))
-        ORDER BY UPDATED_AT DESC
-        LIMIT 1;
+        -- Revert mode: the version current at AS_OF (null if the profile was deleted at that time)
+        SELECT MAX(PROFILE_SETTINGS::VARCHAR) INTO :v_result
+        FROM (
+            SELECT *
+            FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+            WHERE PROFILE_NAME = :PROFILE_NAME
+              AND UPDATED_AT  <= :AS_OF
+            QUALIFY ROW_NUMBER() OVER (ORDER BY UPDATED_AT DESC) = 1
+        )
+        WHERE IS_DELETED = FALSE
+          AND (IS_PUBLIC = TRUE OR UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER()));
         RETURN NVL(:v_result, 'null');
     END IF;
 END;
@@ -129,9 +144,14 @@ $$;
 ## Section C — SAVE Procedure
 
 Actions:
-- `INSERT` — create new profile (fails if name already exists for an active profile)
-- `UPDATE` — append new version row; only the profile owner may update
-- `DELETE` — soft-delete by appending a tombstone row; only the profile owner may delete
+- `INSERT` — create new profile (fails only if the **latest** row for that name is active, so a deleted name can be re-created)
+- `UPDATE` — append new version row; the latest row must be active and owned by the caller
+- `DELETE` — soft-delete by appending a tombstone row; the latest row must be active and owned by the caller (deleting twice fails)
+
+**Tie-breaker.** `UPDATED_AT` is the version order, so two saves in the same instant would tie.
+The procedure stamps each new row with `GREATEST(now, latest UPDATED_AT for that profile + 1 ns)`,
+which makes `UPDATED_AT` strictly increasing per profile. No schema change is needed, so this also
+works on stores created before this fix.
 
 Returns `{"success": true, "updated_at": "YYYY-MM-DD HH24:MI:SS"}` or
 `{"success": false, "error": "..."}`.
@@ -152,16 +172,34 @@ EXECUTE AS <EXECUTE_MODE>
 AS
 $$
 DECLARE
-    v_now    TIMESTAMP_NTZ := CURRENT_TIMESTAMP()::TIMESTAMP_NTZ;
-    v_ts_str VARCHAR       := TO_CHAR(:v_now, 'YYYY-MM-DD HH24:MI:SS');
+    v_now        TIMESTAMP_NTZ;
+    v_ts_str     VARCHAR;
+    v_is_active  BOOLEAN;
+    v_is_owner   BOOLEAN;
 BEGIN
+    -- State of the LATEST row for this profile (no rows → both FALSE)
+    SELECT COALESCE(BOOLOR_AGG(NOT IS_DELETED), FALSE),
+           COALESCE(BOOLOR_AGG(UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER())), FALSE)
+      INTO :v_is_active, :v_is_owner
+    FROM (
+        SELECT IS_DELETED, PROFILE_OWNER
+        FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+        WHERE PROFILE_NAME = :PROFILE_NAME
+        QUALIFY ROW_NUMBER() OVER (ORDER BY UPDATED_AT DESC) = 1
+    );
+
+    -- Tie-breaker: strictly increasing version timestamp per profile
+    SELECT GREATEST(
+               CURRENT_TIMESTAMP()::TIMESTAMP_NTZ,
+               COALESCE(DATEADD(nanosecond, 1, MAX(UPDATED_AT)), '1900-01-01'::TIMESTAMP_NTZ))
+      INTO :v_now
+    FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
+    WHERE PROFILE_NAME = :PROFILE_NAME;
+    v_ts_str := TO_CHAR(:v_now, 'YYYY-MM-DD HH24:MI:SS');
+
     IF (:ACTION = 'INSERT') THEN
-        -- Reject if an active profile with this name already exists
-        IF (EXISTS (
-            SELECT 1 FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
-            WHERE PROFILE_NAME = :PROFILE_NAME
-              AND IS_DELETED   = FALSE
-        )) THEN
+        -- Reject only if the latest row is active (a deleted name may be re-created)
+        IF (:v_is_active) THEN
             RETURN '{"success": false, "error": "Profile name already exists. Use UPDATE to modify."}';
         END IF;
         INSERT INTO <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
@@ -172,13 +210,8 @@ BEGIN
         RETURN '{"success": true, "updated_at": "' || :v_ts_str || '"}';
 
     ELSEIF (:ACTION = 'UPDATE') THEN
-        -- Only the profile owner may update
-        IF (NOT EXISTS (
-            SELECT 1 FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
-            WHERE PROFILE_NAME                  = :PROFILE_NAME
-              AND UPPER(PROFILE_OWNER)          = UPPER(CURRENT_USER())
-              AND IS_DELETED                    = FALSE
-        )) THEN
+        -- Latest row must be active and owned by the caller
+        IF (NOT (:v_is_active AND :v_is_owner)) THEN
             RETURN '{"success": false, "error": "Profile not found or you do not have permission to update."}';
         END IF;
         -- Append a new version row (append-only; no UPDATE on table rows)
@@ -190,13 +223,8 @@ BEGIN
         RETURN '{"success": true, "updated_at": "' || :v_ts_str || '"}';
 
     ELSEIF (:ACTION = 'DELETE') THEN
-        -- Only the profile owner may delete; tombstone row preserves history
-        IF (NOT EXISTS (
-            SELECT 1 FROM <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>
-            WHERE PROFILE_NAME         = :PROFILE_NAME
-              AND UPPER(PROFILE_OWNER) = UPPER(CURRENT_USER())
-              AND IS_DELETED           = FALSE
-        )) THEN
+        -- Latest row must be active and owned by the caller; tombstone row preserves history
+        IF (NOT (:v_is_active AND :v_is_owner)) THEN
             RETURN '{"success": false, "error": "Profile not found or you do not have permission to delete."}';
         END IF;
         INSERT INTO <TABLE_DB>.<TABLE_SCHEMA>.<TABLE_NAME>

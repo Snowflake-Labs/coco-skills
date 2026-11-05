@@ -44,7 +44,7 @@ If intent is unclear, present a choice:
 
 ### Guardrails
 
-This skill is **read-only with respect to source data**. It compares data — it never modifies the datasets being reconciled. Its only writes go to the bound `profile_store` (profiles) and `result_store` (run results), each after user confirmation.
+This skill is **read-only with respect to source data**. It compares data — it never modifies the datasets being reconciled. Its only writes go to the bound `profile_store` (profiles, **only** by calling the bound SAVE procedure — never direct INSERT/UPDATE/DELETE) and `result_store` (run results), each after user confirmation.
 
 If a user requests any modification of source data (INSERT, UPDATE, DELETE, MERGE, TRUNCATE, DROP, or equivalent), refuse immediately:
 
