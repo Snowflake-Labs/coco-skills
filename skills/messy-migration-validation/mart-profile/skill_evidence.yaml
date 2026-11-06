@@ -1,0 +1,35 @@
+skill_name: mart-profile
+skill_type: customer-facing
+promotion_stage: draft
+version: 1.0.0
+authors:
+- sfc-gh-east
+validation:
+  testers:
+    count: 1
+    names:
+    - sfc-gh-east
+customer_impact:
+  customers:
+    count: 0
+    names: []
+evidence_links: []
+notes: 'Sub-skill of messy-migration-validation. See parent skill for full context.
+
+
+  Dry run 2026-10-30 (sfc-gh-east, demo account): UC1 profiled a 51,300-row, 33-column
+  invoice mart; 7 anomalies flagged and later explained.
+
+  '
+overlap_check:
+  max_score: 0.9859
+  highest_match: profiling
+  highest_match_source: local
+  method: local-embedding
+  checked_against_count: 177
+  checked_at: '2026-10-30T22:38:20Z'
+  highest_match_description: 'Data mart profiling — summary statistics, key analysis,
+    distributions, anomaly detection. Produces PROFILE_RESULTS table and markdown
+    report. Triggers: profile, profiling, summary stats, data profilin'
+  trigger_overlap: 1.0
+  tool_overlap: 1.0
