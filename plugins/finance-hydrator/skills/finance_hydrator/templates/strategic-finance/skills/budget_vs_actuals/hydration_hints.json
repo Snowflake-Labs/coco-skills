@@ -16,7 +16,7 @@
             "line_item_id": "<YOUR_LINE_ITEM_COLUMN>",
             "period": "<YOUR_PERIOD_COLUMN>",
             "budget_amount": "<YOUR_BUDGET_AMOUNT_COLUMN>",
-            "line_type": "<YOUR_LINE_TYPE_COLUMN>",
+            "account_type": "<YOUR_LINE_TYPE_COLUMN>",
             "currency": "<YOUR_CURRENCY_COLUMN>"
           }
         }

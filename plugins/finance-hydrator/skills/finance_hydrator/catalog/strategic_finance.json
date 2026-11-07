@@ -22,6 +22,7 @@
       "data_needs": [
         {
           "key": "finance.revenue.forecast_daily",
+          "placeholder": "forecast_daily",
           "required": true,
           "concepts": [
             "daily revenue forecast",
@@ -34,13 +35,15 @@
           ],
           "fields": {
             "date": {"required": true, "semantic_type": "date_or_period", "aliases": ["date", "reporting_date", "most_recent_date"]},
-            "segment": {"required": true, "semantic_type": "category", "aliases": ["segment", "region", "theater", "industry"]},
+            "segment": {"required": true, "semantic_type": "category", "placeholder": "segment_id", "aliases": ["segment", "region", "theater", "industry"]},
             "actual_amount": {"required": true, "semantic_type": "money", "aliases": ["actual_amount", "actual"]},
-            "forecast_amount": {"required": true, "semantic_type": "money", "aliases": ["forecast_amount", "forecast"]}
+            "forecast_amount": {"required": true, "semantic_type": "money", "aliases": ["forecast_amount", "forecast"]},
+            "currency": {"required": false, "affects_readiness": false, "aliases": ["currency", "currency_code", "reporting_currency"]}
           }
         },
         {
           "key": "finance.revenue.account_forecast",
+          "placeholder": "account_forecast",
           "required": true,
           "concepts": [
             "account forecast",
@@ -52,9 +55,31 @@
             "account"
           ],
           "fields": {
-            "week": {"required": true, "semantic_type": "date_or_period", "aliases": ["week", "reporting_date", "forecast_created_date"]},
+            "week": {"required": true, "semantic_type": "date_or_period", "placeholder": "week_ending_date", "aliases": ["week", "week_ending_date", "reporting_date", "forecast_created_date"]},
             "account_id": {"required": true, "semantic_type": "identifier", "aliases": ["account_id", "customer_id"]},
-            "forecast_amount": {"required": true, "semantic_type": "money", "aliases": ["forecast_amount", "forecast"]}
+            "forecast_amount": {"required": true, "semantic_type": "money", "placeholder": "account_forecast_amount", "aliases": ["forecast_amount", "forecast"]},
+            "account_name": {"required": false, "affects_readiness": false, "aliases": ["account_name", "customer_name", "account"]},
+            "currency": {"required": false, "affects_readiness": false, "placeholder": "account_currency", "aliases": ["currency", "currency_code", "reporting_currency"]}
+          }
+        },
+        {
+          "key": "finance.consumption.daily_usage",
+          "placeholder": "daily_usage",
+          "required": false,
+          "affects_readiness": false,
+          "concepts": [
+            "daily consumption",
+            "product usage",
+            "credit usage"
+          ],
+          "grain": [
+            "usage_date",
+            "account_id"
+          ],
+          "fields": {
+            "usage_date": {"required": true, "semantic_type": "date_or_period", "aliases": ["usage_date", "date", "consumption_date", "day"]},
+            "account_id": {"required": true, "semantic_type": "identifier", "placeholder": "usage_account_id", "aliases": ["account_id", "customer_id"]},
+            "usage_quantity": {"required": true, "aliases": ["usage_quantity", "credits_used", "quantity", "consumption", "usage"]}
           }
         }
       ],
@@ -83,7 +108,8 @@
       ],
       "context_queries": {
         "finance.revenue.forecast_daily": "official production data for daily revenue forecast, revenue actuals, actuals vs forecast; grain: date, segment; required fields: date, segment, actual_amount, forecast_amount",
-        "finance.revenue.account_forecast": "official production data for account forecast, customer forecast, weekly account forecast; grain: week, account; required fields: week, account_id, forecast_amount"
+        "finance.revenue.account_forecast": "official production data for account forecast, customer forecast, weekly account forecast; grain: week, account; required fields: week, account_id, forecast_amount",
+        "finance.consumption.daily_usage": "optional official data for daily consumption / product usage; grain: usage_date, account_id; required fields: usage_date, account_id, usage_quantity"
       }
     },
     {
@@ -183,6 +209,7 @@
       "data_needs": [
         {
           "key": "finance.budget.plan",
+          "placeholder": "plan",
           "required": true,
           "concepts": [
             "budget",
@@ -193,14 +220,18 @@
             "line_item_id",
             "period"
           ],
-          "columns": {
-            "line_item_id": "required",
-            "period": "required",
-            "budget_amount": "required"
+          "fields": {
+            "line_item_id": {"required": true, "aliases": ["line_item_id", "line_item", "account", "account_id", "gl_account"]},
+            "period": {"required": true, "semantic_type": "date_or_period", "aliases": ["period", "period_start_date", "fiscal_period", "fiscal_month"]},
+            "budget_amount": {"required": true, "semantic_type": "money", "aliases": ["budget_amount", "budget", "plan_amount"]},
+            "account_type": {"required": false, "affects_readiness": false, "aliases": ["account_type", "line_type", "account_category", "account_class"]},
+            "cost_center": {"required": false, "affects_readiness": false, "aliases": ["cost_center", "cost_center_id", "cost_center_number", "department", "department_id"]},
+            "currency": {"required": false, "affects_readiness": false, "aliases": ["currency", "currency_code", "reporting_currency"]}
           }
         },
         {
           "key": "finance.budget.actuals",
+          "placeholder": "actuals",
           "required": true,
           "concepts": [
             "actuals",
@@ -211,10 +242,13 @@
             "line_item_id",
             "period"
           ],
-          "columns": {
-            "line_item_id": "required",
-            "period": "required",
-            "actual_amount": "required"
+          "fields": {
+            "line_item_id": {"required": true, "placeholder": "actual_line_item_id", "aliases": ["line_item_id", "line_item", "account", "account_id", "gl_account"]},
+            "period": {"required": true, "semantic_type": "date_or_period", "placeholder": "actual_period", "aliases": ["period", "period_start_date", "fiscal_period", "fiscal_month", "accounting_date"]},
+            "actual_amount": {"required": true, "semantic_type": "money", "aliases": ["actual_amount", "actual", "actual_spend"]},
+            "account_type": {"required": false, "affects_readiness": false, "placeholder": "actual_account_type", "aliases": ["account_type", "line_type", "account_category", "account_class"]},
+            "cost_center": {"required": false, "affects_readiness": false, "placeholder": "actual_cost_center", "aliases": ["cost_center", "cost_center_id", "cost_center_number", "department", "department_id"]},
+            "currency": {"required": false, "affects_readiness": false, "placeholder": "actual_currency", "aliases": ["currency", "currency_code", "reporting_currency"]}
           }
         }
       ],

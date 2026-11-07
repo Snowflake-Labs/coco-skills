@@ -9,12 +9,16 @@ edit this file directly.
 
 ## Placeholders
 
-| Placeholder | Resolved from `hydration_hints.yaml` |
+Every `{{token}}` below is a key in the `placeholders:` map of `hydration_hints.yaml` (format: `engine/references/output_contract.md`). Substitute literally; never guess.
+
+| Token | Source |
 |---|---|
-| `{{forecast_daily_fqn}}` | `data_needs.finance.revenue.forecast_daily.sources[0].fqn` |
-| `{{account_forecast_fqn}}` | `data_needs.finance.revenue.account_forecast.sources[0].fqn` |
-| `{{daily_usage_fqn}}` | `data_needs.finance.consumption.daily_usage.sources[0].fqn` |
-| `{{cols.X}}` | The active source's `columns.X` entry for the current query's data need |
+| `{{forecast_daily_fqn}}` | daily revenue forecast (`finance.revenue.forecast_daily`) |
+| `{{account_forecast_fqn}}` | weekly account forecast (`finance.revenue.account_forecast`) |
+| `{{daily_usage_fqn}}` | daily consumption (`finance.consumption.daily_usage`, optional) |
+| `{{cols.date}}`, `{{cols.segment_id}}`, `{{cols.actual_amount}}`, `{{cols.forecast_amount}}`, `{{cols.currency}}` | daily forecast columns |
+| `{{cols.week_ending_date}}`, `{{cols.account_id}}`, `{{cols.account_name}}`, `{{cols.account_forecast_amount}}`, `{{cols.account_currency}}` | account forecast columns |
+| `{{cols.usage_date}}`, `{{cols.usage_account_id}}`, `{{cols.usage_quantity}}` | daily usage columns |
 
 ---
 
@@ -125,8 +129,8 @@ WITH weekly AS (
     {{cols.week_ending_date}}    AS week_end,
     {{cols.account_id}}          AS account_id,
     {{cols.account_name}}        AS account_name,
-    {{cols.currency}}            AS currency,
-    SUM({{cols.forecast_amount}}) AS forecast_amount
+    {{cols.account_currency}}    AS currency,
+    SUM({{cols.account_forecast_amount}}) AS forecast_amount
   FROM {{account_forecast_fqn}}
   WHERE {{cols.week_ending_date}} >= DATEADD(week, -3, CURRENT_DATE())
   GROUP BY 1, 2, 3, 4
@@ -237,7 +241,7 @@ FROM bucketed;
 ```sql
 WITH per_account AS (
   SELECT
-    {{cols.account_id}}              AS account_id,
+    {{cols.usage_account_id}}        AS account_id,
     SUM(CASE WHEN {{cols.usage_date}} >= DATEADD(day, -7, CURRENT_DATE())
              AND  {{cols.usage_date}} <  CURRENT_DATE()
              THEN {{cols.usage_quantity}} END) AS current_week_usage_quantity,
