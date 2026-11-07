@@ -1,0 +1,16 @@
+{
+  "snowflake": {
+    "primary": "#29B5E8",
+    "dark": "#0B1420",
+    "surface": "#122234",
+    "surface2": "#16304A",
+    "cream": "#EAF4FB",
+    "muted": "#8FB3CC",
+    "accent": "#FF9F36",
+    "line": "rgba(255,255,255,.10)",
+    "glow1": "rgba(41,181,232,.30)",
+    "glow2": "rgba(17,86,127,.24)",
+    "logoLeft": "",
+    "logoRightFile": "assets/snowflake.svg"
+  }
+}

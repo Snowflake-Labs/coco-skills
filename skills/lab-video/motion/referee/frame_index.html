@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Referee: frame index as binary bars</title>
+<link rel="stylesheet" href="/motion/scene.css">
+<style>
+  html,body{background:#000}
+  #bars{position:absolute;left:192px;top:440px;width:1536px;height:200px;display:flex}
+  #bars i{flex:1;background:#000}
+  #bars i.on{background:#fff}
+  #num{position:absolute;left:0;right:0;top:700px;text-align:center;color:#888;font:700 64px ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div id="stage"><div id="bars"></div><div id="num"></div></div>
+<script src="/motion/motion.js"></script>
+<script>
+// Every frame writes its own GLOBAL index (offset + frame) as 16 bars, most significant first, so the
+// checker can prove that decode order, scene joins and continued clocks lose and repeat nothing.
+// Code mode reads the frame number; clock mode derives it from the page clock, so it also tests vclock.
+const bars = document.getElementById("bars"), num = document.getElementById("num");
+for (let i = 0; i < 16; i++) bars.appendChild(document.createElement("i"));
+function show(n) {
+  [...bars.children].forEach((b, i) => b.classList.toggle("on", ((n >> (15 - i)) & 1) === 1));
+  num.textContent = String(n);
+}
+const C = window.__MOTION_CONFIG__ || {};
+if (C.clock) {
+  // fps / 1000 frames per page-millisecond; offset is the scene's first global frame
+  const fps = C.fps, offset = (C.params && C.params.offset) || 0;
+  const tick = () => { show(offset + Math.round(performance.now() * fps / 1000)); requestAnimationFrame(tick); };
+  window.__motion = { ready: true, start() { requestAnimationFrame(tick); } };
+} else {
+  Motion.scene({
+    params: { offset: { type: "number", value: 0 } },
+    build() {},
+    frame(ctx, t, f) { show(ctx.params.offset + f); },
+  });
+}
+</script>
+</body>
+</html>
