@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "supaflow": {
+      "type": "http",
+      "url": "https://app.supa-flow.io/mcp",
+      "oauth": {
+        "client_id": "gKvMIcc4J3CBXwbl",
+        "client_name": "Supaflow for Snowflake Cortex Code",
+        "redirect_port": 8585,
+        "scope": "email profile offline_access user:org:read supaflow:read supaflow:write"
+      }
+    }
+  }
+}
