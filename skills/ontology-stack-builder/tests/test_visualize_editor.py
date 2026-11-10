@@ -74,6 +74,17 @@ def test_write_keeps_mode_and_symlink(tmp_path):
     assert real.stat().st_mode & 0o777 == 0o644
 
 
+def test_write_creates_a_missing_target_and_refuses_one_file_twice(tmp_path):
+    target = tmp_path / "new.json"
+    vo._write_json_atomic({str(target): []})
+    assert json.loads(target.read_text()) == []
+    link = tmp_path / "alias.json"
+    link.symlink_to(target)
+    with pytest.raises(ValueError):
+        vo._write_json_atomic({str(target): [1], str(link): [2]})
+    assert json.loads(target.read_text()) == []
+
+
 def test_launcher_binds_localhost_unless_allowed(monkeypatch):
     calls = []
     monkeypatch.setattr(vo.subprocess, "call", lambda cmd: calls.append(cmd) or 0)

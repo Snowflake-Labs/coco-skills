@@ -70,13 +70,15 @@ def _write_json_atomic(targets: dict[str, object]) -> None:
     """Write each {path: data} pair to a temp file, then rename them all into place.
 
     Every file is fully written before any rename, so a failed dump leaves all the
-    originals untouched. A symlinked path keeps its link (the target file is
+    originals untouched (the renames themselves are not one atomic step). A symlinked path keeps its link (the target file is
     replaced) and the replaced file keeps its permission bits.
     """
+    reals = [os.path.realpath(p) for p in targets]
+    if len(set(reals)) != len(reals):
+        raise ValueError(f"Refusing to write two outputs to the same file: {list(targets)}")
     staged: list[tuple[str, str]] = []
     try:
-        for path, data in targets.items():
-            real = os.path.realpath(path)
+        for (_, data), real in zip(targets.items(), reals):
             fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real), prefix=".tmp-", suffix=".json")
             staged.append((tmp, real))
             with os.fdopen(fd, "w") as f:
