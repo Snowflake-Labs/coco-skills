@@ -69,3 +69,42 @@ def test_escape_helper():
     assert vo._esc(PAYLOAD) == "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;"
     assert vo._esc(None) == "None"
     assert vo._esc("A & B") == "A &amp; B"
+
+
+def test_flat_relation_list_escapes_every_field(html_calls):
+    rel_by_name = {"R": {"name": "R", "label": PAYLOAD, "description": PAYLOAD,
+                         "domain_class": PAYLOAD, "range_class": PAYLOAD}}
+    vo.render_flat_relations(["R"], rel_by_name)
+    _assert_escaped(html_calls)
+
+
+@pytest.mark.parametrize("status,cov", [
+    ("mapped", {"status": "mapped", "view_name": PAYLOAD}),
+    ("covered", {"status": "covered", "covering_ancestor": PAYLOAD}),
+    ("unmapped", {"status": "unmapped"}),
+])
+def test_graph_tooltips_escape_ontology_text(status, cov):
+    classes = [{"name": "A", "label": PAYLOAD, "description": PAYLOAD, "parent_name": "P"},
+               {"name": "P", "label": PAYLOAD, "is_abstract": True}]
+    # Show only A so P comes back as a ghost parent node.
+    nodes, _ = vo.build_agraph_nodes_edges(classes, [], {"A": cov}, max_nodes=1)
+    titles = [n.title for n in nodes]
+    assert len(titles) == 2
+    for title in titles:
+        assert "<img" not in title
+        assert "&lt;img" in title
+
+
+def test_node_detail_header_escapes_label(monkeypatch):
+    from unittest.mock import MagicMock
+
+    calls: list[str] = []
+    fake = MagicMock()
+    fake.markdown.side_effect = lambda body, unsafe_allow_html=False, **_: (
+        calls.append(body) if unsafe_allow_html else None)
+    fake.columns.side_effect = lambda spec, **_: [MagicMock() for _ in range(
+        spec if isinstance(spec, int) else len(spec))]
+    monkeypatch.setattr(vo, "st", fake)
+    classes = [{"name": "A", "label": PAYLOAD, "description": PAYLOAD}]
+    vo.render_node_detail("A", classes, [], {"A": {"status": "unmapped"}}, None)
+    _assert_escaped(calls)

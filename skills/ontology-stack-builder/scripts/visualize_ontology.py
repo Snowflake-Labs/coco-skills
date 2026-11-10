@@ -31,7 +31,10 @@ from streamlit_agraph import agraph, Node, Edge, Config
 
 
 def _esc(value: object) -> str:
-    """HTML-escape ontology text before it goes into an unsafe_allow_html string.
+    """HTML-escape ontology text before it goes into an HTML string.
+
+    That is any st.markdown(unsafe_allow_html=True) body and any agraph Node
+    title, which streamlit-agraph renders as HTML.
 
     Labels, descriptions and cardinality come from classes.json/relations.json,
     which parse_owl.py fills from the source OWL file and the editor forms write to,
@@ -355,14 +358,14 @@ def render_interactive_tree(name: str, children_map: dict, name_to_cls: dict,
     cls = name_to_cls.get(name, {})
     label = cls.get("label", name)
     is_abstract = cls.get("is_abstract", False)
-    description = _esc(cls.get("description", ""))
+    description = cls.get("description", "")
     kids = sorted(children_map.get(name, []))
     has_children = len(kids) > 0
 
     # Build the display label with icon and styling
     if is_abstract:
         icon = "🔹"
-        display = f"{icon} **{_esc(label)}**  `abstract`"
+        display = f"{icon} <b>{_esc(label)}</b>  <code>abstract</code>"
     else:
         icon = "🟢"
         display = f"{icon} {_esc(label)}"
@@ -381,7 +384,7 @@ def render_interactive_tree(name: str, children_map: dict, name_to_cls: dict,
         )
         if description:
             st.markdown(
-                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{description}</div>',
+                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{_esc(description)}</div>',
                 unsafe_allow_html=True
             )
         for child in kids:
@@ -395,7 +398,7 @@ def render_interactive_tree(name: str, children_map: dict, name_to_cls: dict,
         )
         if description and search and search.lower() in label.lower():
             st.markdown(
-                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{description}</div>',
+                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{_esc(description)}</div>',
                 unsafe_allow_html=True
             )
 
@@ -426,18 +429,19 @@ def render_interactive_rel_tree(name: str, rel_children_map: dict, rel_by_name: 
     r = rel_by_name.get(name, {})
     label = r.get("label", name)
     is_abstract = r.get("is_abstract", False)
-    domain = _esc(r.get("domain_class", "?"))
-    rng = _esc(r.get("range_class", "?"))
-    description = _esc(r.get("description", ""))
+    domain = r.get("domain_class", "?")
+    rng = r.get("range_class", "?")
+    description = r.get("description", "")
     kids = sorted(rel_children_map.get(name, []))
     has_children = len(kids) > 0
 
     if is_abstract:
         icon = "🔷"
-        display = f"{icon} **{_esc(label)}**  `abstract`  ({domain} -> {rng})"
+        display = (f"{icon} <b>{_esc(label)}</b>  <code>abstract</code>  "
+                   f"({_esc(domain)} -> {_esc(rng)})")
     else:
         icon = "🟣"
-        display = f"{icon} {_esc(label)}  ({domain} -> {rng})"
+        display = f"{icon} {_esc(label)}  ({_esc(domain)} -> {_esc(rng)})"
 
     indent_px = depth * 24
 
@@ -449,7 +453,7 @@ def render_interactive_rel_tree(name: str, rel_children_map: dict, rel_by_name: 
         )
         if description:
             st.markdown(
-                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{description}</div>',
+                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{_esc(description)}</div>',
                 unsafe_allow_html=True
             )
         cardinality = r.get("cardinality", "")
@@ -468,9 +472,25 @@ def render_interactive_rel_tree(name: str, rel_children_map: dict, rel_by_name: 
         )
         if description:
             st.markdown(
-                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{description}</div>',
+                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">{_esc(description)}</div>',
                 unsafe_allow_html=True
             )
+
+
+def render_flat_relations(flat_concrete: list[str], rel_by_name: dict) -> None:
+    """Render concrete relations that have no abstract parent."""
+    st.markdown("**Ungrouped concrete relations**")
+    for name in sorted(flat_concrete):
+        r = rel_by_name[name]
+        domain = r.get("domain_class", "?")
+        rng = r.get("range_class", "?")
+        desc = r.get("description", "")
+        st.markdown(f'<div style="padding:2px 0;">🟣 {_esc(r.get("label", name))}  '
+                    f'({_esc(domain)} -> {_esc(rng)})</div>',
+                    unsafe_allow_html=True)
+        if desc:
+            st.markdown(f'<div style="margin-left:16px; color:gray; font-size:0.85em;">{_esc(desc)}</div>',
+                        unsafe_allow_html=True)
 
 
 def build_coverage_map(classes: list[dict], sem_model: dict | None,
@@ -664,7 +684,8 @@ def build_agraph_nodes_edges(classes: list[dict], relations: list[dict],
             border_width = 2
 
         # Build hover tooltip
-        tooltip_parts = [f"<b>{label}</b>"]
+        # streamlit-agraph parses `title` as HTML, so every ontology value is escaped.
+        tooltip_parts = [f"<b>{_esc(label)}</b>"]
         if name in added_classes:
             tooltip_parts.append("<b style='color:#f1c40f;'>NEW</b>")
         elif name in modified_classes:
@@ -672,16 +693,16 @@ def build_agraph_nodes_edges(classes: list[dict], relations: list[dict],
         if cls.get("is_abstract"):
             tooltip_parts.append("<i>Abstract class</i>")
         if cls.get("description"):
-            tooltip_parts.append(cls["description"][:150])
-        tooltip_parts.append(f"<br/>Coverage: <b>{status.upper()}</b>")
+            tooltip_parts.append(_esc(cls["description"][:150]))
+        tooltip_parts.append(f"<br/>Coverage: <b>{_esc(status.upper())}</b>")
         if status == "mapped":
             vn = cov.get("view_name", "")
             short = vn
             if "VW_ONT_" in vn.upper():
                 short = "VW_ONT_" + vn.upper().split("VW_ONT_", 1)[1]
-            tooltip_parts.append(f"View: <code>{short}</code>")
+            tooltip_parts.append(f"View: <code>{_esc(short)}</code>")
         elif status == "covered":
-            tooltip_parts.append(f"Covered via: {cov.get('covering_ancestor', '?')}")
+            tooltip_parts.append(f"Covered via: {_esc(cov.get('covering_ancestor', '?'))}")
         tooltip = "<br/>".join(tooltip_parts)
 
         # Node shape: diamond for abstract, box for concrete
@@ -713,7 +734,7 @@ def build_agraph_nodes_edges(classes: list[dict], relations: list[dict],
                 nodes.append(Node(
                     id=parent,
                     label=parent_cls.get("label", parent),
-                    title=f"<b>{parent_cls.get('label', parent)}</b><br/><i>Not in visible set</i>",
+                    title=f"<b>{_esc(parent_cls.get('label', parent))}</b><br/><i>Not in visible set</i>",
                     color={"background": "#ecf0f1", "border": "#bdc3c7"},
                     shape="diamond",
                     size=25,
@@ -1189,17 +1210,7 @@ def main():
                 for root_rel in sorted(rel_roots):
                     render_interactive_rel_tree(root_rel, rel_children_map, rel_by_name)
                 if flat_concrete:
-                    st.markdown("**Ungrouped concrete relations**")
-                    for name in sorted(flat_concrete):
-                        r = rel_by_name[name]
-                        domain = _esc(r.get("domain_class", "?"))
-                        rng = _esc(r.get("range_class", "?"))
-                        desc = _esc(r.get("description", ""))
-                        st.markdown(f'<div style="padding:2px 0;">🟣 {_esc(r.get("label", name))}  ({domain} -> {rng})</div>',
-                                    unsafe_allow_html=True)
-                        if desc:
-                            st.markdown(f'<div style="margin-left:16px; color:gray; font-size:0.85em;">{desc}</div>',
-                                        unsafe_allow_html=True)
+                    render_flat_relations(flat_concrete, rel_by_name)
             else:
                 tree_text = ""
                 for root_rel in sorted(rel_roots):
