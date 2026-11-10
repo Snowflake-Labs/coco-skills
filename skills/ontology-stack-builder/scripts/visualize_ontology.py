@@ -20,7 +20,11 @@ Usage:
 import argparse
 import copy
 import json
+import os
+import re
+import subprocess
 import sys
+import tempfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -33,17 +37,17 @@ from streamlit_agraph import agraph, Node, Edge, Config
 # Session-state helpers for mutable ontology editing
 # ---------------------------------------------------------------------------
 
-def _init_session_state(classes: list[dict], relations: list[dict],
-                        classes_path: str, relations_path: str) -> None:
+# Class and relation names end up in generated SQL identifiers.
+IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _init_session_state(classes: list[dict], relations: list[dict]) -> None:
     """Deep-copy loaded data into st.session_state on first run."""
     if "classes" not in st.session_state:
         st.session_state["classes"] = copy.deepcopy(classes)
     if "relations" not in st.session_state:
         st.session_state["relations"] = copy.deepcopy(relations)
-    if "classes_path" not in st.session_state:
-        st.session_state["classes_path"] = classes_path
-    if "relations_path" not in st.session_state:
-        st.session_state["relations_path"] = relations_path
     # Track which names were added or modified this session
     if "added_classes" not in st.session_state:
         st.session_state["added_classes"] = set()
@@ -61,13 +65,36 @@ def _mark_dirty() -> None:
     st.session_state["has_unsaved_changes"] = True
 
 
-def _save_to_disk() -> None:
-    """Write current session-state classes/relations back to JSON files."""
-    with open(st.session_state["classes_path"], "w") as f:
-        json.dump(st.session_state["classes"], f, indent=2)
-    with open(st.session_state["relations_path"], "w") as f:
-        json.dump(st.session_state["relations"], f, indent=2)
+def _write_json_atomic(path: str, data: object) -> None:
+    """Write JSON next to `path`, then rename over it, so a reader never sees half a file."""
+    directory = os.path.dirname(os.path.abspath(path))
+    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".json")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except BaseException:
+        os.unlink(tmp)
+        raise
+
+
+def _save_to_disk(classes_path: str, relations_path: str) -> None:
+    """Write current session-state classes/relations back to the files given on the CLI."""
+    _write_json_atomic(classes_path, st.session_state["classes"])
+    _write_json_atomic(relations_path, st.session_state["relations"])
     st.session_state["has_unsaved_changes"] = False
+
+
+def _invalid_name_error(kind: str, name: str) -> str | None:
+    """Why a new class/relation name is refused, or None."""
+    if IDENTIFIER_RE.match(name):
+        return None
+    return (f"{kind} name '{name}' must start with a letter or underscore and use only "
+            "letters, digits and underscores.")
+
+
+def _is_loopback(address: str) -> bool:
+    return (address or "").strip("[]") in LOOPBACK_HOSTS
 
 
 def _undo_all(original_classes: list[dict], original_relations: list[dict]) -> None:
@@ -86,7 +113,8 @@ def _undo_all(original_classes: list[dict], original_relations: list[dict]) -> N
 # ---------------------------------------------------------------------------
 
 def _render_editor_sidebar(original_classes: list[dict],
-                           original_relations: list[dict]) -> None:
+                           original_relations: list[dict],
+                           classes_path: str, relations_path: str) -> None:
     """Render the ontology editor section in the sidebar."""
     classes = st.session_state["classes"]
     relations = st.session_state["relations"]
@@ -104,7 +132,7 @@ def _render_editor_sidebar(original_classes: list[dict],
     with col_save:
         if st.button("Save Changes", use_container_width=True,
                       disabled=not st.session_state["has_unsaved_changes"]):
-            _save_to_disk()
+            _save_to_disk(classes_path, relations_path)
             st.rerun()
     with col_undo:
         if st.button("Undo All", use_container_width=True,
@@ -124,7 +152,9 @@ def _render_editor_sidebar(original_classes: list[dict],
             submitted = st.form_submit_button("Add Class")
             if submitted and new_name.strip():
                 name = new_name.strip()
-                if any(c["name"] == name for c in classes):
+                if error := _invalid_name_error("Class", name):
+                    st.error(error)
+                elif any(c["name"] == name for c in classes):
                     st.error(f"Class '{name}' already exists.")
                 else:
                     cls_dict = {
@@ -154,7 +184,9 @@ def _render_editor_sidebar(original_classes: list[dict],
             rel_submit = st.form_submit_button("Add Relation")
             if rel_submit and rel_name.strip():
                 rn = rel_name.strip()
-                if any(r["name"] == rn for r in relations):
+                if error := _invalid_name_error("Relation", rn):
+                    st.error(error)
+                elif any(r["name"] == rn for r in relations):
                     st.error(f"Relation '{rn}' already exists.")
                 else:
                     rel_dict = {
@@ -1058,7 +1090,20 @@ def main():
                         help="JSON manifest mapping ontology concepts to deployed Snowflake objects")
     parser.add_argument("--stats-json", default=None)
     parser.add_argument("--port", default="8501")
+    parser.add_argument("--allow-remote", action="store_true",
+                        help="Serve on all interfaces. The editor has no login and can "
+                             "overwrite the JSON files, so only use this on a trusted network.")
     args, _ = parser.parse_known_args(custom_args)
+
+    # `python visualize_ontology.py -- ...` starts the Streamlit server itself,
+    # bound to localhost unless --allow-remote is given.
+    if not st.runtime.exists():
+        address = "0.0.0.0" if args.allow_remote else "127.0.0.1"
+        sys.exit(subprocess.call([
+            sys.executable, "-m", "streamlit", "run", os.path.abspath(__file__),
+            "--server.address", address, "--server.port", str(args.port),
+            "--", *custom_args,
+        ]))
 
     # Load data from disk (the "original" baseline for undo)
     original_classes = load_json(args.classes_json)
@@ -1069,11 +1114,16 @@ def main():
 
     # --- Streamlit App ---
     st.set_page_config(page_title="Ontology Editor", layout="wide")
+    # `streamlit run` serves on every interface by default; the editor has no login.
+    if not args.allow_remote and not _is_loopback(st.get_option("server.address")):
+        st.error("The ontology editor only serves on localhost. Restart it with "
+                 "`--server.address 127.0.0.1`, or pass `--allow-remote` after `--` "
+                 "on a trusted network.")
+        st.stop()
     st.title("Ontology Semantic Modeler - Visualize & Edit")
 
     # Initialize mutable session state
-    _init_session_state(original_classes, original_relations,
-                        args.classes_json, args.relations_json)
+    _init_session_state(original_classes, original_relations)
 
     # Live working copies from session state
     classes = st.session_state["classes"]
@@ -1094,7 +1144,8 @@ def main():
         st.sidebar.metric("Relations", len(relations))
 
     # Sidebar: Ontology Editor (add/delete/save/undo)
-    _render_editor_sidebar(original_classes, original_relations)
+    _render_editor_sidebar(original_classes, original_relations,
+                           args.classes_json, args.relations_json)
 
     # Tab layout (3 tabs: Hierarchy, Graph, Coverage)
     tab_tree, tab_graph, tab_coverage = st.tabs([

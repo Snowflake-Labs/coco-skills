@@ -362,6 +362,8 @@ uv run --project <SKILL_DIR> python <SKILL_DIR>/scripts/visualize_ontology.py --
   --port 8501
 ```
 
+The script starts Streamlit itself, listening on `127.0.0.1` only: the editor has no login and its **Save Changes** button overwrites the JSON files that Phase 4 turns into SQL. Open it at `http://localhost:8501`. Pass `--allow-remote` only on a trusted network. New class and relation names must be SQL identifiers (letters, digits, `_`).
+
 This shows:
 - **Hierarchy** tab with two expandable sections: **Class Hierarchy** (interactive/text toggle, search, depth slider) and **Relation Hierarchy** (interactive/text toggle, abstract/concrete grouping)
 - Ontology graph with coverage coloring and **Layer toggle** (All / Concrete / Abstract)
