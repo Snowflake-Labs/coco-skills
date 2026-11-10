@@ -18,6 +18,7 @@ Usage:
 """
 
 import argparse
+import contextlib
 import copy
 import json
 import os
@@ -65,23 +66,35 @@ def _mark_dirty() -> None:
     st.session_state["has_unsaved_changes"] = True
 
 
-def _write_json_atomic(path: str, data: object) -> None:
-    """Write JSON next to `path`, then rename over it, so a reader never sees half a file."""
-    directory = os.path.dirname(os.path.abspath(path))
-    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".tmp-", suffix=".json")
+def _write_json_atomic(targets: dict[str, object]) -> None:
+    """Write each {path: data} pair to a temp file, then rename them all into place.
+
+    Every file is fully written before any rename, so a failed dump leaves all the
+    originals untouched. A symlinked path keeps its link (the target file is
+    replaced) and the replaced file keeps its permission bits.
+    """
+    staged: list[tuple[str, str]] = []
     try:
-        with os.fdopen(fd, "w") as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp, path)
-    except BaseException:
-        os.unlink(tmp)
-        raise
+        for path, data in targets.items():
+            real = os.path.realpath(path)
+            fd, tmp = tempfile.mkstemp(dir=os.path.dirname(real), prefix=".tmp-", suffix=".json")
+            staged.append((tmp, real))
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=2)
+            if os.path.exists(real):
+                os.chmod(tmp, os.stat(real).st_mode & 0o7777)
+        for tmp, real in staged:
+            os.replace(tmp, real)
+    finally:
+        for tmp, _ in staged:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(tmp)
 
 
 def _save_to_disk(classes_path: str, relations_path: str) -> None:
     """Write current session-state classes/relations back to the files given on the CLI."""
-    _write_json_atomic(classes_path, st.session_state["classes"])
-    _write_json_atomic(relations_path, st.session_state["relations"])
+    _write_json_atomic({classes_path: st.session_state["classes"],
+                        relations_path: st.session_state["relations"]})
     st.session_state["has_unsaved_changes"] = False
 
 
@@ -95,6 +108,21 @@ def _invalid_name_error(kind: str, name: str) -> str | None:
 
 def _is_loopback(address: str) -> bool:
     return (address or "").strip("[]") in LOOPBACK_HOSTS
+
+
+def _launch_streamlit(port: str, allow_remote: bool, custom_args: list[str]) -> int:
+    """Run this file under `streamlit run`, bound to localhost unless allow_remote."""
+    cmd = [
+        sys.executable, "-m", "streamlit", "run", os.path.abspath(__file__),
+        "--server.address", "0.0.0.0" if allow_remote else "127.0.0.1",
+        "--server.port", str(port),
+        "--server.enableXsrfProtection", "true",
+        "--", *custom_args,
+    ]
+    try:
+        return subprocess.call(cmd)
+    except KeyboardInterrupt:  # Streamlit gets the same SIGINT and stops itself
+        return 130
 
 
 def _undo_all(original_classes: list[dict], original_relations: list[dict]) -> None:
@@ -1098,12 +1126,7 @@ def main():
     # `python visualize_ontology.py -- ...` starts the Streamlit server itself,
     # bound to localhost unless --allow-remote is given.
     if not st.runtime.exists():
-        address = "0.0.0.0" if args.allow_remote else "127.0.0.1"
-        sys.exit(subprocess.call([
-            sys.executable, "-m", "streamlit", "run", os.path.abspath(__file__),
-            "--server.address", address, "--server.port", str(args.port),
-            "--", *custom_args,
-        ]))
+        sys.exit(_launch_streamlit(args.port, args.allow_remote, custom_args))
 
     # Load data from disk (the "original" baseline for undo)
     original_classes = load_json(args.classes_json)
