@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import copy
+import html
 import json
 import sys
 from collections import defaultdict
@@ -27,6 +28,16 @@ from pathlib import Path
 import streamlit as st
 import yaml
 from streamlit_agraph import agraph, Node, Edge, Config
+
+
+def _esc(value: object) -> str:
+    """HTML-escape ontology text before it goes into an unsafe_allow_html string.
+
+    Labels, descriptions and cardinality come from classes.json/relations.json,
+    which parse_owl.py fills from the source OWL file and the editor forms write to,
+    so they are untrusted text, not markup.
+    """
+    return html.escape(str(value), quote=True)
 
 
 # ---------------------------------------------------------------------------
@@ -344,17 +355,17 @@ def render_interactive_tree(name: str, children_map: dict, name_to_cls: dict,
     cls = name_to_cls.get(name, {})
     label = cls.get("label", name)
     is_abstract = cls.get("is_abstract", False)
-    description = cls.get("description", "")
+    description = _esc(cls.get("description", ""))
     kids = sorted(children_map.get(name, []))
     has_children = len(kids) > 0
 
     # Build the display label with icon and styling
     if is_abstract:
         icon = "🔹"
-        display = f"{icon} **{label}**  `abstract`"
+        display = f"{icon} **{_esc(label)}**  `abstract`"
     else:
         icon = "🟢"
-        display = f"{icon} {label}"
+        display = f"{icon} {_esc(label)}"
 
     # Highlight search matches
     if search and search.lower() in label.lower():
@@ -415,18 +426,18 @@ def render_interactive_rel_tree(name: str, rel_children_map: dict, rel_by_name: 
     r = rel_by_name.get(name, {})
     label = r.get("label", name)
     is_abstract = r.get("is_abstract", False)
-    domain = r.get("domain_class", "?")
-    rng = r.get("range_class", "?")
-    description = r.get("description", "")
+    domain = _esc(r.get("domain_class", "?"))
+    rng = _esc(r.get("range_class", "?"))
+    description = _esc(r.get("description", ""))
     kids = sorted(rel_children_map.get(name, []))
     has_children = len(kids) > 0
 
     if is_abstract:
         icon = "🔷"
-        display = f"{icon} **{label}**  `abstract`  ({domain} -> {rng})"
+        display = f"{icon} **{_esc(label)}**  `abstract`  ({domain} -> {rng})"
     else:
         icon = "🟣"
-        display = f"{icon} {label}  ({domain} -> {rng})"
+        display = f"{icon} {_esc(label)}  ({domain} -> {rng})"
 
     indent_px = depth * 24
 
@@ -444,7 +455,7 @@ def render_interactive_rel_tree(name: str, rel_children_map: dict, rel_by_name: 
         cardinality = r.get("cardinality", "")
         if cardinality:
             st.markdown(
-                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">Cardinality: {cardinality}</div>',
+                f'<div style="margin-left:{indent_px + 16}px; color:gray; font-size:0.85em;">Cardinality: {_esc(cardinality)}</div>',
                 unsafe_allow_html=True
             )
         for child in kids:
@@ -816,9 +827,9 @@ def render_node_detail(cls_name: str, classes: list[dict], relations: list[dict]
     bc = badge_colors.get(status, "#95a5a6")
     bl = badge_labels.get(status, status.upper())
     st.markdown(
-        f'<h3 style="margin-bottom:0;">{label}</h3>'
+        f'<h3 style="margin-bottom:0;">{_esc(label)}</h3>'
         f'<span style="background:{bc};color:white;padding:2px 10px;border-radius:10px;'
-        f'font-size:0.75em;font-weight:bold;">{bl}</span>',
+        f'font-size:0.75em;font-weight:bold;">{_esc(bl)}</span>',
         unsafe_allow_html=True,
     )
 
@@ -1181,10 +1192,10 @@ def main():
                     st.markdown("**Ungrouped concrete relations**")
                     for name in sorted(flat_concrete):
                         r = rel_by_name[name]
-                        domain = r.get("domain_class", "?")
-                        rng = r.get("range_class", "?")
-                        desc = r.get("description", "")
-                        st.markdown(f'<div style="padding:2px 0;">🟣 {r.get("label", name)}  ({domain} -> {rng})</div>',
+                        domain = _esc(r.get("domain_class", "?"))
+                        rng = _esc(r.get("range_class", "?"))
+                        desc = _esc(r.get("description", ""))
+                        st.markdown(f'<div style="padding:2px 0;">🟣 {_esc(r.get("label", name))}  ({domain} -> {rng})</div>',
                                     unsafe_allow_html=True)
                         if desc:
                             st.markdown(f'<div style="margin-left:16px; color:gray; font-size:0.85em;">{desc}</div>',
