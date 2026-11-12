@@ -3,7 +3,7 @@ name: whats-new
 id: whats-new
 title: Summarize Release Notes
 summary: Digest of what's new in Snowflake (features, preview/GA, behavior changes, drivers) for a time window, from public docs.
-description: "Summarize what's new in Snowflake over a time window using the public release notes on docs.snowflake.com: new features, preview/GA transitions, behavior changes (BCR bundles + unbundled), deprecations, and client/driver releases. Use when the user asks what's new in Snowflake, what shipped/launched/released in a date range, recent release notes, behavior changes, BCRs, or a weekly/monthly Snowflake changelog digest. Triggers: what's new in Snowflake, release notes summary, what shipped last week, Snowflake changelog, new features since, behavior changes, BCR bundle, what went GA, preview features this month, release digest."
+description: "Summarize what's new in Snowflake over a time window using the public release notes on docs.snowflake.com: new features, preview/GA transitions, behavior changes (BCR bundles + unbundled), deprecations, and client/driver releases. Use when the user asks what's new in Snowflake, what shipped/launched/released in a date range, recent release notes, behavior changes, BCRs, or a weekly/monthly Snowflake changelog digest. Triggers: what's new in Snowflake, release notes summary, what shipped last week, Snowflake changelog, new features since, behavior changes, BCR bundle, what went GA, preview features this month, release digest, monthly release summary, features released in <month>, release notes email."
 language: en
 status: Published
 authors: Umesh Unnikrishnan
@@ -42,10 +42,11 @@ Every docs page has a Markdown twin: append `.md` to the URL (for example `https
 
 Parse from the request; ask (ask_user_question) only for what's missing and materially changes output:
 
-- **Time window** (required). Convert relative phrases ("last week", "since Oct 1", "this month", "last 30 days") to absolute `START`–`END` dates using today's date. Default: last 7 days.
+- **Time window** (required). Convert relative phrases ("last week", "since Oct 1", "this month", "last 30 days") to absolute `START`–`END` dates using today's date. A bare month ("October 2026", "last month") means that full calendar month (Oct 1–Oct 31). Default: last 7 days.
 - **Categories** (default: all): new features, preview/GA transitions, behavior changes, deprecations, clients/drivers.
 - **Focus area** (optional filter): for example Cortex/AI, Iceberg, security/governance, CoCo, Native Apps.
-- **Output** (default: chat). Optional: markdown/HTML file.
+- **Layout** (default: by status). Optional: `by area` (detailed document grouped by product area; see Step 6b).
+- **Output** (default: chat). Optional: markdown file, and/or an email-ready version (Step 7).
 
 **Do not over-ask.** "What's new in Snowflake last week" → go straight to Step 2 with defaults.
 
@@ -106,8 +107,30 @@ Then tag a product area (AI/Cortex, CoCo/CoWork, Data engineering, Iceberg/Lakeh
 ## Server releases in window
 - [10.xx (<date range>)](<url>): <sub-items>
 
+## Additional resources
+- [Release notes and feature updates](https://docs.snowflake.com/en/release-notes/new-features)
+- [Behavior change announcements](https://docs.snowflake.com/en/release-notes/behavior-changes)
+- [Preview features](https://docs.snowflake.com/en/release-notes/preview-features)
+
 _Source: docs.snowflake.com release notes, fetched <today>._
 ```
+
+#### Step 6b: By-area layout (when requested, or for file output of a month or longer)
+
+Group by product area instead of status. Per item:
+
+```markdown
+## <Area>
+### <Feature name> (<GA | Preview> · <Date>)
+<1–2 sentence description, from the fetched page only>
+- **Documentation:** [<title>](<url>)
+```
+
+Keep Behavior changes, Clients/drivers, and Server releases as their own trailing sections. Enrich more items than Step 4's default cap when using this layout, since each item needs a description.
+
+#### File output
+
+When the user wants a file, write `<OUTPUT_DIR>/Snowflake_<PERIOD>_Whats_New.md` (`<PERIOD>` = `October_2026` for a month, else `<START>_to_<END>`). Confirm the directory (default: current working directory) before writing.
 
 Rules:
 - Every item links to its docs page. No item without a source.
@@ -115,11 +138,39 @@ Rules:
 - Don't invent descriptions; if you didn't fetch the page, use the title only.
 - Collapse repetitive items (multiple CoCo Desktop versions, weekly DCR updates) into one line with the date range.
 - If the window is large (>~80 items), show highlights + counts per area, and offer the full list as a file.
+- Link docs pages with the `/en/` path and without `.md` (the `.md` form is for fetching only).
+
+### Step 6c: Verify links
+
+Links copied from the index pages are already valid. Verify (via parallel `web_fetch`) any link you **constructed or modified** (for example, anchors, rewritten paths, or resources links), plus any page that failed during enrichment. For a broken link, find the correct page with `web_search` restricted to `docs.snowflake.com`, confirm it loads, and replace it. If it still can't be verified, keep the item without a link and say so. Report the result in one line (`<N> links checked, <N> fixed`).
+
+### Step 7: Email-ready summary (optional)
+
+If the user asks for an email (or "something I can send to my team"), produce a paste-ready version after the digest:
+
+```
+Subject: What's new in Snowflake: <PERIOD>
+
+Hi team,
+
+Here are the key Snowflake updates from <START>–<END>:
+
+**<Area>**
+- <Feature> (<GA | Preview>): <one-line description>
+
+**Behavior changes to review**
+- <change> (<date>)
+
+Full details: https://docs.snowflake.com/en/release-notes/new-features
+```
+
+Keep it to the highlights plus at most ~5 bullets per area; skip driver releases unless asked.
 
 ## Stopping points
 
 - After Step 1 only if the time window is genuinely absent and can't be inferred.
 - Before writing a file (confirm path) if the user asked for a file output.
+- After presenting a file or by-area document: ask if anything is missing before producing the email version.
 
 ## Gotchas
 
