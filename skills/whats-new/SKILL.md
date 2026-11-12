@@ -178,3 +178,4 @@ Keep it to the highlights plus at most ~5 bullets per area; skip driver releases
 - The new-features index only covers recent weeks; older windows need the `-<YYYY>` archive pages.
 - Release dates on upcoming server releases are tentative; label them.
 - Private preview features aren't in public release notes; don't claim completeness for PrPr.
+- The `.md` version of index pages (`new-features`, `feature-releases-<YYYY>`, `weekly-releases-<YYYY>`) can come back with headings only, because their lists are generated at render time. If a fetched index has no list items, re-fetch the HTML URL (no `.md`).
