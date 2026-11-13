@@ -1,0 +1,36 @@
+skill_name: baseline-diff
+skill_type: customer-facing
+promotion_stage: draft
+version: 1.0.0
+authors:
+- sfc-gh-east
+validation:
+  testers:
+    count: 1
+    names:
+    - sfc-gh-east
+customer_impact:
+  customers:
+    count: 0
+    names: []
+evidence_links: []
+notes: 'Sub-skill of messy-migration-validation. See parent skill for full context.
+
+
+  Dry run 2026-10-30 (sfc-gh-east, demo account): UC3 compared mart vs baseline: 100%
+  field match on 51,000 matched keys; two row-segment divergences classified (one
+  expected, one unexpected).
+
+  '
+overlap_check:
+  max_score: 0.8326
+  highest_match: golden-source-comparison
+  highest_match_source: local
+  method: local-embedding
+  checked_against_count: 177
+  checked_at: '2026-10-30T22:38:20Z'
+  highest_match_description: Golden source comparison — aggregate and row-level divergence
+    detection between a data mart and its golden source. Uses PK-based FULL OUTER
+    JOIN with column-level mismatch detection and float toleranc
+  trigger_overlap: 0.7143
+  tool_overlap: 0.5
