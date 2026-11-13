@@ -1,26 +1,91 @@
 name: Validate skill submission
 
+# INERT integration template. This PR-local file is NOT an authoritative gate.
+# Owners must bootstrap a separately managed required workflow before rollout.
 on:
   pull_request:
     branches: [main]
     paths:
       - "skills/**"
+      - "CONTRIBUTING.md"
+      - ".github/scripts/validate_skill.py"
+      - ".github/scripts/action_review.py"
+      - ".github/scripts/package_reviewer.py"
+      - ".github/scripts/test_reviewer_isolated.py"
+      - ".github/scripts/verify_reviewer_runtime.py"
+      - ".github/scripts/reviewer_test_support.py"
+      - ".github/actions/contained-review/**"
+      - ".github/workflows/validate-skill.yml"
+
+permissions:
+  contents: read
 
 jobs:
   validate:
-    name: Check skill structure and frontmatter
+    if: ${{ false }} # Publication, runner provisioning and authority remain blocked.
+    name: Contained review rehearsal (not admission authority)
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
+    env:
+      # Owner placeholders, NOT evidence of approval. No defaults, no PR inputs.
+      TOOLING_REVISION: ${{ vars.CONTAINED_REVIEWER_REVISION }}
+      TOOLING_SHA256: ${{ vars.CONTAINED_REVIEWER_SHA256 }}
+      REVIEW_IMAGE: ${{ vars.CONTAINED_REVIEWER_IMAGE_ID }}
     steps:
-      - name: Checkout PR
-        uses: actions/checkout@v4
+      - name: Require owner provisioning (never install, build or pull)
+        shell: bash
+        run: |
+          [[ "$TOOLING_REVISION" =~ ^[0-9a-f]{40}$ ]] || exit 3
+          [[ "$TOOLING_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 3
+          [[ "$REVIEW_IMAGE" =~ ^sha256:[0-9a-f]{64}$ ]] || exit 3
+      # Ref verified via gh api repos/actions/checkout/git/ref/tags/v4, 2026-10-20.
+      # Verification establishes a commit identity, not source/security approval.
+      - name: Checkout independently approved tooling (not PR base)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          repository: ${{ github.repository }}
+          ref: ${{ env.TOOLING_REVISION }}
+          path: trusted
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Checkout exact base as data
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: baseline
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Checkout exact fork or same-repository head as data
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
           fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Reserve private machine-report directory
+        shell: bash
+        run: mkdir -m 700 -- "$RUNNER_TEMP/contained-review-report"
+      - name: Verify trusted runtime and scan with the same approved image
+        uses: ./trusted/.github/actions/contained-review
         with:
-          python-version: "3.11"
-
-      - name: Run skill validation
-        run: python .github/scripts/validate_skill.py
+          trusted-root: ${{ github.workspace }}/trusted
+          candidate-root: ${{ github.workspace }}/candidate
+          base-root: ${{ github.workspace }}/baseline
+          image: ${{ env.REVIEW_IMAGE }}
+          tooling-sha256: ${{ env.TOOLING_SHA256 }}
+          report: ${{ runner.temp }}/contained-review-report/report.json
+      - name: Proposed-validator tests (untrusted evidence, same approved image)
+        env:
+          BASE_REVISION: ${{ github.event.pull_request.base.sha }}
+          HEAD_REVISION: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 -I -B "$GITHUB_WORKSPACE/trusted/.github/scripts/test_reviewer_isolated.py" \
+            --candidate-root "$GITHUB_WORKSPACE/candidate" --image "$REVIEW_IMAGE" \
+            --base "$BASE_REVISION" --head "$HEAD_REVISION"
+      # No upload-artifact, PR comments, GITHUB_OUTPUT or private locator export.
