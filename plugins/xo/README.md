@@ -47,9 +47,10 @@ Each addresses a specific failure mode of an unsupervised agent:
 - **One place for the work** — capture anything, however rough, where the work happens; nothing leaves your hands until you Ship it, and then the checks apply at the boundary.
 - **Organisation across task-switching** — structured notes, a daily diary, and a low-overhead task queue hold what was decided, what was touched, and what's still owed, so you move between demands without carrying the organisation in your head.
 - **Curated memory, not a hoard** — captured findings and rules are periodically promoted into the vault, and pruned (stale ones dropped), with a nudge when curation is overdue, so memory compounds instead of rotting or being re-learned.
-- **Durable, portable memory** — everything is plain text in a git-backed vault you own; the harness nudges you to commit and push once it has gone unsaved for a while.
+- **Durable, portable memory** — everything is plain text in a vault you own, git-backed if you choose; the harness nudges you to commit and push once it has gone unsaved for a while.
 - **Delegate closed questions** — sends a subagent to fetch just the relevant past work, so the main session stays on your goal instead of reloading everything.
 - **Isolation before parallelism** — each concurrent session gets its own workspace and makes session-local, never global, changes, so parallel runs don't collide.
+- **Notice what moved** — at pickup and at each stage boundary, checks the diary for other sessions' entries on the same work item and re-fetches the sources it recorded, so a plan isn't built on a stale picture; anything that changes the plan goes to you rather than being resolved silently.
 - **Chain of evidence** — every claim traces to a file read or command run; what couldn't be verified is listed as a gap, not smoothed over.
 - **Cold finder, warm writer** — one agent gathers facts and invents nothing; a separate one writes using only those facts, so the writing can't quietly fill a gap.
 - **Null-result reasoning** — an empty search prompts a second hypothesis before concluding a thing isn't there.
@@ -63,11 +64,15 @@ Each addresses a specific failure mode of an unsupervised agent:
 
 ## Prerequisites
 
-`node`, `git`, `gh`, and `jq` on your PATH.
+`node` and `git` on your PATH. `gh` (with `gh auth login`) is needed only to create a GitHub-backed vault.
 
 ## Install & set up
 
-Install the plugin through Cortex Code, then run the bundled setup once. See **[SETUP.md](SETUP.md)** for the happy-path install (zero-config or git-backed) — it sets `XOCORTEX_HOME`, puts `node` on the hooks' PATH, and optionally creates a git-backed memory vault.
+Install the plugin through Cortex Code, then run the bundled setup once. On macOS and Linux that is `setup.sh`; on Windows it is `setup.ps1`, which takes the same commands. See **[SETUP.md](SETUP.md)** for the full steps. Setup checks that `node` is reachable by the hooks and, if you choose, sets `XOCORTEX_HOME` and creates a git-backed memory vault. XO works without it: with no vault configured it records to a local vault at `~/.snowflake/cortex/memory/xocortex/`.
+
+After installing, restart Cortex Code, then open the MCP panel and **Connect** and **Trust** the `xo-ops` server. It gives XO scripted access to your vault (work-item numbers, diary, tasks, archive, commit).
+
+To give a repository its own vault, run `vault-init` from inside it or commit a `.xocortex` marker file; see SETUP.md.
 
 ## License
 

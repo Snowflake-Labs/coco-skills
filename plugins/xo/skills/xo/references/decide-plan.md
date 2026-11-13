@@ -39,7 +39,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — plan review (you did not produce this plan)
   REFERENCE: [the approved spec]
   INPUTS: [the plan artifact + relevant findings / WI notes]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/plan-critique.md
+  OUTPUT_PATH: $XO_SCRATCH/plan-critique.md
 
   Review this plan against the spec:
   - Sequencing: are steps correctly ordered; does any step depend on a later one?
@@ -61,7 +61,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — security (plan review, pre-implementation)
   REFERENCE: [the approved spec + the plan artifact]
   INPUTS: [relevant findings / WI notes]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/plan-critic-security.md
+  OUTPUT_PATH: $XO_SCRATCH/plan-critic-security.md
 
   Review the plan for security boundary violations, credential exposure, and trust boundary crossings it would introduce.
   Map process/trust boundaries the plan implies. Trace where credentials would flow. Evaluate against the security checklist in refs-security-review-triggers.md.
@@ -83,7 +83,7 @@ This runs independently of the optional cold plan critic above — a plan can wa
 
 ## Gate
 
-Operator approves the plan before any Act work begins — *nothing is built before this*.
+Operator approves the plan before any Act work begins — *nothing is built before this*. Run the milestone awareness gate check (`references/core-guidelines.md`, Freshness and concurrency) before presenting the plan.
 
 If the approved spec or approach is stale against current findings or repo state, surface it to the operator before Act.
 

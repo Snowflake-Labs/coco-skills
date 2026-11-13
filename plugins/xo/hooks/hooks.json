@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/sessionstart.js",
+            "command": "node \"${CORTEX_PLUGIN_ROOT}/hooks/sessionstart.js\"",
             "timeout": 15
           }
         ]
@@ -16,7 +16,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/userpromptsubmit.js",
+            "command": "node \"${CORTEX_PLUGIN_ROOT}/hooks/userpromptsubmit.js\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CORTEX_PLUGIN_ROOT}/hooks/pretooluse.js\"",
             "timeout": 5
           }
         ]
@@ -27,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CORTEX_PLUGIN_ROOT}/hooks/posttooluse.js"
+            "command": "node \"${CORTEX_PLUGIN_ROOT}/hooks/posttooluse.js\""
           }
         ]
       }

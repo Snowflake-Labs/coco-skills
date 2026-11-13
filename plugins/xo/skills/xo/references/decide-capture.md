@@ -32,6 +32,8 @@ Decide whether the learning warrants a durable note.
 | Trivial or one-off lookup | No | Not worth maintaining |
 | Too uncertain to commit | No | Note it in the active WI notes instead |
 
+Before writing the durable note, propose the distilled claims to the operator for confirmation — do not finalise unilaterally. The same propose-and-confirm gate that applies to capturing an operating rule applies to learnings and domain notes too: a note you write alone can encode a misreading as "truth" for future sessions.
+
 ---
 
 ## Writing the durable note
@@ -102,7 +104,7 @@ Example `## Environment` block:
 
 ## Mode: promote out
 
-When the captured learning is useful beyond the private workspace — for a shared team wiki, a docs site, a Confluence page, a Slack summary:
+When the captured learning is useful beyond the private workspace — for a shared team wiki, a docs site, a chat summary:
 
 1. Write the durable note as above
 2. Ask the operator:
@@ -115,11 +117,12 @@ When the captured learning is useful beyond the private workspace — for a shar
 
 ## Mode: promote artefacts to durable storage
 
-Beyond the distilled learning, decide whether any **artefacts** produced during the work — findings briefs, design explorations, review briefs sitting in `$XOCORTEX_HOME/tmp/wi{N}/` — deserve to survive. Scratch is discarded at Cleanup, so anything worth keeping must be promoted here:
+Beyond the distilled learning, decide whether any **artefacts** produced during the work — findings briefs, design explorations, review briefs sitting in `$XO_SCRATCH/` — deserve to survive. Scratch is discarded at Cleanup, so anything worth keeping must be promoted here:
 
-```bash
-mv "$XOCORTEX_HOME/tmp/wi{N}/<artifact>.md" "$XOCORTEX_HOME/notes/$(date +%Y-%m)/wi{N}-<slug>.md"
 ```
+promote_artifact({ cwd, wi_number, from: "$XO_SCRATCH/<artifact>.md", slug })
+```
+It builds the canonical `notes/{YYYY-MM}/{project}-wi{N}-<slug>.md` destination and moves the file.
 
 Capture is where you decide artefact durability; Cleanup executes the teardown of whatever wasn't promoted. Promote selectively — most scratch is transient; keep only the artefacts a future session would genuinely want to re-read.
 

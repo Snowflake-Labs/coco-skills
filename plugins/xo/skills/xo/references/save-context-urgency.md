@@ -14,13 +14,13 @@ The context urgency system uses Cortex Code plugin hooks to monitor context full
 | File | Location | Role |
 |------|----------|------|
 | `settings.json` env block | `~/.snowflake/cortex/settings.json` | `XOCORTEX_HOME` env var: memory repo path |
-| `_common.js` | `xo/plugin/hooks/_common.js` | Input parsing, config, logging, path derivation |
-| `_context-monitor.js` | `xo/plugin/hooks/_context-monitor.js` | Token extraction, context state machine, urgency thresholds |
-| `reindex-tasks.js` | `xo/plugin/hooks/reindex-tasks.js` | Task reindexer (also callable directly) |
-| `sessionstart.js` | `xo/plugin/hooks/sessionstart.js` | Injects context, reindexes tasks, handles compact/resume |
-| `userpromptsubmit.js` | `xo/plugin/hooks/userpromptsubmit.js` | User-turn savepoint with verbose urgency reminders |
-| `posttooluse.js` | `xo/plugin/hooks/posttooluse.js` | Autonomous-turn savepoint with concise reminders |
-| `hooks.json` | `xo/plugin/hooks/hooks.json` | Hook registration — loaded automatically by plugin system |
+| `_common.js` | `hooks/_common.js` | Input parsing, config, logging, path derivation |
+| `_context-monitor.js` | `hooks/_context-monitor.js` | Token extraction, context state machine, urgency thresholds |
+| `reindex-tasks.js` | `hooks/reindex-tasks.js` | Task reindexer (also callable directly) |
+| `sessionstart.js` | `hooks/sessionstart.js` | Injects context, reindexes tasks, handles compact/resume |
+| `userpromptsubmit.js` | `hooks/userpromptsubmit.js` | User-turn savepoint with verbose urgency reminders |
+| `posttooluse.js` | `hooks/posttooluse.js` | Autonomous-turn savepoint with concise reminders |
+| `hooks.json` | `hooks/hooks.json` | Hook registration — loaded automatically by plugin system |
 
 ### Data Flow
 
@@ -97,15 +97,15 @@ This is strictly better than sentinel values because summarisation drops context
 
 ## Configuration
 
-The `XOCORTEX_HOME` environment variable (set in `settings.json` env block) provides the memory repo path. All other paths are derived:
+The **effective vault** (`$XO_VAULT`) is resolved by `buildPaths` / the `xo-ops` MCP using the precedence: registry entry → committed `.xocortex` marker → `XOCORTEX_HOME` → cortex-memory fallback (see `save-protocol.md`). All recording paths derive from it:
 
 ```
-XOCORTEX_HOME=~/Projects/xocortex
+XO_VAULT=<resolved vault>   # e.g. ~/Projects/xocortex (default) or ~/xocortex-vaults/<name> (project vault)
 ```
 
 Derived paths:
-- `diary`: `${XOCORTEX_HOME}/diary/${YYYY-MM}/${YYYY-MM-DD}.md`
-- `tasks_dir`: `${XOCORTEX_HOME}/tasks`
+- `diary`: `${XO_VAULT}/diary/${YYYY-MM}/${YYYY-MM-DD}.md`
+- `tasks_dir`: `${XO_VAULT}/tasks`
 
 Context state files: `${SNOWFLAKE_HOME:-~/.snowflake}/cortex/memory/context-state/`
 
@@ -121,15 +121,16 @@ All hooks receive JSON on stdin from Desktop:
   "hook_event_name": "PostToolUse",
   "response_metadata": {
     "usage": {
-      "tokens_consumed": [{
-        "input_tokens": {"total": 145000},
-        "output_tokens": {"total": 8500},
-        "context_window": 200000
-      }]
+      "tokens_consumed": [
+        {"model_role": "guardrail", "input_tokens": {"total": 500}, "output_tokens": {"total": 20}, "context_window": 262144},
+        {"model_role": "orchestration", "input_tokens": {"total": 145000}, "output_tokens": {"total": 8500}, "context_window": 200000}
+      ]
     }
   }
 }
 ```
+
+`tokens_consumed` is an array with one entry per model role; order is not stable, so the monitor selects the `model_role === 'orchestration'` entry (fallback: largest `context_window`), not `[0]`.
 
 `response_metadata` is a **trailing indicator** — reflects the previous turn, not the current one. Without it (first prompt, CLI/SDK), hooks exit silently.
 

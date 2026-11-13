@@ -7,7 +7,9 @@ description: "Provision stage — set up an isolated workspace before any produc
 
 Set up an isolated workspace before producing anything. This stage creates the safety net for Build — work happens in a provisioned space; the operator's main environment stays clean.
 
-**Scratch already exists.** The per-WI scratch dir (`$XOCORTEX_HOME/tmp/wi{N}/`, recorded as `Scratch:` in the task file) was allocated at WI creation — Provision does **not** create it. Provision sets up the *workspace* (worktree, local runtime, Snowflake context, cloud target) which lives inside or alongside that scratch dir. If the scratch dir is somehow missing (a legacy WI created before scratch was first-class), `ls` then `mkdir -p` it once — never invent an alternative path.
+**Scratch already exists.** The per-WI scratch dir (`$XO_SCRATCH/`, recorded as `Scratch:` in the task file) was allocated at WI creation — Provision does **not** create it. Provision sets up the *workspace* (worktree, local runtime, Snowflake context, cloud target) which lives inside or alongside that scratch dir. If the scratch dir is somehow missing (a legacy WI created before scratch was first-class), `resolve_paths({ cwd, wi_number, create: true })` returns and creates it — never invent an alternative path.
+
+**Project vault (rare — not a provisioning step).** If the operator wants this repo to record to its *own* vault instead of the default, that is a one-time opt-in via the `xo-ops` `register_vault` tool (or `setup.sh vault-init`; see `SETUP.md`) — NOT part of Provision. Do not run it as a provisioning step; at most mention it if a session resolves to an unexpected/fallback vault.
 
 ## When to use this stage
 
@@ -23,8 +25,8 @@ Before provisioning, determine what kind of workspace the work requires:
 
 | Work type | Workspace mode | What gets provisioned |
 |---|---|---|
-| Code changes in a repository | **Git worktree** | Isolated branch + worktree in `$XOCORTEX_HOME/tmp/wi{N}/<repo>/` |
-| Standalone artifact (document, spec, analysis, guide) | **Scratch-only** | `$XOCORTEX_HOME/tmp/wi{N}/` scratch directory — no repo needed |
+| Code changes in a repository | **Git worktree** | Isolated branch + worktree in `$XO_SCRATCH/<repo>/` |
+| Standalone artifact (document, spec, analysis, guide) | **Scratch-only** | `$XO_SCRATCH/` scratch directory — no repo needed |
 | App, demo, or UI that needs local runtime | **Local infrastructure** | Scratch dir + local server (Streamlit in-IDE, Docker, dev server) |
 | Snowflake objects (tables, procedures, pipelines, apps) | **Snowflake schema** | Scratch dir + target schema/database context confirmed |
 | Cloud deployment (SPCS, external hosting) | **Cloud infrastructure** | Scratch dir + deployment target confirmed with operator |
@@ -59,7 +61,7 @@ git -C <repo> status -sb
 
 | State | Implication | Default action |
 |---|---|---|
-| Clean, on main/master | New work | Create worktree at `$XOCORTEX_HOME/tmp/wi{N}/<repo-name>/` on branch `agent/wi{N}-<slug>` |
+| Clean, on main/master | New work | Create worktree at `$XO_SCRATCH/<repo-name>/` on branch `agent/wi{N}-<slug>` |
 | Clean, on feature branch | Resuming | Confirm this is the right branch |
 | Dirty, uncommitted changes | Prior work in progress | Clarify: continue, stash, or new worktree |
 | Behind remote | Missing upstream | Pull or rebase before starting |
@@ -70,7 +72,7 @@ git -C <repo> status -sb
 > "Target: `<repo>` on branch `<branch>`
 > State: [clean/dirty], [ahead/behind/in-sync]
 >
-> Default: create worktree at `$XOCORTEX_HOME/tmp/wi{N}/<repo-name>/` on branch `agent/wi{N}-<slug>` — keeps main dir clean, isolates this work.
+> Default: create worktree at `$XO_SCRATCH/<repo-name>/` on branch `agent/wi{N}-<slug>` — keeps main dir clean, isolates this work.
 >
 > Alternatives:
 > (a) Proceed on this branch (if already on the right feature branch)
@@ -143,25 +145,31 @@ This mode often combines with another (e.g., git worktree for source + cloud for
 
 ---
 
+## Shared-object mutation guard (infrastructure modes)
+
+**Fresh/dedicated infra means don't mutate pre-existing shared objects** — the scope covers the whole stack (databases, schemas, deployments, runtimes, warehouses), not just the leaf object. Never `SET`/`ALTER`/`UNSET` a pre-existing shared or demo object, even to "test and revert". If you must change one, capture its exact current value first so you can restore it; if that value is unreadable, don't mutate it at all. `UNSET`/`RESET` ≠ restore-to-original.
+
+---
+
 ## Scratch directory (universal — all modes)
 
 The per-WI scratch dir is the universal handoff surface, **allocated at WI creation** and recorded as the `Scratch:` field in the task file:
 
 ```
-$XOCORTEX_HOME/tmp/wi{N}/
+$XO_SCRATCH/
 ```
 
-Provision does not create it — it already exists. Read the path from the task file and use it. If it is somehow missing (legacy WI), ensure it once with `ls "$XOCORTEX_HOME/tmp/wi{N}" || mkdir -p "$XOCORTEX_HOME/tmp/wi{N}"` — never invent an alternative location.
+Provision does not create it — it already exists. Read the path from the task file and use it. If it is somehow missing (legacy WI), ensure it once with `resolve_paths({ cwd, wi_number, create: true })` — never invent an alternative location.
 
 Cold and bounded subagents write their handoff artifacts (findings, critiques, briefs) here — never into the codebase, and never creating directories themselves.
 
 **OUTPUT_PATH convention** — the **orchestrator** assigns each dispatched subagent a unique, fully-formed path:
 
 ```
-$XOCORTEX_HOME/tmp/wi{N}/{stage}-{role}-{nn}.md
+$XO_SCRATCH/{stage}-{role}-{nn}.md
 ```
 
-e.g. `tmp/wi319/workshop-edge-cases-01.md`, `tmp/wi319/review-security-02.md`. The unique `{role}`/`{nn}` suffix prevents collisions across parallel dispatches.
+e.g. `tmp/wi123/workshop-edge-cases-01.md`, `tmp/wi123/review-security-02.md`. The unique `{role}`/`{nn}` suffix prevents collisions across parallel dispatches.
 
 ---
 
@@ -169,7 +177,7 @@ e.g. `tmp/wi319/workshop-edge-cases-01.md`, `tmp/wi319/review-security-02.md`. T
 
 When dispatching multiple sub-agents that write files, give each a distinct OUTPUT_PATH under the canonical scratch dir — never the same path — to prevent conflicts. The orchestrator merges their outputs.
 
-For agents that write to the worktree (Build, Prove.author), use separate worktrees per agent if parallelism is needed within a single stage.
+For agents that write to the worktree (Build, Prove.author, the Prove.reproduce Reproducer), use separate worktrees per agent if parallelism is needed within a single stage.
 
 ---
 
@@ -193,4 +201,4 @@ Provision creates the workspace structures (worktree, runtime, Snowflake/cloud c
 
 - **Usually follows:** Plan (you know what you're producing) — Provision sets up the isolated workspace before any production.
 - **Leads to — primary:** Build.
-- **Or:** Prove.author (TDD — author the tests before implementing), Document (if the deliverable IS documentation).
+- **Or:** Prove.author (TDD — author the tests before implementing), Prove.reproduce (reproduce-bug — a failing command before the fix), Document (if the deliverable IS documentation).

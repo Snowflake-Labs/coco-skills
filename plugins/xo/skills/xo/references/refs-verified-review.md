@@ -65,7 +65,7 @@ Update the initial static risk assessment with empirical findings:
 |--------|------------------|-------------------|---------|
 | [area] | [initial call] | [what build/test showed] | [updated] |
 
-Feed the empirical findings table to the review Briefer as additional context when producing the review brief.
+Feed the empirical findings table to the Spec-and-chain Critic as input (`references/decide-review.md` Step 1), so it shapes the verdict; the Briefer receives it through the critique.
 
 ## Anti-Patterns
 

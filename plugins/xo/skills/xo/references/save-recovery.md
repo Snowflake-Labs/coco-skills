@@ -15,11 +15,11 @@ The operator has told you which WI to work on.
 
 **Steps:**
 
-1. **Read task file** — glob for `tasks/current/*wi{N}-*.md` (the project prefix varies; match on the WI number)
+1. **Read task file** — `find_wi({ cwd, wi_number })` returns `task_path` (plus `notes_paths`, `archived`); read that file.
    - Identify: Status, NextAction, Blockers
    - This tells you **what to do next**
 
-2. **Read notes file** — glob for `notes/**/*wi{N}-*.md` (may be in any month directory)
+2. **Read notes file** — use `notes_paths` from the same `find_wi` result (may be in any month directory)
    - This carries the deep understanding: decisions, evidence, architecture context
    - Read the most recent session section for the latest state
    - This tells you **what you know**
@@ -149,7 +149,7 @@ When the three-layer model is insufficient — files disagree, are missing, or t
 
 The agent knows its own session ID. After reset, diary entries with matching `[{session-id}]` headings are from this session — use these to understand what happened before the reset.
 
-To inspect conversation history, load `$session-history` skill which provides Python tools for conversation.json analysis.
+To inspect conversation history, load a session-analysis skill if one is installed (e.g. `$session-history`, which provides Python tools for conversation.json/.jsonl analysis). If no such skill is available, this is the capability to reach for — fall back to reading the local session files directly under `~/.snowflake/cortex/conversations/`.
 
 ### When to Escalate to Conversation History
 
@@ -165,7 +165,7 @@ To inspect conversation history, load `$session-history` skill which provides Py
 
 2. **Wait for approval** — conversation history is verbose; the operator may prefer to clarify verbally
 
-3. **With approval**, load `$session-history` skill:
+3. **With approval**, load a session-analysis skill if available (e.g. `$session-history`); if none is installed, read the local conversation files directly:
    - Provides Python tools for conversation.json analysis
    - Search for recent WI references
    - Look for the last savepoint message

@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { isoUtc, atomicWrite, appendLog } = require('./_common.js');
+const { isoUtc, atomicWrite, appendLog, resolveEffectiveVault } = require('./_common.js');
 
 function reindexTasks(tasksDir, logFile, shortSid) {
     const currentDir = path.join(tasksDir, 'current');
@@ -112,3 +112,17 @@ function reindexTasks(tasksDir, logFile, shortSid) {
 }
 
 module.exports = { reindexTasks };
+
+// CLI entry: `node reindex-tasks.js` regenerates tasks/index.md immediately
+// (e.g. after archiving a work item mid-session, before the next SessionStart).
+// Resolves the vault root the same way _common.js does.
+if (require.main === module) {
+    const vault = resolveEffectiveVault(process.cwd()).vault;
+    const tasksDir = path.join(vault, 'tasks');
+    if (!fs.existsSync(path.join(tasksDir, 'current'))) {
+        console.error(`reindex-tasks: no tasks/current under ${tasksDir} — run from a repo with a project vault, or set XOCORTEX_HOME.`);
+        process.exit(1);
+    }
+    reindexTasks(tasksDir);
+    console.log(`reindex-tasks: wrote ${path.join(tasksDir, 'index.md')}`);
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-const { readInput, buildPaths } = require('./_common.js');
+const { readInput, buildPaths, buildRehydrationDirective, consumeRehydrateFlag, detectSummarisation,
+        markSessionNamingComplete, readSessionTitle, sessionTitleCheck } = require('./_common.js');
 const { checkContext } = require('./_context-monitor.js');
 
 function main() {
@@ -13,7 +14,11 @@ function main() {
     }
 
     const ctx = buildPaths(input);
-    const { SHORT_SID, LOG_FILE, CONTEXT_STATE_DIR, SESSION_ID } = ctx;
+    const { SHORT_SID, LOG_FILE, CONTEXT_STATE_DIR, CONVERSATIONS_DIR, SESSION_ID } = ctx;
+
+    if (input.tool_name === 'rename_session') {
+        markSessionNamingComplete(CONTEXT_STATE_DIR, SESSION_ID);
+    }
 
     const r = checkContext(input, CONTEXT_STATE_DIR, SESSION_ID, {
         promptTokensEst: 0,
@@ -23,6 +28,26 @@ function main() {
         shortSid: SHORT_SID,
         incrementTurns: false,
     });
+
+    // Detect a summarisation from the host's own record (authoritative) and set the
+    // one-shot rehydrate flag when the conversation's summarisation count grows. Runs
+    // before the consume below so a summarisation detected this turn injects immediately.
+    detectSummarisation({
+        sessionId: SESSION_ID, conversationsDir: CONVERSATIONS_DIR, contextStateDir: CONTEXT_STATE_DIR,
+        mode: 'live', logFile: LOG_FILE, shortSid: SHORT_SID,
+    });
+
+    // Consume a pending summarisation-rehydrate flag (set by sessionstart compact or the
+    // summarisation detector above). First consumer to see it injects the directive once
+    // and clears it, so the wording has a single source and the paths cannot double-fire.
+    const rehydrate = consumeRehydrateFlag(CONTEXT_STATE_DIR, SESSION_ID);
+    const rehydrateMsg = rehydrate.pending
+        ? buildRehydrationDirective({
+            shortSid: SHORT_SID,
+            stats: rehydrate.stats,
+            titleCheck: sessionTitleCheck(readSessionTitle(SESSION_ID, CONVERSATIONS_DIR)),
+        })
+        : '';
 
     // When a skill loads, append a short reminder that the skill is domain knowledge
     // for the current XO stage, not a replacement for the XO process. This lands at the
@@ -52,7 +77,7 @@ function main() {
         }
     }
 
-    const parts = [skillNudge, checkpointMsg].filter(Boolean);
+    const parts = [rehydrateMsg, skillNudge, checkpointMsg].filter(Boolean);
     if (parts.length === 0) {
         process.stdout.write('{"continue": true}');
         return;

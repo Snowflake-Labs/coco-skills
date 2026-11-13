@@ -74,9 +74,11 @@ Include whichever fields serve the work's category and complexity:
 | `Provisional Pathway` | Substantial multi-stage work | The projected arc of stages, current one marked `(here)` — e.g. `Spec → Build (here) → Prove → Ship → Capture → Cleanup`. Revisable, not a commitment; advanced at each stage boundary; read it to know the natural next step. |
 | `ValidationRequired` | Items with quality gates | `Yes` or `No` |
 | `ValidationAction` | When ValidationRequired is Yes | Specific acceptance criteria |
-| `Related` | Items with connections | Cross-references to related WIs |
+| `Related` | Items with connections | Cross-references to related WIs. A WI carved from or added to another cites its origin here in the literal form `WI-N` (e.g. `Related: WI-624 (carved from)`). |
+| `Sources` | Items that depend on external inputs | The external resources the task depends on (PR, doc, Slack/email thread), each as a URL or identifier with its as-of state (e.g. `PR #48 as of 2026-10-24 11:30: approved`). Inputs re-checked by the milestone awareness check (`core-guidelines.md`); distinct from `Artifacts`, which are outputs. |
+| `Last checked` | Items that have run the milestone awareness check | Date (`YYYY-MM-DD`, UTC) of the last light or gate check; the next check passes it to `read_diary` as `since`. Set by the savepoint that ran the check. |
 | `Notes` | Items with deep records | Path to notes file in `notes/{YYYY-MM}/` |
-| `Scratch` | Set at allocation | Authoritative per-WI scratch dir (`$XOCORTEX_HOME/tmp/wi{N}/`) — the transient handoff surface stages use for subagent outputs, drafts, and intermediates. Recorded so downstream stages use it directly without checking or inventing a path. |
+| `Scratch` | Set at allocation | Authoritative per-WI scratch dir (`$XO_SCRATCH/`) — the transient handoff surface stages use for subagent outputs, drafts, and intermediates. Recorded so downstream stages use it directly without checking or inventing a path. |
 | `Promotion trigger` | Idea-stage items | What would promote this to a real WI |
 
 ### Provisional Pathway

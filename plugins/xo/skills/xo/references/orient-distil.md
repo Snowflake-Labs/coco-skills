@@ -17,7 +17,7 @@ Compile raw evidence into a clean statement of findings. The output — `finding
 
 ## Input contract
 
-- One or more evidence files (`$XOCORTEX_HOME/tmp/wi{N}/survey-*.md`, `$XOCORTEX_HOME/tmp/wi{N}/analyse-*.md`, notes from observation passes)
+- One or more evidence files (`$XO_SCRATCH/survey-*.md`, `$XO_SCRATCH/analyse-*.md`, notes from observation passes)
 - The question that was being investigated
 - Optional: the active WI task file for context
 
@@ -31,7 +31,7 @@ Dispatch `xo-bounded-writer` to compile the evidence into a findings brief. The 
 runSubagent(subagent_type: "xocortex:xo-bounded-writer", prompt: "
   PERSONA: Compiler — synthesise evidence into a findings brief
   INPUT_PATH: [path(s) to evidence files — survey outputs, analysis files, observation notes]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/findings.md
+  OUTPUT_PATH: $XO_SCRATCH/findings.md
   
   Read all evidence files. Write a findings brief that:
   1. States each key finding with the source evidence it traces to
@@ -52,7 +52,7 @@ runSubagent(subagent_type: "xocortex:xo-bounded-writer", prompt: "
 When the evidence is straightforward (single source, short), compile inline as the orchestrator rather than dispatching a sub-agent:
 
 1. Read all evidence files
-2. Write `$XOCORTEX_HOME/tmp/wi{N}/findings.md` directly in the format below
+2. Write `$XO_SCRATCH/findings.md` directly in the format below
 3. Present to operator for review before proceeding
 
 Use this for small investigations; use the sub-agent dispatch for rich multi-source evidence.
@@ -61,7 +61,7 @@ Use this for small investigations; use the sub-agent dispatch for rich multi-sou
 
 ## Output contract
 
-Write a **findings brief** to `$XOCORTEX_HOME/tmp/wi{N}/findings.md`:
+Write a **findings brief** to `$XO_SCRATCH/findings.md`:
 
 ```markdown
 # Findings — [topic] ([date])
@@ -96,7 +96,7 @@ This file is the scoping contract for Workshop and Spec. Do not proceed without 
 
 ## Next step
 
-Present `$XOCORTEX_HOME/tmp/wi{N}/findings.md` to the operator. Ask: "Does this capture what we found accurately? Ready to proceed to Workshop?"
+Present `$XO_SCRATCH/findings.md` to the operator. Ask: "Does this capture what we found accurately? Ready to proceed to Workshop?"
 
 Then load `references/orient-workshop.md` to design the approach.
 
