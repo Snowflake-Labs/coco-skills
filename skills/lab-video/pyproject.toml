@@ -1,0 +1,20 @@
+[project]
+name = "lab-video"
+version = "0.1.0"
+description = "Helper scripts for the lab-video Cortex Code skill: gate, render, mix, caption and deliver short videos"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24",
+    "imageio-ffmpeg>=0.4.9",
+]
+
+[project.optional-dependencies]
+# Snowflake mode: figures from queries, AI_TRANSCRIBE captions, delivery to a stage or Workspace
+snowflake = [
+    "snowflake-connector-python>=3.12.0",
+]
+# OCR of filmed takes (motion/snowflake/scan.py) uses Apple Vision, so macOS only
+ocr = [
+    "pyobjc-framework-Vision>=10.0; sys_platform == 'darwin'",
+    "pyobjc-framework-Quartz>=10.0; sys_platform == 'darwin'",
+]
