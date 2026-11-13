@@ -143,11 +143,11 @@ Standard locations to check in any repo:
 - `package.json` / `Cargo.toml` / etc. — dependencies, scripts
 
 **For substantive work (new features, understanding prior decisions), surface the offer to check attendant services before expanding scope:**
-> "I'm about to survey [repo]. For feature-level work it's worth checking attendant services — PR history, issue tracker, wiki, Jira — to surface prior decisions, non-goals, and abandoned approaches. Do you want me to include those, or just the codebase?"
+> "I'm about to survey [repo]. For feature-level work it's worth checking attendant services — PR history, issue tracker, wiki — to surface prior decisions, non-goals, and abandoned approaches. Do you want me to include those, or just the codebase?"
 
 Skip the offer for bug fixes and targeted lookups where breadth of prior art is irrelevant. When the operator says yes, specifically look for: WONTFIX decisions, abandoned PRs and their reversal reasons, and any tests or docs that explicitly assert "NOT SUPPORTED" — these are the evidence for non-goals in the spec.
 
-**If Survey surfaces reusable standards or knowledge sources (test commands, build conventions, CI setup, AGENTS.md location, PR workflow, doc styles, a useful KB, Glean collection, Confluence space, or MCP), these are candidates for Capture** regardless of the depth of investigation. Offer once: *"I found conventions or reference sources worth keeping — want me to record them so future sessions don't have to re-discover?"* Persist global sources as a `reference`-type memory entry; persist repo- or customer-specific sources in that repo's `AGENTS.md` domain note. Keep it operator-gated: propose the capture, do not auto-persist. See Capture (`references/decide-capture.md`). Notes written this way can be refreshed deliberately when the repo changes.
+**If Survey surfaces reusable standards or knowledge sources (test commands, build conventions, CI setup, AGENTS.md location, PR workflow, doc styles, a useful knowledge base, search collection, wiki space, or MCP), these are candidates for Capture** regardless of the depth of investigation. Offer once: *"I found conventions or reference sources worth keeping — want me to record them so future sessions don't have to re-discover?"* Persist global sources as a `reference`-type memory entry; persist repo- or customer-specific sources in that repo's `AGENTS.md` domain note. Keep it operator-gated: propose the capture, do not auto-persist. See Capture (`references/decide-capture.md`). Notes written this way can be refreshed deliberately when the repo changes.
 
 ---
 
@@ -182,7 +182,7 @@ Discovery surfaces what exists — but not all sources are equally trustworthy. 
 |--------|---------------|-------------|
 | **Last updated** | Git log, page metadata, captured-note date | >1 year = flag as potentially stale |
 | **Activity level** | Commit frequency, PR activity, edit history | Active = higher trust; dormant = skepticism |
-| **Source type** | What kind of artifact | Code > tests > internal docs > wiki > old Confluence |
+| **Source type** | What kind of artifact | Code > tests > internal docs > recent wiki > old wiki |
 | **Note recency** | Date stamp on a captured note or diary entry | Recent = more likely current |
 | **Contradictions** | Multiple sources say different things | Flag for operator resolution |
 
@@ -194,11 +194,11 @@ Discovery surfaces what exists — but not all sources are equally trustworthy. 
 | 2 | Recent PRs, code review discussions | High | Current thinking, actively debated |
 | 3 | Recent captured notes (this WI or recent sessions) | Medium-high | Written from verified findings |
 | 4 | AGENTS.md, README in active repos | Medium-high | Maintained alongside code |
-| 5 | Recent Confluence (<6 months), Jira tickets | Medium | May lag behind code changes |
+| 5 | Recent wiki pages (<6 months), issue-tracker tickets | Medium | May lag behind code changes |
 | 6 | Older captured notes (prior WIs, undated) | Medium-low | Better than nothing, verify currency |
-| 7 | Old Confluence (>1 year), archived wikis | Low | Likely stale, may contradict current state |
+| 7 | Old wiki pages (>1 year), archived wikis | Low | Likely stale, may contradict current state |
 | 8 | Memories (no metadata) | Low | Unknown staleness, may be abandoned |
-| 9 | Slack threads, email snippets | Lowest | Ephemeral, context-dependent |
+| 9 | Chat threads, email snippets | Lowest | Ephemeral, context-dependent |
 
 ### Annotating Findings
 

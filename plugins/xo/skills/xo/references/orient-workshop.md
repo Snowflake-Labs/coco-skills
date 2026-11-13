@@ -19,9 +19,15 @@ This is the stage where XO's "bounded work to sub-agents; creative synthesis to 
 
 ## Input contract
 
-- `$XOCORTEX_HOME/tmp/wi{N}/findings.md` (from Distil) OR equivalent grounded findings
+- `$XO_SCRATCH/findings.md` (from Distil) OR equivalent grounded findings
 - The question or problem to explore approaches for
 - Optional: a proposed approach to stress-test
+
+---
+
+## Choosing the mode
+
+Read the problem's ambiguity before dispatching. Most Workshop work is bounded and technical ("here is the code or system, establish the right details"): use the autonomous modes below. They are the default and the strength of this stage. Reach for the interactive mode only when the problem is open and human-centric (a design document, new architecture with no baseline, or genuine ambiguity about what the operator is trying to produce), where the useful first move is to resolve intent with the operator rather than send sub-agents at an under-specified question. When unsure, default autonomous; do not turn bounded analysis into a discussion.
 
 ---
 
@@ -44,14 +50,14 @@ Custom angles replace or supplement defaults per the WI context. Consider whethe
 
 **Angle discipline (applies to every dispatched agent):** (1) Cite the evidence for each claim (file, code path, source examined); an unverified claim stated as fact is a silent failure. (2) Report only implications the artifact and findings support; do not invent failure modes the artifact does not exhibit. For the Edge Cases angle: trace error paths present in the code, not hypothetical scenarios. (3) Record off-angle discoveries under Gaps, not in the angle's own section.
 
-**Scratch paths**: OUTPUT_PATHs are under the canonical per-WI scratch dir `$XOCORTEX_HOME/tmp/wi{N}/` — the `Scratch:` path recorded in the WI task file (allocated at WI creation). The orchestrator assigns each agent a unique, fully-formed path under it; agents write there directly with the `write` tool and never create directories. If the dir is somehow missing (legacy/ad-hoc WI), the orchestrator `ls`/`mkdir -p`s it once before dispatching — never invent an alternative path.
+**Scratch paths**: OUTPUT_PATHs are under the canonical per-WI scratch dir `$XO_SCRATCH/` — the `Scratch:` path recorded in the WI task file (allocated at WI creation). The orchestrator assigns each agent a unique, fully-formed path under it; agents write there directly with the `write` tool and never create directories. If the dir is somehow missing (legacy/ad-hoc WI), the orchestrator calls `resolve_paths({ cwd, wi_number, create: true })` once before dispatching — never invent an alternative path.
 
 ```
 runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Investigator — Existing Patterns angle
   REFERENCE: [findings brief from Distil or problem description]
   INPUTS: [scope — repo paths, system description, relevant codebase areas]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/workshop-angle-existing-patterns.md
+  OUTPUT_PATH: $XO_SCRATCH/workshop-angle-existing-patterns.md
   
   Investigate the Existing Patterns angle. Answer: how does this codebase or system already solve similar problems? What can be reused, and what looks reusable but has hidden constraints?
   Evidence first. Every finding must cite a source. Stay on your angle — note off-angle discoveries under Gaps.
@@ -61,7 +67,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Investigator — Edge Cases angle
   REFERENCE: [findings brief]
   INPUTS: [scope]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/workshop-angle-edge-cases.md
+  OUTPUT_PATH: $XO_SCRATCH/workshop-angle-edge-cases.md
   
   Investigate the Edge Cases angle. Answer: what could go wrong? Trace error paths, boundary conditions, concurrent access, partial failures, backward compatibility risks.
   Evidence first. Stay on your angle.
@@ -71,7 +77,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Investigator — Alternative Approaches angle
   REFERENCE: [findings brief]
   INPUTS: [scope]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/workshop-angle-alternatives.md
+  OUTPUT_PATH: $XO_SCRATCH/workshop-angle-alternatives.md
   
   Investigate the Alternative Approaches angle. Identify at least 2-3 viable alternatives to the proposed solution. For each: describe the approach, assess complexity, identify risks. Check git log and closed PRs for abandoned approaches.
   Evidence first. Stay on your angle.
@@ -81,7 +87,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Investigator — Integration Impact angle
   REFERENCE: [findings brief]
   INPUTS: [scope]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/workshop-angle-integration-impact.md
+  OUTPUT_PATH: $XO_SCRATCH/workshop-angle-integration-impact.md
   
   Investigate the Integration Impact angle. Trace callers and dependents of modified code. Check API contracts, configuration surface, cross-repo impact. Answer: what breaks or changes behaviour outside the immediate change?
   Evidence first. Stay on your angle.
@@ -133,6 +139,24 @@ Present to the operator for judgment. The recommendation is yours to make; the d
 ## Mode: single-angle investigation
 
 When only one dimension needs exploration, dispatch a single `xo-cold-smart` with the appropriate angle persona rather than the full four-way or more parallel. Synthesise inline.
+
+---
+
+## Mode: interactive (interlocutor)
+
+For open, human-centric work where there is no baseline to explore from and the value is resolving the operator's intent. The orchestrator does not open with parallel sub-agents; it acts as interlocutor:
+
+- Clarify intent, much as Triage does: the outcome the operator wants, the target shape (document type, template, the sections they expect), which decisions are theirs to make, and the constraints.
+- Work the ideas through in dialogue, surfacing options and tradeoffs and testing them against the operator's judgment.
+- Then decide the next move: synthesise the discussion into a draft for confirmation, or, once the question is bounded, hand specific sub-questions to the autonomous angles above.
+
+How to run the dialogue:
+
+- **Ask in rounds.** Each round asks every open decision that no unanswered question blocks. Number the questions, give your recommendation with each, and word each so a one-word reply ("yes", "ok", the option letter) accepts the recommendation. A question that depends on an answer still pending in this round waits for the next round.
+- **Look up facts; ask only for decisions.** If you can find the answer yourself (read a file, run a tool, dispatch a subagent), do that instead of asking. Hold back only the questions that depend on a lookup still running; ask the rest now.
+- **Done when** no open decision remains and the operator confirms you share the same understanding. Then make the next move above: a draft for confirmation, or bounded sub-questions to the autonomous angles.
+
+Keep it a discussion, not a framework: converge on intent and shape, then proceed. Grounding and the synthesis output are the same as the autonomous mode.
 
 ---
 

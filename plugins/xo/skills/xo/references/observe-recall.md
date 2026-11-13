@@ -25,7 +25,7 @@ Dispatch `xo-cold-fast` (auto-fast model — keeps Recall cheap) with the Recall
 runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
   PERSONA: Recall — search the operator's memory vault
   INPUTS: query = '[the operator's query, verbatim or lightly cleaned]'
-          scope = $XOCORTEX_HOME/notes, $XOCORTEX_HOME/tasks, $XOCORTEX_HOME/diary
+          scope = $XO_VAULT/notes, $XO_VAULT/tasks, $XO_VAULT/diary   (the effective vault for the operator's cwd — resolve via xo-ops resolve_paths)
 
   Step 1 — EXPAND the query into 4-10 keyword/phrase candidates: synonyms,
   likely technical terms, class/product/customer names, and rephrasings that
@@ -42,9 +42,9 @@ runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
   that rank on keyword density rather than relevance.
 
   Step 3 — RETURN IN-CONTEXT (do not write a file). Top 5-8 hits, each:
-    - full path RELATIVE to \$XOCORTEX_HOME (e.g. notes/2026-06/wi314-...md) —
+    - full path RELATIVE to \$XO_VAULT (e.g. notes/2026-06/wi123-...md) —
       NEVER a bare basename (basenames collide: notes/ and tasks/ both hold
-      wi308-session-end-closure-hooks-investigation.md)
+      wi124-session-end-closure-hooks-investigation.md)
     - a 1-2 line excerpt around the strongest match
     - a one-line 'why relevant'
   If nothing scores, say so plainly — do not pad with weak hits.
@@ -54,6 +54,19 @@ runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
 ```
 
 This is one bounded dispatch: expand -> grep -> rank -> return. Fast by design.
+
+### Gate mode
+
+Used by the milestone awareness gate check (`core-guidelines.md`, Freshness and concurrency) before returning work to the operator. Same dispatch, with these INPUTS in place of a free query:
+
+```
+  INPUTS: known_set = [this task's WI-N, Related WIs, Sources identifiers]
+          window    = diary files from the light check's window_start through today, plus notes/tasks dated in that window (by their own dates: diary file name, dated headings, as-of lines); use file mtimes only as a hint
+          exclude   = diary entries headed [<your short session id>], and this WI's own task/notes files
+          question  = 'What in this window is relevant to this task that the known set does not name?'
+```
+
+Expand from the task's subject, not from the known set. Search only the window and return hits in the normal format. For a diary hit, report the entry: give its `## ` heading line with the excerpt, and drop any entry whose heading starts `## [<your short session id>]`. An empty result is a normal outcome; say so in one line.
 
 ---
 
@@ -67,7 +80,7 @@ Present the two sources as **clearly-labelled separate groups**:
 
 ```markdown
 **From the vault (checked — authoritative):**
-- notes/2026-06/wi314-kafka-binary-headers.md — little-endian Int64 header decode
+- notes/2026-06/wi123-kafka-binary-headers.md — little-endian Int64 header decode
 - ...
 
 **Also in agent scratch (/memories — provisional, verify before relying):**
@@ -80,7 +93,7 @@ If there is nothing relevant in memory, omit the second group rather than paddin
 
 ## Bounding
 
-- **Scope is fixed:** notes/tasks/diary under `$XOCORTEX_HOME`. No skills, no knowledge-base, no external, no `/memories` (handled by the index glance above).
+- **Scope is fixed:** notes/tasks/diary under the effective vault `$XO_VAULT` (a project-vault session searches its own vault, not the global one — resolve via `resolve_paths`). No skills, no knowledge-base, no external, no `/memories` (handled by the index glance above).
 - **One pass, fast model.** No iterative deepening, no thread-following.
 - **Full relative paths always** — the single most important output rule (basename collisions are real in this workspace).
 - The orchestrator decides what to do with hits — Recall surfaces *associations ranked by overlap*, not verified answers.

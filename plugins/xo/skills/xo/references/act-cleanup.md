@@ -17,13 +17,13 @@ Tear down the workspace and run hygiene processes. Cleanup is always the last st
 
 ## Mode: scratch directory clear (universal — always applies)
 
-Subagent handoff artifacts and other transient files for this work live under the canonical per-WI scratch dir `$XOCORTEX_HOME/tmp/wi{N}/` (the `Scratch:` path in the WI task file, allocated at WI creation). At the end of the work, inventory what exists and propose a disposition to the operator before taking any action.
+Subagent handoff artifacts and other transient files for this work live under the canonical per-WI scratch dir `$XO_SCRATCH/` (the `Scratch:` path in the WI task file, allocated at WI creation). At the end of the work, inventory what exists and propose a disposition to the operator before taking any action.
 
 ### Process
 
 1. **Inventory** — list what's in the scratch directory:
    ```bash
-   ls "$XOCORTEX_HOME/tmp/wi{N}/"
+   ls "$XO_SCRATCH/"
    ```
 
 2. **Propose disposition** — present the inventory to the operator with a recommended action for each artifact:
@@ -39,9 +39,10 @@ Subagent handoff artifacts and other transient files for this work live under th
    >
    > Shall I proceed with these, or would you like to adjust?"
 
-3. **Act on approval** — only after operator confirms:
-   - Promote designated artifacts: `mv "$XOCORTEX_HOME/tmp/wi{N}/<artifact>.md" "$XOCORTEX_HOME/notes/$(date +%Y-%m)/{project}-wi{N}-<slug>.md"`
-   - Clear the rest: `rm -rf "$XOCORTEX_HOME/tmp/wi{N}/"`
+3. **Act on approval** — only after operator confirms, in this order:
+   - **Deregister any git worktree** under the scratch first (Provision places one at `$XO_SCRATCH/<repo>`): `git -C <repo> worktree remove "$XO_SCRATCH/<repo>"`. A raw delete would leave a dangling worktree registration in the parent repo.
+   - **Promote** designated artifacts: `promote_artifact({ cwd, wi_number, from: "$XO_SCRATCH/<artifact>.md", slug })` — it builds the canonical `notes/{YYYY-MM}/{project}-wi{N}-<slug>.md` destination and moves the file (you decide what is worth keeping).
+   - **Clear** the leftover transient files: `clear_scratch({ cwd, wi_number })` — the FINAL step. Containment-checked, and it REFUSES if a worktree is still present, so deregister worktrees first (above).
 
 ---
 
@@ -85,7 +86,7 @@ Record the decisions in the WI notes. Deferred items get a reminder at the next 
 
 ## Mode: Curate (supervised dreaming)
 
-Trigger: the session-start nudge ("your `/memories` were last curated Nd ago"), or operator request. Run only on operator opt-in. Treat memory as scratch, not a sanctioned record (Memory Trust). Operator-gate every removal and every promotion. (Curate is XO's supervised-dreaming pass.)
+Trigger: the session-start nudge ("your `/memories` were last curated Nd ago"), or operator request. The nudge escalates in two bands: soft at first ("consider a Curate pass"), firming after 3+ unresolved sessions or 60+ days ("this keeps surfacing — overdue"); both remain declinable. Run only on operator opt-in. Treat memory as scratch, not a sanctioned record (Memory Trust). Operator-gate every removal and every promotion. (Curate is XO's supervised-dreaming pass.)
 
 ### Step 1 — Enumerate the real store first
 
@@ -150,13 +151,23 @@ Set `memoryPrune.lastPruned` to today's date in `/memories/xo/hygiene-state.json
 
 ## Mode: durable commit/push
 
-The session-start hygiene nudge ("your xocortex vault was last committed Nd ago / has N unpushed commits") points here. When wrapping up, offer to commit and push the vault so notes/tasks/diary are durable:
+The session-start hygiene nudge ("your xocortex vault was last committed Nd ago / has N unpushed commits") points here. When wrapping up, offer to commit and push the vault so notes/tasks/diary are durable. `$XO_VAULT` is the **effective vault** for this session (the resolved project vault when the repo is opted in, else the default vault) — from `resolve_paths.vault` / the SessionStart "vault is at" line, NOT necessarily `$XOCORTEX_HOME`:
 
 ```bash
-git -C "$XOCORTEX_HOME" add -A && git -C "$XOCORTEX_HOME" commit -m "<summary>" && git -C "$XOCORTEX_HOME" push
+git -C "$XO_VAULT" add -A && git -C "$XO_VAULT" commit -m "<summary>" && git -C "$XO_VAULT" push
 ```
 
-Only with operator approval, and only the xocortex vault — never push project code as a side effect of Cleanup. Committing resets the staleness the hook tracks (it reads git directly; no watermark needed).
+Only with operator approval, and only the effective vault — never push project code as a side effect of Cleanup. Committing resets the staleness the hook tracks (it reads git directly; no watermark needed).
+
+### Three commit surfaces — when each applies
+
+The vault has three commit mechanisms; each serves a different purpose:
+
+1. **Reflexive `commit_wi`** (per-session scoped savepoint) — commits exactly this session's diary/task/notes files via an explicit pathspec (`git commit -- <paths>`), never `git add -A`. Fires at savepoints as part of the recording beat (save-protocol). Commit-only, never pushes. This is the routine path — most vault changes are committed here.
+2. **Durable commit/push** (this mode) — the end-of-work catch-all. Stages the whole vault (`git add -A`) and pushes. Use this in Cleanup when wrapping up, or when the session-start nudge reminds you of unpushed commits. Catches anything not already committed by `commit_wi` (e.g. manual edits, multi-session residue).
+3. **Repo-commit session-start nudge** — the SessionStart hook's push-focused reminder (ahead >0 or staleness >7d). Points the agent to this mode. Does not commit or push itself.
+
+The **stale-orphan nudge** (tracked vault files under diary/notes/tasks with uncommitted changes >2d old) surfaces alongside the repo-commit nudge. The agent reviews the listed files and commits them via this mode, or discards them. Declinable; no auto-commit.
 
 ---
 
@@ -170,7 +181,7 @@ Trigger: when the operator confirms the outcome of the work is good (approval of
 
 Surface once:
 > "We're done with this work. Want to clean up intermediate artifacts?
-> [list `$XOCORTEX_HOME/tmp/wi{N}/` contents that aren't the final deliverable]"
+> [list `$XO_SCRATCH/` contents that aren't the final deliverable]"
 
 ---
 
@@ -185,13 +196,16 @@ Surface once per session:
 
 ### 3. Session-lifecycle: hygiene reminders surface at session start
 
-The durable-repo commit/push reminder and the Curate reminder are surfaced by the **SessionStart hook** (`hooks/sessionstart.js`, `buildHygieneNudges`). The hook decides *whether to present* a nudge from two inputs: the live condition (vault last committed >7d ago or unpushed commits >0; `/memories` last curated >30d ago) and a **decline watermark it never writes itself**.
+The durable-repo commit/push reminder, the Curate reminder, and the stale-orphan check are surfaced by the **SessionStart hook** (`hooks/sessionstart.js`, `buildHygieneNudges`). The hook decides *whether to present* a nudge from two inputs: the live condition (vault ahead >0 or last committed >7d ago; `/memories` last curated >30d ago; tracked vault files with stale uncommitted changes) and a **decline watermark the agent writes** (the hook never writes `lastDeclined`).
 
-Recording the operator's response is the agent's job, not the hook's — the hook cannot know whether the operator actually saw or answered a nudge (a watermark written on generation silently consumed nudges on compaction-triggered starts, which do not surface them). So when a hygiene nudge appears:
+For the curation nudge specifically, the hook self-tracks a **surfaced-but-unresolved streak** (`memoryPrune.unresolvedStreak`): incremented once per session when the nudge surfaces on a surfacing start (startup/resume/default — never compact), session-deduped via `lastNudgedSession`, and reset to 0 when a Curate pass completes (i.e. `lastPruned` advances). This is a deliberate, scoped exception to the hook's "never write a watermark on generation" stance — it records "the nudge surfaced to the agent on a surfacing start" (accurate: the nudge IS in the emitted additionalContext), not "the user answered". The streak drives the two-band escalation: soft at first, firming after 3+ unresolved sessions or 60+ days. On compaction starts (which suppress hygiene output), the hook queues a pending-nudge marker so the next surfacing start picks it up.
 
-- **On decline / "not now":** record it so the nudge does not re-nag. Set the matching `lastDeclined` to today (ISO date) in `/memories/xo/hygiene-state.json` via the memory tool — `repoCommit.lastDeclined` for the commit/push nudge, `memoryPrune.lastDeclined` for the Curate nudge. The hook then suppresses that nudge for 7 days (`DECLINE_DAYS`).
-- **On accept:** run the matching process above (**Mode: durable commit/push** or **Mode: Curate**). No watermark write is needed — acting resets the condition: a commit clears staleness/unpushed; a completed Curate pass stamps `memoryPrune.lastPruned`.
-- **If neither (ignored):** the nudge re-presents at most once per session start until answered — intentional, so it reminds rather than silently dropping.
+Recording the operator's response is the agent's job:
+
+- **On decline / "not now":** record it so the nudge does not re-nag. Set the matching `lastDeclined` to today (ISO date) in `/memories/xo/hygiene-state.json` via the memory tool — `repoCommit[<vault>].lastDeclined` for the commit/push nudge, `memoryPrune.lastDeclined` for the Curate nudge. The hook then suppresses that nudge for 7 days (`DECLINE_DAYS`). Note: decline does NOT reset the curation streak — an ignored/declined-then-elapsed nudge keeps escalating.
+- **On accept:** run the matching process above (**Mode: durable commit/push** or **Mode: Curate**). No watermark write is needed — acting resets the condition: a commit clears staleness/unpushed; a completed Curate pass stamps `memoryPrune.lastPruned` (which resets the streak to 0).
+- **If neither (ignored):** the nudge re-presents at most once per session start until answered — intentional, so it reminds rather than silently dropping. The curation streak increments each session it re-presents, driving escalation.
+- **Stale-orphan nudge:** the agent reviews the listed files and commits (via the durable commit/push mode) or discards them. No decline watermark — committing or discarding the files clears the condition.
 
 ---
 
@@ -200,7 +214,7 @@ Recording the operator's response is the agent's job, not the hook's — the hoo
 - Worktree removed (confirmed via `git worktree list`)
 - Scratch files cleared or recorded as kept
 - Infrastructure decisions recorded in WI notes
-- Task status updated to Done if work is complete; archive via Update Task File (`references/save-protocol.md`)
+- Task status updated to Done if work is complete; archive via Update Task File (`references/save-protocol.md`). When you archive, pass the archived WI to the next `commit_wi` so the `tasks/current` deletion is committed together with the move — otherwise HEAD keeps the stale current copy and a later checkout/stash/rebase can resurrect it.
 
 ---
 

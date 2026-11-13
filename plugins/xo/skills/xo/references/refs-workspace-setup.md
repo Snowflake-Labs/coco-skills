@@ -19,22 +19,22 @@ Worktrees default to the XO scratch directory — the per-WI scratch dir (`Scrat
 
 | Pattern | Path | When |
 |---------|------|------|
-| **XO scratch (default)** | `$XOCORTEX_HOME/tmp/wi{N}/<repo-name>/` | Standard — write-approved, lifecycle-managed |
+| **XO scratch (default)** | `$XO_SCRATCH/<repo-name>/` | Standard — write-approved, lifecycle-managed |
 | **Operator override** | Whatever the operator specifies | Record in notes for future sessions |
 
-**Why XO scratch?** In editor mode (single project open), creating a sibling folder in the project parent may trigger a permissions prompt or appear as a separate project to the IDE. `$XOCORTEX_HOME` is already approved and scoped. Cleanup stage handles removal after merge.
+**Why XO scratch?** In editor mode (single project open), creating a sibling folder in the project parent may trigger a permissions prompt or appear as a separate project to the IDE. `$XO_VAULT` (the effective vault) is already approved and scoped. Cleanup stage handles removal after merge.
 
 **Constraint:** The worktree must be on the same filesystem as the target repo (git links via absolute paths). This is almost always true for local dev.
 
 When proposing a worktree to the operator:
-> "I'll create a worktree at `$XOCORTEX_HOME/tmp/wi{N}/<repo-name>/` — or would you prefer a different location?"
+> "I'll create a worktree at `$XO_SCRATCH/<repo-name>/` — or would you prefer a different location?"
 
 ### Commands
 
 ```bash
-# The scratch parent ($XOCORTEX_HOME/tmp/wi{N}) already exists from WI allocation.
-# Insurance for legacy WIs only — guarded so it never prompts when already present:
-ls "$XOCORTEX_HOME/tmp/wi{N}" >/dev/null 2>&1 || mkdir -p "$XOCORTEX_HOME/tmp/wi{N}"
+# The scratch parent ($XO_SCRATCH) already exists from WI allocation.
+# Insurance for legacy WIs only — resolve_paths creates it if missing (contained under the vault):
+#   resolve_paths({ cwd, wi_number, create: true })
 
 # Resolve and fetch the remote default branch before compare/review/PR work.
 base_ref=$(git -C <repo> symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null | sed 's#^refs/remotes/origin/##')
@@ -44,17 +44,17 @@ fi
 git -C <repo> fetch origin "$base_ref"
 
 # Create worktree for a work item (default location)
-git -C <repo> worktree add "$XOCORTEX_HOME/tmp/wi{N}/<repo-name>" -b agent/wi{N}-<slug>
+git -C <repo> worktree add "$XO_SCRATCH/<repo-name>" -b agent/wi{N}-<slug>
 
-# Example — WI-235 on myproject:
+# Example — WI-123 on myproject:
 git -C ~/Projects/myproject worktree add \
-  "$XOCORTEX_HOME/tmp/wi235/myproject" -b agent/wi235-worktree-placement
+  "$XO_SCRATCH/myproject" -b agent/wi123-worktree-placement
 
 # List active worktrees
 git -C <repo> worktree list
 
 # Remove after merge (also handled by Cleanup stage)
-git -C <repo> worktree remove "$XOCORTEX_HOME/tmp/wi{N}/<repo-name>"
+git -C <repo> worktree remove "$XO_SCRATCH/<repo-name>"
 git -C <repo> branch -d agent/wi{N}-<slug>
 ```
 
@@ -78,7 +78,7 @@ After worktree work, verify the primary checkout with `git -C <repo> status --sh
 
 **For xo-tracked work items**, use `agent/wi{N}-<slug>` — the WI number traces back to internal tracking, the slug makes the branch self-documenting for anyone reading the remote.
 
-Examples: `agent/wi235-worktree-placement`, `agent/wi318-local-vector-search`
+Examples: `agent/wi123-worktree-placement`, `agent/wi124-local-vector-search`
 
 **For other work**, check prior notes for any recorded branch naming conventions via **Recall** (`references/observe-recall.md`, query the repo name).
 

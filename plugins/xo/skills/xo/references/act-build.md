@@ -20,7 +20,8 @@ Produce the artifact specified by the spec. The generator creates; the critics r
 - Approved spec (`notes/{YYYY-MM}/{project}-wi{N}-spec.md`)
 - Workspace location (from Provision — worktree path, scratch dir, or Snowflake schema context)
 - Production conventions (from Step 0 discovery — see below)
-- In TDD mode: failing tests written by Prove (author)
+- In TDD mode: failing tests written by Prove (author); any further test added during Build is added one at a time as new behaviour appears, and follows `references/refs-test-design.md` (traced to a criterion or confirmed interface)
+- In reproduce-bug mode: the failing command and the regression test from Prove.reproduce; the fix must make the command pass
 
 ---
 
@@ -63,7 +64,7 @@ runSubagent(subagent_type: "xocortex:xo-generator", prompt: "
   
   Produce what the specification requires.
   Read existing work near each change site to understand patterns and style before editing.
-  Change ONLY what the specification requires — report anything out-of-scope under OBSERVED.
+  Change ONLY what the specification requires, with the least code that satisfies it: no speculative abstraction, config, or features beyond the spec. Report anything out-of-scope under OBSERVED.
   Output a REQUIREMENT/FILE/CHANGE/RATIONALE record for each change made.
 ")
 ```
@@ -81,16 +82,17 @@ Check `references/refs-security-review-triggers.md` to determine if security per
 ```
 runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — general correctness and scope
-  REFERENCE: [spec]
+  REFERENCE: [spec; references/refs-code-smells.md (advisory)]
   INPUTS: [worktree path, incremental diff: git diff HEAD, branch diff: git diff main..HEAD]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/build-critic-general.md
+  OUTPUT_PATH: $XO_SCRATCH/build-critic-general.md
   
   Review the implementation diff for:
-  1. Scope compliance (only what the spec requires)
+  1. Scope compliance: only what the spec requires, and the least code that satisfies it (flag speculative abstraction, config, or features as over-build)
   2. Safety and correctness
   3. Repo convention adherence
   4. Collateral damage (changes outside spec scope)
   5. Foundations — is the implementation grounded in the spec/findings, or built on speculation? Flag plausible-but-ungrounded choices and name the missing basis.
+  6. Smells (advisory): report any smell from references/refs-code-smells.md the diff introduces, under its own heading. A smell alone is not grounds for REVISE unless it breaches a documented repo standard; cite that standard if so.
   
   Return APPROVE, REVISE (specific concern + suggestion + severity), or BLOCK (red lines).
 ")
@@ -99,7 +101,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — security
   REFERENCE: [change description + what security boundaries exist]
   INPUTS: [worktree path, incremental diff]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/build-critic-security.md
+  OUTPUT_PATH: $XO_SCRATCH/build-critic-security.md
   
   Review for security boundary violations, credential exposure, and trust boundary crossings.
   Map process/trust boundaries. Trace credential flow. Evaluate the security checklist.
@@ -118,6 +120,10 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
 
 **Maximum 3 cycles per artifact-critic loop.** After 3 rejections in the same loop, escalate — repeated attempts degrade quality. A new operator correction starts a fresh loop; it does not consume the prior cap.
 
+**Smells are advisory.** Smells the general critic reports stay in its output and are reported to the operator with the Build result; they do not route back to the generator. They do not trigger REVISE and do not count toward the 3-cycle cap, unless a smell breaches a documented repo standard; then treat it as that standard's breach.
+
+**Reconcile against intent when fixes accumulate.** When changes pile up across critic cycles or a batch of review comments, reconcile the whole diff against the spec's intent before continuing: prefer a coherent redo over more patches, and flag drift from what was specified. (Principle: `core-guidelines.md` "Coherent work, not a patch pile".)
+
 ---
 
 ## Step 3: Verifier (xo-cold-smart)
@@ -128,8 +134,8 @@ Unified gate: code + critics + tests vs spec.
 runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Verifier — unified gate
   REFERENCE: [spec]
-  INPUTS: [worktree path, critic verdicts from $XOCORTEX_HOME/tmp/wi{N}/, test results if available]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/build-verifier.md
+  INPUTS: [worktree path, critic verdicts from $XO_SCRATCH/, test results if available]
+  OUTPUT_PATH: $XO_SCRATCH/build-verifier.md
   
   Verify the full package against the spec:
   1. Each requirement: implemented? tested? test passed?

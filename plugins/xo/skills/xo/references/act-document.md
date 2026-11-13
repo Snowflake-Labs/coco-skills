@@ -52,7 +52,7 @@ For shippable guides and reference docs, load `references/refs-guide-frontmatter
 runSubagent(subagent_type: "xocortex:xo-bounded-writer", prompt: "
   PERSONA: Drafter — write the explanation
   INPUT_PATH: [findings brief path — THE ONLY SOURCE]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/doc-guide-draft.md
+  OUTPUT_PATH: $XO_SCRATCH/doc-guide-draft.md
   
   Write a user guide based solely on the findings brief. Target audience: [audience].
   Lead with 'how to do X', not 'how X works internally'. Use tables for reference material,
@@ -67,8 +67,8 @@ runSubagent(subagent_type: "xocortex:xo-bounded-writer", prompt: "
 runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — citation audit
   REFERENCE: [findings brief path]
-  INPUTS: $XOCORTEX_HOME/tmp/wi{N}/doc-guide-draft.md
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/doc-audit.md
+  INPUTS: $XO_SCRATCH/doc-guide-draft.md
+  OUTPUT_PATH: $XO_SCRATCH/doc-audit.md
   
   Audit every factual claim in the guide against the findings brief.
   Return PASS (backed), CONTRADICTION (guide contradicts finding), or UNBACKED (claim not in findings).
@@ -102,6 +102,16 @@ When sources are external references rather than codebase findings:
 
 ---
 
+## Authoring skills and procedure files
+
+When the document is itself a procedure a cold agent will execute — a skill, an agent/monitor definition, a runbook — three disciplines apply on top of citation discipline:
+
+- **Prescriptive, single imperative path.** Author it as "do this exactly", not a menu of co-equal options — a cold agent reads optionality ("either X or alternatively Y") as licence to improvise. Where a genuine branch exists, key it on an observable condition as a deterministic branch ("if X, do Y; otherwise Z"), not a preference. Reserve real user choices for an explicit question to the operator, not embedded in the procedure.
+- **Ship clean instructions.** The shipped file carries operating instructions only — never design deliberation ("why we chose X not Y"), decision rationale, "this is not a Z" framing, developer/person names, hardcoded environment-specific identifiers, or framework-internal vocabulary a first-time reader lacks. The rationale and alternatives-rejected belong in the spec and WI notes. Before declaring such a file done, dispatch a cold-reader Critic (persona: a capable reader with none of your session/system context) to confirm it defines its terms at or before first use and orients a first-timer.
+- **Run every step before it ships, or mark it untested.** A runbook's own commands and procedures are its deliverable, not a pending gate — execute each before presenting the runbook as ready. If one cannot be run, mark it inline as `UNTESTED` at that step and say so in the handoff; never present a runbook as ready or complete while a step is silently unexercised.
+
+---
+
 ## Output contract
 
 Draft + clean audit. If the artifact is a shippable guide or reference doc, its final output must include the provenance frontmatter from `references/refs-guide-frontmatter.md`. Present the work to the operator:
@@ -111,6 +121,12 @@ Draft + clean audit. If the artifact is a shippable guide or reference doc, its 
 Do not push to Ship unprompted. The operator decides the next step.
 
 Route to **Review** (`references/decide-review.md`) as the formal gate — the operator accepts, requests revisions, or parks the work.
+
+---
+
+## Coherence discipline
+
+When an artifact is corrected across multiple turns, rewrite it into one coherent position — do not append dated "CORRECTION (date)" sections or inline "UPDATED" asides, and do not narrate your own abandoned steps or argue against earlier wrong drafts. Fold corrections into the body; the edit history belongs in diary/task savepoints, not the deliverable. After any round of corrections, sweep the whole artifact for internal consistency — a fix in one section must be reflected everywhere it bears (tables, summaries, positioning). State the clean current position and legitimate forward-looking caveats only. This is the prose instance of the `core-guidelines.md` "Coherent work, not a patch pile" principle.
 
 ---
 

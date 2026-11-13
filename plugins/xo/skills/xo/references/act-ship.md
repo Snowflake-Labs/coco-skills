@@ -20,9 +20,15 @@ Before delivering, confirm prior stages were completed:
 
 > **Check 1 — Reviewed?** Has this artifact been through Review (operator approval)? If not — pause and route to Review first. Do not ship unreviewed work. (If the operator explicitly said "ship it" or the pathway already passed through Review, this check is satisfied — proceed.)
 >
-> **Check 2 — Still current?** Before an irreversible post to a remote or shared target (PR, publish, share to a live thread), re-fetch **both** its code and its discussion surface and reconcile — it may have moved while the work was in Review. This check **always runs**, including after Review passed — time in Review is exactly when the target drifts. See the freshness reconcile in `references/core-guidelines.md` ("Freshness and concurrency") and `references/decide-review.md` (Step 3, item 4).
+> **Check 2 — Still current?** Before an irreversible post to a remote or shared target (PR, publish, share to a live thread), re-fetch **both** its code and its discussion surface and reconcile — it may have moved while the work was in Review. This check **always runs**, including after Review passed — time in Review is exactly when the target drifts. See the freshness reconcile in `references/core-guidelines.md` ("Freshness and concurrency") and `references/decide-review.md` (Step 3, item 4). Check 2 is the re-fetch half; the full **gate check** (the light check plus a bounded Recall over the window, per core-guidelines "Freshness and concurrency") also runs before this gate, catching concurrent work the known set does not name.
 
 Check 1 is a reminder to the orchestrator, not a validation step. Check 2 is a required gate before any irreversible post — not waived by "ship it" or a prior Review pass.
+
+When you report gate status, name the specific unmet check and the exact missing artifact (e.g. "Check 2: PR head advanced 3 commits since Review — re-review needed"), not a generic "not ready".
+
+**On authorisation language.** "Prepare", "finalize", "get it ready to share", "update the guide so we can share it", or "close it out" are NOT instructions to publish, push, share, or create a shared document. Stop at the prepared local artifact and let the operator drive the external action; take the external action only when the operator explicitly names it. Each external action is its own gate — see the outward-action rule in `core-guidelines.md` §Execution discipline.
+
+**Scrub shared artifacts of private identifiers.** Before any delivery to a shared or public-mirrored destination — PR body, commit message, published doc, or shared file — make the content self-contained. This extends the always-on Shared Content Policy (no private WI numbers in shared content): also strip internal build/slice/stage shorthand, sweep/session narrative, individual names used as private context, internal-only links, and real user/home paths (use `/Users/alice` in tests).
 
 ---
 
@@ -30,9 +36,9 @@ Check 1 is a reminder to the orchestrator, not a validation step. Check 2 is a r
 
 | Work type | Delivery mode | Target |
 |---|---|---|
-| Code changes in a repository | **Pull request** | Repo reviewers via `gh pr create` |
+| Code changes in a repository | **Pull request** | Repo reviewers, via whichever GitHub tool is available (an MCP server or the CLI) |
 | Standalone deliverable (doc, analysis, spec) | **Route to requestor** | The person/channel who raised the demand |
-| Documentation for a docs site | **Publish** | Docs platform (Confluence, docs repo, wiki) |
+| Documentation for a docs site | **Publish** | Docs platform (wiki, docs repo, docs site) |
 | App or service | **Deploy** | Platform (SPCS, Streamlit in Snowflake, hosting service) |
 | Demo, presentation, or shared artifact | **Share** | Stakeholders via appropriate channel |
 
@@ -45,18 +51,18 @@ Ask the operator if the delivery target isn't obvious from the spec.
 ### Input contract
 
 - Worktree path and branch name (from Provision)
-- Build/Prove summary
+- Build/Prove summary (for a bug fix: `$XO_SCRATCH/prove-repro-before.md`, `prove-repro-after.md`, and the confirmed cause from the WI notes)
 - Target repository + organisation
 
 ### Steps
 
-1. **Auth** — confirm push access to the target repo. For Snowflake repos, confirm correct org. If issues, load `$snowflake-github`.
+1. **Auth** — confirm push access to the target repo. For Snowflake repos, confirm correct org. If issues, load a GitHub-identity skill if available (e.g. `$snowflake-github`); otherwise resolve auth directly (correct account, host alias, token scope).
 
 2. **Push + create PR:**
    ```bash
    git -C <worktree> push -u origin <branch-name>
    ```
-   Fetch PR template (`<repo>/.github/PULL_REQUEST_TEMPLATE.md`) or use standard format. Create with `gh pr create`.
+   Fetch the PR template (`<repo>/.github/PULL_REQUEST_TEMPLATE.md`, or a file under `<repo>/.github/PULL_REQUEST_TEMPLATE/`; when there are several, use the one matching the change type, and ask the operator if none clearly matches). Then write the PR body following `references/refs-pr-standard.md`, filling the template when one exists. Open the PR with whichever GitHub tool is available (an MCP server or the CLI).
 
 3. **Record** — update task file with PR URL, branch name, status `In Review`. Inform operator.
 
@@ -90,7 +96,7 @@ For guides, docs, or reference material reaching a documentation platform.
 
 1. **Submit** — depending on platform:
    - **Docs repo:** Commit + PR (reuse PR mode)
-   - **Confluence/wiki:** Use available API or ask operator to paste/upload
+   - **Wiki:** Use available API or ask operator to paste/upload
    - **Static site:** Commit to content directory + trigger build
 
 2. **Record** — note published location in task file and WI notes.
@@ -121,9 +127,11 @@ For work reaching stakeholders via informal channels.
 
 ### Steps
 
-1. **Deliver** — share via the appropriate channel. Ask operator for routing if unclear.
+1. **Match the thread's register.** When replying in an existing thread (Slack, doc comment, email reply), match its length, tone, and focus — a congruent reply is the appropriate update + a brief statement of intent + the ask, nothing more, not a project-status dump or multi-paragraph background where participants post 1–2 line replies. (For thread *staleness* — it may have moved since you last read it — see Gate guard Check 2.)
 
-2. **Record** — note what was shared, with whom, and where it lives.
+2. **Deliver** — share via the appropriate channel. Ask operator for routing if unclear.
+
+3. **Record** — note what was shared, with whom, and where it lives.
 
 ---
 

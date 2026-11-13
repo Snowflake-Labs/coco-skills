@@ -37,9 +37,11 @@ Survey ranges widely to find *where* a topic lives and *what* is already known. 
 | 1 | Active WI notes | Read `notes/{YYYY-MM}/{project}-wi{N}-*.md` directly if a WI is active |
 | 2 | The vault (notes + tasks + diary) | **Recall** (`references/observe-recall.md`) — not a bare grep. Recall expands the query into candidate terms, then greps; it bridges the vocabulary gap a literal grep misses. |
 | 3 | `/memories/` directory | Glance the in-context `MEMORY.md` index; `memory view` a specific file if a pointer looks relevant. Do not send Recall here — its scope is the vault only. |
-| 4 | External discovery surfaces | Glean, wiki/Confluence, Google Docs, the web, code repositories, and any connected MCP sources — to locate where the topic lives and what's documented |
+| 4 | External discovery surfaces | Knowledge bases and enterprise search, wikis, shared documents, the web, code repositories, and any connected MCP sources — to locate where the topic lives and what's documented |
 
 **Check local first** (1–3) so you don't re-discover what we already know — but Survey's job is breadth: once local is checked, range across whatever external surfaces and MCP tools are available. No results means "not yet documented" — not "nothing exists."
+
+The hermetic survey subagent (`xo-cold-fast`) reaches only the filesystem, vault, and code — it has **no MCP, web, or browser tools**. Scan external and MCP-backed sources (knowledge bases, wikis, chat, email, code hosts, the web) from the main session, or offload them to a `generalPurpose` subagent — see *Offload an external or MCP read* below.
 
 Before you range outward, consult any registered knowledge sources relevant to the topic and suggest them to the operator rather than auto-searching them. Use the survey context to frame the offer plainly: *"You've previously found [source] useful for [domain] — want me to include that in this survey?"*
 
@@ -55,7 +57,7 @@ For broad scans across multiple sources or a large codebase, dispatch one or mor
 runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
   PERSONA: Surveyor — scan for all references to [topic]
   INPUTS: [source area path or system]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/survey-[source-area].md
+  OUTPUT_PATH: $XO_SCRATCH/survey-[source-area].md
   
   Scan [source area] for any content related to [topic]. 
   Record what you find, where it lives, and any pointers to related material.
@@ -63,7 +65,22 @@ runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
 ")
 ```
 
-Run multiple dispatches in parallel when covering genuinely distinct areas. Each writes its findings to `$XOCORTEX_HOME/tmp/wi{N}/survey-[area].md`.
+Run multiple dispatches in parallel when covering genuinely distinct areas. Each writes its findings to `$XO_SCRATCH/survey-[area].md`.
+
+### Offload an external or MCP read (generalPurpose)
+
+`xo-cold-fast` is hermetic — filesystem, vault, and code only. When Survey needs to range across an **external or MCP-backed source** (a knowledge base or enterprise search, a wiki space, chat, email, a code host, the web) and you want the bulky raw results kept out of your own context, offload the read to the built-in `generalPurpose` subagent. It inherits the session's connected MCP, web, and browser tools, so it reaches whatever the operator has configured — there are no tool names to predict.
+
+```
+runSubagent(subagent_type: "generalPurpose", prompt: "
+  Read-only. Search [the knowledge base / wiki space / the web] for [topic].
+  Do NOT send, post, create, edit, reply, or modify anything — only read and report.
+  Write the full findings to OUTPUT_PATH: $XO_SCRATCH/survey-[source].md, and
+  return a short distilled list of relevant items (title, source, link).
+")
+```
+
+> **`generalPurpose` has full read-write access.** Unlike the hermetic `xo-cold-*` agents, it inherits *every* session tool — including write and send ones (sending messages, drafting email, writing to a code host, editing files, running SQL). Dispatching it with `readonly: true` does **not** remove those tools. So frame the brief as strictly read-and-report, name the single source to read, and never instruct it to act. This is the **one** sanctioned use of `generalPurpose` in XO; the Hard rule against substituting it for a stage's prescribed subagent (SKILL.md) holds everywhere else.
 
 ### Inline survey (single source, quick)
 

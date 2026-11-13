@@ -27,6 +27,8 @@ A good spec is not about enumerating every detail — it is about bounding the e
 
 ## Structure: intent-driven format
 
+**Specify the minimal sufficient scope.** Define the least that meets the Goal; challenge every requirement that is not necessary to it. Capture what a leaner design deliberately omits as explicit Non-goals, so the trade is visible and operator-accepted rather than assumed. (Principle: `core-guidelines.md` "Minimal sufficient solution".)
+
 Organise the spec around the four blocks of intent-driven development:
 
 ```markdown
@@ -72,6 +74,7 @@ Organise the spec around the four blocks of intent-driven development:
 ## Output / Acceptance criteria
 [How we know this is done. What the agent can check. What the operator observes.]
 - Done when: [condition]
+- Interfaces to test: [optional; for work that will get tests. Each public interface, with one line on what a test there would catch and what it would miss. See `references/refs-test-design.md`.]
 - Anchor-integrity check: [before Build, every tagged concept resolves to a real source and nothing is left to improvisation]
 - Verify by: [how to verify]
 ```
@@ -97,7 +100,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — spec review
   REFERENCE: [the draft spec]
   INPUTS: [relevant findings brief or prior WI notes]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/spec-critique.md
+  OUTPUT_PATH: $XO_SCRATCH/spec-critique.md
   
   Review this spec draft. For each section (Goal/Requirements/Constraints/Non-goals/Output):
   - Is the intent clear and unambiguous?
@@ -121,7 +124,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Critic — anchor-integrity check
   REFERENCE: [the draft spec]
   INPUTS: [source files or findings the source map cites]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/spec-anchor-integrity.md
+  OUTPUT_PATH: $XO_SCRATCH/spec-anchor-integrity.md
   
   Review the spec's Source map (chain of evidence).
   - Does every tagged concept resolve to a real source section or anchor?
@@ -138,15 +141,18 @@ Address any REVISE feedback before presenting to the operator.
 
 ## Operator gate (mandatory)
 
-**No execution begins without operator approval of the spec.**
+**No execution begins without operator approval of the spec.** Run the milestone awareness gate check (`references/core-guidelines.md`, Freshness and concurrency) before presenting the spec.
 
 For build/act-pathway WIs, acceptance criteria must be present and operator-confirmed before Act. Investigation/observe (and other non-build) WIs state the deliverable *form* instead (e.g. "findings brief at the scratch path") and must not be blocked for lacking acceptance criteria.
+
+When the work will get tests, propose the public interfaces to test with the acceptance criteria, and the operator confirms them in this same approval. If the spec already lists them, there is nothing extra to ask.
 
 Present the spec:
 > "Here is the spec for [brief title]. Please review:
 > - Goal: [one line]
 > - [N] requirements, [M] constraints
 > - Done when: [acceptance criteria summary]
+> - Interfaces to test: [the list, when the spec has one]
 >
 > Approve to proceed to Act, or let me know what to adjust."
 
@@ -187,8 +193,9 @@ Write the approved spec to `notes/{YYYY-MM}/{project}-wi{N}-spec.md`. Update the
 The spec informs how the Act phase is sequenced:
 
 - **Standard (spec-first)**: Spec → Plan → Provision → Build → Prove → Ship
-- **TDD (bracket-first)**: Spec → Plan → Prove (write failing tests encoding the spec's acceptance criteria) → Build (implement to green) → Prove (verify) → Ship
-- **Empirical (discovery-first)**: No upfront spec; after production, write a retrospective spec and enter Review (Mode C: Self-Validation)
+- **TDD (bracket-first)**: Spec → Plan → Provision → Prove (write at most one failing test per acceptance criterion; see `references/refs-test-design.md`) → Build (implement to green) → Prove (verify) → Ship
+- **Reproduce-bug (failing-command-first)**: Spec (the reported symptom and acceptance criteria; no cause) → Provision → Prove.reproduce → Build → Prove.verify → Ship
+- **Empirical (discovery-first)**: No upfront spec; after production, write a retrospective spec and enter Review (`references/decide-review.md` "Self-validation")
 
 State the intended sequence at the bottom of the spec so the Act phase knows how to compose.
 
@@ -198,4 +205,4 @@ State the intended sequence at the bottom of the spec so the Act phase knows how
 
 - **Usually follows:** Workshop (an approach was chosen) — or Distil / the operator directly if the approach is obvious.
 - **Leads to — primary:** Plan (turn the spec into implementation steps via plan mode).
-- **Or:** Prove.author (TDD — write tests from the spec before building).
+- **Or:** Prove.author (TDD — write tests from the spec before building); Provision → Prove.reproduce (reproduce-bug — a failing command before the fix).

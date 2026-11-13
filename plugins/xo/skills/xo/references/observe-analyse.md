@@ -26,6 +26,12 @@ Depth-first investigation of a known target. The goal is to **establish what is 
 
 ---
 
+## Source access (local-first)
+
+**Local-first for multi-file repo reads.** Before making many sequential MCP `get_file` calls against one repo, check whether it's already cloned locally (or clone once) and read with Read/Grep — a local checkout is faster and doesn't burn API calls. Reserve single MCP reads for a one-file peek or PR metadata. For the identity-aware clone mechanics (host aliases, per-owner tokens), see a GitHub-identity skill if you have one (e.g. `snowflake-github`'s Local Clone Fast Path); otherwise apply the same approach directly — clone once with the correct identity and read locally.
+
+---
+
 ## Mode: investigation
 
 Investigation of a known target. By default, a single depth-first pass following connections level-by-level — but for large targets (a monorepo with distinct areas, a stack of PDFs where contract details could be in any of them) dispatch multiple agents in parallel, each scoped to a distinct area. Use judgment: parallel when one agent can't cover the target thoroughly; depth-first when focused precision is what's needed.
@@ -37,7 +43,7 @@ runSubagent(subagent_type: "xocortex:xo-cold-smart", prompt: "
   PERSONA: Investigator — establish verified facts about [topic]
   REFERENCE: [the question to answer or the spec to verify against]
   INPUTS: [target path(s)]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/analyse-[topic].md
+  OUTPUT_PATH: $XO_SCRATCH/analyse-[topic].md
   
   Investigate [target] to answer: [question].
   For each finding: cite file:line or specific evidence.
@@ -54,7 +60,7 @@ When static analysis isn't sufficient (behaviour under real conditions, build ou
 runSubagent(subagent_type: "xocortex:xo-cold-fast", prompt: "
   PERSONA: Tester — run [command or test] and report the output faithfully
   INPUTS: [what to run, where]
-  OUTPUT_PATH: $XOCORTEX_HOME/tmp/wi{N}/analyse-empirical-[topic].md
+  OUTPUT_PATH: $XO_SCRATCH/analyse-empirical-[topic].md
   
   Run [command]. Record the exact output. Note pass/fail counts, errors, and any environment issues.
   Do not interpret — just report.
@@ -69,7 +75,7 @@ The `xo-cold-smart` analysis and the empirical results are then synthesised by t
 
 **Completion condition: grounding.** Analyse is complete when every reported fact cites the evidence obtained for it (file:line, command output, traced path). Do not report recalled or assumed behaviour as fact — that is a silent failure. Set investigation depth by what the downstream stage requires, not by confidence or token count. Report only facts the evidence supports; do not add speculative risk.
 
-Write **verified facts** to `notes/{YYYY-MM}/wi{N}-analysis.md` (or `$XOCORTEX_HOME/tmp/wi{N}/analyse-*.md` for intermediate per-angle files):
+Write **verified facts** to `notes/{YYYY-MM}/wi{N}-analysis.md` (or `$XO_SCRATCH/analyse-*.md` for intermediate per-angle files):
 
 ```markdown
 ## Analysis — [subject] ([date])

@@ -26,7 +26,7 @@ The diary answers **"what happened today, in what order?"** Each entry is a save
 - Applied orphaned DOM cleanup (Fix F) and tool pinning leak fix (Fix G)
 - Decision: cleanup at diff-render level, not aggressive node clear
 - Status: InProgress — awaiting user testing of multi-monitor scenario
-- Notes updated: `notes/2026-03/wi46-chat-overlap-bug-investigation.md`
+- Notes updated: `notes/2026-03/wi123-chat-overlap-bug-investigation.md`
 ```
 
 The diary always gets an entry for a session that did substantive work, keyed on the short session id. A WI reference is included when the session is tracked under a work item; a lightweight WI-less session drops the WI prefix and the notes pointer and keys on the session id alone.
@@ -52,8 +52,8 @@ The diary always gets an entry for a session that did substantive work, keyed on
 The diary is a single file per day. Multiple parallel sessions append to it. Short entries minimise conflict surface.
 
 **CRITICAL:** Diary writes must be append-only operations.
-- Bash: `echo "..." >> diary.md` or `cat >> diary.md << 'EOF'`
-- Never use `edit`, `multi_edit`, or any tool that reads the file first
+- Use the `xo-ops` `append_diary` tool — it appends without reading the file, and resolves the dated path and month dir for you.
+- Never use `edit`, `multi_edit`, or any tool that reads the file first; never shell-append.
 - This prevents race conditions when multiple agents savepoint concurrently
 
 ## Task File: Living Current State

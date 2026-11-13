@@ -1,5 +1,12 @@
 {
   "name": "xo",
-  "description": "XO operator workflow system for Cortex Code: composable workflow stages with quality gates, specialised subagents (proposer/critic/verifier), behavioural-enforcement hooks (automatic session recording, context checkpointing, and process guidance), and persistent cross-session memory. Prereqs: node, git, gh, jq. After install, run the bundled plugin/setup.sh to set XOCORTEX_HOME, put node on the hooks' PATH, and optionally create a git-backed vault.",
-  "version": "3.3.1"
+  "description": "XO operator workflow system for Cortex Code: composable workflow stages with quality gates, specialised subagents (proposer/critic/verifier), behavioural-enforcement hooks (automatic session recording, context checkpointing, and process guidance), and persistent cross-session memory. Prereqs: node, git (gh only to create a GitHub-backed vault). After install, run the bundled setup.sh at the plugin root (Windows: setup.ps1) to check node is reachable by hooks and optionally choose or create a git-backed vault (it also registers the plugin when installed from a git clone); then restart Cortex Code and Connect and Trust the xo-ops MCP server in the MCP panel.",
+  "version": "3.5.5",
+  "mcpServers": {
+    "xo-ops": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CORTEX_PLUGIN_ROOT}/mcp/server.js"]
+    }
+  }
 }

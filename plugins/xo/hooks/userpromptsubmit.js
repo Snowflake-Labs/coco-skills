@@ -2,7 +2,9 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { readInput, localWallClock, buildPaths } = require('./_common.js');
+const { readInput, localWallClock, buildPaths, buildRehydrationDirective, consumeRehydrateFlag, detectSummarisation,
+        readSessionTitle, sessionTitleCheck, claimSessionNamingDirective,
+        buildSessionNamingDirective, claimSessionNamingTip, SESSION_NAME_TIP } = require('./_common.js');
 const { checkContext } = require('./_context-monitor.js');
 
 function main() {
@@ -15,7 +17,7 @@ function main() {
     }
 
     const ctx = buildPaths(input);
-    const { SHORT_SID, LOG_FILE, CONTEXT_STATE_DIR, SESSION_ID, DIARY_PATH } = ctx;
+    const { SHORT_SID, LOG_FILE, CONTEXT_STATE_DIR, CONVERSATIONS_DIR, SESSION_ID, DIARY_PATH } = ctx;
 
     if (DIARY_PATH) {
         try { fs.mkdirSync(path.dirname(DIARY_PATH), { recursive: true }); } catch (_) {}
@@ -36,19 +38,49 @@ function main() {
 
     const localPromptLine = `TIME: User Local Time at Prompt Submit: ${localWallClock()}`;
 
+    // Detect a summarisation from the host's own record and set the one-shot rehydrate flag
+    // when the conversation's summarisation count grows. Runs before the consume below.
+    detectSummarisation({
+        sessionId: SESSION_ID, conversationsDir: CONVERSATIONS_DIR, contextStateDir: CONTEXT_STATE_DIR,
+        mode: 'live', logFile: LOG_FILE, shortSid: SHORT_SID,
+    });
+
+    // Consume a pending summarisation-rehydrate flag (set by sessionstart compact or the
+    // summarisation detector above). On a reopen this is the first turn the user sees, so
+    // the directive leads the injected context; first consumer to see it clears it.
+    const rehydrate = consumeRehydrateFlag(CONTEXT_STATE_DIR, SESSION_ID);
+    const rehydratePrefix = rehydrate.pending
+        ? buildRehydrationDirective({
+            shortSid: SHORT_SID,
+            stats: rehydrate.stats,
+            titleCheck: sessionTitleCheck(readSessionTitle(SESSION_ID, CONVERSATIONS_DIR)),
+        }) + '\n\n'
+        : '';
+
+    // First-rename directive: bounded, and cleared once PostToolUse observes rename_session.
+    let renameLine = claimSessionNamingDirective(CONTEXT_STATE_DIR, SESSION_ID)
+        ? `\n\n${buildSessionNamingDirective()}`
+        : '';
+    // Once-only pointer to the setting, after the bounded directive went unanswered.
+    if (!renameLine && claimSessionNamingTip(CONTEXT_STATE_DIR, SESSION_ID)) renameLine = `\n\n${SESSION_NAME_TIP}`;
+
     if (r.result !== 'fire') {
         // Not a checkpoint threshold. When a live reading is available, surface a minimal
         // SILENT context indicator every turn so the agent always has the CURRENT number and
         // never carries a stale checkpoint figure forward (e.g. after compaction frees the
         // window). Informational only — the wording forbids idle discussion of it.
+        // Skip the figure when the monitor SUPPRESSED or flagged this reading as an untrusted
+        // spike: both are unconfirmed one-turn cache_read over-reports, so the % is untrusted
+        // and would mislead if quoted. The line is purely informational, so omitting it for
+        // that one turn is safer than surfacing a spike.
         // Primary reminder that keeps XO discipline present through skill loads.
         // Conditional wording self-suppresses for reactive / no-pathway sessions.
         const xoLine = `XO [silent]: if you're working under an XO pathway, treat any skill you invoke as domain knowledge for your CURRENT stage — keep following your XO stages, gates, and recording; don't let a loaded skill replace the XO process. Surface nothing about this unless it yields a real action.`;
-        if (r.reportedPct !== undefined) {
+        if (r.reportedPct !== undefined && r.result !== 'suppress' && r.result !== 'untrusted') {
             const ctxLine = `CONTEXT [silent — informational; surface to the user ONLY when context is genuinely decision-relevant, never as idle chatter]: ~${r.reportedPct}% of the window used as of last turn. May jitter after compaction.`;
-            process.stdout.write(JSON.stringify({ additionalContext: `${localPromptLine}\n\n${ctxLine}\n\n${xoLine}` }));
+            process.stdout.write(JSON.stringify({ additionalContext: `${rehydratePrefix}${localPromptLine}\n\n${ctxLine}\n\n${xoLine}${renameLine}` }));
         } else {
-            process.stdout.write(JSON.stringify({ additionalContext: `${localPromptLine}\n\n${xoLine}` }));
+            process.stdout.write(JSON.stringify({ additionalContext: `${rehydratePrefix}${localPromptLine}\n\n${xoLine}${renameLine}` }));
         }
         return;
     }
@@ -84,7 +116,9 @@ function main() {
 
     const processCheckLine = `PROCESS CHECK (silent): confirm you're still following the XO process — save first, plus the stages, slices, and reflexive gates (cold critic / Prove / Review on produced work) the work warrants. Consult the task's Provisional Pathway if set: when the current stage looks complete — especially right after delivering or shipping something — do your recording (advance the (here) marker), then offer the natural next stage once. Offer any skipped stage or gate once, unless the user already declined it. If this session has become substantive but is NOT tracked under a work item, treat that as a skipped gate: still append the diary line as above, and also offer the user a work item (Work Item Gate options, including "keep it lightweight — no WI"); offer once, and if the user declines, record the decline, keep diarising the session, and don't re-ask. Keep this private — surface nothing unless it yields a real offer.`;
 
-    const msg = `${localPromptLine}\n\nCHECKPOINT [${r.level}] — Session ${SHORT_SID}\n\n${factLine}\n\n${predictionLine}\n\n${recommendationLine}\n${urgencyDetail}\n\n${actionDetail}\n\n${processCheckLine}`;
+    let msg = `${rehydratePrefix}${localPromptLine}\n\nCHECKPOINT [${r.level}] — Session ${SHORT_SID}\n\n${factLine}\n\n${predictionLine}\n\n${recommendationLine}\n${urgencyDetail}\n\n${actionDetail}\n\n${processCheckLine}${renameLine}`;
+    const titleCheck = sessionTitleCheck(readSessionTitle(SESSION_ID, CONVERSATIONS_DIR));
+    if (titleCheck) msg += `\n\n${titleCheck}`;
 
     process.stdout.write(JSON.stringify({ additionalContext: msg }));
 }
