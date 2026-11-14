@@ -1,0 +1,123 @@
+# The report describes structure, not execution safety, license approval, or a
+# complete repository audit. Keep that limited scope visible in the check name.
+name: Skill structure (advisory)
+
+# A PR can edit this workflow. It is not an authoritative merge gate without
+# an independently enforced source workflow in an external ruleset. Checking
+# out a base checker protects that code path, not the workflow definition itself.
+# Use the ordinary PR event rather than a privileged target-context trigger.
+# No path filter: support-only changes, deletions, and automation-only edits must
+# still produce a result. 'edited' also lets base changes trigger reevaluation;
+# the checker decides whether any skills actually need inspection.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+# Checkout needs repository read access. Grant no write permissions for comments,
+# statuses, or repository changes; the later public object fetch uses no token.
+permissions:
+  contents: read
+
+# Superseded runs for the same numeric PR need not spend runner/fetch resources.
+# Different PRs remain independent; this does not lock remote refs during fetch.
+concurrency:
+  group: skill-structure-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# One job keeps trusted bootstrap, dependency setup, and inspection together.
+jobs:
+  structure:
+    name: Skill structure (advisory)
+    # Hosted Linux x64 matches the one wheel allowed by the dependency lock.
+    # This pins an OS label, not an immutable runner-image digest.
+    runs-on: ubuntu-24.04
+    # Overall backstop in addition to the checker's per-command/output budgets.
+    timeout-minutes: 5
+    env:
+      # Runner context supplies the expected repository independently of event
+      # contents; the checker requires the event/base repository to agree.
+      EXPECTED_REPOSITORY: ${{ github.repository }}
+      # Disable pip config-file loading as well as using pip's isolated mode.
+      PIP_CONFIG_FILE: /dev/null
+    defaults:
+      run:
+        # Use predictable Bash behavior from the workspace root, never a
+        # candidate checkout; executable/lock paths below are explicit.
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout maintainer-reviewed base checker only
+        # Immutable action commit; the version comment is a human-readable hint,
+        # not the pin or independent evidence of the action's trustworthiness.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Select the receiving repository's exact base snapshot, not PR code.
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.sha }}
+          # Separate trusted files from the workspace root used by run steps.
+          path: trusted
+          # Non-cone sparse patterns request only the checker and its lock, not
+          # skills/tests to execute. This is a checkout selection, not a content
+          # review or a replacement for the repository trust assumption.
+          sparse-checkout: |
+            /.github/scripts/check_skill_structure.py
+            /.github/requirements-skill-check.txt
+          sparse-checkout-cone-mode: false
+          # The checker needs this snapshot's files, not checkout history.
+          fetch-depth: 1
+          # Do not leave checkout credentials for later Git commands to reuse.
+          persist-credentials: false
+          # Avoid expanding separate repositories or large-file storage content.
+          submodules: false
+          lfs: false
+
+      - name: Require checker and lock on trusted base
+        # Initial bootstrap intentionally fails until both files exist on the
+        # reviewed base. Review/test their introduction locally; never substitute
+        # candidate copies to make that first run green. The guard checks regular
+        # files and rejects final-component symlinks, not every ancestor or the
+        # files' contents. It relies on the preceding trusted-base selection.
+        run: |
+          for file in "$GITHUB_WORKSPACE/trusted/.github/scripts/check_skill_structure.py" "$GITHUB_WORKSPACE/trusted/.github/requirements-skill-check.txt"; do
+            if [[ ! -f "$file" || -L "$file" ]]; then
+              printf '%s\n' '[incomplete] Trusted base must contain the regular checker and dependency lock. Bootstrap: review and test these changes locally before merging them into the base; no candidate fallback.' >&2
+              exit 2
+            fi
+          done
+
+      - name: Set up Python
+        # Pin the setup action implementation separately from the interpreter.
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # Explicit minor version/architecture match the cp312 x86_64 wheel.
+          # The patch release is not fixed; no candidate version file is read.
+          python-version: '3.12'
+          architecture: x64
+
+      - name: Install trusted hash-locked wheel
+        # -I excludes ambient Python import paths/environment overrides; -B
+        # avoids bytecode writes. pip isolation/config controls reduce ambient
+        # installer settings. Only the base lock supplies requirements: hashes
+        # constrain artifact identity, binary-only forbids source builds, and
+        # no-cache avoids a reused pip cache. The index is explicit, not from PR
+        # metadata. A matching hash does not establish that a dependency is safe.
+        run: |
+          python -I -B -m pip --isolated --disable-pip-version-check install \
+            --require-hashes --only-binary=:all: --no-cache-dir \
+            --index-url https://pypi.org/simple \
+            -r "$GITHUB_WORKSPACE/trusted/.github/requirements-skill-check.txt"
+
+      - name: Inspect exact PR Git objects without candidate checkout
+        # Execute only the base checker with isolated Python. Quoted environment
+        # variables carry runner paths/context; no event strings are interpolated
+        # into shell source. The checker validates event identities, constructs
+        # the public fetch/refspec, and checks the fetched head against the event.
+        # Candidate objects stay in a disposable bare database and are not run.
+        # Explicitly pass the runner's summary path; the checker does not infer
+        # it from its environment. Failures remain visible despite advisory scope.
+        run: |
+          python -I -B "$GITHUB_WORKSPACE/trusted/.github/scripts/check_skill_structure.py" \
+            --event "$GITHUB_EVENT_PATH" \
+            --expected-repository "$EXPECTED_REPOSITORY" \
+            --fetch-public \
+            --summary-trusted "$GITHUB_STEP_SUMMARY"
