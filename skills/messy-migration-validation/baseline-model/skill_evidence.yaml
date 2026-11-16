@@ -1,0 +1,36 @@
+skill_name: baseline-model
+skill_type: customer-facing
+promotion_stage: draft
+version: 1.0.0
+authors:
+- sfc-gh-east
+validation:
+  testers:
+    count: 1
+    names:
+    - sfc-gh-east
+customer_impact:
+  customers:
+    count: 0
+    names: []
+evidence_links: []
+notes: 'Sub-skill of messy-migration-validation. See parent skill for full context.
+
+
+  Dry run 2026-10-30 (sfc-gh-east, demo account): UC2 modeled 7 legacy tables (6 verified
+  joins, 33/33 columns mapped) into a 61,002-row baseline view and deployed the validation
+  semantic view.
+
+  '
+overlap_check:
+  max_score: 0.8824
+  highest_match: legacy-model
+  highest_match_source: local
+  method: local-embedding
+  checked_against_count: 178
+  checked_at: '2026-10-30T22:38:20Z'
+  highest_match_description: 'Legacy model development — build a comparable golden
+    source from one or more source tables. Column mapping, join logic, naming conventions,
+    transforms, filters, and primary key definition. Triggers: l'
+  trigger_overlap: 0.5
+  tool_overlap: 1.0
