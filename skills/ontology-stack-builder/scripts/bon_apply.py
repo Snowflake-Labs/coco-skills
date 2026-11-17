@@ -39,7 +39,7 @@ class Applier:
         self.cur, self.domain, self.dry_run, self.log = cur, domain, dry_run, log
 
     def call(self, fn: str, *args, write: bool = True) -> dict:
-        # SYSTEM$ glossary functions raise "inputs may not be null" for NULL
+        # Business Ontology SYSTEM$ functions raise "inputs may not be null" for NULL
         # arguments; optional trailing arguments must be omitted instead.
         while args and args[-1] is None:
             args = args[:-1]

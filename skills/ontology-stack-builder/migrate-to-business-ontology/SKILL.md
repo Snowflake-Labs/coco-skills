@@ -15,7 +15,7 @@ Read [MAPPING.md](MAPPING.md) before starting. It is the contract for what maps 
 - **The user names the domain.** Never derive it from the schema or ontology name without asking.
 - **Read back before reporting.** BON can return `error: false` for writes that never persist. Counts come from `bon_reconcile.py`, never from the write log.
 - **Nothing destructive without a separate confirmation.** M7b (archive and drop) has its own gate and clones before it drops.
-- **BON may not be enabled.** At the time of writing BON is in Private Preview. If any `SYSTEM$*GLOSSARY*` call returns a feature-gate error, stop and tell the user: *Business Ontology is not enabled in this account; ask your account admin to enable it.*
+- **BON may not be enabled.** At the time of writing BON is in Private Preview. If any `SYSTEM$*ONTOLOGY*` call returns a feature-gate error, stop and tell the user: *Business Ontology is not enabled in this account; ask your account admin to enable it.*
 
 All scripts run with `uv` from the skill directory:
 
