@@ -40,12 +40,12 @@ M0 PREFLIGHT  -> M1 EXTRACT -> M2 REVIEW (gate) -> M3 APPLY NODES/EDGES/REPRESEN
 Collect `{DATABASE}.{SCHEMA}` of the stack and the Snowflake connection name. Then run:
 
 ```sql
-SELECT SYSTEM$GET_GLOSSARY_SUMMARY();                              -- feature gate + existing domains[]
+SELECT SYSTEM$GET_ONTOLOGY_SUMMARY();                              -- feature gate + existing domains[]
 SHOW TABLES LIKE 'ONT_%' IN SCHEMA {DATABASE}.{SCHEMA};             -- stack present? previous run (ONT_BON_MIGRATION_MAP)?
 SELECT ONTOLOGY_NAME, DESCRIPTION, VERSION FROM {DATABASE}.{SCHEMA}.ONT_ONTOLOGY;
 SHOW SEMANTIC VIEWS IN SCHEMA {DATABASE}.{SCHEMA};                  -- data SV (base view or {ONT}_KG_MODEL) + ontology/metadata SVs
 SHOW AGENTS IN SCHEMA {DATABASE}.{SCHEMA};                          -- the stack's agent (name varies)
-SELECT SYSTEM$GET_GLOSSARY_TERM_DRAFTS();                           -- pending drafts that a scoped approve must not touch
+SELECT SYSTEM$GET_ONTOLOGY_TERM_DRAFTS();                           -- pending drafts that a scoped approve must not touch
 ```
 
 If no agent is in the stack schema, also check `SHOW AGENTS IN SCHEMA SNOWFLAKE_INTELLIGENCE.AGENTS` and ask the user which agent serves this stack.
@@ -119,10 +119,10 @@ uv run --extra migration python scripts/bon_apply.py \
 
 `bon_apply.py` follows the BON backend model exactly:
 
-1. Creates `{DOMAIN}` if it does not exist (`SYSTEM$CREATE_GLOSSARY_DOMAIN`).
-2. Drafts every node (`SYSTEM$DRAFT_GLOSSARY_TERM`), then approves only the term IDs it drafted (`SYSTEM$APPROVE_ALL_GLOSSARY_TERMS('[ids]')`). Existing nodes with the same name in the domain are reused, not duplicated.
-3. Drafts relationships only between ACTIVE endpoints (`SYSTEM$DRAFT_GLOSSARY_RELATIONSHIP` addressed by term ID, so names containing dots are safe), then approves only its own tuples (`SYSTEM$APPROVE_ALL_GLOSSARY_RELATIONSHIPS('[{source,target,type}]')`). The label argument is sent only for `CUSTOM`.
-4. Drafts representations (`SYSTEM$DRAFT_GLOSSARY_ASSET`), then approves only its own refs (`SYSTEM$APPROVE_ALL_GLOSSARY_ASSETS`).
+1. Creates `{DOMAIN}` if it does not exist (`SYSTEM$CREATE_ONTOLOGY_DOMAIN`).
+2. Drafts every node (`SYSTEM$DRAFT_ONTOLOGY_TERM`), then approves only the term IDs it drafted (`SYSTEM$APPROVE_ALL_ONTOLOGY_TERMS('[ids]')`). Existing nodes with the same name in the domain are reused, not duplicated.
+3. Drafts relationships only between ACTIVE endpoints (`SYSTEM$DRAFT_ONTOLOGY_RELATIONSHIP` addressed by term ID, so names containing dots are safe), then approves only its own tuples (`SYSTEM$APPROVE_ALL_ONTOLOGY_RELATIONSHIPS('[{source,target,type}]')`). The label argument is sent only for `CUSTOM`.
+4. Drafts representations (`SYSTEM$DRAFT_ONTOLOGY_ASSET`), then approves only its own refs (`SYSTEM$APPROVE_ALL_ONTOLOGY_ASSETS`).
 5. Never calls the no-argument `APPROVE_ALL_*` forms (they approve the whole account's queue).
 6. Writes `{OUT}/apply_log.json` with every call and response.
 
@@ -163,7 +163,7 @@ uv run --extra migration python scripts/bon_reconcile.py \
   --domain "{DOMAIN}" --input-dir {OUT}
 ```
 
-It reads the BON graph back (`SYSTEM$GET_GLOSSARY_GRAPH('{DOMAIN}')`, falling back to per-term `SYSTEM$GET_GLOSSARY_TERM` when the graph call fails on large accounts), compares it with the export, writes `{OUT}/reconcile_report.md`, and upserts `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP` (DDL in `references/migration_map_table.sql`): one row per source object with its BON term ID, status (`MIGRATED`, `MISSING`, `NOT_MIGRATED`) and the original source row.
+It reads the BON graph back (`SYSTEM$GET_ONTOLOGY_GRAPH('{DOMAIN}')`, falling back to per-term `SYSTEM$GET_ONTOLOGY_TERM` when the graph call fails on large accounts), compares it with the export, writes `{OUT}/reconcile_report.md`, and upserts `{DATABASE}.{SCHEMA}.ONT_BON_MIGRATION_MAP` (DDL in `references/migration_map_table.sql`): one row per source object with its BON term ID, status (`MIGRATED`, `MISSING`, `NOT_MIGRATED`) and the original source row.
 
 Parity must be 100% for every in-scope object. For each `MISSING` item, re-run `bon_apply.py` once (it is idempotent and only writes what is missing). If an item is still missing, report it; do not loop.
 
@@ -251,7 +251,7 @@ A delta re-run is M1 -> M4 -> M3 apply -> M5: run `bon_import_metrics.py` after 
 
 ## Incremental re-runs (delta sync)
 
-While both systems coexist, rerun M1 -> M4 -> M3 -> M5. The exporter compares each source row's checksum with `ONT_BON_MIGRATION_MAP.SOURCE_CHECKSUM`. Unchanged rows are skipped, changed descriptions become `SYSTEM$UPDATE_GLOSSARY_TERM` patches (shown at M2 as old -> new, because changing a governed value is drift), and new rows are drafted. Removed source rows are reported, never deleted from BON automatically.
+While both systems coexist, rerun M1 -> M4 -> M3 -> M5. The exporter compares each source row's checksum with `ONT_BON_MIGRATION_MAP.SOURCE_CHECKSUM`. Unchanged rows are skipped, changed descriptions become `SYSTEM$UPDATE_ONTOLOGY_TERM` patches (shown at M2 as old -> new, because changing a governed value is drift), and new rows are drafted. Removed source rows are reported, never deleted from BON automatically.
 
 ## Troubleshooting
 
@@ -260,7 +260,7 @@ While both systems coexist, rerun M1 -> M4 -> M3 -> M5. The exporter compares ea
 | `Term not found` on a relationship | endpoint still DRAFT | approve the node first, or re-run without `--save-as-draft` |
 | `source and target must be different terms` | self-referential relation edited into `relationships.json` by hand | remove it; the exporter already reports these in the loss report |
 | Relationship reported written but absent | BON silent drop | re-run `bon_apply.py` once; report if still missing |
-| `GET_GLOSSARY_GRAPH` error 300002 | account graph too large | reconcile falls back to per-term reads automatically |
+| `GET_ONTOLOGY_GRAPH` error 300002 | account graph too large | reconcile falls back to per-term reads automatically |
 | COLUMN representation rejected | column not in the catalog (KG path view built with different casing) | check `DESCRIBE VIEW V_{CLASS}`; the column is reported, not retried |
 | Domain name rejected by BON tools | name with characters a tool does not accept | `bon_apply.py` binds names as string literals; keep the name the user chose |
 | Reconcile says representations are missing right after a clean apply | read-side objects report `objectType` (`Column`, `View`) instead of `refType` | handled by `bon_migration_common.asset_key`; if a new object type appears, extend it there |

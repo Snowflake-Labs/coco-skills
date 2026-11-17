@@ -29,7 +29,7 @@ If you are starting fresh and have no stack yet, you do not need this: use the `
 
 | Requirement | How to check |
 |---|---|
-| **Business Ontology enabled on the account.** At the time of writing BON is in Private Preview; your account team enables it. | `SELECT SYSTEM$GET_GLOSSARY_SUMMARY();` returns JSON with `"error":false`. A feature-gate error means it is not enabled. |
+| **Business Ontology enabled on the account.** At the time of writing BON is in Private Preview; your account team enables it. | `SELECT SYSTEM$GET_ONTOLOGY_SUMMARY();` returns JSON with `"error":false`. A feature-gate error means it is not enabled. |
 | **An ontology stack** in one schema | `SHOW TABLES LIKE 'ONT_CLASS' IN SCHEMA MY_DB.MY_SCHEMA;` returns a row |
 | **A role** that can read the stack schema, create tables and agents in it, and create and approve BON domains, nodes, relationships and representations | All tests so far used `ACCOUNTADMIN`. A least-privilege role has not been verified yet. |
 | **Cortex Code** with this skill installed | `$ontology-stack-builder` is available in Cortex Code |
@@ -290,7 +290,7 @@ The full table is in [SKILL.md § Troubleshooting](SKILL.md#troubleshooting). Th
 
 | You see | Do this |
 |---|---|
-| Feature-gate error on any `SYSTEM$...GLOSSARY` call | BON is not enabled; contact your account team |
+| Feature-gate error on any `SYSTEM$..._ONTOLOGY_...` call | BON is not enabled; contact your account team |
 | *ONT_ONTOLOGY holds 2 ontologies* | Re-run with `--ontology NAME`, one domain each |
 | Review lists `broken_bindings` | A source table behind a class was dropped or renamed. The class still migrates without the table link; fix the stack and re-run to add it |
 | Agent comparison: `not_grounded_in_domain` | Search index lag: wait 5+ minutes and re-run `compare` |
