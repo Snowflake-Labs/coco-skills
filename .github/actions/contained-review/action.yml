@@ -1,0 +1,40 @@
+name: Contained skill review
+description: Thin adapter for separately reviewed tooling and a preprovisioned image; not workflow authority.
+inputs:
+  trusted-root:
+    description: Absolute separately reviewed installation root, never base or candidate data.
+    required: true
+  candidate-root:
+    description: Absolute checkout of the exact PR head, treated only as data.
+    required: true
+  base-root:
+    description: Absolute separate checkout of the exact PR base, treated only as data.
+    required: true
+  image:
+    description: Independently approved, preloaded local sha256 image ID; never pulled or built.
+    required: true
+  tooling-sha256:
+    description: Independently approved CI snapshot manifest digest; not PR-supplied.
+    required: true
+  report:
+    description: New JSON file in an existing private 0700 directory outside all checkouts.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Verify and review with the same deterministic core
+      shell: bash
+      env:
+        TRUSTED_ROOT: ${{ inputs.trusted-root }}
+        CANDIDATE_ROOT: ${{ inputs.candidate-root }}
+        BASE_ROOT: ${{ inputs.base-root }}
+        REVIEW_IMAGE: ${{ inputs.image }}
+        TOOLING_SHA256: ${{ inputs.tooling-sha256 }}
+        REPORT_PATH: ${{ inputs.report }}
+      run: |
+        python3 -I -B "$GITHUB_ACTION_PATH/../../scripts/action_review.py" \
+          --trusted-root "$TRUSTED_ROOT" --candidate-root "$CANDIDATE_ROOT" \
+          --base-root "$BASE_ROOT" --image "$REVIEW_IMAGE" \
+          --tooling-sha256 "$TOOLING_SHA256" --report "$REPORT_PATH" \
+          --event-path "$GITHUB_EVENT_PATH" --event-name "$GITHUB_EVENT_NAME" \
+          --repository "$GITHUB_REPOSITORY"

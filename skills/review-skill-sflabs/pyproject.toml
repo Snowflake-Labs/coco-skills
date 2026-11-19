@@ -1,0 +1,12 @@
+# Snapshot recipe metadata, NOT a pip/setuptools distribution.
+# Do not run pip install or a PEP 517 build in this directory.
+[tool.contained-reviewer]
+format = "contained-reviewer-snapshot/1"
+python = ">=3.11"
+runtime-dependencies = "requirements.txt"
+packager = "../../.github/scripts/package_reviewer.py"
+local-entrypoint = "scripts/run.py"
+distribution = "blocked-pending-rights-and-owner-approval"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

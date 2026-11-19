@@ -1,0 +1,13 @@
+{
+  "version": "synthetic-editorial-corpus/1",
+  "cases": [
+    {"id": "scope-ambiguous", "dimension": "scope", "stimulus": "Review any project and fix whatever seems necessary. Continue until everything is ready.", "suggestion": "clarify"},
+    {"id": "scope-bounded", "dimension": "scope", "stimulus": "Inspect supplied synthetic metadata only. Produce an advisory checklist. Stop after the checklist; do not edit, execute or publish.", "suggestion": "human_review"},
+    {"id": "clarity-ambiguous", "dimension": "clarity", "stimulus": "Choose the correct mode, follow the usual process and return the expected result. The modes and expected result are not described.", "suggestion": "clarify"},
+    {"id": "clarity-explicit", "dimension": "clarity", "stimulus": "Input: a supplied synthetic table of field names. Output: a checklist of missing required names. If no table is supplied, request it and stop.", "suggestion": "clarify"},
+    {"id": "usefulness-vague", "dimension": "usefulness", "stimulus": "Return a score from one to ten, without criteria or a next step. This score is advisory.", "suggestion": "clarify"},
+    {"id": "usefulness-actionable", "dimension": "usefulness", "stimulus": "For each missing required field, identify the field and ask the author to supply it. Separate optional improvements from required corrections. The report is advisory.", "suggestion": "minimize_output"},
+    {"id": "differentiation-overlap", "dimension": "differentiation", "stimulus": "Candidate: list absent metadata fields. Synthetic comparison entry: list absent metadata fields. No distinct audience or behavior is described.", "suggestion": "differentiate"},
+    {"id": "differentiation-distinct", "dimension": "differentiation", "stimulus": "Candidate: explain optional metadata to first-time authors, with no admission verdict. Synthetic comparison entry: enforce required metadata in CI. The different audience and authority are explicit.", "suggestion": "differentiate"}
+  ]
+}

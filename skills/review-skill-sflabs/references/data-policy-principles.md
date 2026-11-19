@@ -1,6 +1,6 @@
 # Data Policy Principles for Skills
 
-> Source of truth for the `data-policy-scan` workflow. When this file changes, the workflow's behavior changes — no other file needs to update.
+> Human editorial guidance, not runtime instructions or authorization. Deterministic rules live in scripts/checks.py and require a versioned code change to update. Contextual interpretation is human review; optional model assessment is disabled. Never load candidate text into the host agent to apply this guidance. Internal access to personal data requires authorization regardless of whether it appears in output.
 
 These principles apply to any skill that surfaces data, recommendations, or assessments to a user. They are domain-agnostic — every check below is engineering hygiene that holds regardless of which platform, tool, or audience the skill targets.
 

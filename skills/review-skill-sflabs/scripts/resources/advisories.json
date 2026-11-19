@@ -1,0 +1,7 @@
+{
+  "format": "osv-ranges/1",
+  "source": "https://osv.dev (public OSV database), refreshed offline by .github/scripts/refresh_advisories.py",
+  "generated": null,
+  "approval": "Empty until a maintainer runs the refresh script and reviews the diff. Pinned dependencies are reported as dependency.unchecked while this is empty.",
+  "packages": {}
+}
