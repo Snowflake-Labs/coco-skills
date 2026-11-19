@@ -1,0 +1,99 @@
+/* voice.css: Voice Studio. The line being read is the loudest thing on screen; everything else stays quiet. */
+:root{
+  --bg:#F6F5F2; --panel:#FFFFFF; --ink:#152838; --muted:#526979; --line:#D6DDE2; --line2:#B7C3CC;
+  --rec:#AB202A; --rec-soft:#F9E4E1; --ok:#0B7A55; --warn:#8A5A00; --bad:#B42318;
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  color:var(--ink); background:var(--bg); color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0}
+button,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line2);background:#fff;color:var(--ink);border-radius:8px}
+button:disabled{cursor:default;opacity:.45}
+button:not(:disabled):hover{filter:brightness(.96)}
+:focus-visible{outline:3px solid #168cba;outline-offset:3px}
+.muted{color:var(--muted)} .small{font-size:13px}
+
+.top{height:72px;display:flex;align-items:center;gap:18px;padding:0 28px;background:#fff;border-bottom:1px solid var(--line)}
+.wordmark{font-size:21px;font-weight:650;margin:0}
+.project{font-size:14px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{font-size:13.5px;font-weight:600;min-width:90px}
+.recording .status{color:var(--rec)}
+.privacy{font-size:12.5px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.back{font-size:13.5px;color:#126a8e;text-underline-offset:3px;white-space:nowrap}
+
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:calc(100vh - 72px)}
+nav{padding:20px 14px;border-right:1px solid var(--line);background:#EEF2F5}
+nav button{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;padding:10px;margin:0 0 4px;
+  border:1px solid transparent;background:transparent;border-radius:6px;line-height:1.35;font-size:13.5px}
+nav button[aria-current=true]{background:#DDE7EE;border-color:#AEBFCD}
+nav time{font-variant-numeric:tabular-nums;font-size:12px;padding-top:1px;color:#506775}
+nav .lab{font-weight:600}
+nav .say{grid-column:2;color:var(--muted);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav .chip{grid-column:2;justify-self:start;font-size:11px;font-weight:650;padding:1px 8px;border-radius:999px;background:#E3E8EC;color:var(--muted)}
+.chip.ok{background:#DDF1E6;color:#08613F} .chip.missing{background:#FFF4D6;color:#7A5200}
+.chip.stale{background:#F3E3E1;color:#8A2A1F} .chip.long{background:#F3E3E1;color:#8A2A1F} .chip.none{background:transparent;padding-left:0}
+.chip.test{background:#F0E6F8;color:#5B2A8A}
+
+.main{min-width:0;padding:26px clamp(20px,4vw,56px) 170px}
+.brief{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;color:#435c6c;font-size:14.5px;margin:0 0 18px}
+.brief strong{color:var(--ink)}
+.stage{display:grid;grid-template-columns:minmax(260px,420px) minmax(0,1fr);gap:24px;align-items:start}
+.picture{background:#111;border-radius:8px;overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center}
+.picture video{width:100%;height:100%;display:block}
+.nopic{color:#ddd;margin:0;font-size:13px}
+.cue-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.scene-number{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.scene-title{font-size:21px;line-height:1.3;margin:6px 0 0;font-weight:600}
+.timer{text-align:right;flex-shrink:0}
+.timer strong{display:block;font-size:44px;font-weight:450;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.timer span{display:block;font-size:12.5px;color:var(--muted);margin-top:6px}
+.hint{font-size:15px;color:#435c6c;line-height:1.5;margin:14px 0 0}
+.script{font-size:clamp(28px,3.1vw,46px);font-weight:450;line-height:1.45;letter-spacing:-.016em;margin:34px 0 30px;max-width:1050px;min-height:140px}
+.script.idle-line{color:#8A9AA6}
+.script.active{background:linear-gradient(transparent 0,transparent 100%);}
+.script .mark{border-bottom:3px solid transparent;transition:border-color .12s}
+.script.active .mark{border-bottom-color:#B92A31;background:var(--rec-soft)}
+.next{border-top:1px solid var(--line);padding-top:18px;display:flex;gap:22px;align-items:baseline;max-width:1050px}
+.next-label{font-size:12.5px;color:var(--muted);flex-shrink:0}
+.next p{font-size:18px;line-height:1.5;margin:0;color:#435c6c}
+.error{color:var(--bad);font-weight:600;margin:16px 0 0;white-space:pre-wrap}
+
+.linebox,.results{margin-top:30px;max-width:1050px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.linebox h3,.results h3{font-size:14px;margin:0 0 4px}
+.fit{margin:0 0 8px;font-size:13.5px;color:var(--muted)}
+.fit.bad{color:var(--bad)}
+.takes{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.takes li{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:13.5px}
+.takes li.chosen{font-weight:600}
+.takes audio{height:32px}
+.takes button{font-size:12.5px;padding:4px 10px}
+.take-row{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.take-row:first-child{border-top:0}
+.take-row .lines{font-size:13px;color:var(--muted)}
+.take-row a{font-size:12.5px;color:#126a8e}
+.take-row .bad{color:var(--bad)}
+
+.controls{position:fixed;left:260px;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:16px 30px 20px;
+  display:flex;align-items:center;gap:10px;z-index:5}
+.controls .icon{width:46px;height:46px;display:grid;place-items:center;flex-shrink:0;padding:0}
+.controls svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.record,.pickup{height:46px;padding:0 18px;display:flex;gap:10px;align-items:center;font-weight:600;font-size:15px}
+.record{background:var(--rec);color:#fff;border-color:var(--rec)}
+.record svg,.pickup svg{fill:currentColor;stroke:none;width:13px}
+.pickup{color:var(--rec);border-color:#E3A9A6}
+.progress{position:absolute;top:0;left:0;height:4px;background:#B92A31;width:0}
+.elapsed{font-variant-numeric:tabular-nums;font-size:13.5px;color:var(--muted);min-width:84px}
+.spacer{flex:1}
+.pace{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.pace select,.device{border:1px solid var(--line2);border-radius:8px;padding:7px 8px;background:#fff;max-width:220px}
+.level{width:80px;height:8px;border-radius:4px;background:#E3E8EC;overflow:hidden}
+.level span{display:block;height:100%;width:0;background:#287757}
+.countdown{position:fixed;inset:0;display:grid;place-items:center;background:rgba(21,40,56,.55);z-index:20}
+/* An author display value beats the UA's [hidden]{display:none}: say it explicitly, or the closed overlay eats every click. */
+[hidden]{display:none!important}
+.countdown strong{font-size:160px;color:#fff;font-weight:300;font-variant-numeric:tabular-nums}
+
+@media(max-width:1100px){.stage{grid-template-columns:1fr}.picture{max-width:520px}}
+@media(max-width:900px){.layout{grid-template-columns:1fr}nav{display:none}.controls{left:0;flex-wrap:wrap}.privacy{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}

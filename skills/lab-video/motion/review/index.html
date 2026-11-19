@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="snowflake-source" content="cortex-agent-authored">
+<title>Review</title>
+<link rel="stylesheet" href="/review.css">
+</head>
+<body>
+<header class="top">
+  <div class="title">
+    <h1 id="title">Loading…</h1>
+    <p id="meta" class="muted"></p>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <button id="send" class="send" type="button" disabled>Send to CoCo</button>
+</header>
+
+<main>
+  <section class="cut" aria-label="The whole video">
+    <div class="player">
+      <video id="full" playsinline preload="auto" aria-label="Full cut"></video>
+      <p id="nofull" class="empty" hidden>No preview yet. CoCo is still rendering the first cut.</p>
+    </div>
+    <div class="transport">
+      <button id="play" type="button" class="ghost" aria-label="Play or pause">Play</button>
+      <span id="clock" class="clock">0:00.0</span>
+      <div id="timeline" class="timeline" role="slider" aria-label="Timeline" tabindex="0"></div>
+      <button id="pin" type="button" class="ghost">Note at playhead</button>
+    </div>
+    <form id="pinform" class="pinform" hidden>
+      <label for="pintext" id="pinlabel">Note</label>
+      <textarea id="pintext" rows="2" placeholder="What should change here?"></textarea>
+      <div class="row"><button type="submit">Add note</button><button type="button" class="ghost" id="pincancel">Cancel</button></div>
+    </form>
+  </section>
+
+  <section class="global" aria-labelledby="gh">
+    <h2 id="gh">Whole video</h2>
+    <p class="muted small">Changes here apply to every scene and re-render all of them.</p>
+    <div id="globalcontrols" class="controls"></div>
+    <form id="globalform" class="noteform">
+      <label for="globaltext">Note for the whole video</label>
+      <textarea id="globaltext" rows="2" placeholder="Tone, pacing, colour, what to cut…"></textarea>
+      <button type="submit">Add note</button>
+    </form>
+    <ul id="globalnotes" class="notes"></ul>
+  </section>
+
+  <section class="sound" aria-labelledby="soh">
+    <div class="soundhead">
+      <h2 id="soh">Sound</h2>
+      <span id="mixstatus" class="muted small"></span>
+      <a id="openvoice" class="voicelink" href="/voice">Open Voice Studio</a>
+    </div>
+    <div class="soundgrid">
+      <div class="ctl">
+        <label for="track">Music</label>
+        <select id="track"></select>
+        <p id="trackinfo" class="muted small"></p>
+      </div>
+      <div class="ctl">
+        <label for="musicedit">How the music is cut</label>
+        <select id="musicedit">
+          <option value="ending">Land its ending on the call to action</option>
+          <option value="intro">Start from the top, fade at the end</option>
+        </select>
+        <button type="button" id="snap" class="ghost apply">Put the cuts on the beat…</button>
+        <p id="snapinfo" class="muted small" hidden></p>
+        <button type="button" id="snapapply" class="apply" hidden>Apply these lengths</button>
+      </div>
+      <div class="ctl">
+        <label for="gain">Music level</label>
+        <input type="range" id="gain" min="-12" max="6" step="1">
+        <output id="gainout" class="num"></output>
+        <button type="button" id="gainapply" class="apply">Apply</button>
+      </div>
+      <div class="ctl">
+        <label for="narr">Narration</label>
+        <select id="narr"><option value="1">On: my recorded lines</option><option value="0">Off: music only</option></select>
+        <p id="narrinfo" class="muted small"></p>
+      </div>
+    </div>
+    <p id="soundwarn" class="soundwarn small" hidden></p>
+  </section>
+
+  <section aria-labelledby="sh">
+    <h2 id="sh">Scenes</h2>
+    <div id="scenes" class="scenes"></div>
+  </section>
+</main>
+
+<template id="tpl-scene">
+  <article class="scene">
+    <header>
+      <h3><span class="sid"></span> <span class="role"></span></h3>
+      <span class="badge ver"></span>
+      <span class="badge new" hidden>Updated</span>
+      <span class="badge sim" hidden>Simulated</span>
+      <span class="badge line" hidden></span>
+      <span class="dur muted small"></span>
+    </header>
+    <div class="media">
+      <video class="clip" muted loop playsinline preload="metadata"></video>
+      <video class="old" muted loop playsinline preload="metadata" hidden></video>
+    </div>
+    <div class="compare" hidden>
+      <label>Compare with <select class="versions"></select></label>
+    </div>
+    <p class="say" hidden></p>
+    <details class="edits">
+      <summary>Edit directly</summary>
+      <div class="controls"></div>
+    </details>
+    <ul class="notes"></ul>
+    <form class="noteform">
+      <label>Note for this scene <textarea rows="2" placeholder="e.g. hold here a beat longer"></textarea></label>
+      <button type="submit">Add note</button>
+    </form>
+  </article>
+</template>
+
+<script src="/review.js"></script>
+</body>
+</html>
