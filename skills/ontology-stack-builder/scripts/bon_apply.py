@@ -39,7 +39,7 @@ class Applier:
         self.cur, self.domain, self.dry_run, self.log = cur, domain, dry_run, log
 
     def call(self, fn: str, *args, write: bool = True) -> dict:
-        # SYSTEM$ glossary functions raise "inputs may not be null" for NULL
+        # Business Ontology SYSTEM$ functions raise "inputs may not be null" for NULL
         # arguments; optional trailing arguments must be omitted instead.
         while args and args[-1] is None:
             args = args[:-1]
@@ -55,7 +55,7 @@ class Applier:
 
     # ------------------------------------------------------------------ domain
     def ensure_domain(self, description: str) -> str | None:
-        summary = self.call("SYSTEM$GET_GLOSSARY_SUMMARY", write=False)
+        summary = self.call("SYSTEM$GET_ONTOLOGY_SUMMARY", write=False)
         if summary.get("error"):
             raise SystemExit(f"Business Ontology unavailable: {summary.get('errorMessage')} "
                              "(is FEATURE_BUSINESS_GLOSSARY enabled on this account?)")
@@ -63,7 +63,7 @@ class Applier:
             if d.get("name") == self.domain:
                 return str(d["domainId"])
         args = (self.domain, description) if description else (self.domain,)
-        out = self.call("SYSTEM$CREATE_GLOSSARY_DOMAIN", *args)
+        out = self.call("SYSTEM$CREATE_ONTOLOGY_DOMAIN", *args)
         if out.get("error"):
             raise SystemExit(f"Cannot create domain {self.domain!r}: {out.get('errorMessage')}")
         return str(out.get("domainId")) if out.get("domainId") else None
@@ -72,18 +72,18 @@ class Applier:
     def existing_terms(self) -> dict[str, dict]:
         """name(normalised) -> {termId, status} for ACTIVE and DRAFT terms in the domain."""
         found: dict[str, dict] = {}
-        lst = self.call("SYSTEM$GET_GLOSSARY_TERM_LIST", self.domain, "TERM", "", write=False)
+        lst = self.call("SYSTEM$GET_ONTOLOGY_TERM_LIST", self.domain, "TERM", "", write=False)
         for t in lst.get("terms", []) or []:
             if t.get("domain") == self.domain:
                 found[norm_key(t["name"])] = {"termId": str(t["termId"]), "status": "ACTIVE", "term": t}
-        drafts = self.call("SYSTEM$GET_GLOSSARY_TERM_DRAFTS", self.domain, write=False)
+        drafts = self.call("SYSTEM$GET_ONTOLOGY_TERM_DRAFTS", self.domain, write=False)
         for t in drafts.get("terms", []) or []:
             if t.get("domain") == self.domain:
                 found.setdefault(norm_key(t["name"]), {"termId": str(t["termId"]), "status": "DRAFT", "term": t})
         return found
 
     def graph(self) -> dict:
-        g = self.call("SYSTEM$GET_GLOSSARY_GRAPH", self.domain, write=False)
+        g = self.call("SYSTEM$GET_ONTOLOGY_GRAPH", self.domain, write=False)
         return {} if g.get("error") else g
 
 
@@ -157,13 +157,13 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
                     for f in ("formula", "formulaSource"):
                         if c.get(f):
                             patch[f] = c[f]
-                out = ap.call("SYSTEM$UPDATE_GLOSSARY_TERM", ex["termId"], dumps(patch))
+                out = ap.call("SYSTEM$UPDATE_ONTOLOGY_TERM", ex["termId"], dumps(patch))
                 if out.get("error"):
                     summary["nodes"]["failed"].append({"name": c["name"], "op": "update", "error": out.get("errorMessage")})
                 else:
                     summary["nodes"]["updated"] += 1
             continue
-        out = ap.call("SYSTEM$DRAFT_GLOSSARY_TERM", dumps(_term_payload(c, domain_id, domain)))
+        out = ap.call("SYSTEM$DRAFT_ONTOLOGY_TERM", dumps(_term_payload(c, domain_id, domain)))
         if out.get("error"):
             summary["nodes"]["failed"].append({"name": c["name"], "op": "draft", "error": out.get("errorMessage")})
             continue
@@ -174,7 +174,7 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
 
     if not save_as_draft and not dry_run:
         for chunk in _chunks(to_approve, APPROVE_CHUNK):
-            out = ap.call("SYSTEM$APPROVE_ALL_GLOSSARY_TERMS", dumps(chunk))
+            out = ap.call("SYSTEM$APPROVE_ALL_ONTOLOGY_TERMS", dumps(chunk))
             summary["nodes"]["approved"] += int(out.get("approved", 0) or 0)
             for r in out.get("results", []) or []:
                 if r.get("status") == "FAILED":
@@ -188,7 +188,7 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
     g = ap.graph() if not dry_run else {}
     active_ids = {str(t["termId"]) for t in g.get("terms", []) or []}
     if not dry_run and not g:
-        # GET_GLOSSARY_GRAPH can fail on large accounts (error 300002): fall back to the term list.
+        # GET_ONTOLOGY_GRAPH can fail on large accounts (error 300002): fall back to the term list.
         # Existing edges/representations are then unknown; BON CREATE/DRAFT calls are idempotent.
         summary["graph_fallback"] = True
         for key, t in ap.existing_terms().items():
@@ -217,14 +217,14 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
             summary["relationships"]["existing"] += 1
             continue
         label = e.get("label") if t == "CUSTOM" else None  # label is rejected on every non-CUSTOM type
-        out = ap.call("SYSTEM$DRAFT_GLOSSARY_RELATIONSHIP", s_id, d_id, t, label)
+        out = ap.call("SYSTEM$DRAFT_ONTOLOGY_RELATIONSHIP", s_id, d_id, t, label)
         if out.get("error"):
             summary["relationships"]["failed"].append({**e, "op": "draft", "error": out.get("errorMessage")})
             continue
         summary["relationships"]["drafted"] += 1
         rel_items.append({"source": s_id, "target": d_id, "type": t})
     for chunk in _chunks(rel_items, APPROVE_CHUNK):
-        out = ap.call("SYSTEM$APPROVE_ALL_GLOSSARY_RELATIONSHIPS", dumps(chunk))
+        out = ap.call("SYSTEM$APPROVE_ALL_ONTOLOGY_RELATIONSHIPS", dumps(chunk))
         summary["relationships"]["approved"] += int(out.get("approved", 0) or 0)
         for r in out.get("results", []) or []:
             # Some drafts auto-approve; approve then reports them as skipped/failed. Reconcile is the truth.
@@ -243,14 +243,14 @@ def apply(cur, input_dir: Path, domain: str, save_as_draft: bool, dry_run: bool)
         if _ref_key(tid, ref) in existing_refs:
             summary["representations"]["existing"] += 1
             continue
-        out = ap.call("SYSTEM$DRAFT_GLOSSARY_ASSET", tid, dumps(ref), a.get("role", "DESCRIBES"))
+        out = ap.call("SYSTEM$DRAFT_ONTOLOGY_ASSET", tid, dumps(ref), a.get("role", "DESCRIBES"))
         if out.get("error"):
             summary["representations"]["failed"].append({**a, "op": "draft", "error": out.get("errorMessage")})
             continue
         summary["representations"]["drafted"] += 1
         asset_items.append({"term": tid, **ref})
     for chunk in _chunks(asset_items, APPROVE_CHUNK):
-        out = ap.call("SYSTEM$APPROVE_ALL_GLOSSARY_ASSETS", dumps(chunk))
+        out = ap.call("SYSTEM$APPROVE_ALL_ONTOLOGY_ASSETS", dumps(chunk))
         summary["representations"]["approved"] += int(out.get("approved", 0) or 0)
         for r in out.get("results", []) or []:
             if r.get("status") == "FAILED":

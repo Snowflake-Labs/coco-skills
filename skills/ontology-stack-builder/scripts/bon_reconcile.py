@@ -31,17 +31,17 @@ REF_KINDS = {"BINDING", "PROPERTY", "METRIC_SV"}
 
 def read_bon_state(cur, domain: str, expected_names: list[str]) -> dict:
     """Return {"terms": {norm_name: {termId, name, itemKind}}, "edges": set, "refs": set, "source": str}."""
-    g = call_system(cur, "SYSTEM$GET_GLOSSARY_GRAPH", domain)
+    g = call_system(cur, "SYSTEM$GET_ONTOLOGY_GRAPH", domain)
     if not g.get("error"):
         terms = {norm_key(t["name"]): t for t in g.get("terms", []) or [] if t.get("domain", domain) == domain}
         by_id = {str(t["termId"]): t["name"] for t in terms.values()}
         edges = {(norm_key(by_id.get(str(r["sourceTermId"]), "")), norm_key(by_id.get(str(r["targetTermId"]), "")), r["relationshipType"])
                  for r in g.get("relationships", []) or []}
         refs = {asset_key(norm_key(by_id.get(str(a["termId"]), "")), a) for a in g.get("associations", []) or []}
-        return {"terms": terms, "edges": edges, "refs": refs, "source": "GET_GLOSSARY_GRAPH"}
+        return {"terms": terms, "edges": edges, "refs": refs, "source": "GET_ONTOLOGY_GRAPH"}
 
     # Fallback for large accounts: term list, then per-term reads for edges and assets.
-    lst = call_system(cur, "SYSTEM$GET_GLOSSARY_TERM_LIST", domain, "TERM", "")
+    lst = call_system(cur, "SYSTEM$GET_ONTOLOGY_TERM_LIST", domain, "TERM", "")
     terms = {norm_key(t["name"]): t for t in lst.get("terms", []) or [] if t.get("domain") == domain}
     by_id = {str(t["termId"]): t["name"] for t in terms.values()}
     edges, refs = set(), set()
@@ -49,12 +49,12 @@ def read_bon_state(cur, domain: str, expected_names: list[str]) -> dict:
     for key, t in terms.items():
         if key not in wanted:
             continue
-        detail = call_system(cur, "SYSTEM$GET_GLOSSARY_TERM", str(t["termId"]))
+        detail = call_system(cur, "SYSTEM$GET_ONTOLOGY_TERM", str(t["termId"]))
         for e in (detail.get("relationships") or {}).get("edges", []) or []:
             names = {str(n["termId"]): n["name"] for n in (detail.get("relationships") or {}).get("nodes", []) or []}
             names.update(by_id)
             edges.add((norm_key(names.get(str(e["sourceTermId"]), "")), norm_key(names.get(str(e["targetTermId"]), "")), e["relationshipType"]))
-        assets = call_system(cur, "SYSTEM$GET_GLOSSARY_TERM_ASSETS", str(t["termId"]), "")
+        assets = call_system(cur, "SYSTEM$GET_ONTOLOGY_TERM_ASSETS", str(t["termId"]), "")
         for a in assets.get("assets", assets.get("associations", [])) or []:
             refs.add(asset_key(key, a))
     return {"terms": terms, "edges": edges, "refs": refs, "source": f"term reads (graph error: {g.get('errorMessage')})"}

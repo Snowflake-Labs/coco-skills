@@ -70,7 +70,7 @@ def checksum(obj: Any) -> str:
 
 
 def parse_json_result(raw: Any) -> dict:
-    """SYSTEM$ glossary functions return a JSON string with an error envelope."""
+    """Business Ontology SYSTEM$ functions return a JSON string with an error envelope."""
     if isinstance(raw, dict):
         return raw
     try:
@@ -92,7 +92,7 @@ def connect(connection_name: str):
 
 
 def call_system(cur, function: str, *args: Any) -> dict:
-    """Call a SYSTEM$ glossary function with client-side bound literals.
+    """Call a Business Ontology SYSTEM$ function (SYSTEM$*_ONTOLOGY_*) with client-side bound literals.
 
     The connector's pyformat binding renders each argument as an escaped string
     literal, which is what these functions require (they reject PARSE_JSON and
