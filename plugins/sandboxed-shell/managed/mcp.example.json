@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "sandboxed-shell": {
+      "type": "stdio",
+      "command": "python3",
+      "args": ["-I", "/opt/sandboxed-shell/mcp/server.py"]
+    }
+  }
+}
