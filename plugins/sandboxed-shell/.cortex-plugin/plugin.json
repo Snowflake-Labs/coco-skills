@@ -1,0 +1,10 @@
+{
+  "name": "sandboxed-shell",
+  "version": "0.2.0",
+  "description": "Runs the agent's shell commands in an NVIDIA OpenShell sandbox that holds a copy of the project, instead of on your machine. If no sandbox can be reached the command does not run (exit code 125). CoCo CLI on macOS and Linux. Prereqs: python3 (3.9+) and the openshell CLI with a reachable gateway. See SETUP.md.",
+  "author": {
+    "name": "zozo123",
+    "url": "https://github.com/zozo123/sandboxed-shell"
+  },
+  "skills": ["./skills"]
+}

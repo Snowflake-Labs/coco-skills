@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "permissions": {
+    "deny": ["bash"],
+    "dangerouslyAllowAll": false
+  },
+  "files": {
+    "mcpFile": "/Library/Application Support/Cortex/mcp.json"
+  },
+  "ui": {
+    "showManagedBanner": true,
+    "bannerText": "Shell commands run in a sandbox on this device."
+  }
+}
