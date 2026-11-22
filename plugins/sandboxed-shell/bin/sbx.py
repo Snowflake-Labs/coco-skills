@@ -50,7 +50,7 @@ INLINE_COMMAND_BYTES = 24_000
 # Machine-specific build output and caches: each side keeps its own copy.
 DEFAULT_EXCLUDES = [
     "node_modules", ".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache",
-    ".ruff_cache", ".tox", ".gradle", ".terraform", "target", ".DS_Store",
+    ".ruff_cache", ".tox", ".nox", ".direnv", ".gradle", ".terraform", "target", ".DS_Store",
 ]
 # Secret-looking files and agent configuration: never leave this machine.
 DEFAULT_SECRETS = [
@@ -620,6 +620,73 @@ def landing(root_real: str, rel: str):
     return os.path.relpath(os.path.join(parent, os.path.basename(rel)), root_real)
 
 
+def command_dirs(root_real: str):
+    """The project directories this machine looks in when something is run by name (CoCo runs
+    `bash`, the hook runs `python3`): PATH entries that resolve into the project, folded and
+    relative to its root. True instead when PATH has an empty or relative entry: that one follows
+    whatever directory a later command starts in, so every directory counts."""
+    root = os.stat(root_real)
+    found = set()
+    for entry in os.environ.get("PATH", "").split(os.pathsep):
+        if not os.path.isabs(entry):
+            return True
+        # The entry as written and every path its links lead through, one link at a time: a link
+        # on the way (tools -> scripts) is a name that can redirect the entry, so it counts too.
+        todo, hops = [os.path.normpath(entry), os.path.realpath(entry)], 0
+        while todo:
+            path = todo.pop()
+            # Inside the project when an ancestor IS the project directory (same device and inode),
+            # whatever its spelling: case, NFD, /System/Volumes/Data. A look-alike sibling is not.
+            above, tail = path, []
+            while os.path.dirname(above) != above:
+                with contextlib.suppress(OSError):
+                    if os.path.samestat(os.lstat(above), root):
+                        found.add("/".join(fold(part) for part in reversed(tail)))
+                        break
+                tail.append(os.path.basename(above))
+                above = os.path.dirname(above)
+            parts, head = path.split(os.sep)[1:], ""
+            for index, part in enumerate(parts):
+                head += os.sep + part
+                if hops < 64 and os.path.islink(head):
+                    hops += 1
+                    with contextlib.suppress(OSError):
+                        todo.append(os.path.normpath(os.path.join(
+                            os.path.dirname(head), os.readlink(head), *parts[index + 1:])))
+                    break
+    return found
+
+
+def in_python_env(root_real: str, rel: str, seen: dict) -> bool:
+    """True when rel is a pyvenv.cfg, or lies inside a Python environment on this machine (a
+    directory holding pyvenv.cfg or conda-meta). An activated environment's python3 reads its
+    pyvenv.cfg and site-packages every time it starts, the hook's python3 included."""
+    parts = rel.split("/")
+    if fold(parts[-1]) == "pyvenv.cfg":
+        return True
+    for depth in range(len(parts)):
+        here = os.path.join(root_real, *parts[:depth])
+        if here not in seen:
+            seen[here] = (os.path.lexists(os.path.join(here, "pyvenv.cfg"))
+                          or os.path.lexists(os.path.join(here, "conda-meta")))
+        if seen[here]:
+            return True
+    return False
+
+
+def runs_as_command(member: tarfile.TarInfo, rel: str, dirs) -> bool:
+    """True when writing member at rel would leave something this machine can run by name: an
+    executable file or a link in a directory on PATH, or a link standing in for such a directory
+    or one of its parents."""
+    if dirs is True:
+        return member.issym() or (member.isreg() and bool(member.mode & 0o111))
+    parts = [fold(part) for part in rel.split("/")]
+    path, parent = "/".join(parts), "/".join(parts[:-1])
+    if member.issym():
+        return parent in dirs or any(d == path or d.startswith(path + "/") for d in dirs)
+    return member.isreg() and bool(member.mode & 0o111) and parent in dirs
+
+
 def scrub_git_config(data: bytes) -> bytes:
     """git configuration without the credentials it can carry: user:token@ in an http(s) URL and
     http.extraheader (an Authorization header)."""
@@ -710,6 +777,8 @@ def apply_pull_tar(root: str, tar_path: str, rules: Rules, conflicts: set, known
     root_real = os.path.realpath(root)
     written, removed, refused, deleted, listed = [], [], [], [], {}
     incomplete = set()  # git directories that did not get all of their data: nothing is deleted in them
+    on_path = command_dirs(root_real)
+    environments = {}  # project directory -> holds a Python environment on this machine
 
     def git_dir(path):
         folded = [fold(part) for part in path.split("/")]
@@ -739,6 +808,12 @@ def apply_pull_tar(root: str, tar_path: str, rules: Rules, conflicts: set, known
                                    or (member.issym() and git_dir(path) is not None)
                                    for path in (name, real)):
                 refused.append(name)
+                continue
+            if any(runs_as_command(member, path, on_path) for path in (name, real)):
+                refused.append(f"{name} (a directory on your PATH: it could run as a command on this machine)")
+                continue
+            if any(in_python_env(root_real, path, environments) for path in (name, real)):
+                refused.append(f"{name} (a Python environment on this machine: its python3 would load it)")
                 continue
             if other_spelling(root, name, listed):
                 refused.append(f"{name} (this disk already has that name in another spelling)")

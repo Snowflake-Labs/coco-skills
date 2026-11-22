@@ -15,7 +15,7 @@ import threading
 from pathlib import Path
 
 RUNNER = Path(__file__).resolve().parent.parent / "bin" / "sbx.py"
-NAME, VERSION = "sandboxed-shell", "0.2.0"
+NAME, VERSION = "sandboxed-shell", "0.2.1"
 OUTPUT_LIMIT = 200_000  # characters of command output returned to the model (the tail is kept)
 DEFAULT_TIMEOUT_SECONDS = 600
 

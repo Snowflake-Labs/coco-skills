@@ -8,12 +8,21 @@ this plugin they run in a sandbox that holds a copy of the project directory and
 else from your machine. OpenShell is open source (Apache-2.0) and runs on your machine or
 your own hosts, so the project does not leave them.
 
-CoCo CLI has its own ways to do this. `/sandbox` (experimental) runs commands under
-operating-system restrictions or in a container on your machine, and `cortex --cloud` runs
-tools in a Snowflake-managed container on a mounted workspace. This plugin is for people
-who want the agent's commands to run in an OpenShell sandbox, with OpenShell's file,
-network and process policy, while they work on a local checkout. It does not replace
-either Snowflake feature.
+CoCo CLI has two sandbox options of its own. This plugin is a third, for teams that use
+OpenShell, and it replaces neither:
+
+| Option | Where a command runs | What it works on |
+|---|---|---|
+| `/sandbox` (experimental, off by default) | On your machine, under the operating system's sandbox (`sandbox-exec`, `bubblewrap` or restricted tokens) | Your working directory |
+| `cortex --cloud` (generally available) | In a Snowflake-managed container | A mounted workspace, not your local checkout |
+| This plugin | In an OpenShell sandbox, a separate Linux environment run by your OpenShell gateway | A copy of your local checkout; changed files come back |
+
+Pick the plugin when your team already runs OpenShell and wants one sandbox and one policy
+across its agents, or when commands should see a copy of the project and nothing else from
+your machine. The plugin's runner has no way to run a command on your machine, while
+`/sandbox` lets the agent ask you to approve running one there unless
+`allowUnsandboxedCommands` is `false`. Use one option per session: the plugin together with
+`/sandbox` is not tested.
 
 ## How it works
 
@@ -76,6 +85,15 @@ Files a command changed come back only inside the project directory. These never
   worktree settings, redirects, links and rebase state stay as they are on your machine.
   A `.git` that arrives as a file or a link is refused.
 - Hooks or Git configuration next to a `HEAD` file in a directory under another name.
+- An executable file or a link in a project directory that is on your `PATH`, and a link
+  that would stand in for such a directory or one of its parents. CoCo runs `bash` and the
+  hook runs `python3` by name, so a file planted there could run on your machine at the
+  next call when that directory comes before the system ones (direnv's `PATH_add` puts it
+  first). If your `PATH` has an empty or relative entry, such as `.` or `bin`, every
+  executable file and every link is refused.
+- Anything inside a Python environment in the project (a directory holding `pyvenv.cfg` or
+  `conda-meta`), whatever it is called, and a new `pyvenv.cfg`. An activated environment's
+  `python3`, the hook's included, reads those files every time it starts.
 - `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `GEMINI.md` and `.cursorrules`, at any depth.
 - Every name on the lists above.
 
@@ -151,8 +169,9 @@ machine is. Configuration and the team setup are in [SETUP.md](SETUP.md).
 ## Good to know
 
 - The sandbox is Linux. Files and directories named `node_modules`, `.venv`, `venv`,
-  `target`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.tox`, `.gradle`,
-  `.terraform` or `.DS_Store` are not copied, at any depth. Each side keeps its own.
+  `target`, `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.tox`, `.nox`,
+  `.direnv`, `.gradle`, `.terraform` or `.DS_Store` are not copied, at any depth. Each side
+  keeps its own.
 - The project lives at `<sandbox working directory>/<project name>`, with the name in
   lower case, each run of other characters replaced by one `-`, and cut to 24 characters.
   `My Project` becomes `my-project`. Paths from your machine do not exist there, so the
@@ -188,7 +207,7 @@ blocked the call. Git hooks written in the sandbox did not reach the machine. Wi
 shell tool removed, the MCP tool ran the commands. The two limits under
 [What is not protected](#what-is-not-protected) were found in these runs.
 
-61 unit tests pass on Python 3.9 and 3.14, on macOS and on Linux. They run 32 command
+67 unit tests pass on Python 3.9 and 3.14, on macOS and on Linux. They run 32 command
 strings, 19 of them injection attempts, through sh, bash, zsh, dash and ksh. A canary
 file checks that none of them runs on the host.
 

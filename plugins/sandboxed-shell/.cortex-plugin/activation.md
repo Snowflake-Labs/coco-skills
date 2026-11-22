@@ -7,6 +7,7 @@ It works with CoCo CLI on macOS and Linux (on Windows, use WSL). It needs `pytho
 `openshell` CLI with a reachable gateway. OpenShell is open source (Apache-2.0) and runs on
 your machine or your own hosts, so project files stay with you. If no sandbox can be
 reached, shell commands fail with exit code 125 and do not run on your machine. Read, edit,
-SQL and web tools are not affected. CoCo CLI also has its own sandbox; see `/sandbox`.
+SQL and web tools are not affected. CoCo CLI also has its own options, `/sandbox` and
+`cortex --cloud`; running this plugin together with `/sandbox` is not tested.
 
 Check your setup from your own terminal with `python3 <plugin directory>/bin/sbx.py doctor`.
