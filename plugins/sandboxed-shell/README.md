@@ -146,7 +146,7 @@ policy that allows the hosts you need ([SETUP.md](SETUP.md#3-configuration)).
 In your terminal:
 
 ```
-cortex plugin install zozo123/sandboxed-shell/plugins/sandboxed-shell
+cortex plugin install Snowflake-Labs/coco-skills/plugins/sandboxed-shell
 cortex plugin validate sandboxed-shell
 ```
 
@@ -195,8 +195,8 @@ machine is. Configuration and the team setup are in [SETUP.md](SETUP.md).
   started again. If it was replaced while a command was running, the call returns 125 and
   the command is not run a second time.
 - To run CoCo itself inside OpenShell, with your Snowflake token kept in the OpenShell
-  gateway rather than in the sandbox, see `openshell/` in the
-  [project repository](https://github.com/zozo123/sandboxed-shell).
+  gateway rather than in the sandbox, see [`openshell/`](openshell/)
+  in this plugin.
 
 ## Tested
 

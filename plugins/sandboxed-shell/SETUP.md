@@ -28,10 +28,10 @@ that allows the hosts you need (see [Configuration](#3-configuration)).
 
 ## 2. Install the plugin
 
-From the project's repository, in your terminal:
+From the Snowflake-Labs coco-skills repository, in your terminal:
 
 ```
-cortex plugin install zozo123/sandboxed-shell/plugins/sandboxed-shell
+cortex plugin install Snowflake-Labs/coco-skills/plugins/sandboxed-shell
 ```
 
 Or, in a CoCo session:
@@ -115,9 +115,9 @@ it is readable by you only). The runner also follows `XDG_CONFIG_HOME` (settings
 ### Snowflake credentials for commands in the sandbox
 
 Do not copy a password or token into the sandbox. An OpenShell provider keeps the stored
-secret in the gateway and gives the sandbox a placeholder. The project repository has a
+secret in the gateway and gives the sandbox a placeholder. This plugin has a
 Snowflake provider profile, tested with CoCo itself running inside OpenShell
-(`openshell/` in https://github.com/zozo123/sandboxed-shell). It does not work for `snow`
+([`openshell/`](openshell/)). It does not work for `snow`
 or `dbt`, which compress their sign-in request. A command that logs in to Snowflake still
 receives a session token it can use.
 

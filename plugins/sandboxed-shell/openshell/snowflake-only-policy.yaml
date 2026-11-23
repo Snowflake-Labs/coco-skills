@@ -1,0 +1,17 @@
+# OpenShell sandbox policy: the sandbox may reach one host, the Snowflake account, on 443.
+# openshell/coco-in-openshell.sh replaces __SNOWFLAKE_HOST__ with <account>.snowflakecomputing.com.
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /etc, /proc]
+  read_write: [/tmp]
+landlock:
+  compatibility: hard_requirement
+network_policies:
+  snowflake:
+    name: snowflake
+    endpoints:
+      - host: __SNOWFLAKE_HOST__
+        port: 443
+    binaries:
+      - path: /**
