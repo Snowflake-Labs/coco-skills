@@ -1,0 +1,10 @@
+# OpenShell sandbox policy for provider mode: no network rules of its own. The attached
+# provider (openshell/providers/snowflake.yaml) adds the only allowed destination, the
+# Snowflake account host, with its traffic inspected.
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only: [/usr, /lib, /etc, /proc]
+  read_write: [/tmp]
+landlock:
+  compatibility: hard_requirement

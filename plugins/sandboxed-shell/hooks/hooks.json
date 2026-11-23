@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"${CORTEX_PLUGIN_ROOT}/hooks/route_bash.py\" || exit 2",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

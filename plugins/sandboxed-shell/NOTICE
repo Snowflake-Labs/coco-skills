@@ -1,0 +1,4 @@
+sandboxed-shell: run an agent's shell commands in an NVIDIA OpenShell sandbox
+Copyright 2026 The sandboxed-shell authors
+
+Licensed under the Apache License, Version 2.0. See LICENSE.

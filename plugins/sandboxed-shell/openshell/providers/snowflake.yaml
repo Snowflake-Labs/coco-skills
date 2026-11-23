@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Example provider profile for Snowflake. OpenShell does not load it; import it explicitly
+# (openshell/snowflake-provider.sh does all of this for one account):
+#   openshell profile lint   -f openshell/providers/snowflake.yaml
+#   openshell profile import -f openshell/providers/snowflake.yaml
+#
+# Copy and edit this file rather than importing it unchanged: replace
+# myorg-myaccount.snowflakecomputing.com with your account host, and make `binaries` name
+# the CoCo path in your image.
+#
+# Client binaries:   cortex (Snowflake's CoCo CLI); its child processes match by ancestry.
+# Reference layout:  /sandbox/coco-<version>-linux-<arch>/cortex (Snowflake's Linux package,
+#                    unpacked by openshell/coco-in-openshell.sh), or
+#                    /sandbox/.local/share/cortex/<version>/cortex (Snowflake's installer
+#                    with HOME=/sandbox).
+# Credential scope:  SNOWFLAKE_TOKEN, a Snowflake programmatic access token. The sandbox
+#                    holds a placeholder. The proxy puts the token into the JSON body of
+#                    POST /session/v1/login-request on the account host, and nowhere else.
+#                    After sign-in, CoCo uses the session token Snowflake returns.
+# Endpoint access:   one account host, port 443, every path, inspected. Keep the host
+#                    pinned: a wildcard such as *.snowflakecomputing.com would let the proxy
+#                    send the token to any Snowflake account.
+# Limits:            the placeholder is replaced anywhere in the sign-in request body, so a
+#                    process that writes its own sign-in request could have Snowflake echo
+#                    the token back; use a short-lived token restricted to one role.
+#                    Python-based Snowflake clients gzip request bodies, which the proxy
+#                    cannot rewrite; this profile is for CoCo, which is Node-based.
+# Smoke test:        PROVIDER=snowflake SNOWFLAKE_ACCOUNT=myorg-myaccount \
+#                      SNOWFLAKE_USER=me@example.com openshell/coco-in-openshell.sh "Reply with OK"
+
+id: snowflake
+display_name: Snowflake
+description: Snowflake account access with a programmatic access token, substituted at sign-in
+category: data
+credentials:
+  - name: token
+    description: Snowflake programmatic access token
+    env_vars: [SNOWFLAKE_TOKEN]
+    required: true
+    auth_style: bearer
+    header_name: authorization
+discovery:
+  credentials: [token]
+endpoints:
+  # Sign-in: the only request whose body may carry the token.
+  - host: myorg-myaccount.snowflakecomputing.com
+    port: 443
+    path: /session/v1/login-request
+    protocol: rest
+    enforcement: enforce
+    rules:
+      - allow: { method: POST, path: /session/v1/login-request }
+    request_body_credential_rewrite: true
+  # Everything else on the account host (queries, Cortex calls): inspected, not rewritten.
+  - host: myorg-myaccount.snowflakecomputing.com
+    port: 443
+    protocol: rest
+    access: full
+    enforcement: enforce
+binaries:
+  - /sandbox/coco-*/cortex
+  - /sandbox/.local/share/cortex/*/cortex
